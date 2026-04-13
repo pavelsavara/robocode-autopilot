@@ -10,10 +10,10 @@ import java.util.Map;
  * then executes all processors in sorted order each tick.
  */
 public class Transformer {
-    private final List<IFeatureProcessor> registered = new ArrayList<IFeatureProcessor>();
-    private List<IFeatureProcessor> sortedProcessors;
+    private final List<IInGameFeatures> registered = new ArrayList<IInGameFeatures>();
+    private List<IInGameFeatures> sortedProcessors;
 
-    public void register(IFeatureProcessor processor) {
+    public void register(IInGameFeatures processor) {
         registered.add(processor);
     }
 
@@ -23,25 +23,25 @@ public class Transformer {
      */
     public void resolveDependencies() {
         // Build adjacency: feature -> processor that produces it
-        Map<Feature, IFeatureProcessor> producers = new HashMap<Feature, IFeatureProcessor>();
-        for (IFeatureProcessor p : registered) {
+        Map<Feature, IInGameFeatures> producers = new HashMap<Feature, IInGameFeatures>();
+        for (IInGameFeatures p : registered) {
             for (Feature f : p.getOutputFeatures()) {
                 producers.put(f, p);
             }
         }
 
         // Topological sort using Kahn's algorithm
-        Map<IFeatureProcessor, Integer> inDegree = new HashMap<IFeatureProcessor, Integer>();
-        Map<IFeatureProcessor, List<IFeatureProcessor>> adj = new HashMap<IFeatureProcessor, List<IFeatureProcessor>>();
+        Map<IInGameFeatures, Integer> inDegree = new HashMap<IInGameFeatures, Integer>();
+        Map<IInGameFeatures, List<IInGameFeatures>> adj = new HashMap<IInGameFeatures, List<IInGameFeatures>>();
 
-        for (IFeatureProcessor p : registered) {
+        for (IInGameFeatures p : registered) {
             inDegree.put(p, 0);
-            adj.put(p, new ArrayList<IFeatureProcessor>());
+            adj.put(p, new ArrayList<IInGameFeatures>());
         }
 
-        for (IFeatureProcessor p : registered) {
+        for (IInGameFeatures p : registered) {
             for (Feature dep : p.getDependencies()) {
-                IFeatureProcessor depProducer = producers.get(dep);
+                IInGameFeatures depProducer = producers.get(dep);
                 if (depProducer != null && depProducer != p) {
                     adj.get(depProducer).add(p);
                     inDegree.put(p, inDegree.get(p) + 1);
@@ -49,18 +49,18 @@ public class Transformer {
             }
         }
 
-        List<IFeatureProcessor> sorted = new ArrayList<IFeatureProcessor>();
-        List<IFeatureProcessor> queue = new ArrayList<IFeatureProcessor>();
-        for (Map.Entry<IFeatureProcessor, Integer> entry : inDegree.entrySet()) {
+        List<IInGameFeatures> sorted = new ArrayList<IInGameFeatures>();
+        List<IInGameFeatures> queue = new ArrayList<IInGameFeatures>();
+        for (Map.Entry<IInGameFeatures, Integer> entry : inDegree.entrySet()) {
             if (entry.getValue() == 0) {
                 queue.add(entry.getKey());
             }
         }
 
         while (!queue.isEmpty()) {
-            IFeatureProcessor current = queue.remove(0);
+            IInGameFeatures current = queue.remove(0);
             sorted.add(current);
-            for (IFeatureProcessor neighbor : adj.get(current)) {
+            for (IInGameFeatures neighbor : adj.get(current)) {
                 int newDegree = inDegree.get(neighbor) - 1;
                 inDegree.put(neighbor, newDegree);
                 if (newDegree == 0) {
@@ -81,20 +81,13 @@ public class Transformer {
         if (sortedProcessors == null) {
             throw new IllegalStateException("resolveDependencies() must be called before process()");
         }
-        for (IFeatureProcessor p : sortedProcessors) {
+        for (IInGameFeatures p : sortedProcessors) {
             p.process(wb);
         }
     }
 
-    /** Get processors for a specific file type (used by CsvWriter). */
-    public List<IFeatureProcessor> getProcessors(FileType fileType) {
-        List<IFeatureProcessor> result = new ArrayList<IFeatureProcessor>();
-        List<IFeatureProcessor> source = sortedProcessors != null ? sortedProcessors : registered;
-        for (IFeatureProcessor p : source) {
-            if (p.getFileType() == fileType) {
-                result.add(p);
-            }
-        }
-        return result;
+    /** Get all registered processors (in dependency order if resolved). */
+    public List<IInGameFeatures> getProcessors() {
+        return sortedProcessors != null ? sortedProcessors : registered;
     }
 }

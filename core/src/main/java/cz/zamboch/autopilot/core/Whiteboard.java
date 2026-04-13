@@ -19,8 +19,13 @@ public class Whiteboard {
     // Opponent state (from last scan — may be stale)
     private double opponentX, opponentY, opponentHeading, opponentVelocity, opponentEnergy;
     private double prevOpponentEnergy;
+    private double prevOpponentHeading = Double.NaN;
     private long lastScanTick = -1;
     private boolean scanAvailableThisTick;
+
+    // Event flags for energy drop detection
+    private boolean weHitOpponentThisTick;
+    private boolean opponentHitWallThisTick;
 
     // Battle constants
     private int battlefieldWidth, battlefieldHeight;
@@ -58,6 +63,8 @@ public class Whiteboard {
     public void advanceTick() {
         tick++;
         scanAvailableThisTick = false;
+        weHitOpponentThisTick = false;
+        opponentHitWallThisTick = false;
         for (int i = 0; i < featureSet.length; i++) {
             featureSet[i] = false;
             features[i] = Double.NaN;
@@ -70,6 +77,10 @@ public class Whiteboard {
         scanAvailableThisTick = false;
         lastScanTick = -1;
         prevOpponentEnergy = 0;
+        prevOpponentHeading = Double.NaN;
+        opponentHeading = Double.NaN;
+        weHitOpponentThisTick = false;
+        opponentHitWallThisTick = false;
         for (int i = 0; i < featureSet.length; i++) {
             featureSet[i] = false;
             features[i] = Double.NaN;
@@ -126,8 +137,11 @@ public class Whiteboard {
     public double getOpponentVelocity() { return opponentVelocity; }
     public double getOpponentEnergy() { return opponentEnergy; }
     public double getPrevOpponentEnergy() { return prevOpponentEnergy; }
+    public double getPrevOpponentHeading() { return prevOpponentHeading; }
     public long getLastScanTick() { return lastScanTick; }
     public boolean isScanAvailableThisTick() { return scanAvailableThisTick; }
+    public boolean isWeHitOpponentThisTick() { return weHitOpponentThisTick; }
+    public boolean isOpponentHitWallThisTick() { return opponentHitWallThisTick; }
 
     public int getBattlefieldWidth() { return battlefieldWidth; }
     public int getBattlefieldHeight() { return battlefieldHeight; }
@@ -155,6 +169,7 @@ public class Whiteboard {
 
     public void setOpponentScan(double x, double y, double heading, double velocity, double energy) {
         this.prevOpponentEnergy = this.opponentEnergy;
+        this.prevOpponentHeading = this.opponentHeading;
         this.opponentX = x;
         this.opponentY = y;
         this.opponentHeading = heading;
@@ -165,6 +180,8 @@ public class Whiteboard {
     }
 
     public void setTick(long tick) { this.tick = tick; }
+    public void setWeHitOpponentThisTick(boolean hit) { this.weHitOpponentThisTick = hit; }
+    public void setOpponentHitWallThisTick(boolean hit) { this.opponentHitWallThisTick = hit; }
 
     public void incrementOurShotsFired() { ourShotsFired++; }
     public void incrementOpponentShotsDetected() { opponentShotsDetected++; }
