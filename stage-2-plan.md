@@ -755,10 +755,47 @@ java -jar pipeline.jar --input recordings/24360294214/ --output output/ [--featu
 2. Wired to shared core (Whiteboard, Transformer)
 3. Robot JAR builds
 
-### Phase H: Additional Features (Incremental)
-- Add features in batches
-- Each batch: implement, unit test, god-view validate
-- Priority order: Wall interaction → Targeting geometry → Movement patterns → Wave surfing
+### Phase H: Additional Features (Offline-Only)
+
+12 high-ROI offline-only features. These are computed in pipeline `IOfflineFeatures` implementations and written directly to CSV — they do NOT go into the core `Feature` enum or the Whiteboard features array. Existing Whiteboard state (positions, velocities, energies, headings) provides all inputs.
+
+**Batch 1 — Movement segmentation (domains A, C)**
+
+| # | Feature | Formula | Unit | Why high ROI |
+|---|---------|---------|------|-------------|
+| 1 | `opponent_lateral_direction` | `sign(opponent_lateral_velocity)`: +1=CW, −1=CCW, 0=stopped | {−1,0,1} | Core GF segmentation dimension. Every competitive bot bins on this. |
+| 2 | `opponent_velocity_delta` | `(velocity − prev_velocity) / delta_ticks` | px/tick² | Raw acceleration signal. Crucial for anticipating speed changes. |
+| 3 | `opponent_is_decelerating` | `abs(current_vel) < abs(prev_vel)` | bool | Binary acceleration state. Tree models split on this heavily. |
+| 4 | `opponent_time_since_direction_change` | Ticks since `lateral_direction` last changed sign | ticks | Key pattern/oscillation feature. Requires new counter in offline state. |
+
+**Batch 2 — Targeting geometry (domains A, C)**
+
+| # | Feature | Formula | Unit | Why high ROI |
+|---|---------|---------|------|-------------|
+| 5 | `opponent_angular_velocity` | `opponent_lateral_velocity / distance` | rad/tick | Angular sweep rate across our FOV. THE input for aiming difficulty. |
+| 6 | `opponent_max_turn_rate` | `(10 − 0.75 × abs(opponent_velocity))` → radians | rad/tick | Constrains opponent's reachable heading space. Tighter at high speed. |
+| 7 | `distance_norm` | `distance / battlefield_diagonal` | [0,1] | ML-friendly normalized distance. Removes battlefield-size bias. |
+
+**Batch 3 — State normalization (domains C, D, E)**
+
+| # | Feature | Formula | Unit | Why high ROI |
+|---|---------|---------|------|-------------|
+| 8 | `energy_ratio` | `our_energy / (our_energy + opponent_energy)` | [0,1] | Normalized energy balance. Better than raw advantage for ML. |
+| 9 | `our_lateral_velocity` | `our_velocity × sin(our_heading − bearing_to_opponent_abs)` | px/tick | Our movement perpendicular to bearing line. Critical for dodge assessment. |
+| 10 | `our_dist_to_wall_min` | `min(dist_N, dist_S, dist_E, dist_W)` for us (18px offset) | px | Our wall constraint. Directly limits escape options. |
+
+**Batch 4 — Opponent prediction (domains A, B)**
+
+| # | Feature | Formula | Unit | Why high ROI |
+|---|---------|---------|------|-------------|
+| 11 | `opponent_wall_ahead_distance` | Ray-cast from opponent position along opponent heading to nearest wall | px | How far opponent can travel before wall collision. |
+| 12 | `opponent_inferred_gun_heat` | `max(0, (1 + fire_power/5) − elapsed × coolingRate)` since last detected fire | heat | Predicts when opponent can fire next. Requires Phase F (energy-drop detection). |
+
+**Implementation approach:**
+- Each batch: implement offline feature class, unit test, validate against recordings
+- Features 1–10 depend only on existing Whiteboard state (phases A–D)
+- Feature 11 needs a wall-ray-cast utility (simple geometry)
+- Feature 12 depends on Phase F (opponent fire detection + gun heat tracking)
 
 ---
 
