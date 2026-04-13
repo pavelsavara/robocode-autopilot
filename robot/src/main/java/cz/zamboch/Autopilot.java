@@ -13,7 +13,7 @@ import robocode.StatusEvent;
  * forwards to Whiteboard, computes features via Transformer.
  * ML decision module is a future addition.
  */
-public class Autopilot extends AdvancedRobot {
+public final class Autopilot extends AdvancedRobot {
     private Whiteboard whiteboard;
     private Transformer transformer;
 

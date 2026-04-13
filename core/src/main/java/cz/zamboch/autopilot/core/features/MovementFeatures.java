@@ -7,8 +7,7 @@ import cz.zamboch.autopilot.core.util.RoboMath;
 
 /**
  * Computes movement features: velocity, lateral velocity, advancing velocity, heading delta.
- * Depends on BEARING_TO_OPPONENT_ABS from SpatialFeatures.
- */
+ * Depends on BEARING_TO_OPPONENT_ABS from SpatialFeatures. */
 public class MovementFeatures implements IInGameFeatures {
 
     private static final Feature[] OUTPUTS = {

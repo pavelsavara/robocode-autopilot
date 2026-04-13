@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Integration test: processes real .br recordings through the full pipeline
- * (Loader + Player + Transformer with all offline feature processors) and validates
+ * (Loader + Player + Transformer with all offline features) and validates
  * computed features against god-view snapshot data.
  */
 class FeatureIntegrationTest {

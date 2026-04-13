@@ -8,9 +8,9 @@ import java.nio.file.Path;
 
 /**
  * Produces CSV files per battle per robot perspective.
- * Delegates column writing to IOfflineFeatureProcessor instances from the Transformer.
+ * Delegates column writing to IOfflineFeatures instances from the Transformer.
  */
-public class CsvWriter implements Closeable {
+public final class CsvWriter implements Closeable {
     private final Path outputDir;
     private final String battleId;
     private final String robotName;

@@ -6,15 +6,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Feature processor orchestrator. Registers processors, resolves dependency order once,
- * then executes all processors in sorted order each tick.
+ * Feature orchestrator. Registers features, resolves dependency order once,
+ * then executes all features in sorted order each tick.
  */
-public class Transformer {
+public final class Transformer {
     private final List<IInGameFeatures> registered = new ArrayList<IInGameFeatures>();
-    private List<IInGameFeatures> sortedProcessors;
+    private List<IInGameFeatures> sortedFeatures;
 
-    public void register(IInGameFeatures processor) {
-        registered.add(processor);
+    public void register(IInGameFeatures feature) {
+        registered.add(feature);
     }
 
     /**
@@ -22,7 +22,7 @@ public class Transformer {
      * @throws IllegalStateException if circular dependencies detected
      */
     public void resolveDependencies() {
-        // Build adjacency: feature -> processor that produces it
+        // Build adjacency: feature enum -> feature impl that produces it
         Map<Feature, IInGameFeatures> producers = new HashMap<Feature, IInGameFeatures>();
         for (IInGameFeatures p : registered) {
             for (Feature f : p.getOutputFeatures()) {
@@ -70,24 +70,24 @@ public class Transformer {
         }
 
         if (sorted.size() != registered.size()) {
-            throw new IllegalStateException("Circular dependency detected among feature processors");
+            throw new IllegalStateException("Circular dependency detected among features");
         }
 
-        this.sortedProcessors = sorted;
+        this.sortedFeatures = sorted;
     }
 
-    /** Execute all processors in pre-sorted dependency order. */
+    /** Execute all features in pre-sorted dependency order. */
     public void process(Whiteboard wb) {
-        if (sortedProcessors == null) {
+        if (sortedFeatures == null) {
             throw new IllegalStateException("resolveDependencies() must be called before process()");
         }
-        for (IInGameFeatures p : sortedProcessors) {
+        for (IInGameFeatures p : sortedFeatures) {
             p.process(wb);
         }
     }
 
-    /** Get all registered processors (in dependency order if resolved). */
-    public List<IInGameFeatures> getProcessors() {
-        return sortedProcessors != null ? sortedProcessors : registered;
+    /** Get all registered features (in dependency order if resolved). */
+    public List<IInGameFeatures> getFeatures() {
+        return sortedFeatures != null ? sortedFeatures : registered;
     }
 }

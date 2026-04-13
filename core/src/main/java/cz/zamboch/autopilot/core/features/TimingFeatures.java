@@ -6,7 +6,7 @@ import cz.zamboch.autopilot.core.Whiteboard;
 
 /**
  * Computes timing features: gun heat, ticks since last scan.
- * No dependencies on other feature processors.
+ * No dependencies on other features.
  */
 public class TimingFeatures implements IInGameFeatures {
 

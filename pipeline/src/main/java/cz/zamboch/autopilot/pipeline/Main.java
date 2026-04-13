@@ -7,7 +7,7 @@ import java.nio.file.Paths;
  * CLI entry point for the Stage 2 pipeline.
  * Processes .br recordings into CSV feature files.
  */
-public class Main {
+public final class Main {
     public static void main(String[] args) {
         if (args.length < 2) {
             System.err.println("Usage: pipeline --input <dir> --output <dir> [--features all|core]");

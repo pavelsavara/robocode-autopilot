@@ -17,7 +17,7 @@ import java.io.IOException;
  * Phase B: extracts own-robot state per tick for both perspectives.
  * Phase C: synthesizes ScannedRobotEvent via radar arc intersection.
  */
-public class Player {
+public final class Player {
 
     private static final int ROBOT_WIDTH = 36;
     private static final int ROBOT_HEIGHT = 36;

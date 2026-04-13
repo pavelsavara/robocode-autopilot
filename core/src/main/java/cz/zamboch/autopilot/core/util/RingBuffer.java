@@ -3,7 +3,7 @@ package cz.zamboch.autopilot.core.util;
 /**
  * Fixed-size circular buffer for lookback history.
  */
-public class RingBuffer<T> {
+public final class RingBuffer<T> {
     private final Object[] buffer;
     private int head;
     private int size;

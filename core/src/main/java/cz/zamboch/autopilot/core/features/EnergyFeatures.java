@@ -6,7 +6,7 @@ import cz.zamboch.autopilot.core.Whiteboard;
 
 /**
  * Computes energy features: opponent energy, fire detection via energy drop heuristic.
- * No dependencies on other feature processors.
+ * No dependencies on other features.
  */
 public class EnergyFeatures implements IInGameFeatures {
 

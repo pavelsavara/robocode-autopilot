@@ -16,7 +16,7 @@ import java.util.zip.ZipInputStream;
  * Opens ZIP entry, deserializes BattleRecordInfo header + TurnSnapshot objects
  * via ObjectInputStream. Direct reading, no temp files.
  */
-public class Loader implements Closeable {
+public final class Loader implements Closeable {
     private final Path brFile;
     private BattleRecordInfo recordInfo;
 
