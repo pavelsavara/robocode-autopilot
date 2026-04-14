@@ -2,6 +2,8 @@ package cz.zamboch.autopilot.pipeline;
 
 import cz.zamboch.autopilot.core.Transformer;
 import cz.zamboch.autopilot.core.Whiteboard;
+import cz.zamboch.autopilot.core.Feature;
+import cz.zamboch.autopilot.pipeline.features.CombatStateOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.EnergyOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.MovementOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.MovementSegmentationOfflineFeatures;
@@ -10,7 +12,11 @@ import cz.zamboch.autopilot.pipeline.features.SpatialOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.StateNormalizationOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.TargetingGeometryOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.TimingOfflineFeatures;
+import cz.zamboch.autopilot.pipeline.features.WaveTrackingOfflineFeatures;
 import robocode.BattleRules;
+import robocode.Rules;
+import robocode.control.snapshot.BulletState;
+import robocode.control.snapshot.IBulletSnapshot;
 import robocode.control.snapshot.IRobotSnapshot;
 import robocode.control.snapshot.ITurnSnapshot;
 import robocode.control.snapshot.RobotState;
@@ -19,6 +25,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * CLI entry point for the Stage 2 pipeline.
@@ -112,17 +120,25 @@ public final class Main {
         csvB.writeHeaders();
 
         // Second pass: process all turns
+        final int[] lastRoundHolder = {-1};
+        final long[] lastTickHolder = {-1};
         try {
             loader.forEachTurn(new Loader.TurnConsumer() {
-                private int lastRound = -1;
                 private double prevRadarA = Double.NaN;
                 private double prevRadarB = Double.NaN;
+                private final Map<Integer, BulletState> prevBulletStates =
+                        new HashMap<Integer, BulletState>();
 
                 public void accept(int roundIndex, ITurnSnapshot turn) {
                     IRobotSnapshot[] robots = turn.getRobots();
                     if (robots.length < 2) return;
 
-                    if (roundIndex != lastRound) {
+                    if (roundIndex != lastRoundHolder[0]) {
+                        // Write score row for previous round before resetting
+                        if (lastRoundHolder[0] >= 0) {
+                            csvA.writeScoreRow(wbA, lastTickHolder[0] + 1);
+                            csvB.writeScoreRow(wbB, lastTickHolder[0] + 1);
+                        }
                         BattleRules rules = loader.getRecordInfo().battleRules;
                         int bfW = rules.getBattlefieldWidth();
                         int bfH = rules.getBattlefieldHeight();
@@ -132,14 +148,19 @@ public final class Main {
                         wbB.onRoundStart(roundIndex, bfW, bfH, cooling, numRounds);
                         prevRadarA = Double.NaN;
                         prevRadarB = Double.NaN;
-                        lastRound = roundIndex;
+                        prevBulletStates.clear();
+                        lastRoundHolder[0] = roundIndex;
                     }
 
                     IRobotSnapshot rA = robots[0];
                     IRobotSnapshot rB = robots[1];
+                    int indexA = rA.getContestantIndex();
+                    int indexB = rB.getContestantIndex();
 
-                    wbA.setTick(turn.getTurn());
-                    wbB.setTick(turn.getTurn());
+                    long currentTick = turn.getTurn();
+                    wbA.setTick(currentTick);
+                    wbB.setTick(currentTick);
+                    lastTickHolder[0] = currentTick;
 
                     wbA.setOurState(rA.getX(), rA.getY(), rA.getBodyHeading(),
                             rA.getGunHeading(), rA.getRadarHeading(),
@@ -148,7 +169,7 @@ public final class Main {
                             rB.getGunHeading(), rB.getRadarHeading(),
                             rB.getVelocity(), rB.getEnergy(), rB.getGunHeat());
 
-                    boolean firstTick = (turn.getTurn() == 0);
+                    boolean firstTick = (currentTick == 0);
 
                     if (rB.getState() != RobotState.DEAD) {
                         if (firstTick || Player.radarSweepIntersects(
@@ -171,16 +192,82 @@ public final class Main {
                     prevRadarA = rA.getRadarHeading();
                     prevRadarB = rB.getRadarHeading();
 
+                    // Process bullet events (fire, hit, damage)
+                    IBulletSnapshot[] bullets = turn.getBullets();
+                    if (bullets != null) {
+                        Map<Integer, BulletState> currentStates =
+                                new HashMap<Integer, BulletState>();
+                        for (IBulletSnapshot b : bullets) {
+                            BulletState state = b.getState();
+                            if (state == BulletState.INACTIVE
+                                    || state == BulletState.EXPLODED) {
+                                continue;
+                            }
+                            int bulletId = b.getBulletId();
+                            currentStates.put(bulletId, state);
+                            int owner = b.getOwnerIndex();
+                            int victim = b.getVictimIndex();
+                            double power = b.getPower();
+                            BulletState prev = prevBulletStates.get(bulletId);
+
+                            // New bullet = fired this tick
+                            if (prev == null) {
+                                if (owner == indexA) {
+                                    wbA.incrementOurShotsFired();
+                                } else if (owner == indexB) {
+                                    wbB.incrementOurShotsFired();
+                                }
+                            }
+
+                            // Bullet hit victim
+                            if (state == BulletState.HIT_VICTIM
+                                    && prev != BulletState.HIT_VICTIM) {
+                                double damage = Rules.getBulletDamage(power);
+                                if (owner == indexA && victim == indexB) {
+                                    wbA.setWeHitOpponentThisTick(true);
+                                    wbA.addDamageDealt(damage);
+                                    wbA.incrementOurBulletHitCount();
+                                    wbB.addDamageReceived(damage);
+                                    wbB.incrementOpponentBulletHitCount();
+                                } else if (owner == indexB && victim == indexA) {
+                                    wbB.setWeHitOpponentThisTick(true);
+                                    wbB.addDamageDealt(damage);
+                                    wbB.incrementOurBulletHitCount();
+                                    wbA.addDamageReceived(damage);
+                                    wbA.incrementOpponentBulletHitCount();
+                                }
+                            }
+                        }
+                        prevBulletStates.clear();
+                        prevBulletStates.putAll(currentStates);
+                    }
+
                     tA.process(wbA);
                     tB.process(wbB);
 
                     csvA.writeTickRow(wbA);
                     csvB.writeTickRow(wbB);
 
+                    // Write wave row when opponent fire detected
+                    if (wbA.hasFeature(Feature.OPPONENT_FIRED)
+                            && wbA.getFeature(Feature.OPPONENT_FIRED) == 1.0) {
+                        csvA.writeWaveRow(wbA);
+                    }
+                    if (wbB.hasFeature(Feature.OPPONENT_FIRED)
+                            && wbB.getFeature(Feature.OPPONENT_FIRED) == 1.0) {
+                        csvB.writeWaveRow(wbB);
+                    }
+
                     wbA.advanceTick();
                     wbB.advanceTick();
                 }
             });
+
+            // Write score row for the final round
+            if (lastRoundHolder[0] >= 0) {
+                csvA.writeScoreRow(wbA, lastTickHolder[0] + 1);
+                csvB.writeScoreRow(wbB, lastTickHolder[0] + 1);
+            }
         } finally {
             csvA.close();
             csvB.close();
@@ -197,6 +284,8 @@ public final class Main {
         t.register(new TargetingGeometryOfflineFeatures());
         t.register(new StateNormalizationOfflineFeatures());
         t.register(new OpponentPredictionOfflineFeatures());
+        t.register(new WaveTrackingOfflineFeatures());
+        t.register(new CombatStateOfflineFeatures());
         t.resolveDependencies();
         return t;
     }

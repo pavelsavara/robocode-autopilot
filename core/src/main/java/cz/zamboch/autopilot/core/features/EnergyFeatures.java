@@ -60,6 +60,7 @@ public class EnergyFeatures implements IInGameFeatures {
 
             if (opponentFired) {
                 wb.incrementOpponentShotsDetected();
+                wb.setLastOpponentFire(wb.getTick(), inferredPower);
             }
         } else {
             wb.setFeature(Feature.OPPONENT_FIRED, 0.0);

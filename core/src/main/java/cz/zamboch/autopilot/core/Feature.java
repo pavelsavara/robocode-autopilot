@@ -117,5 +117,59 @@ public enum Feature {
 
     /** Estimated opponent gun heat based on last detected fire. Unit: heat.
      *  Eq: max(0, (1+firePower/5) - elapsed*coolingRate). Predicts next fire window. */
-    OPPONENT_INFERRED_GUN_HEAT;
+    OPPONENT_INFERRED_GUN_HEAT,
+
+    // === Wave features (one row per detected opponent fire — WAVES file type) ===
+    // Depends on OPPONENT_FIRED, OPPONENT_FIRE_POWER, DISTANCE, OUR_LATERAL_VELOCITY.
+
+    /** Bullet power of the detected opponent shot. Unit: energy [0.1,3.0].
+     *  Same as OPPONENT_FIRE_POWER, captured as wave-event column. */
+    WAVE_BULLET_POWER,
+
+    /** Speed of the detected opponent bullet. Unit: px/tick [11,19.7].
+     *  Eq: 20 - 3 * firePower. Determines wave travel rate and MEA. */
+    WAVE_BULLET_SPEED,
+
+    /** Distance to opponent at the moment they fired. Unit: px.
+     *  Snapshot of DISTANCE at fire tick. Sets total wave travel distance. */
+    WAVE_FIRE_DISTANCE,
+
+    /** Maximum escape angle against this bullet. Unit: rad.
+     *  Eq: asin(8.0 / bulletSpeed). Defines reachable GF range. */
+    WAVE_MEA,
+
+    /** Estimated ticks for this wave to reach us. Unit: ticks.
+     *  Eq: fireDistance / bulletSpeed. Dodge-time budget. */
+    WAVE_FLIGHT_TIME,
+
+    /** Our lateral velocity when the opponent fired. Unit: px/tick.
+     *  Snapshot of OUR_LATERAL_VELOCITY at fire tick. Initial dodge state. */
+    WAVE_LATERAL_VELOCITY_AT_FIRE,
+
+    // === Score features (one row per round end — SCORES file type) ===
+    // No feature dependencies — reads per-round Whiteboard counters directly.
+
+    /** Bullet damage we dealt to opponent this round. Unit: energy.
+     *  Per-round counter from Whiteboard. Offensive effectiveness. */
+    SCORE_DAMAGE_DEALT,
+
+    /** Bullet damage received from opponent this round. Unit: energy.
+     *  Per-round counter from Whiteboard. Defensive pressure. */
+    SCORE_DAMAGE_RECEIVED,
+
+    /** Net damage this round. Unit: energy.
+     *  Eq: damageDealtThisRound - damageReceivedThisRound. Combat advantage. */
+    SCORE_NET_DAMAGE,
+
+    /** Our bullet hit rate this round. Unit: [0,1].
+     *  Eq: ourBulletHitCountThisRound / max(1, ourShotsFiredThisRound). */
+    SCORE_OUR_HIT_RATE,
+
+    /** Opponent hit rate on us this round. Unit: [0,1].
+     *  Eq: opponentBulletHitCountThisRound / max(1, opponentShotsDetectedThisRound). */
+    SCORE_OPPONENT_HIT_RATE,
+
+    /** Win rate across completed rounds. Unit: [0,1].
+     *  Eq: roundsWon / max(1, roundsWon + roundsLost). Match-level trend. */
+    SCORE_WIN_RATE;
 }

@@ -5,7 +5,11 @@ import cz.zamboch.autopilot.core.Transformer;
 import cz.zamboch.autopilot.core.Whiteboard;
 import cz.zamboch.autopilot.pipeline.features.EnergyOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.MovementOfflineFeatures;
+import cz.zamboch.autopilot.pipeline.features.MovementSegmentationOfflineFeatures;
+import cz.zamboch.autopilot.pipeline.features.OpponentPredictionOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.SpatialOfflineFeatures;
+import cz.zamboch.autopilot.pipeline.features.StateNormalizationOfflineFeatures;
+import cz.zamboch.autopilot.pipeline.features.TargetingGeometryOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.TimingOfflineFeatures;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +43,10 @@ class FeatureIntegrationTest {
         transformer.register(new MovementOfflineFeatures());
         transformer.register(new EnergyOfflineFeatures());
         transformer.register(new TimingOfflineFeatures());
+        transformer.register(new MovementSegmentationOfflineFeatures());
+        transformer.register(new TargetingGeometryOfflineFeatures());
+        transformer.register(new StateNormalizationOfflineFeatures());
+        transformer.register(new OpponentPredictionOfflineFeatures());
         transformer.resolveDependencies();
     }
 

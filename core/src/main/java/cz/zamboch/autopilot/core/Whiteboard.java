@@ -1,7 +1,5 @@
 package cz.zamboch.autopilot.core;
 
-import cz.zamboch.autopilot.core.util.RingBuffer;
-
 /**
  * Central state store per robot perspective. Receives robocode events,
  * accumulates per-tick data, and provides lookback history.
@@ -20,6 +18,7 @@ public class Whiteboard {
     private double opponentX, opponentY, opponentHeading, opponentVelocity, opponentEnergy;
     private double prevOpponentEnergy;
     private double prevOpponentHeading = Double.NaN;
+    private double prevOpponentVelocity = Double.NaN;
     private long lastScanTick = -1;
     private long prevScanTick = -1;
     private boolean scanAvailableThisTick;
@@ -28,16 +27,29 @@ public class Whiteboard {
     private boolean weHitOpponentThisTick;
     private boolean opponentHitWallThisTick;
 
+    // Movement segmentation inter-tick state (written by features, stored here for statelessness)
+    private int prevLateralDirection;
+    private long ticksSinceDirectionChange;
+
+    // Opponent fire tracking (set by EnergyFeatures on detected fire)
+    private long lastOpponentFireTick = -1;
+    private double lastOpponentFirePower;
+
     // Battle constants
     private int battlefieldWidth, battlefieldHeight;
     private double gunCoolingRate;
     private int numRounds;
 
-    // Cumulative counters
+    // Cumulative counters (battle-level)
     private int ourShotsFired, opponentShotsDetected;
     private double damageDealt, damageReceived;
     private int roundsWon, roundsLost;
     private int ourBulletHitCount, opponentBulletHitCount;
+
+    // Per-round counters (reset each round for SCORES output)
+    private int ourShotsFiredThisRound, opponentShotsDetectedThisRound;
+    private double damageDealtThisRound, damageReceivedThisRound;
+    private int ourBulletHitCountThisRound, opponentBulletHitCountThisRound;
 
     // Computed features (array-backed for performance)
     private final double[] features = new double[Feature.values().length];
@@ -80,9 +92,20 @@ public class Whiteboard {
         prevScanTick = -1;
         prevOpponentEnergy = 0;
         prevOpponentHeading = Double.NaN;
+        prevOpponentVelocity = Double.NaN;
         opponentHeading = Double.NaN;
         weHitOpponentThisTick = false;
         opponentHitWallThisTick = false;
+        prevLateralDirection = 0;
+        ticksSinceDirectionChange = 0;
+        lastOpponentFireTick = -1;
+        lastOpponentFirePower = 0;
+        ourShotsFiredThisRound = 0;
+        opponentShotsDetectedThisRound = 0;
+        damageDealtThisRound = 0;
+        damageReceivedThisRound = 0;
+        ourBulletHitCountThisRound = 0;
+        opponentBulletHitCountThisRound = 0;
         for (int i = 0; i < featureSet.length; i++) {
             featureSet[i] = false;
             features[i] = Double.NaN;
@@ -140,8 +163,14 @@ public class Whiteboard {
     public double getOpponentEnergy() { return opponentEnergy; }
     public double getPrevOpponentEnergy() { return prevOpponentEnergy; }
     public double getPrevOpponentHeading() { return prevOpponentHeading; }
+    public double getPrevOpponentVelocity() { return prevOpponentVelocity; }
     public long getLastScanTick() { return lastScanTick; }
     public long getPrevScanTick() { return prevScanTick; }
+
+    public int getPrevLateralDirection() { return prevLateralDirection; }
+    public long getTicksSinceDirectionChange() { return ticksSinceDirectionChange; }
+    public long getLastOpponentFireTick() { return lastOpponentFireTick; }
+    public double getLastOpponentFirePower() { return lastOpponentFirePower; }
     public boolean isScanAvailableThisTick() { return scanAvailableThisTick; }
     public boolean isWeHitOpponentThisTick() { return weHitOpponentThisTick; }
     public boolean isOpponentHitWallThisTick() { return opponentHitWallThisTick; }
@@ -155,6 +184,17 @@ public class Whiteboard {
     public int getOpponentShotsDetected() { return opponentShotsDetected; }
     public double getDamageDealt() { return damageDealt; }
     public double getDamageReceived() { return damageReceived; }
+    public int getOurBulletHitCount() { return ourBulletHitCount; }
+    public int getOpponentBulletHitCount() { return opponentBulletHitCount; }
+    public int getRoundsWon() { return roundsWon; }
+    public int getRoundsLost() { return roundsLost; }
+
+    public int getOurShotsFiredThisRound() { return ourShotsFiredThisRound; }
+    public int getOpponentShotsDetectedThisRound() { return opponentShotsDetectedThisRound; }
+    public double getDamageDealtThisRound() { return damageDealtThisRound; }
+    public double getDamageReceivedThisRound() { return damageReceivedThisRound; }
+    public int getOurBulletHitCountThisRound() { return ourBulletHitCountThisRound; }
+    public int getOpponentBulletHitCountThisRound() { return opponentBulletHitCountThisRound; }
 
     // === Setters (used by Player to inject state from snapshots) ===
 
@@ -173,6 +213,7 @@ public class Whiteboard {
     public void setOpponentScan(double x, double y, double heading, double velocity, double energy) {
         this.prevOpponentEnergy = this.opponentEnergy;
         this.prevOpponentHeading = this.opponentHeading;
+        this.prevOpponentVelocity = this.opponentVelocity;
         this.opponentX = x;
         this.opponentY = y;
         this.opponentHeading = heading;
@@ -187,12 +228,18 @@ public class Whiteboard {
     public void setWeHitOpponentThisTick(boolean hit) { this.weHitOpponentThisTick = hit; }
     public void setOpponentHitWallThisTick(boolean hit) { this.opponentHitWallThisTick = hit; }
 
-    public void incrementOurShotsFired() { ourShotsFired++; }
-    public void incrementOpponentShotsDetected() { opponentShotsDetected++; }
-    public void addDamageDealt(double damage) { damageDealt += damage; }
-    public void addDamageReceived(double damage) { damageReceived += damage; }
-    public void incrementOurBulletHitCount() { ourBulletHitCount++; }
-    public void incrementOpponentBulletHitCount() { opponentBulletHitCount++; }
+    public void incrementOurShotsFired() { ourShotsFired++; ourShotsFiredThisRound++; }
+    public void incrementOpponentShotsDetected() { opponentShotsDetected++; opponentShotsDetectedThisRound++; }
+    public void setPrevLateralDirection(int dir) { this.prevLateralDirection = dir; }
+    public void setTicksSinceDirectionChange(long ticks) { this.ticksSinceDirectionChange = ticks; }
+    public void setLastOpponentFire(long tick, double power) {
+        this.lastOpponentFireTick = tick;
+        this.lastOpponentFirePower = power;
+    }
+    public void addDamageDealt(double damage) { damageDealt += damage; damageDealtThisRound += damage; }
+    public void addDamageReceived(double damage) { damageReceived += damage; damageReceivedThisRound += damage; }
+    public void incrementOurBulletHitCount() { ourBulletHitCount++; ourBulletHitCountThisRound++; }
+    public void incrementOpponentBulletHitCount() { opponentBulletHitCount++; opponentBulletHitCountThisRound++; }
     public void incrementRoundsWon() { roundsWon++; }
     public void incrementRoundsLost() { roundsLost++; }
 }
