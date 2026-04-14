@@ -67,6 +67,12 @@ public final class CsvRowWriter {
         }
     }
 
+    /** End the current row with a newline. */
+    public void endRow() {
+        raw("\n");
+        needsComma = false;
+    }
+
     /** Flush pending content to the underlying stream. */
     public void flush() throws IOException {
         out.flush();

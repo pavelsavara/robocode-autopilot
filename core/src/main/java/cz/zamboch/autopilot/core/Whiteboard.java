@@ -21,6 +21,7 @@ public class Whiteboard {
     private double prevOpponentEnergy;
     private double prevOpponentHeading = Double.NaN;
     private long lastScanTick = -1;
+    private long prevScanTick = -1;
     private boolean scanAvailableThisTick;
 
     // Event flags for energy drop detection
@@ -76,6 +77,7 @@ public class Whiteboard {
         tick = 0;
         scanAvailableThisTick = false;
         lastScanTick = -1;
+        prevScanTick = -1;
         prevOpponentEnergy = 0;
         prevOpponentHeading = Double.NaN;
         opponentHeading = Double.NaN;
@@ -139,6 +141,7 @@ public class Whiteboard {
     public double getPrevOpponentEnergy() { return prevOpponentEnergy; }
     public double getPrevOpponentHeading() { return prevOpponentHeading; }
     public long getLastScanTick() { return lastScanTick; }
+    public long getPrevScanTick() { return prevScanTick; }
     public boolean isScanAvailableThisTick() { return scanAvailableThisTick; }
     public boolean isWeHitOpponentThisTick() { return weHitOpponentThisTick; }
     public boolean isOpponentHitWallThisTick() { return opponentHitWallThisTick; }
@@ -175,6 +178,7 @@ public class Whiteboard {
         this.opponentHeading = heading;
         this.opponentVelocity = velocity;
         this.opponentEnergy = energy;
+        this.prevScanTick = this.lastScanTick;
         this.lastScanTick = tick;
         this.scanAvailableThisTick = true;
     }

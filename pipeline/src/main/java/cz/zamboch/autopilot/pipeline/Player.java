@@ -4,6 +4,8 @@ import cz.zamboch.autopilot.core.Whiteboard;
 import cz.zamboch.autopilot.core.util.RoboMath;
 import robocode.BattleRules;
 import robocode.Rules;
+import robocode.control.snapshot.BulletState;
+import robocode.control.snapshot.IBulletSnapshot;
 import robocode.control.snapshot.IRobotSnapshot;
 import robocode.control.snapshot.ITurnSnapshot;
 import robocode.control.snapshot.RobotState;
@@ -11,6 +13,8 @@ import robocode.control.snapshot.RobotState;
 import java.awt.geom.Arc2D;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Replays TurnSnapshot data through synthesized robot events.
@@ -32,6 +36,8 @@ public final class Player {
                 private int lastRound = -1;
                 private double prevRadarHeadingA = Double.NaN;
                 private double prevRadarHeadingB = Double.NaN;
+                // Track previous bullet states by bulletId to detect transitions
+                private final Map<Integer, BulletState> prevBulletStates = new HashMap<Integer, BulletState>();
 
                 public void accept(int roundIndex, ITurnSnapshot turn) {
                     IRobotSnapshot[] robots = turn.getRobots();
@@ -51,11 +57,14 @@ public final class Player {
                         whiteboardB.onRoundStart(roundIndex, bfWidth, bfHeight, gunCoolingRate, numRounds);
                         prevRadarHeadingA = Double.NaN;
                         prevRadarHeadingB = Double.NaN;
+                        prevBulletStates.clear();
                         lastRound = roundIndex;
                     }
 
                     IRobotSnapshot robotA = robots[0];
                     IRobotSnapshot robotB = robots[1];
+                    int indexA = robotA.getContestantIndex();
+                    int indexB = robotB.getContestantIndex();
 
                     // Set tick
                     whiteboardA.setTick(turn.getTurn());
@@ -71,6 +80,9 @@ public final class Player {
                             robotB.getX(), robotB.getY(),
                             robotB.getBodyHeading(), robotB.getGunHeading(), robotB.getRadarHeading(),
                             robotB.getVelocity(), robotB.getEnergy(), robotB.getGunHeat());
+
+                    // === Bullet event synthesis ===
+                    processBulletEvents(turn, indexA, indexB, whiteboardA, whiteboardB);
 
                     // === Scan synthesis ===
                     boolean isFirstTick = (turn.getTurn() == 0);
@@ -102,8 +114,65 @@ public final class Player {
                     // Remember radar headings for next tick's sweep calculation
                     prevRadarHeadingA = robotA.getRadarHeading();
                     prevRadarHeadingB = robotB.getRadarHeading();
+                }
 
-                    // TODO Phase F: bullet events, energy drop detection
+                private void processBulletEvents(ITurnSnapshot turn,
+                                                 int indexA, int indexB,
+                                                 Whiteboard wbA, Whiteboard wbB) {
+                    IBulletSnapshot[] bullets = turn.getBullets();
+                    if (bullets == null) return;
+
+                    Map<Integer, BulletState> currentStates = new HashMap<Integer, BulletState>();
+                    for (IBulletSnapshot b : bullets) {
+                        BulletState state = b.getState();
+                        if (state == BulletState.INACTIVE || state == BulletState.EXPLODED) {
+                            continue;
+                        }
+
+                        int bulletId = b.getBulletId();
+                        currentStates.put(bulletId, state);
+                        int owner = b.getOwnerIndex();
+                        int victim = b.getVictimIndex();
+                        double power = b.getPower();
+                        BulletState prev = prevBulletStates.get(bulletId);
+
+                        // Detect NEW bullet (not seen in previous tick) = fired this tick
+                        // Note: FIRED state is not captured in recordings; bullets appear
+                        // as MOVING on the tick they are fired
+                        if (prev == null) {
+                            if (owner == indexA) {
+                                wbA.incrementOurShotsFired();
+                            } else if (owner == indexB) {
+                                wbB.incrementOurShotsFired();
+                            }
+                        }
+
+                        // Detect state transition: bullet just hit a victim
+                        if (state == BulletState.HIT_VICTIM && prev != BulletState.HIT_VICTIM) {
+                            double damage = Rules.getBulletDamage(power);
+
+                            if (owner == indexA && victim == indexB) {
+                                // Our bullet (A's) hit opponent (B)
+                                wbA.setWeHitOpponentThisTick(true);
+                                wbA.addDamageDealt(damage);
+                                wbA.incrementOurBulletHitCount();
+                                // B was hit by A's bullet
+                                wbB.addDamageReceived(damage);
+                                wbB.incrementOpponentBulletHitCount();
+                            } else if (owner == indexB && victim == indexA) {
+                                // B's bullet hit A
+                                wbB.setWeHitOpponentThisTick(true);
+                                wbB.addDamageDealt(damage);
+                                wbB.incrementOurBulletHitCount();
+                                // A was hit by B's bullet
+                                wbA.addDamageReceived(damage);
+                                wbA.incrementOpponentBulletHitCount();
+                            }
+                        }
+                    }
+
+                    prevBulletStates.clear();
+                    prevBulletStates.putAll(currentStates);
                 }
             });
         } catch (IOException e) {

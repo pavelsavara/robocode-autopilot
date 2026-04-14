@@ -34,18 +34,14 @@ public class EnergyFeatures implements IInGameFeatures {
         // Opponent energy (direct from scan)
         wb.setFeature(Feature.OPPONENT_ENERGY, wb.getOpponentEnergy());
 
-        // Energy drop detection
+        // Energy drop detection — only on consecutive scans
         double prevEnergy = wb.getPrevOpponentEnergy();
         double currEnergy = wb.getOpponentEnergy();
+        long prevScanTick = wb.getPrevScanTick();
+        long currentTick = wb.getTick();
+        boolean consecutiveScans = prevScanTick >= 0 && (currentTick - prevScanTick) == 1;
 
-        // Only detect on consecutive scans (ticksSinceScan == 1)
-        long ticksSinceScan = wb.getTick() - wb.getLastScanTick();
-        // After setOpponentScan, lastScanTick == current tick, so we check
-        // if prevOpponentEnergy was set (> 0 means we had a previous scan)
-        if (prevEnergy > 0 && ticksSinceScan == 0) {
-            // ticksSinceScan == 0 because lastScanTick was just set to current tick
-            // We need to check if the previous scan was on the immediately preceding tick
-            // This is approximated: prevOpponentEnergy is set from the scan *before* this one
+        if (prevEnergy > 0 && consecutiveScans) {
             double energyDrop = prevEnergy - currEnergy;
 
             boolean opponentFired = false;
