@@ -182,8 +182,8 @@ class ScanValidationTest {
         Whiteboard wbA = new Whiteboard();
         Whiteboard wbB = new Whiteboard();
 
-        Player player = new Player();
-        player.replay(loader, wbA, wbB);
+        Player player = new Player(wbA, wbB);
+        player.replay(loader);
 
         // After replay of the last round, tick 0 should have produced a scan
         // We verify by checking that lastScanTick was set during the replay
@@ -226,8 +226,8 @@ class ScanValidationTest {
 
                 // Replay with scan synthesis
                 Loader loader2 = new Loader(brFile);
-                Player player = new Player();
-                player.replay(loader2, wbA, wbB);
+                Player player = new Player(wbA, wbB);
+                player.replay(loader2);
 
                 double scanRate = (double) scanTicks[0] / totalTicks[0];
                 // Most competitive bots maintain radar lock, so scan rate should be > 50%

@@ -59,8 +59,6 @@ class FeatureIntegrationTest {
         Whiteboard wbA = new Whiteboard();
         Whiteboard wbB = new Whiteboard();
 
-        Player player = new Player();
-
         // We'll replay manually to interleave transformer processing
         final int[] scanCount = {0};
         final int[] distanceMatches = {0};

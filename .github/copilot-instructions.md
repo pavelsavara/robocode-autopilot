@@ -32,3 +32,12 @@
 ## Build
 - Gradle 9.4.1 Kotlin DSL, version catalog in `gradle/libs.versions.toml`
 - Robocode 1.10.1 from Maven Central
+
+## Intuition / ML Exploration (Python)
+- The `intuition/` folder contains Jupyter notebooks for statistical exploration of pipeline CSV output.
+- **Explain all statistics and ML concepts at high-school math level.**
+  Every notebook must define terms (mean, std, correlation, PCA, etc.) in plain language
+  with intuitive analogies before using them. Assume the reader knows algebra but not
+  university-level statistics or linear algebra.
+- Use pandas, scikit-learn, matplotlib, seaborn. Python 3.10 venv in `intuition/.venv/`.
+- Notebooks read data from `../output/csv/`. They are self-contained and produce inline plots.

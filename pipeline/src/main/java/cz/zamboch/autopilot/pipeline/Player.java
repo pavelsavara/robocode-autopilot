@@ -18,161 +18,163 @@ import java.util.Map;
 
 /**
  * Replays TurnSnapshot data through synthesized robot events.
- * Phase B: extracts own-robot state per tick for both perspectives.
- * Phase C: synthesizes ScannedRobotEvent via radar arc intersection.
+ * Stateful processor: construct with two Whiteboards, then call
+ * {@link #processTurn} per tick or {@link #replay} for a full recording.
  */
 public final class Player {
 
     private static final int ROBOT_WIDTH = 36;
     private static final int ROBOT_HEIGHT = 36;
 
+    private final Whiteboard wbA;
+    private final Whiteboard wbB;
+
+    private int lastRound = -1;
+    private double prevRadarA = Double.NaN;
+    private double prevRadarB = Double.NaN;
+    private final Map<Integer, BulletState> prevBulletStates = new HashMap<Integer, BulletState>();
+
+    public Player(Whiteboard wbA, Whiteboard wbB) {
+        this.wbA = wbA;
+        this.wbB = wbB;
+    }
+
     /**
-     * Replays all turns from a Loader, feeding own-robot state into two Whiteboards
-     * (one per robot perspective in a 1v1 battle).
+     * Process one turn snapshot. Handles round transitions, own state injection,
+     * scan synthesis, and bullet event processing for both perspectives.
+     *
+     * @return true if this was the first tick of a new round
      */
-    public void replay(Loader loader, Whiteboard whiteboardA, Whiteboard whiteboardB) {
+    public boolean processTurn(int roundIndex, ITurnSnapshot turn,
+                               int bfWidth, int bfHeight,
+                               double gunCoolingRate, int numRounds) {
+        IRobotSnapshot[] robots = turn.getRobots();
+        if (robots.length < 2) {
+            return false;
+        }
+
+        boolean newRound = (roundIndex != lastRound);
+        if (newRound) {
+            wbA.onRoundStart(roundIndex, bfWidth, bfHeight, gunCoolingRate, numRounds);
+            wbB.onRoundStart(roundIndex, bfWidth, bfHeight, gunCoolingRate, numRounds);
+            prevRadarA = Double.NaN;
+            prevRadarB = Double.NaN;
+            prevBulletStates.clear();
+            lastRound = roundIndex;
+        }
+
+        IRobotSnapshot robotA = robots[0];
+        IRobotSnapshot robotB = robots[1];
+        int indexA = robotA.getContestantIndex();
+        int indexB = robotB.getContestantIndex();
+
+        wbA.setTick(turn.getTurn());
+        wbB.setTick(turn.getTurn());
+
+        wbA.setOurState(
+                robotA.getX(), robotA.getY(),
+                robotA.getBodyHeading(), robotA.getGunHeading(), robotA.getRadarHeading(),
+                robotA.getVelocity(), robotA.getEnergy(), robotA.getGunHeat());
+
+        wbB.setOurState(
+                robotB.getX(), robotB.getY(),
+                robotB.getBodyHeading(), robotB.getGunHeading(), robotB.getRadarHeading(),
+                robotB.getVelocity(), robotB.getEnergy(), robotB.getGunHeat());
+
+        // Bullet event synthesis
+        processBulletEvents(turn, indexA, indexB);
+
+        // Scan synthesis
+        boolean isFirstTick = (turn.getTurn() == 0);
+
+        if (robotB.getState() != RobotState.DEAD) {
+            if (isFirstTick || radarSweepIntersects(
+                    robotA.getX(), robotA.getY(), prevRadarA,
+                    robotA.getRadarHeading(),
+                    robotB.getX(), robotB.getY())) {
+                wbA.setOpponentScan(
+                        robotB.getX(), robotB.getY(),
+                        robotB.getBodyHeading(), robotB.getVelocity(), robotB.getEnergy());
+            }
+        }
+
+        if (robotA.getState() != RobotState.DEAD) {
+            if (isFirstTick || radarSweepIntersects(
+                    robotB.getX(), robotB.getY(), prevRadarB,
+                    robotB.getRadarHeading(),
+                    robotA.getX(), robotA.getY())) {
+                wbB.setOpponentScan(
+                        robotA.getX(), robotA.getY(),
+                        robotA.getBodyHeading(), robotA.getVelocity(), robotA.getEnergy());
+            }
+        }
+
+        prevRadarA = robotA.getRadarHeading();
+        prevRadarB = robotB.getRadarHeading();
+
+        return newRound;
+    }
+
+    private void processBulletEvents(ITurnSnapshot turn, int indexA, int indexB) {
+        IBulletSnapshot[] bullets = turn.getBullets();
+        if (bullets == null) return;
+
+        Map<Integer, BulletState> currentStates = new HashMap<Integer, BulletState>();
+        for (IBulletSnapshot b : bullets) {
+            BulletState state = b.getState();
+            if (state == BulletState.INACTIVE || state == BulletState.EXPLODED) {
+                continue;
+            }
+
+            int bulletId = b.getBulletId();
+            currentStates.put(bulletId, state);
+            int owner = b.getOwnerIndex();
+            int victim = b.getVictimIndex();
+            double power = b.getPower();
+            BulletState prev = prevBulletStates.get(bulletId);
+
+            if (prev == null) {
+                if (owner == indexA) {
+                    wbA.incrementOurShotsFired();
+                } else if (owner == indexB) {
+                    wbB.incrementOurShotsFired();
+                }
+            }
+
+            if (state == BulletState.HIT_VICTIM && prev != BulletState.HIT_VICTIM) {
+                double damage = Rules.getBulletDamage(power);
+
+                if (owner == indexA && victim == indexB) {
+                    wbA.setWeHitOpponentThisTick(true);
+                    wbA.addDamageDealt(damage);
+                    wbA.incrementOurBulletHitCount();
+                    wbB.addDamageReceived(damage);
+                    wbB.incrementOpponentBulletHitCount();
+                } else if (owner == indexB && victim == indexA) {
+                    wbB.setWeHitOpponentThisTick(true);
+                    wbB.addDamageDealt(damage);
+                    wbB.incrementOurBulletHitCount();
+                    wbA.addDamageReceived(damage);
+                    wbA.incrementOpponentBulletHitCount();
+                }
+            }
+        }
+
+        prevBulletStates.clear();
+        prevBulletStates.putAll(currentStates);
+    }
+
+    /**
+     * Replays all turns from a Loader through {@link #processTurn}.
+     */
+    public void replay(Loader loader) {
         try {
             loader.forEachTurn(new Loader.TurnConsumer() {
-                private int lastRound = -1;
-                private double prevRadarHeadingA = Double.NaN;
-                private double prevRadarHeadingB = Double.NaN;
-                // Track previous bullet states by bulletId to detect transitions
-                private final Map<Integer, BulletState> prevBulletStates = new HashMap<Integer, BulletState>();
-
                 public void accept(int roundIndex, ITurnSnapshot turn) {
-                    IRobotSnapshot[] robots = turn.getRobots();
-                    if (robots.length < 2) {
-                        return;
-                    }
-
-                    // New round: initialize whiteboards
-                    if (roundIndex != lastRound) {
-                        BattleRules rules = loader.getRecordInfo().battleRules;
-                        int bfWidth = rules.getBattlefieldWidth();
-                        int bfHeight = rules.getBattlefieldHeight();
-                        double gunCoolingRate = rules.getGunCoolingRate();
-                        int numRounds = loader.getRecordInfo().roundsCount;
-
-                        whiteboardA.onRoundStart(roundIndex, bfWidth, bfHeight, gunCoolingRate, numRounds);
-                        whiteboardB.onRoundStart(roundIndex, bfWidth, bfHeight, gunCoolingRate, numRounds);
-                        prevRadarHeadingA = Double.NaN;
-                        prevRadarHeadingB = Double.NaN;
-                        prevBulletStates.clear();
-                        lastRound = roundIndex;
-                    }
-
-                    IRobotSnapshot robotA = robots[0];
-                    IRobotSnapshot robotB = robots[1];
-                    int indexA = robotA.getContestantIndex();
-                    int indexB = robotB.getContestantIndex();
-
-                    // Set tick
-                    whiteboardA.setTick(turn.getTurn());
-                    whiteboardB.setTick(turn.getTurn());
-
-                    // Feed own-robot state from god-view snapshot
-                    whiteboardA.setOurState(
-                            robotA.getX(), robotA.getY(),
-                            robotA.getBodyHeading(), robotA.getGunHeading(), robotA.getRadarHeading(),
-                            robotA.getVelocity(), robotA.getEnergy(), robotA.getGunHeat());
-
-                    whiteboardB.setOurState(
-                            robotB.getX(), robotB.getY(),
-                            robotB.getBodyHeading(), robotB.getGunHeading(), robotB.getRadarHeading(),
-                            robotB.getVelocity(), robotB.getEnergy(), robotB.getGunHeat());
-
-                    // === Bullet event synthesis ===
-                    processBulletEvents(turn, indexA, indexB, whiteboardA, whiteboardB);
-
-                    // === Scan synthesis ===
-                    boolean isFirstTick = (turn.getTurn() == 0);
-
-                    // Robot A scanning for robot B
-                    if (robotB.getState() != RobotState.DEAD) {
-                        if (isFirstTick || radarSweepIntersects(
-                                robotA.getX(), robotA.getY(), prevRadarHeadingA,
-                                robotA.getRadarHeading(),
-                                robotB.getX(), robotB.getY())) {
-                            whiteboardA.setOpponentScan(
-                                    robotB.getX(), robotB.getY(),
-                                    robotB.getBodyHeading(), robotB.getVelocity(), robotB.getEnergy());
-                        }
-                    }
-
-                    // Robot B scanning for robot A
-                    if (robotA.getState() != RobotState.DEAD) {
-                        if (isFirstTick || radarSweepIntersects(
-                                robotB.getX(), robotB.getY(), prevRadarHeadingB,
-                                robotB.getRadarHeading(),
-                                robotA.getX(), robotA.getY())) {
-                            whiteboardB.setOpponentScan(
-                                    robotA.getX(), robotA.getY(),
-                                    robotA.getBodyHeading(), robotA.getVelocity(), robotA.getEnergy());
-                        }
-                    }
-
-                    // Remember radar headings for next tick's sweep calculation
-                    prevRadarHeadingA = robotA.getRadarHeading();
-                    prevRadarHeadingB = robotB.getRadarHeading();
-                }
-
-                private void processBulletEvents(ITurnSnapshot turn,
-                                                 int indexA, int indexB,
-                                                 Whiteboard wbA, Whiteboard wbB) {
-                    IBulletSnapshot[] bullets = turn.getBullets();
-                    if (bullets == null) return;
-
-                    Map<Integer, BulletState> currentStates = new HashMap<Integer, BulletState>();
-                    for (IBulletSnapshot b : bullets) {
-                        BulletState state = b.getState();
-                        if (state == BulletState.INACTIVE || state == BulletState.EXPLODED) {
-                            continue;
-                        }
-
-                        int bulletId = b.getBulletId();
-                        currentStates.put(bulletId, state);
-                        int owner = b.getOwnerIndex();
-                        int victim = b.getVictimIndex();
-                        double power = b.getPower();
-                        BulletState prev = prevBulletStates.get(bulletId);
-
-                        // Detect NEW bullet (not seen in previous tick) = fired this tick
-                        // Note: FIRED state is not captured in recordings; bullets appear
-                        // as MOVING on the tick they are fired
-                        if (prev == null) {
-                            if (owner == indexA) {
-                                wbA.incrementOurShotsFired();
-                            } else if (owner == indexB) {
-                                wbB.incrementOurShotsFired();
-                            }
-                        }
-
-                        // Detect state transition: bullet just hit a victim
-                        if (state == BulletState.HIT_VICTIM && prev != BulletState.HIT_VICTIM) {
-                            double damage = Rules.getBulletDamage(power);
-
-                            if (owner == indexA && victim == indexB) {
-                                // Our bullet (A's) hit opponent (B)
-                                wbA.setWeHitOpponentThisTick(true);
-                                wbA.addDamageDealt(damage);
-                                wbA.incrementOurBulletHitCount();
-                                // B was hit by A's bullet
-                                wbB.addDamageReceived(damage);
-                                wbB.incrementOpponentBulletHitCount();
-                            } else if (owner == indexB && victim == indexA) {
-                                // B's bullet hit A
-                                wbB.setWeHitOpponentThisTick(true);
-                                wbB.addDamageDealt(damage);
-                                wbB.incrementOurBulletHitCount();
-                                // A was hit by B's bullet
-                                wbA.addDamageReceived(damage);
-                                wbA.incrementOpponentBulletHitCount();
-                            }
-                        }
-                    }
-
-                    prevBulletStates.clear();
-                    prevBulletStates.putAll(currentStates);
+                    BattleRules rules = loader.getRecordInfo().battleRules;
+                    processTurn(roundIndex, turn,
+                            rules.getBattlefieldWidth(), rules.getBattlefieldHeight(),
+                            rules.getGunCoolingRate(), loader.getRecordInfo().roundsCount);
                 }
             });
         } catch (IOException e) {
@@ -247,11 +249,9 @@ public final class Player {
 
     /**
      * Returns the robot names from the recording (index 0 and 1).
+     * Reads the recording if not already read.
      */
     public static String[] getRobotNames(Loader loader) {
-        if (loader.getRecordInfo() == null) {
-            throw new IllegalStateException("Loader must be read (forEachTurn) before calling getRobotNames");
-        }
         final String[][] names = new String[1][];
         try {
             loader.forEachTurn(new Loader.TurnConsumer() {

@@ -40,8 +40,8 @@ class PlayerTest {
         wbA.setBattleId(brFile.getFileName().toString().replace(".br", ""));
         wbB.setBattleId(brFile.getFileName().toString().replace(".br", ""));
 
-        Player player = new Player();
-        player.replay(loader, wbA, wbB);
+        Player player = new Player(wbA, wbB);
+        player.replay(loader);
 
         // After replay, whiteboards should have valid state
         BattleRecordInfo info = loader.getRecordInfo();
@@ -76,8 +76,8 @@ class PlayerTest {
         };
         Whiteboard wbB = new Whiteboard();
 
-        Player player = new Player();
-        player.replay(loader, wbA, wbB);
+        Player player = new Player(wbA, wbB);
+        player.replay(loader);
 
         BattleRecordInfo info = loader.getRecordInfo();
         assertTrue(ticks[0] > 0, "Should have processed ticks");
@@ -119,8 +119,8 @@ class PlayerTest {
         };
         Whiteboard wbB = new Whiteboard();
 
-        Player player = new Player();
-        player.replay(loader, wbA, wbB);
+        Player player = new Player(wbA, wbB);
+        player.replay(loader);
 
         BattleRecordInfo info = loader.getRecordInfo();
         assertEquals(info.roundsCount, roundChanges[0], "Should have seen all rounds");

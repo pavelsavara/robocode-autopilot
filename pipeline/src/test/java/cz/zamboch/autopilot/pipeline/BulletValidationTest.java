@@ -35,8 +35,8 @@ class BulletValidationTest {
         Loader loader = new Loader(brFile.toPath());
         Whiteboard wbA = new Whiteboard();
         Whiteboard wbB = new Whiteboard();
-        Player player = new Player();
-        player.replay(loader, wbA, wbB);
+        Player player = new Player(wbA, wbB);
+        player.replay(loader);
 
         // After processing a full battle, at least one side should have dealt damage
         double totalDamage = wbA.getDamageDealt() + wbB.getDamageDealt();
@@ -79,8 +79,8 @@ class BulletValidationTest {
         Loader loader2 = new Loader(brFile.toPath());
         Whiteboard wbA = new Whiteboard();
         Whiteboard wbB = new Whiteboard();
-        Player player = new Player();
-        player.replay(loader2, wbA, wbB);
+        Player player = new Player(wbA, wbB);
+        player.replay(loader2);
 
         // Both robots should have fired
         int totalGodViewShots = 0;
@@ -237,8 +237,8 @@ class BulletValidationTest {
         Loader loader = new Loader(brFile.toPath());
         Whiteboard wbA = new Whiteboard();
         Whiteboard wbB = new Whiteboard();
-        Player player = new Player();
-        player.replay(loader, wbA, wbB);
+        Player player = new Player(wbA, wbB);
+        player.replay(loader);
 
         // Verify damage dealt by A = damage received by B and vice versa
         assertEquals(wbA.getDamageDealt(), wbB.getDamageReceived(), 0.01,

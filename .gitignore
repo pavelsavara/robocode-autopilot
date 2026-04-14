@@ -35,3 +35,4 @@ build/
 
 # Pipeline output
 output/
+intuition/.venv/
