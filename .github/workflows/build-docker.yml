@@ -18,7 +18,7 @@ jobs:
       - name: Download Robocode release
         run: |
           curl -fSL -o robocode-setup.jar \
-            "https://github.com/robo-code/robocode/releases/download/v1.10.1.0/robocode-1.10.1.0-setup.jar"
+            "https://github.com/robo-code/robocode/releases/download/VER_1_10_1/robocode-1.10.1-setup.jar"
           mkdir -p robocode-home
           cd robocode-home
           unzip -o ../robocode-setup.jar \
