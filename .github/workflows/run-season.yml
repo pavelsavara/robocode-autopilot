@@ -262,21 +262,17 @@ jobs:
         with:
           pattern: results-chunk-*
           path: all-results/
-          merge-multiple: false
 
       # Merge new results with historical
       - name: Merge results
         run: |
-          # Debug: show what was downloaded
           echo "Downloaded artifacts:"
           find all-results/ -type f 2>/dev/null || echo "No all-results/ directory"
 
-          # Append new chunk results (timestamped to avoid overwriting historical)
           RUN_ID="${{ github.run_id }}"
           MERGED=0
           for f in $(find all-results/ -name 'results.json' -type f 2>/dev/null); do
-            chunk=$(echo "$f" | grep -o 'chunk-[0-9]*' | grep -o '[0-9]*')
-            cp "$f" "results/run-${RUN_ID}-chunk-${chunk}.json"
+            cp "$f" "results/run-${RUN_ID}-chunk-${MERGED}.json"
             MERGED=$((MERGED + 1))
           done
           echo "Merged $MERGED chunk(s). Total result files: $(ls results/*.json 2>/dev/null | wc -l)"
