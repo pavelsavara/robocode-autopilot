@@ -1,4 +1,6 @@
-# Top 50 RoboRumble bots — active participants for season runs (2026-04-22)
+# Top 46 RoboRumble bots — active participants for season runs
+# Removed: xander.cat.XanderCat (no JAR), abc.Shadow (no JAR),
+#          aw.Gilgalad (corrupt), rsalesc.roborio.Roborio (corrupt)
 # Subset of top150.txt. Scale up by replacing with top150.txt in run-season.yml.
 kc.mega.BeepBoop 2.0
 oog.mega.saguaro.Saguaro 1.0
@@ -6,11 +8,9 @@ aaa.r.ScalarR 0.005h.053-noshield
 jk.mega.DrussGT 3.1.7
 voidious.Diamond 1.8.22
 cb.fire.Firestarter 2.0f
-xander.cat.XanderCat 12.9
 dsekercioglu.mega.Raven 3.56j8
 lxx.Tomcat 3.68
 rsalesc.mega.Knight 0.6.28
-aw.Gilgalad 1.99.5c
 dsekercioglu.mega.WhiteFang 2.8.1
 gh.GresSuffurd 0.4.13
 kc.serpent.WaveSerpent 2.11
@@ -18,11 +18,9 @@ cs.Nene 1.0.5
 jk.melee.Neuromancer 7.12
 voidious.Dookious 1.573c
 davidalves.Phoenix 1.02
-rsalesc.roborio.Roborio 1.2.4
 cb.Domogled 1.2
 mue.Ascendant 1.2.27
 darkcanuck.Pris 0.92
-abc.Shadow 3.83c
 fromHell.BlackBox 0.0.2
 kc.serpent.Hydra 0.21
 jk.precise.Wintermute 0.8
