@@ -118,18 +118,40 @@ function runSingleBattle(botA, botB) {
 }
 
 function parseResults(raw, botA, botB, elapsedMs) {
-    // Format:
-    // Results for 35 rounds
-    // Robot Name          Total Score  ...  1sts  2nds  3rds
-    // 1st: sample.Crazy   3615 (55%)  800  160   2295  215  104  41   17  18  0
-    // 2nd: sample.Fire     2971 (45%)  900  180   1669  207  14   0    19  16  0
+    // Robocode results file comes in two formats:
+    //
+    // Space-separated with percentage (older Robocode):
+    //   1st: sample.Crazy   3615 (55%)  800  160   2295  215  104  41   17  18  0
+    //
+    // Tab-separated without percentage (Robocode 1.10.x):
+    //   1st: sample.Crazy\t3615\t800\t160\t2295\t215\t104\t41\t17\t18\t0
     const lines = raw.trim().split('\n');
     const roundsLine = lines[0]; // "Results for 35 rounds"
     const numRounds = parseInt(roundsLine.match(/(\d+) rounds/)?.[1] || '0', 10);
 
     const bots = [];
     for (const line of lines) {
-        // Match: "1st: name  score (pct%)  surv  survBonus  bulletDmg  bulletBonus  ramDmg  ramBonus  1sts  2nds  3rds"
+        // Try tab-separated format first (Robocode 1.10.x)
+        const tabMatch = line.match(/^\s*\d+\w+:\s+(.+?)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)/);
+        if (tabMatch) {
+            const totalScore = parseInt(tabMatch[2], 10);
+            bots.push({
+                name: tabMatch[1].trim(),
+                total_score: totalScore,
+                score_pct: 0, // computed after both bots parsed
+                survival: parseInt(tabMatch[3], 10),
+                survival_bonus: parseInt(tabMatch[4], 10),
+                bullet_damage: parseInt(tabMatch[5], 10),
+                bullet_bonus: parseInt(tabMatch[6], 10),
+                ram_damage: parseInt(tabMatch[7], 10),
+                ram_bonus: parseInt(tabMatch[8], 10),
+                firsts: parseInt(tabMatch[9], 10),
+                seconds: parseInt(tabMatch[10], 10),
+                thirds: parseInt(tabMatch[11], 10),
+            });
+            continue;
+        }
+        // Fall back to space-separated format with percentage
         const m = line.match(
             /^\s*\d+\w+:\s+(.+?)\s+(\d+)\s+\((\d+)%\)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/
         );
@@ -148,6 +170,15 @@ function parseResults(raw, botA, botB, elapsedMs) {
                 seconds: parseInt(m[11], 10),
                 thirds: parseInt(m[12], 10),
             });
+        }
+    }
+
+    // Compute score_pct if not available (tab format)
+    if (bots.length >= 2) {
+        const totalAll = bots[0].total_score + bots[1].total_score;
+        if (totalAll > 0) {
+            bots[0].score_pct = Math.round(100 * bots[0].total_score / totalAll);
+            bots[1].score_pct = Math.round(100 * bots[1].total_score / totalAll);
         }
     }
 
