@@ -110,7 +110,7 @@ jobs:
       # Fetch robot JARs from robots branch
       - name: Fetch robot JARs
         run: |
-          apk add --no-cache git git-lfs
+          apk add --no-cache git git-lfs unzip
           git lfs install
           git clone --depth=1 --branch=robots --single-branch \
             https://github.com/${{ github.repository }}.git /tmp/robots || true
@@ -249,6 +249,19 @@ jobs:
           ls -la /opt/robocode/robots/.data/ 2>/dev/null || echo "No .data/ directory"
           ls -la /opt/robocode/robots/.robotcache/ 2>/dev/null || echo "No .robotcache/ directory"
           find /opt/robocode/robots/ -type d -name '.?*' 2>/dev/null || echo "No hidden dirs"
+
+          echo "=== JAR contents comparison ==="
+          echo "--- Working JAR: EFD.AdvancedEFD ---"
+          unzip -l /opt/robocode/robots/EFD.AdvancedEFD_0.4.5a.jar 2>&1 | head -30
+          echo "--- Failing JAR: aw.Gilgalad ---"
+          unzip -l /opt/robocode/robots/aw.Gilgalad_1.99.5c.jar 2>&1 | head -30
+          echo "--- Failing JAR: aaa.r.ScalarR ---"
+          unzip -l /opt/robocode/robots/aaa.r.ScalarR_0.005h.053-noshield.jar 2>&1 | head -30
+          echo "--- Properties files in JARs ---"
+          for jar in EFD.AdvancedEFD_0.4.5a.jar aw.Gilgalad_1.99.5c.jar aaa.r.ScalarR_0.005h.053-noshield.jar Krabb.sliNk.Garm_0.9u.jar axeBots.Musashi_2.18.jar; do
+            echo "$jar:"
+            unzip -l /opt/robocode/robots/$jar 2>&1 | grep -i '\.properties' || echo "  (no .properties files)"
+          done
 
       # Checkout repo to get latest run-battle.mjs
       - uses: actions/checkout@v6
