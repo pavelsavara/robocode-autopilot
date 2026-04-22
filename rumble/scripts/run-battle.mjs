@@ -8,7 +8,7 @@
 // Single battle mode: prints JSON result to stdout.
 // Batch mode (--battles): reads a JSON array of {bot_a, bot_b} pairs, writes results to --out directory.
 
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { writeFileSync, readFileSync, mkdirSync, existsSync, unlinkSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
@@ -79,22 +79,33 @@ function runSingleBattle(botA, botB) {
     }
 
     const startTime = Date.now();
+    let javaStdout = '';
+    let javaStderr = '';
     try {
-        execFileSync('java', javaArgs, {
+        const proc = spawnSync('java', javaArgs, {
             cwd: robocodeDir,
             timeout: 180_000, // 3 min max per battle
             stdio: ['pipe', 'pipe', 'pipe'],
+            maxBuffer: 10 * 1024 * 1024,
         });
+        javaStdout = proc.stdout?.toString() || '';
+        javaStderr = proc.stderr?.toString() || '';
+        if (proc.status !== 0) {
+            return {
+                error: true,
+                bot_a: botA,
+                bot_b: botB,
+                message: `Battle failed: exit code ${proc.status}`,
+                stderr: javaStderr.slice(0, 1000),
+                stdout: javaStdout.slice(0, 500),
+            };
+        }
     } catch (err) {
-        const stderr = err.stderr?.toString() || '';
-        const stdout = err.stdout?.toString() || '';
         return {
             error: true,
             bot_a: botA,
             bot_b: botB,
             message: `Battle failed: ${err.message}`,
-            stderr: stderr.slice(0, 500),
-            stdout: stdout.slice(0, 500),
         };
     } finally {
         // Cleanup battle file
@@ -104,20 +115,20 @@ function runSingleBattle(botA, botB) {
 
     // Parse results file
     if (!existsSync(resultsFile)) {
-        return { error: true, bot_a: botA, bot_b: botB, message: 'No results file produced' };
+        return { error: true, bot_a: botA, bot_b: botB, message: 'No results file produced', stderr: javaStderr.slice(0, 1000) };
     }
 
     const raw = readFileSync(resultsFile, 'utf-8');
     try { unlinkSync(resultsFile); } catch { /* ignore */ }
 
-    const result = parseResults(raw, botA, botB, elapsed);
+    const result = parseResults(raw, botA, botB, elapsed, javaStderr);
     if (recordFile && existsSync(recordFile)) {
         result.record_file = recordFile;
     }
     return result;
 }
 
-function parseResults(raw, botA, botB, elapsedMs) {
+function parseResults(raw, botA, botB, elapsedMs, javaStderr) {
     // Robocode results file comes in two formats:
     //
     // Space-separated with percentage (older Robocode):
@@ -183,7 +194,7 @@ function parseResults(raw, botA, botB, elapsedMs) {
     }
 
     if (bots.length < 2) {
-        return { error: true, bot_a: botA, bot_b: botB, message: 'Could not parse results', raw };
+        return { error: true, bot_a: botA, bot_b: botB, message: 'Could not parse results', raw, stderr: (javaStderr || '').slice(0, 1000) };
     }
 
     return {
