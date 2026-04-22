@@ -41,6 +41,10 @@ function runSingleBattle(botA, botB) {
     const resultsFile = join(robocodeDir, `results-${battleId}.txt`);
 
     // Write .battle file
+    // Strip version from bot names — selectedRobots uses class name only.
+    // Robocode resolves versions from the JAR metadata.
+    const classA = botA.replace(/\s+\S+$/, '');
+    const classB = botB.replace(/\s+\S+$/, '');
     const battleContent = [
         '#Battle Properties',
         `robocode.battleField.width=${fieldWidth}`,
@@ -49,7 +53,7 @@ function runSingleBattle(botA, botB) {
         'robocode.battle.gunCoolingRate=0.1',
         'robocode.battle.rules.inactivityTime=450',
         'robocode.battle.hideEnemyNames=true',
-        `robocode.battle.selectedRobots=${botA},${botB}`,
+        `robocode.battle.selectedRobots=${classA},${classB}`,
         '',
     ].join('\n');
     writeFileSync(battleFile, battleContent);
