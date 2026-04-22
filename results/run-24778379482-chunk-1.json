@@ -1,0 +1,498 @@
+[
+  {
+    "error": true,
+    "bot_a": "aaa.r.ScalarR 0.005h.053-noshield",
+    "bot_b": "gh.GresSuffurd 0.4.13",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/1f59d24a.br"
+  },
+  {
+    "error": true,
+    "bot_a": "fromHell.BlackBox 0.0.2",
+    "bot_b": "wcsv.Engineer.Engineer 0.5.4",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/b7b5ed5c.br"
+  },
+  {
+    "error": true,
+    "bot_a": "mue.Ascendant 1.2.27",
+    "bot_b": "zyx.mega.YersiniaPestis 3.0",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/ac0e846e.br"
+  },
+  {
+    "error": true,
+    "bot_a": "aaa.r.ScalarR 0.005h.053-noshield",
+    "bot_b": "dft.Cyanide 1.90",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/5898bd0e.br"
+  },
+  {
+    "error": true,
+    "bot_a": "davidalves.Firebird 0.25",
+    "bot_b": "ar.horizon.Horizon 1.2.2",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/061a4e6d.br"
+  },
+  {
+    "error": true,
+    "bot_a": "davidalves.Firebird 0.25",
+    "bot_b": "dft.Cardigan 1.09",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/4450b511.br"
+  },
+  {
+    "error": true,
+    "bot_a": "fromHell.CHCl3 1.4.2",
+    "bot_b": "ar.horizon.Horizon 1.2.2",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/06e26641.br"
+  },
+  {
+    "error": true,
+    "bot_a": "darkcanuck.Pris 0.92",
+    "bot_b": "Krabb.sliNk.Garm 0.9u",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/ab1a93a6.br"
+  },
+  {
+    "error": true,
+    "bot_a": "oog.mega.saguaro.Saguaro 1.0",
+    "bot_b": "abc.Shadow 3.83c",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/e9027273.br"
+  },
+  {
+    "error": true,
+    "bot_a": "voidious.Diamond 1.8.22",
+    "bot_b": "ags.Midboss 1q.fast",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/690af129.br"
+  },
+  {
+    "error": true,
+    "bot_a": "cb.Domogled 1.2",
+    "bot_b": "axeBots.SilverSurfer 2.53.33fix",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/d95e3645.br"
+  },
+  {
+    "error": true,
+    "bot_a": "fromHell.CHCl3 1.4.2",
+    "bot_b": "darkcanuck.Holden 1.13a",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/5c15757c.br"
+  },
+  {
+    "error": true,
+    "bot_a": "oog.mega.saguaro.Saguaro 1.0",
+    "bot_b": "davidalves.Phoenix 1.02",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/9146e536.br"
+  },
+  {
+    "error": true,
+    "bot_a": "gh.GresSuffurd 0.4.13",
+    "bot_b": "axeBots.SilverSurfer 2.53.33fix",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/232c7668.br"
+  },
+  {
+    "error": true,
+    "bot_a": "cb.fire.Firestarter 2.0f",
+    "bot_b": "aw.Gilgalad 1.99.5c",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/73ff81c7.br"
+  },
+  {
+    "error": true,
+    "bot_a": "aaa.r.ScalarR 0.005h.053-noshield",
+    "bot_b": "cs.s2.Seraphim 2.3.1",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/ac8acde4.br"
+  },
+  {
+    "error": true,
+    "bot_a": "abc.Shadow 3.83c",
+    "bot_b": "axeBots.SilverSurfer 2.53.33fix",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/28d7e41b.br"
+  },
+  {
+    "error": true,
+    "bot_a": "jk.melee.Neuromancer 7.12",
+    "bot_b": "sheldor.mini.Foilist 1.3.1",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/3731ddda.br"
+  },
+  {
+    "error": true,
+    "bot_a": "cb.Domogled 1.2",
+    "bot_b": "mn.Combat 3.25.0",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/0fce310a.br"
+  },
+  {
+    "error": true,
+    "bot_a": "pulsar.PulsarMax 0.8.9",
+    "bot_b": "ags.Midboss 1q.fast",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/590d0a0a.br"
+  },
+  {
+    "error": true,
+    "bot_a": "voidious.Diamond 1.8.22",
+    "bot_b": "cb.Domogled 1.2",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/4733d5e8.br"
+  },
+  {
+    "error": true,
+    "bot_a": "dsekercioglu.mega.WhiteFang 2.8.1",
+    "bot_b": "rsalesc.roborio.Roborio 1.2.4",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/10638752.br"
+  },
+  {
+    "error": true,
+    "bot_a": "oog.mega.saguaro.Saguaro 1.0",
+    "bot_b": "aaa.r.ScalarR 0.005h.053-noshield",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/b7914cce.br"
+  },
+  {
+    "error": true,
+    "bot_a": "xander.cat.XanderCat 12.9",
+    "bot_b": "rsalesc.mega.Knight 0.6.28",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/28e93462.br"
+  },
+  {
+    "error": true,
+    "bot_a": "cs.Nene 1.0.5",
+    "bot_b": "wcsv.PowerHouse.PowerHouse 1.7e3",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/ba7c03ab.br"
+  },
+  {
+    "error": true,
+    "bot_a": "jk.melee.Neuromancer 7.12",
+    "bot_b": "jk.mini.CunobelinDC 1.2",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/98eb73b1.br"
+  },
+  {
+    "error": true,
+    "bot_a": "voidious.Diamond 1.8.22",
+    "bot_b": "darkcanuck.Pris 0.92",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/b9bfc9ef.br"
+  },
+  {
+    "error": true,
+    "bot_a": "fromHell.BlackBox 0.0.2",
+    "bot_b": "darkcanuck.Holden 1.13a",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/f65ba58c.br"
+  },
+  {
+    "error": true,
+    "bot_a": "ar.horizon.Horizon 1.2.2",
+    "bot_b": "ags.rougedc.RougeDC willow",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/cbd29e96.br"
+  },
+  {
+    "error": true,
+    "bot_a": "cs.Nene 1.0.5",
+    "bot_b": "cjm.chalk.Chalk 2.6.Be",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/1643ebd4.br"
+  },
+  {
+    "error": true,
+    "bot_a": "dsekercioglu.mega.WhiteFang 2.8.1",
+    "bot_b": "darkcanuck.Holden 1.13a",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/a207eb50.br"
+  },
+  {
+    "error": true,
+    "bot_a": "dsekercioglu.mega.Raven 3.56j8",
+    "bot_b": "kc.serpent.WaveSerpent 2.11",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/d1dc16fc.br"
+  },
+  {
+    "error": true,
+    "bot_a": "mn.Combat 3.25.0",
+    "bot_b": "florent.XSeries.X2 0.17",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/c86455c8.br"
+  },
+  {
+    "error": true,
+    "bot_a": "aaa.r.ScalarR 0.005h.053-noshield",
+    "bot_b": "jk.precise.Wintermute 0.8",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/5ff787dc.br"
+  },
+  {
+    "error": true,
+    "bot_a": "cb.Domogled 1.2",
+    "bot_b": "darkcanuck.Pris 0.92",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/b0aaaca8.br"
+  },
+  {
+    "error": true,
+    "bot_a": "rsalesc.mega.Knight 0.6.28",
+    "bot_b": "jk.melee.Neuromancer 7.12",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/ce84d7d0.br"
+  },
+  {
+    "error": true,
+    "bot_a": "rsalesc.mega.Knight 0.6.28",
+    "bot_b": "pez.rumble.Ali 0.4.9",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/582c4fa8.br"
+  },
+  {
+    "error": true,
+    "bot_a": "oog.mega.saguaro.Saguaro 1.0",
+    "bot_b": "pez.rumble.Ali 0.4.9",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/ef723256.br"
+  },
+  {
+    "error": true,
+    "bot_a": "cb.Domogled 1.2",
+    "bot_b": "zyx.mega.YersiniaPestis 3.0",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/c4df6c21.br"
+  },
+  {
+    "error": true,
+    "bot_a": "pulsar.PulsarMax 0.8.9",
+    "bot_b": "cjm.chalk.Chalk 2.6.Be",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/e27eaa74.br"
+  },
+  {
+    "error": true,
+    "bot_a": "cb.Domogled 1.2",
+    "bot_b": "florent.test.Toad 0.14t",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/83cad334.br"
+  },
+  {
+    "error": true,
+    "bot_a": "lxx.Tomcat 3.68",
+    "bot_b": "jk.mini.CunobelinDC 1.2",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/30ae77ff.br"
+  },
+  {
+    "error": true,
+    "bot_a": "kc.serpent.WaveSerpent 2.11",
+    "bot_b": "ar.horizon.Horizon 1.2.2",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/bb1487d2.br"
+  },
+  {
+    "error": true,
+    "bot_a": "aw.Gilgalad 1.99.5c",
+    "bot_b": "mue.Ascendant 1.2.27",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/e9088f9d.br"
+  },
+  {
+    "error": true,
+    "bot_a": "pulsar.PulsarMax 0.8.9",
+    "bot_b": "Krabb.sliNk.Garm 0.9u",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/ddfe6367.br"
+  },
+  {
+    "error": true,
+    "bot_a": "davidalves.Firebird 0.25",
+    "bot_b": "ags.Midboss 1q.fast",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/57fef3bf.br"
+  },
+  {
+    "error": true,
+    "bot_a": "jk.mini.CunobelinDC 1.2",
+    "bot_b": "ags.rougedc.RougeDC willow",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/b34bf2e6.br"
+  },
+  {
+    "error": true,
+    "bot_a": "oog.mega.saguaro.Saguaro 1.0",
+    "bot_b": "gh.GresSuffurd 0.4.13",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/7436d910.br"
+  },
+  {
+    "error": true,
+    "bot_a": "kc.mega.BeepBoop 2.0",
+    "bot_b": "davidalves.Phoenix 1.02",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/30c97bc4.br"
+  },
+  {
+    "error": true,
+    "bot_a": "kc.serpent.Hydra 0.21",
+    "bot_b": "pez.rumble.Ali 0.4.9",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/05fc2c8e.br"
+  },
+  {
+    "error": true,
+    "bot_a": "xander.cat.XanderCat 12.9",
+    "bot_b": "florent.test.Toad 0.14t",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/5b991f1e.br"
+  },
+  {
+    "error": true,
+    "bot_a": "kc.mega.BeepBoop 2.0",
+    "bot_b": "zyx.mega.YersiniaPestis 3.0",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/abc35258.br"
+  },
+  {
+    "error": true,
+    "bot_a": "lxx.Tomcat 3.68",
+    "bot_b": "abc.Shadow 3.83c",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/d39e8df4.br"
+  },
+  {
+    "error": true,
+    "bot_a": "lxx.Tomcat 3.68",
+    "bot_b": "voidious.Dookious 1.573c",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/7b425ccd.br"
+  },
+  {
+    "error": true,
+    "bot_a": "jk.mega.DrussGT 3.1.7",
+    "bot_b": "cb.Domogled 1.2",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/42edc927.br"
+  },
+  {
+    "error": true,
+    "bot_a": "cb.fire.Firestarter 2.0f",
+    "bot_b": "sheldor.mini.Foilist 1.3.1",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/198bbf73.br"
+  },
+  {
+    "error": true,
+    "bot_a": "jk.mega.DrussGT 3.1.7",
+    "bot_b": "ags.Midboss 1q.fast",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/da71944b.br"
+  },
+  {
+    "error": true,
+    "bot_a": "lxx.Tomcat 3.68",
+    "bot_b": "darkcanuck.Pris 0.92",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/a7f65fc7.br"
+  },
+  {
+    "error": true,
+    "bot_a": "jk.melee.Neuromancer 7.12",
+    "bot_b": "dft.Cardigan 1.09",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/a3fab2da.br"
+  },
+  {
+    "error": true,
+    "bot_a": "rsalesc.roborio.Roborio 1.2.4",
+    "bot_b": "ags.rougedc.RougeDC willow",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/383cd6fd.br"
+  },
+  {
+    "error": true,
+    "bot_a": "cb.fire.Firestarter 2.0f",
+    "bot_b": "darkcanuck.Holden 1.13a",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/86068f1e.br"
+  },
+  {
+    "error": true,
+    "bot_a": "dsekercioglu.mega.WhiteFang 2.8.1",
+    "bot_b": "wcsv.Engineer.Engineer 0.5.4",
+    "message": "Could not parse results",
+    "raw": "Results for 35 rounds\nRobot Name\t    Total Score    \tSurvival\tSurv Bonus\tBullet Dmg\tBullet Bonus\tRam Dmg * 2\tRam Bonus\t 1sts \t 2nds \t 3rds \t\n",
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/eec308ce.br"
+  }
+]
