@@ -173,7 +173,7 @@ jobs:
 
           WORK=$(mktemp -d)
           git worktree add "$WORK" origin/robots 2>/dev/null || {
-            git worktree add --orphan "$WORK" robots
+            git worktree add -b robots --orphan "$WORK"
           }
 
           # Copy results
@@ -199,7 +199,7 @@ jobs:
           WORK=$(mktemp -d)
           git fetch origin gh-pages --depth=1 || true
           git worktree add "$WORK" origin/gh-pages 2>/dev/null || {
-            git worktree add --orphan "$WORK" gh-pages
+            git worktree add -b gh-pages --orphan "$WORK"
           }
 
           # Copy site files

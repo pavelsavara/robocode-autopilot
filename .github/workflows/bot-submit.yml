@@ -62,7 +62,7 @@ jobs:
           git fetch origin robots --depth=1 || true
           WORK=$(mktemp -d)
           git worktree add "$WORK" origin/robots 2>/dev/null || {
-            git worktree add --orphan "$WORK" robots
+            git worktree add -b robots --orphan "$WORK"
           }
 
           cp "robots/${{ steps.parse.outputs.jar_file }}" "$WORK/"
