@@ -4,9 +4,11 @@ oog.mega.saguaro.Saguaro 1.0
 aaa.r.ScalarR 0.005h.053-noshield
 jk.mega.DrussGT 3.1.7
 voidious.Diamond 1.8.22
+abc.Shadow 3.83c
 cb.fire.Firestarter 2.0f
 dsekercioglu.mega.Raven 3.56j8
 lxx.Tomcat 3.68
+aw.Gilgalad 1.99.5c
 rsalesc.mega.Knight 0.6.28
 dsekercioglu.mega.WhiteFang 2.8.1
 gh.GresSuffurd 0.4.13
@@ -14,11 +16,13 @@ kc.serpent.WaveSerpent 2.11
 cs.Nene 1.0.5
 jk.melee.Neuromancer 7.12
 voidious.Dookious 1.573c
+xander.cat.XanderCat 12.9
 davidalves.Phoenix 1.02
 cb.Domogled 1.2
 mue.Ascendant 1.2.27
 darkcanuck.Pris 0.92
 fromHell.BlackBox 0.0.2
+rsalesc.roborio.Roborio 1.2.4
 kc.serpent.Hydra 0.21
 jk.precise.Wintermute 0.8
 davidalves.Firebird 0.25
@@ -70,6 +74,7 @@ darkcanuck.Gaff 1.50
 ary.SMG 1.01
 catcat20.shape.Theta 0.018
 rz.Aleph 0.34
+theo.Tungsten 1.0a
 synapse.rsim.GeomancyBS 0.11
 ags.Glacier 0.3.2
 stelo.PastFuture 2.3.2
@@ -116,6 +121,7 @@ florent.small.LittleAngel 1.8
 florent.FloatingTadpole 1.2.6
 nat.BlackHole 2.0gamma
 stelo.Liblix 0.3.1
+theo.avenge.Pequod 1.0
 cx.BlestPain 1.41
 stelo.Chord 1.0
 ary.mini.Nimi 1.0
@@ -139,6 +145,7 @@ vic.Locke 0.7.5.5
 jam.micro.RaikoMicro 1.44
 ary.micro.Weak 1.2
 catcat20.helios.Helios 1.5
+theo.real.Ahab 1.0
 cf.star.Star2 1.23
 ab.DengerousRoBatra 1.3
 axeBots.Musashi 2.18
