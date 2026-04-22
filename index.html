@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Robocode Rumble Rankings</title>
+  <style>
+:root {
+  --bg: #333;
+  --surface: #444;
+  --surface2: #4a4a4a;
+  --border: #555;
+  --text: #e0e0e0;
+  --text-muted: #aaa;
+  --accent: #4a8f3f;
+  --accent-light: #6abf5e;
+  --link: #8cc63f;
+  --link-hover: #afe06a;
+  --header-bg: #222;
+  --gold: #f5c518;
+  --silver: #c0c0c0;
+  --bronze: #cd7f32;
+  --th-bg: #3a3a3a;
+  --row-hover: rgba(74,143,63,0.12);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+.container { max-width: 1100px; margin: 0 auto; padding: 0 1rem; }
+header { background: var(--header-bg); border-bottom: 3px solid var(--accent); padding: 0; margin-bottom: 1.5rem; }
+.header-inner { display: flex; align-items: center; gap: 1rem; padding: 0.6rem 0; }
+.header-logo img { height: 48px; width: auto; }
+.header-text h1 { font-size: 1.5rem; letter-spacing: 0.02em; }
+.header-text h1 a { color: var(--text); text-decoration: none; }
+.header-text h1 span { color: var(--accent-light); }
+.header-text .tagline { color: var(--accent-light); font-size: 0.75rem; font-style: italic; }
+header .meta { color: var(--text-muted); font-size: 0.8rem; margin-left: auto; text-align: right; white-space: nowrap; }
+.content-card { background: var(--surface); border-radius: 6px; padding: 1rem; margin-bottom: 1.5rem; border: 1px solid var(--border); }
+h2 { font-size: 1.1rem; margin-bottom: 0.75rem; color: var(--text); border-bottom: 2px solid var(--accent); padding-bottom: 0.3rem; }
+table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 6px; overflow: hidden; }
+th { background: var(--th-bg); color: var(--text); padding: 0.5rem 0.7rem; text-align: left; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; cursor: pointer; user-select: none; white-space: nowrap; border-bottom: 2px solid var(--accent); }
+th:hover { background: #484848; }
+td { padding: 0.4rem 0.7rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+tr:hover td { background: var(--row-hover); }
+.rank { font-weight: bold; text-align: center; width: 3rem; }
+.rank-1 { color: var(--gold); }
+.rank-2 { color: var(--silver); }
+.rank-3 { color: var(--bronze); }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+a { color: var(--link); text-decoration: none; }
+a:hover { color: var(--link-hover); text-decoration: underline; }
+.bar { height: 6px; background: var(--th-bg); border-radius: 3px; position: relative; }
+.bar-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+.flag { width: 18px; height: 12px; vertical-align: middle; margin-right: 4px; }
+.bot-summary { display: flex; gap: 2rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.bot-stats { flex: 1; min-width: 250px; }
+.bot-stats table { width: auto; }
+.bot-stats td, .bot-stats th { padding: 0.3rem 0.8rem; }
+.bot-meta { margin-bottom: 1rem; }
+.bot-meta table { width: auto; }
+.bot-meta td, .bot-meta th { padding: 0.25rem 0.6rem; font-size: 0.85rem; }
+.bot-meta th { background: none; border-bottom: none; text-transform: none; font-size: 0.85rem; color: var(--text-muted); cursor: default; }
+.score-chart { flex: 0 0 240px; }
+.score-chart svg { border: 1px solid var(--border); border-radius: 4px; }
+.compare-link { font-size: 0.8rem; }
+.compare-header { display: flex; gap: 2rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.compare-bot { flex: 1; min-width: 200px; }
+.compare-bot table { width: 100%; }
+footer { text-align: center; color: var(--text-muted); font-size: 0.78rem; margin-top: 2rem; padding: 1rem 0; border-top: 1px solid var(--border); background: var(--header-bg); }
+footer a { color: var(--link); }
+</style>
+</head>
+<body>
+<header><div class="container">
+  <div class="header-inner">
+    <div class="header-logo"><img src="flags/robocode_logo_tanks.png" alt="Robocode"></div>
+    <div class="header-text">
+      <h1>Robocode <span>Rumble</span></h1>
+      <div class="tagline">Build the best - destroy the rest!</div>
+    </div>
+    <div class="meta">
+      0 bots &middot;
+      0 battles &middot;
+      0 pairings<br>
+      2026-04-22T12:33:46.263Z
+    </div>
+  </div>
+</div></header>
+<div class="container">
+<div class="content-card">
+<table>
+  <thead><tr>
+    <th data-sort="num">#</th>
+    <th>Flag</th>
+    <th data-sort="str">Robot</th>
+    <th data-sort="num">APS</th>
+    <th></th>
+    <th data-sort="num">PWIN</th>
+    <th data-sort="num">ANPP</th>
+    <th data-sort="num">Vote%</th>
+    <th data-sort="num">Surv%</th>
+    <th data-sort="num">Pairs</th>
+    <th data-sort="num">Battles</th>
+  </tr></thead>
+  <tbody>
+
+  </tbody>
+</table>
+</div></div>
+<footer><div class="container">
+  <a href="https://github.com/pavelsavara/robocode-autopilot">pavelsavara/robocode-autopilot</a> &middot; Powered by GitHub Actions
+</div></footer>
+<script>
+document.querySelectorAll('th[data-sort]').forEach(th => {
+  th.addEventListener('click', () => {
+    const table = th.closest('table');
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    const col = th.cellIndex;
+    const type = th.dataset.sort;
+    const asc = th.classList.toggle('sort-asc');
+    table.querySelectorAll('th').forEach(h => { if (h !== th) h.classList.remove('sort-asc', 'sort-desc'); });
+    if (!asc) th.classList.add('sort-desc');
+    rows.sort((a, b) => {
+      let va = a.cells[col]?.textContent.trim() ?? '';
+      let vb = b.cells[col]?.textContent.trim() ?? '';
+      if (type === 'num') { va = parseFloat(va) || 0; vb = parseFloat(vb) || 0; }
+      const cmp = type === 'num' ? va - vb : va.localeCompare(vb);
+      return asc ? cmp : -cmp;
+    });
+    rows.forEach(r => tbody.appendChild(r));
+  });
+});
+</script>
+</body>
+</html>
