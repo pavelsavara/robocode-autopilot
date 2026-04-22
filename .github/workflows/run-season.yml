@@ -72,7 +72,7 @@ jobs:
           fi
 
           node rumble/scripts/plan-battles.mjs \
-            --participants rumble/test5.txt \
+            --participants rumble/top50.txt \
             --chunks ${{ inputs.max_parallel || '20' }} \
             --min-battles ${{ inputs.min_battles_per_pair || '2' }} \
             $RESULTS_FLAG \
@@ -375,7 +375,7 @@ jobs:
 
           # Plan with min-battles filter to count how many pairs still need battles
           node rumble/scripts/plan-battles.mjs \
-            --participants rumble/test5.txt \
+            --participants rumble/top50.txt \
             --chunks 1 \
             --min-battles ${{ inputs.min_battles_per_pair || '2' }} \
             $RESULTS_FLAG \
