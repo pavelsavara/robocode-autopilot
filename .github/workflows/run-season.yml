@@ -138,6 +138,81 @@ jobs:
           # Remove stale robot database to force re-scan
           rm -rf /opt/robocode/robots/.data 2>/dev/null || true
 
+      # Pre-flight: verify Robocode engine works
+      - name: Pre-flight test
+        run: |
+          echo "--- libs/ contents ---"
+          ls /opt/robocode/libs/
+
+          echo "--- Testing with sample robots ---"
+          cat > /tmp/test.battle <<'EOF'
+          #Battle Properties
+          robocode.battleField.width=800
+          robocode.battleField.height=600
+          robocode.battle.numRounds=1
+          robocode.battle.gunCoolingRate=0.1
+          robocode.battle.rules.inactivityTime=450
+          robocode.battle.hideEnemyNames=true
+          robocode.battle.selectedRobots=sample.Fire,sample.Crazy
+          EOF
+
+          java -cp '/opt/robocode/libs/*' \
+            -Xmx512M \
+            -XX:+IgnoreUnrecognizedVMOptions \
+            '--add-opens=java.base/sun.net.www.protocol.jar=ALL-UNNAMED' \
+            '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED' \
+            '--add-opens=java.base/java.lang=ALL-UNNAMED' \
+            '--add-opens=java.base/java.io=ALL-UNNAMED' \
+            '--add-opens=java.base/java.net=ALL-UNNAMED' \
+            '--add-opens=java.base/java.util=ALL-UNNAMED' \
+            -DNOSECURITY=true \
+            -Djava.awt.headless=true \
+            robocode.Robocode \
+            -cwd /opt/robocode \
+            -battle /tmp/test.battle \
+            -results /tmp/test-results.txt \
+            -nodisplay 2>&1 || true
+
+          echo "--- Sample battle results ---"
+          cat /tmp/test-results.txt 2>/dev/null || echo "No results file"
+
+          echo "--- Testing with competition bot (no version) ---"
+          FIRST_JAR=$(ls /opt/robocode/robots/*.jar 2>/dev/null | head -1)
+          FIRST_BOT=$(basename "$FIRST_JAR" .jar | sed 's/_/ /')
+          BOT_CLASS=$(echo "$FIRST_BOT" | cut -d' ' -f1)
+          echo "Testing bot: $BOT_CLASS (from $FIRST_JAR)"
+
+          cat > /tmp/test2.battle <<EOF
+          #Battle Properties
+          robocode.battleField.width=800
+          robocode.battleField.height=600
+          robocode.battle.numRounds=1
+          robocode.battle.gunCoolingRate=0.1
+          robocode.battle.rules.inactivityTime=450
+          robocode.battle.hideEnemyNames=true
+          robocode.battle.selectedRobots=sample.Fire,$BOT_CLASS
+          EOF
+
+          java -cp '/opt/robocode/libs/*' \
+            -Xmx512M \
+            -XX:+IgnoreUnrecognizedVMOptions \
+            '--add-opens=java.base/sun.net.www.protocol.jar=ALL-UNNAMED' \
+            '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED' \
+            '--add-opens=java.base/java.lang=ALL-UNNAMED' \
+            '--add-opens=java.base/java.io=ALL-UNNAMED' \
+            '--add-opens=java.base/java.net=ALL-UNNAMED' \
+            '--add-opens=java.base/java.util=ALL-UNNAMED' \
+            -DNOSECURITY=true \
+            -Djava.awt.headless=true \
+            robocode.Robocode \
+            -cwd /opt/robocode \
+            -battle /tmp/test2.battle \
+            -results /tmp/test2-results.txt \
+            -nodisplay 2>&1 || true
+
+          echo "--- Competition bot results ---"
+          cat /tmp/test2-results.txt 2>/dev/null || echo "No results file"
+
       # Checkout repo to get latest run-battle.mjs
       - uses: actions/checkout@v6
         with:
