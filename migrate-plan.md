@@ -235,7 +235,7 @@ Unchanged from fork — the simplification is in the workflow, not the Dockerfil
 1. Delete `actions-rumble` branch from `pavelsavara/robocode`.
 2. Delete `data/robots` branch from `pavelsavara/robocode`.
 3. Delete `gh-pages` branch from `pavelsavara/robocode` (or update to redirect to new URL).
-4. Reset fork README to upstream content.
+4. Reset fork main branch to upstream hash.
 
 ---
 

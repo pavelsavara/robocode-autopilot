@@ -74,9 +74,11 @@ jobs:
       # Fetch robot JARs from robots branch
       - name: Fetch robot JARs
         run: |
-          apk add --no-cache git
+          apk add --no-cache git git-lfs
+          git lfs install
           git clone --depth=1 --branch=robots --single-branch \
             https://github.com/${{ github.repository }}.git /tmp/robots || true
+          cd /tmp/robots && git lfs pull && cd -
           cp /tmp/robots/*.jar /opt/robocode/robots/ 2>/dev/null || true
           echo "Robots loaded:"
           ls /opt/robocode/robots/*.jar 2>/dev/null | wc -l
