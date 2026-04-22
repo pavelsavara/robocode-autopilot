@@ -1,0 +1,6 @@
+# 5-bot quick test for end-to-end validation
+kc.mega.BeepBoop 2.0
+oog.mega.saguaro.Saguaro 1.0
+aaa.r.ScalarR 0.005h.053-noshield
+jk.mega.DrussGT 3.1.7
+voidious.Diamond 1.8.22
