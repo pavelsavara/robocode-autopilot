@@ -45,6 +45,16 @@ function runSingleBattle(botA, botB) {
     // Robocode resolves versions from the JAR metadata.
     const classA = botA.replace(/\s+\S+$/, '');
     const classB = botB.replace(/\s+\S+$/, '');
+
+    // Debug: log first battle details
+    if (!runSingleBattle._logged) {
+        runSingleBattle._logged = true;
+        console.error(`[DEBUG] robocodeDir=${robocodeDir}`);
+        console.error(`[DEBUG] selectedRobots=${classA},${classB}`);
+        console.error(`[DEBUG] battleFile=${battleFile}`);
+        console.error(`[DEBUG] resultsFile=${resultsFile}`);
+    }
+
     const battleContent = [
         '#Battle Properties',
         `robocode.battleField.width=${fieldWidth}`,
@@ -130,6 +140,9 @@ function runSingleBattle(botA, botB) {
     try { unlinkSync(resultsFile); } catch { /* ignore */ }
 
     const result = parseResults(raw, botA, botB, elapsed, javaStderr);
+    if (result.error && javaStdout) {
+        result.stdout = javaStdout.slice(0, 1000);
+    }
     if (recordFile && existsSync(recordFile)) {
         result.record_file = recordFile;
     }

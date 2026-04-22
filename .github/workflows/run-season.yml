@@ -213,6 +213,43 @@ jobs:
           echo "--- Competition bot results ---"
           cat /tmp/test2-results.txt 2>/dev/null || echo "No results file"
 
+          echo "--- Testing aw.Gilgalad (known-JAR bot) ---"
+          cat > /tmp/test3.battle <<'EOF'
+          #Battle Properties
+          robocode.battleField.width=800
+          robocode.battleField.height=600
+          robocode.battle.numRounds=1
+          robocode.battle.gunCoolingRate=0.1
+          robocode.battle.rules.inactivityTime=450
+          robocode.battle.hideEnemyNames=true
+          robocode.battle.selectedRobots=sample.Fire,aw.Gilgalad
+          EOF
+
+          java -cp '/opt/robocode/libs/*' \
+            -Xmx512M \
+            -XX:+IgnoreUnrecognizedVMOptions \
+            '--add-opens=java.base/sun.net.www.protocol.jar=ALL-UNNAMED' \
+            '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED' \
+            '--add-opens=java.base/java.lang=ALL-UNNAMED' \
+            '--add-opens=java.base/java.io=ALL-UNNAMED' \
+            '--add-opens=java.base/java.net=ALL-UNNAMED' \
+            '--add-opens=java.base/java.util=ALL-UNNAMED' \
+            -DNOSECURITY=true \
+            -Djava.awt.headless=true \
+            robocode.Robocode \
+            -cwd /opt/robocode \
+            -battle /tmp/test3.battle \
+            -results /tmp/test3-results.txt \
+            -nodisplay 2>&1 || true
+
+          echo "--- aw.Gilgalad results ---"
+          cat /tmp/test3-results.txt 2>/dev/null || echo "No results file"
+
+          echo "--- .data/ directory after scans ---"
+          ls -la /opt/robocode/robots/.data/ 2>/dev/null || echo "No .data/ directory"
+          ls -la /opt/robocode/robots/.robotcache/ 2>/dev/null || echo "No .robotcache/ directory"
+          find /opt/robocode/robots/ -type d -name '.?*' 2>/dev/null || echo "No hidden dirs"
+
       # Checkout repo to get latest run-battle.mjs
       - uses: actions/checkout@v6
         with:
