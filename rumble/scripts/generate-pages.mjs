@@ -12,11 +12,11 @@ import { parseArgs } from 'node:util';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const { values: args } = parseArgs({
-    options: {
-        rankings: { type: 'string', default: 'rankings.json' },
-        results: { type: 'string', default: 'results' },
-        out: { type: 'string', default: 'site' },
-    },
+  options: {
+    rankings: { type: 'string', default: 'rankings.json' },
+    results: { type: 'string', default: 'results' },
+    out: { type: 'string', default: 'site' },
+  },
 });
 
 const outDir = resolve(args.out);
@@ -29,72 +29,72 @@ const flagsSrc = join(__dirname, '..', 'flags');
 let flagMap = {};
 const flagsJsonPath = join(flagsSrc, 'flags.json');
 if (existsSync(flagsJsonPath)) {
-    flagMap = JSON.parse(readFileSync(flagsJsonPath, 'utf-8'));
+  flagMap = JSON.parse(readFileSync(flagsJsonPath, 'utf-8'));
 }
 
 // Copy flag images to output
 const flagsOutDir = join(outDir, 'flags');
 if (existsSync(flagsSrc)) {
-    mkdirSync(flagsOutDir, { recursive: true });
-    for (const f of readdirSync(flagsSrc)) {
-        if (f.endsWith('.gif') || f.endsWith('.png')) {
-            copyFileSync(join(flagsSrc, f), join(flagsOutDir, f));
-        }
+  mkdirSync(flagsOutDir, { recursive: true });
+  for (const f of readdirSync(flagsSrc)) {
+    if (f.endsWith('.gif') || f.endsWith('.png')) {
+      copyFileSync(join(flagsSrc, f), join(flagsOutDir, f));
     }
+  }
 }
 const hasFlags = existsSync(flagsSrc);
 
 function getBotFlag(botName) {
-    const pkg = botName.split('.')[0];
-    return flagMap[pkg] || 'NONE';
+  const pkg = botName.split('.')[0];
+  return flagMap[pkg] || 'NONE';
 }
 
 function flagImg(botName, relative) {
-    if (!hasFlags) return '';
-    const code = getBotFlag(botName);
-    const prefix = relative || '';
-    return `<img class="flag" src="${prefix}flags/${code}.gif" alt="${code}" title="${code}">`;
+  if (!hasFlags) return '';
+  const code = getBotFlag(botName);
+  const prefix = relative || '';
+  return `<img class="flag" src="${prefix}flags/${code}.gif" alt="${code}" title="${code}">`;
 }
 
 // Load robot catalog for metadata on detail pages
 let robotCatalog = [];
 const catalogPath = join(__dirname, '..', 'robots', 'index.json');
 if (existsSync(catalogPath)) {
-    robotCatalog = JSON.parse(readFileSync(catalogPath, 'utf-8'));
+  robotCatalog = JSON.parse(readFileSync(catalogPath, 'utf-8'));
 }
 function getCatalogEntry(botName) {
-    return robotCatalog.find(b => b.name === botName || b.fullName === botName);
+  return robotCatalog.find(b => b.name === botName || b.fullName === botName);
 }
 
 // Load all results for head-to-head detail pages
 let allResults = [];
 try {
-    const p = resolve(args.results);
-    function walkResults(dir) {
-        for (const entry of readdirSync(dir, { withFileTypes: true })) {
-            const full = join(dir, entry.name);
-            if (entry.isDirectory()) walkResults(full);
-            else if (entry.name.endsWith('.json')) {
-                const data = JSON.parse(readFileSync(full, 'utf-8'));
-                if (Array.isArray(data)) allResults.push(...data);
-                else allResults.push(data);
-            }
-        }
+  const p = resolve(args.results);
+  function walkResults(dir) {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) walkResults(full);
+      else if (entry.name.endsWith('.json')) {
+        const data = JSON.parse(readFileSync(full, 'utf-8'));
+        if (Array.isArray(data)) allResults.push(...data);
+        else allResults.push(data);
+      }
     }
-    if (statSync(p).isDirectory()) {
-        walkResults(p);
-    } else {
-        allResults = JSON.parse(readFileSync(p, 'utf-8'));
-    }
+  }
+  if (statSync(p).isDirectory()) {
+    walkResults(p);
+  } else {
+    allResults = JSON.parse(readFileSync(p, 'utf-8'));
+  }
 } catch { /* no results detail available */ }
 allResults = allResults.filter(r => !r.error);
 
 function escapeHtml(s) {
-    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function botSlug(name) {
-    return name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  return name.replace(/[^a-zA-Z0-9._-]/g, '_');
 }
 
 // Robocode logo (local copy in flags/)
@@ -192,10 +192,10 @@ document.querySelectorAll('th[data-sort]').forEach(th => {
 
 // Generate index page
 function generateIndex() {
-    const rows = rankings.rankings.map(r => {
-        const rankClass = r.rank <= 3 ? ` rank-${r.rank}` : '';
-        const flag = flagImg(r.name, '');
-        return `<tr>
+  const rows = rankings.rankings.map(r => {
+    const rankClass = r.rank <= 3 ? ` rank-${r.rank}` : '';
+    const flag = flagImg(r.name, '');
+    return `<tr>
       <td class="rank${rankClass}">${r.rank}</td>
       <td>${flag}</td>
       <td><a href="bots/${botSlug(r.name)}.html">${escapeHtml(r.name)}</a></td>
@@ -208,9 +208,9 @@ function generateIndex() {
       <td class="num">${r.pairings}</td>
       <td class="num">${r.battles ?? 0}</td>
     </tr>`;
-    }).join('\n');
+  }).join('\n');
 
-    return `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -266,37 +266,37 @@ ${rows}
 // Build a lookup of bot overall APS for score distribution chart
 const botApsLookup = new Map();
 for (const r of rankings.rankings) {
-    botApsLookup.set(r.name, r);
+  botApsLookup.set(r.name, r);
 }
 
 // Generate score distribution SVG for a bot
 function generateScoreDistSvg(bot, opponents) {
-    const size = 230;
-    const pad = 0;
-    // Plot opponent's overall APS (X) vs this bot's pairing APS/survival (Y)
-    const points = [];
-    for (const o of opponents) {
-        const oppRanking = botApsLookup.get(o.name);
-        const oppAps = oppRanking ? oppRanking.aps : 50;
-        points.push({ x: oppAps, yAps: o.aps, ySurv: o.survival_pct ?? 50 });
-    }
+  const size = 230;
+  const pad = 0;
+  // Plot opponent's overall APS (X) vs this bot's pairing APS/survival (Y)
+  const points = [];
+  for (const o of opponents) {
+    const oppRanking = botApsLookup.get(o.name);
+    const oppAps = oppRanking ? oppRanking.aps : 50;
+    points.push({ x: oppAps, yAps: o.aps, ySurv: o.survival_pct ?? 50 });
+  }
 
-    let circles = '';
-    for (const p of points) {
-        const cx = pad + (p.x / 100) * size;
-        // APS — red dots
-        const cyAps = pad + size - (p.yAps / 100) * size;
-        circles += `<circle cx="${cx.toFixed(1)}" cy="${cyAps.toFixed(1)}" r="2.5" fill="rgba(204,37,41,0.8)"/>`;
-        // Survival — green dots
-        const cySurv = pad + size - (p.ySurv / 100) * size;
-        circles += `<circle cx="${cx.toFixed(1)}" cy="${cySurv.toFixed(1)}" r="2.5" fill="rgba(62,150,81,0.8)"/>`;
-    }
+  let circles = '';
+  for (const p of points) {
+    const cx = pad + (p.x / 100) * size;
+    // APS — red dots
+    const cyAps = pad + size - (p.yAps / 100) * size;
+    circles += `<circle cx="${cx.toFixed(1)}" cy="${cyAps.toFixed(1)}" r="2.5" fill="rgba(204,37,41,0.8)"/>`;
+    // Survival — green dots
+    const cySurv = pad + size - (p.ySurv / 100) * size;
+    circles += `<circle cx="${cx.toFixed(1)}" cy="${cySurv.toFixed(1)}" r="2.5" fill="rgba(62,150,81,0.8)"/>`;
+  }
 
-    // Midline at 50%
-    const mid = pad + size * 0.5;
-    const gridLines = `<line x1="${pad}" y1="${mid}" x2="${pad + size}" y2="${mid}" stroke="#555" stroke-width="0.5" stroke-dasharray="2,2"/>`;
+  // Midline at 50%
+  const mid = pad + size * 0.5;
+  const gridLines = `<line x1="${pad}" y1="${mid}" x2="${pad + size}" y2="${mid}" stroke="#555" stroke-width="0.5" stroke-dasharray="2,2"/>`;
 
-    return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
 <rect width="${size}" height="${size}" fill="#3a3a3a"/>
 ${gridLines}
 ${circles}
@@ -305,68 +305,68 @@ ${circles}
 
 // Generate per-bot detail page
 function generateBotPage(bot) {
-    const botResults = allResults.filter(r =>
-        r.bot_a.name === bot.name || r.bot_b.name === bot.name
-    );
+  const botResults = allResults.filter(r =>
+    r.bot_a.name === bot.name || r.bot_b.name === bot.name
+  );
 
-    // Aggregate results per opponent
-    const oppMap = new Map();
-    for (const r of botResults) {
-        const isA = r.bot_a.name === bot.name;
-        const me = isA ? r.bot_a : r.bot_b;
-        const opp = isA ? r.bot_b : r.bot_a;
-        const rounds = r.rounds || 35;
-        if (!oppMap.has(opp.name)) {
-            oppMap.set(opp.name, { my_score: 0, opp_score: 0, firsts: 0, rounds: 0, battles: 0 });
-        }
-        const agg = oppMap.get(opp.name);
-        agg.my_score += me.total_score;
-        agg.opp_score += opp.total_score;
-        agg.firsts += me.firsts;
-        agg.rounds += rounds;
-        agg.battles++;
+  // Aggregate results per opponent
+  const oppMap = new Map();
+  for (const r of botResults) {
+    const isA = r.bot_a.name === bot.name;
+    const me = isA ? r.bot_a : r.bot_b;
+    const opp = isA ? r.bot_b : r.bot_a;
+    const rounds = r.rounds || 35;
+    if (!oppMap.has(opp.name)) {
+      oppMap.set(opp.name, { my_score: 0, opp_score: 0, firsts: 0, rounds: 0, battles: 0 });
     }
+    const agg = oppMap.get(opp.name);
+    agg.my_score += me.total_score;
+    agg.opp_score += opp.total_score;
+    agg.firsts += me.firsts;
+    agg.rounds += rounds;
+    agg.battles++;
+  }
 
-    const opponents = [];
-    for (const [name, agg] of oppMap) {
-        const total = agg.my_score + agg.opp_score;
-        const aps = total > 0 ? (100 * agg.my_score / total) : 50;
-        const survPct = agg.rounds > 0 ? (100 * agg.firsts / agg.rounds) : 0;
-        opponents.push({
-            name,
-            aps: Math.round(aps * 100) / 100,
-            survival_pct: Math.round(survPct * 100) / 100,
-            my_score: agg.my_score,
-            opp_score: agg.opp_score,
-            battles: agg.battles,
-            won: aps > 50,
-        });
+  const opponents = [];
+  for (const [name, agg] of oppMap) {
+    const total = agg.my_score + agg.opp_score;
+    const aps = total > 0 ? (100 * agg.my_score / total) : 50;
+    const survPct = agg.rounds > 0 ? (100 * agg.firsts / agg.rounds) : 0;
+    opponents.push({
+      name,
+      aps: Math.round(aps * 100) / 100,
+      survival_pct: Math.round(survPct * 100) / 100,
+      my_score: agg.my_score,
+      opp_score: agg.opp_score,
+      battles: agg.battles,
+      won: aps > 50,
+    });
+  }
+  opponents.sort((a, b) => b.aps - a.aps);
+
+  const flag = flagImg(bot.name, '../');
+  const svgChart = generateScoreDistSvg(bot, opponents);
+
+  // Build metadata section from catalog
+  const catalog = getCatalogEntry(bot.name);
+  let metaHtml = '';
+  if (catalog) {
+    const rows = [];
+    if (catalog.author) rows.push(`<tr><th>Author</th><td>${escapeHtml(catalog.author)}</td></tr>`);
+    if (catalog.country) rows.push(`<tr><th>Country</th><td>${flagImg(bot.name, '../')} ${escapeHtml(catalog.country)}</td></tr>`);
+    if (catalog.version) rows.push(`<tr><th>Version</th><td>${escapeHtml(catalog.version)}</td></tr>`);
+    if (catalog.wikiUrl) rows.push(`<tr><th>Wiki</th><td><a href="${escapeHtml(catalog.wikiUrl)}" target="_blank">RoboWiki page</a></td></tr>`);
+    if (catalog.jarUrl) rows.push(`<tr><th>JAR</th><td><a href="${escapeHtml(catalog.jarUrl)}" target="_blank">Download</a></td></tr>`);
+    if (catalog.githubRawUrl) rows.push(`<tr><th>Mirror</th><td><a href="${escapeHtml(catalog.githubRawUrl)}" target="_blank">GitHub mirror</a></td></tr>`);
+    if (rows.length > 0) {
+      metaHtml = `<div class="bot-meta"><table>${rows.join('\n')}</table></div>`;
     }
-    opponents.sort((a, b) => b.aps - a.aps);
+  }
 
-    const flag = flagImg(bot.name, '../');
-    const svgChart = generateScoreDistSvg(bot, opponents);
-
-    // Build metadata section from catalog
-    const catalog = getCatalogEntry(bot.name);
-    let metaHtml = '';
-    if (catalog) {
-        const rows = [];
-        if (catalog.author) rows.push(`<tr><th>Author</th><td>${escapeHtml(catalog.author)}</td></tr>`);
-        if (catalog.country) rows.push(`<tr><th>Country</th><td>${flagImg(bot.name, '../')} ${escapeHtml(catalog.country)}</td></tr>`);
-        if (catalog.version) rows.push(`<tr><th>Version</th><td>${escapeHtml(catalog.version)}</td></tr>`);
-        if (catalog.wikiUrl) rows.push(`<tr><th>Wiki</th><td><a href="${escapeHtml(catalog.wikiUrl)}" target="_blank">RoboWiki page</a></td></tr>`);
-        if (catalog.jarUrl) rows.push(`<tr><th>JAR</th><td><a href="${escapeHtml(catalog.jarUrl)}" target="_blank">Download</a></td></tr>`);
-        if (catalog.githubRawUrl) rows.push(`<tr><th>Mirror</th><td><a href="${escapeHtml(catalog.githubRawUrl)}" target="_blank">GitHub mirror</a></td></tr>`);
-        if (rows.length > 0) {
-            metaHtml = `<div class="bot-meta"><table>${rows.join('\n')}</table></div>`;
-        }
-    }
-
-    const rows = opponents.map((o, i) => {
-        const oFlag = flagImg(o.name, '../');
-        const compareSlug = `${botSlug(bot.name)}_vs_${botSlug(o.name)}`;
-        return `<tr>
+  const rows = opponents.map((o, i) => {
+    const oFlag = flagImg(o.name, '../');
+    const compareSlug = `${botSlug(bot.name)}_vs_${botSlug(o.name)}`;
+    return `<tr>
     <td>${i + 1}</td>
     <td>${oFlag}</td>
     <td><a href="${botSlug(o.name)}.html">${escapeHtml(o.name)}</a></td>
@@ -378,9 +378,9 @@ function generateBotPage(bot) {
     <td class="num">${o.battles}</td>
     <td>${o.won ? '&#10003;' : ''}</td>
   </tr>`;
-    }).join('\n');
+  }).join('\n');
 
-    return `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -455,92 +455,92 @@ ${rows}
 
 // Generate comparison page for two bots
 function generateComparePage(botAEntry, botBEntry) {
-    const nameA = botAEntry.name;
-    const nameB = botBEntry.name;
-    const flagA = flagImg(nameA, '../');
-    const flagB = flagImg(nameB, '../');
+  const nameA = botAEntry.name;
+  const nameB = botBEntry.name;
+  const flagA = flagImg(nameA, '../');
+  const flagB = flagImg(nameB, '../');
 
-    // Aggregate all results per opponent for each bot
-    const aAgg = new Map(); // opponent -> { my_score, opp_score, firsts, rounds }
-    const bAgg = new Map();
+  // Aggregate all results per opponent for each bot
+  const aAgg = new Map(); // opponent -> { my_score, opp_score, firsts, rounds }
+  const bAgg = new Map();
 
-    for (const r of allResults) {
-        const isAa = r.bot_a.name === nameA;
-        const isAb = r.bot_b.name === nameA;
-        const iBa = r.bot_a.name === nameB;
-        const iBb = r.bot_b.name === nameB;
-        const rounds = r.rounds || 35;
+  for (const r of allResults) {
+    const isAa = r.bot_a.name === nameA;
+    const isAb = r.bot_b.name === nameA;
+    const iBa = r.bot_a.name === nameB;
+    const iBb = r.bot_b.name === nameB;
+    const rounds = r.rounds || 35;
 
-        if (isAa || isAb) {
-            const me = isAa ? r.bot_a : r.bot_b;
-            const opp = isAa ? r.bot_b : r.bot_a;
-            if (!aAgg.has(opp.name)) aAgg.set(opp.name, { my_score: 0, opp_score: 0, firsts: 0, rounds: 0 });
-            const a = aAgg.get(opp.name);
-            a.my_score += me.total_score; a.opp_score += opp.total_score;
-            a.firsts += me.firsts; a.rounds += rounds;
-        }
-        if (iBa || iBb) {
-            const me = iBa ? r.bot_a : r.bot_b;
-            const opp = iBa ? r.bot_b : r.bot_a;
-            if (!bAgg.has(opp.name)) bAgg.set(opp.name, { my_score: 0, opp_score: 0, firsts: 0, rounds: 0 });
-            const b = bAgg.get(opp.name);
-            b.my_score += me.total_score; b.opp_score += opp.total_score;
-            b.firsts += me.firsts; b.rounds += rounds;
-        }
+    if (isAa || isAb) {
+      const me = isAa ? r.bot_a : r.bot_b;
+      const opp = isAa ? r.bot_b : r.bot_a;
+      if (!aAgg.has(opp.name)) aAgg.set(opp.name, { my_score: 0, opp_score: 0, firsts: 0, rounds: 0 });
+      const a = aAgg.get(opp.name);
+      a.my_score += me.total_score; a.opp_score += opp.total_score;
+      a.firsts += me.firsts; a.rounds += rounds;
     }
-
-    // Convert aggregated data to APS/survival
-    const aResults = new Map();
-    for (const [name, a] of aAgg) {
-        const total = a.my_score + a.opp_score;
-        aResults.set(name, {
-            aps: total > 0 ? Math.round((100 * a.my_score / total) * 100) / 100 : 50,
-            survival: a.rounds > 0 ? Math.round((100 * a.firsts / a.rounds) * 100) / 100 : 0,
-        });
+    if (iBa || iBb) {
+      const me = iBa ? r.bot_a : r.bot_b;
+      const opp = iBa ? r.bot_b : r.bot_a;
+      if (!bAgg.has(opp.name)) bAgg.set(opp.name, { my_score: 0, opp_score: 0, firsts: 0, rounds: 0 });
+      const b = bAgg.get(opp.name);
+      b.my_score += me.total_score; b.opp_score += opp.total_score;
+      b.firsts += me.firsts; b.rounds += rounds;
     }
-    const bResults = new Map();
-    for (const [name, b] of bAgg) {
-        const total = b.my_score + b.opp_score;
-        bResults.set(name, {
-            aps: total > 0 ? Math.round((100 * b.my_score / total) * 100) / 100 : 50,
-            survival: b.rounds > 0 ? Math.round((100 * b.firsts / b.rounds) * 100) / 100 : 0,
-        });
+  }
+
+  // Convert aggregated data to APS/survival
+  const aResults = new Map();
+  for (const [name, a] of aAgg) {
+    const total = a.my_score + a.opp_score;
+    aResults.set(name, {
+      aps: total > 0 ? Math.round((100 * a.my_score / total) * 100) / 100 : 50,
+      survival: a.rounds > 0 ? Math.round((100 * a.firsts / a.rounds) * 100) / 100 : 0,
+    });
+  }
+  const bResults = new Map();
+  for (const [name, b] of bAgg) {
+    const total = b.my_score + b.opp_score;
+    bResults.set(name, {
+      aps: total > 0 ? Math.round((100 * b.my_score / total) * 100) / 100 : 50,
+      survival: b.rounds > 0 ? Math.round((100 * b.firsts / b.rounds) * 100) / 100 : 0,
+    });
+  }
+
+  // Find common opponents
+  const commonOpponents = [];
+  for (const [opp, aData] of aResults) {
+    if (opp === nameB || opp === nameA) continue;
+    const bData = bResults.get(opp);
+    if (bData) {
+      const oppRanking = botApsLookup.get(opp);
+      commonOpponents.push({
+        name: opp,
+        aAps: aData.aps,
+        aSurv: aData.survival,
+        bAps: bData.aps,
+        bSurv: bData.survival,
+        diffAps: Math.round((aData.aps - bData.aps) * 100) / 100,
+        diffSurv: Math.round((aData.survival - bData.survival) * 100) / 100,
+        oppAps: oppRanking ? oppRanking.aps : 50,
+      });
     }
+  }
+  commonOpponents.sort((a, b) => a.name.localeCompare(b.name));
 
-    // Find common opponents
-    const commonOpponents = [];
-    for (const [opp, aData] of aResults) {
-        if (opp === nameB || opp === nameA) continue;
-        const bData = bResults.get(opp);
-        if (bData) {
-            const oppRanking = botApsLookup.get(opp);
-            commonOpponents.push({
-                name: opp,
-                aAps: aData.aps,
-                aSurv: aData.survival,
-                bAps: bData.aps,
-                bSurv: bData.survival,
-                diffAps: Math.round((aData.aps - bData.aps) * 100) / 100,
-                diffSurv: Math.round((aData.survival - bData.survival) * 100) / 100,
-                oppAps: oppRanking ? oppRanking.aps : 50,
-            });
-        }
-    }
-    commonOpponents.sort((a, b) => a.name.localeCompare(b.name));
+  // Summary stats
+  const commonApsA = commonOpponents.length > 0 ? commonOpponents.reduce((s, o) => s + o.aAps, 0) / commonOpponents.length : 0;
+  const commonApsB = commonOpponents.length > 0 ? commonOpponents.reduce((s, o) => s + o.bAps, 0) / commonOpponents.length : 0;
+  const commonSurvA = commonOpponents.length > 0 ? commonOpponents.reduce((s, o) => s + o.aSurv, 0) / commonOpponents.length : 0;
+  const commonSurvB = commonOpponents.length > 0 ? commonOpponents.reduce((s, o) => s + o.bSurv, 0) / commonOpponents.length : 0;
 
-    // Summary stats
-    const commonApsA = commonOpponents.length > 0 ? commonOpponents.reduce((s, o) => s + o.aAps, 0) / commonOpponents.length : 0;
-    const commonApsB = commonOpponents.length > 0 ? commonOpponents.reduce((s, o) => s + o.bAps, 0) / commonOpponents.length : 0;
-    const commonSurvA = commonOpponents.length > 0 ? commonOpponents.reduce((s, o) => s + o.aSurv, 0) / commonOpponents.length : 0;
-    const commonSurvB = commonOpponents.length > 0 ? commonOpponents.reduce((s, o) => s + o.bSurv, 0) / commonOpponents.length : 0;
+  // Build diff distribution SVG
+  const diffSvg = generateDiffDistSvg(commonOpponents);
 
-    // Build diff distribution SVG
-    const diffSvg = generateDiffDistSvg(commonOpponents);
-
-    const rows = commonOpponents.map((o, i) => {
-        const oFlag = flagImg(o.name, '../');
-        const diffClass = o.diffAps > 0 ? 'style="color:#62c462"' : o.diffAps < 0 ? 'style="color:#e94560"' : '';
-        return `<tr>
+  const rows = commonOpponents.map((o, i) => {
+    const oFlag = flagImg(o.name, '../');
+    const diffClass = o.diffAps > 0 ? 'style="color:#62c462"' : o.diffAps < 0 ? 'style="color:#e94560"' : '';
+    return `<tr>
     <td>${i + 1}</td>
     <td>${oFlag}</td>
     <td><a href="../bots/${botSlug(o.name)}.html">${escapeHtml(o.name)}</a></td>
@@ -551,9 +551,9 @@ function generateComparePage(botAEntry, botBEntry) {
     <td class="num" ${diffClass}>${o.diffAps > 0 ? '+' : ''}${o.diffAps.toFixed(2)}</td>
     <td class="num">${o.oppAps.toFixed(2)}</td>
   </tr>`;
-    }).join('\n');
+  }).join('\n');
 
-    return `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -628,20 +628,20 @@ ${rows}
 
 // Generate a diff distribution SVG for comparison page
 function generateDiffDistSvg(commonOpponents) {
-    const size = 230;
-    let circles = '';
-    for (const o of commonOpponents) {
-        // X = opponent APS, Y = diff (centered at 50% = 0 diff)
-        const cx = (o.oppAps / 100) * size;
-        // Map diff (-100..+100) to Y (size..0)
-        const diffNorm = Math.max(-100, Math.min(100, o.diffAps));
-        const cy = size - ((diffNorm + 100) / 200) * size;
-        const color = diffNorm > 0 ? 'rgba(62,150,81,0.8)' : diffNorm < 0 ? 'rgba(204,37,41,0.8)' : 'rgba(128,128,128,0.8)';
-        circles += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="2.5" fill="${color}"/>`;
-    }
-    const mid = size * 0.5;
-    const gridLine = `<line x1="0" y1="${mid}" x2="${size}" y2="${mid}" stroke="#555" stroke-width="0.5" stroke-dasharray="2,2"/>`;
-    return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+  const size = 230;
+  let circles = '';
+  for (const o of commonOpponents) {
+    // X = opponent APS, Y = diff (centered at 50% = 0 diff)
+    const cx = (o.oppAps / 100) * size;
+    // Map diff (-100..+100) to Y (size..0)
+    const diffNorm = Math.max(-100, Math.min(100, o.diffAps));
+    const cy = size - ((diffNorm + 100) / 200) * size;
+    const color = diffNorm > 0 ? 'rgba(62,150,81,0.8)' : diffNorm < 0 ? 'rgba(204,37,41,0.8)' : 'rgba(128,128,128,0.8)';
+    circles += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="2.5" fill="${color}"/>`;
+  }
+  const mid = size * 0.5;
+  const gridLine = `<line x1="0" y1="${mid}" x2="${size}" y2="${mid}" stroke="#555" stroke-width="0.5" stroke-dasharray="2,2"/>`;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
 <rect width="${size}" height="${size}" fill="#3a3a3a"/>
 ${gridLine}
 ${circles}
@@ -655,7 +655,7 @@ writeFileSync(join(outDir, 'index.html'), generateIndex());
 const botsDir = join(outDir, 'bots');
 mkdirSync(botsDir, { recursive: true });
 for (const bot of rankings.rankings) {
-    writeFileSync(join(botsDir, `${botSlug(bot.name)}.html`), generateBotPage(bot));
+  writeFileSync(join(botsDir, `${botSlug(bot.name)}.html`), generateBotPage(bot));
 }
 
 // Compare pages — generate for all pairs that have head-to-head data
@@ -663,27 +663,27 @@ const compareDir = join(outDir, 'compare');
 mkdirSync(compareDir, { recursive: true });
 const generatedCompares = new Set();
 for (const bot of rankings.rankings) {
-    const botResults = allResults.filter(r =>
-        r.bot_a.name === bot.name || r.bot_b.name === bot.name
-    );
-    for (const r of botResults) {
-        const oppName = r.bot_a.name === bot.name ? r.bot_b.name : r.bot_a.name;
-        const key = [bot.name, oppName].sort().join('|');
-        if (generatedCompares.has(key)) continue;
-        generatedCompares.add(key);
+  const botResults = allResults.filter(r =>
+    r.bot_a.name === bot.name || r.bot_b.name === bot.name
+  );
+  for (const r of botResults) {
+    const oppName = r.bot_a.name === bot.name ? r.bot_b.name : r.bot_a.name;
+    const key = [bot.name, oppName].sort().join('|');
+    if (generatedCompares.has(key)) continue;
+    generatedCompares.add(key);
 
-        const oppEntry = rankings.rankings.find(b => b.name === oppName);
-        if (!oppEntry) continue;
+    const oppEntry = rankings.rankings.find(b => b.name === oppName);
+    if (!oppEntry) continue;
 
-        const slug = `${botSlug(bot.name)}_vs_${botSlug(oppName)}`;
-        const slugReverse = `${botSlug(oppName)}_vs_${botSlug(bot.name)}`;
-        const html = generateComparePage(bot, oppEntry);
-        writeFileSync(join(compareDir, `${slug}.html`), html);
-        // Also write reverse direction so links work from either side
-        if (slug !== slugReverse) {
-            writeFileSync(join(compareDir, `${slugReverse}.html`), generateComparePage(oppEntry, bot));
-        }
+    const slug = `${botSlug(bot.name)}_vs_${botSlug(oppName)}`;
+    const slugReverse = `${botSlug(oppName)}_vs_${botSlug(bot.name)}`;
+    const html = generateComparePage(bot, oppEntry);
+    writeFileSync(join(compareDir, `${slug}.html`), html);
+    // Also write reverse direction so links work from either side
+    if (slug !== slugReverse) {
+      writeFileSync(join(compareDir, `${slugReverse}.html`), generateComparePage(oppEntry, bot));
     }
+  }
 }
 
 // Write rankings JSON for programmatic access

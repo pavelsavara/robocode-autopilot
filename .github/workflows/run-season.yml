@@ -19,11 +19,27 @@ on:
         required: false
         default: '35'
         type: string
+      season:
+        description: 'Season number (auto-incremented on re-trigger)'
+        required: false
+        default: '1'
+        type: string
+      max_seasons:
+        description: 'Maximum seasons before stopping'
+        required: false
+        default: '5'
+        type: string
+      min_battles_per_pair:
+        description: 'Minimum battles per pair before considered stable'
+        required: false
+        default: '2'
+        type: string
 
 permissions:
   contents: write
   packages: read
   pages: write
+  actions: write
 
 jobs:
   # ─── Step 1: Plan battles ───
@@ -35,12 +51,31 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Fetch historical results
+        run: |
+          mkdir -p results
+          git fetch origin robots --depth=1 || true
+          if git show origin/robots:results/ > /dev/null 2>&1; then
+            git checkout origin/robots -- results/ 2>/dev/null || true
+            echo "Loaded $(ls results/*.json 2>/dev/null | wc -l) historical result files"
+          else
+            echo "No historical results found"
+          fi
+
       - name: Plan battles
         id: plan
         run: |
+          RESULTS_FLAG=""
+          RESULT_COUNT=$(find results -name '*.json' 2>/dev/null | wc -l)
+          if [ "$RESULT_COUNT" -gt 0 ]; then
+            RESULTS_FLAG="--results results/"
+          fi
+
           node rumble/scripts/plan-battles.mjs \
             --participants rumble/top50.txt \
             --chunks ${{ inputs.max_parallel || '20' }} \
+            --min-battles ${{ inputs.min_battles_per_pair || '2' }} \
+            $RESULTS_FLAG \
             --out battle-plan.json
 
           TOTAL=$(jq '.total_battles' battle-plan.json)
@@ -48,7 +83,7 @@ jobs:
           MATRIX=$(jq -c '{chunk: [range(.num_chunks)]}' battle-plan.json)
           echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
           echo "total_battles=$TOTAL" >> "$GITHUB_OUTPUT"
-          echo "Planned $TOTAL battles in $CHUNKS chunks"
+          echo "Season ${{ inputs.season || '1' }}: $TOTAL battles in $CHUNKS chunks"
 
       - uses: actions/upload-artifact@v7
         with:
@@ -58,6 +93,7 @@ jobs:
   # ─── Step 2: Run battles in parallel using Docker image ───
   battles:
     needs: [plan]
+    if: needs.plan.outputs.total_battles != '0'
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/pavelsavara/robocode-autopilot/battle-runner:latest
@@ -114,7 +150,8 @@ jobs:
 
   # ─── Step 3: Compute rankings and publish pages ───
   publish:
-    needs: [battles]
+    needs: [plan, battles]
+    if: always() && needs.plan.outputs.total_battles != '0' && !cancelled()
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -216,3 +253,66 @@ jobs:
           }
           cd -
           git worktree remove "$WORK" --force
+
+  # ─── Step 4: Auto-trigger next season if rankings not stabilized ───
+  continue:
+    needs: [plan, publish]
+    if: always() && needs.publish.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check if more battles needed
+        id: check
+        run: |
+          SEASON=${{ inputs.season || '1' }}
+          MAX_SEASONS=${{ inputs.max_seasons || '5' }}
+
+          # Fetch latest results (including this season's new data)
+          mkdir -p results
+          git fetch origin robots --depth=1 || true
+          git checkout origin/robots -- results/ 2>/dev/null || true
+
+          RESULTS_FLAG=""
+          RESULT_COUNT=$(find results -name '*.json' 2>/dev/null | wc -l)
+          if [ "$RESULT_COUNT" -gt 0 ]; then
+            RESULTS_FLAG="--results results/"
+          fi
+
+          # Plan with min-battles filter to count how many pairs still need battles
+          node rumble/scripts/plan-battles.mjs \
+            --participants rumble/top50.txt \
+            --chunks 1 \
+            --min-battles ${{ inputs.min_battles_per_pair || '2' }} \
+            $RESULTS_FLAG \
+            --out check-plan.json
+
+          REMAINING=$(jq '.total_battles' check-plan.json)
+
+          echo "Season $SEASON complete. Pairs needing battles: $REMAINING. Max seasons: $MAX_SEASONS"
+
+          if [ "$REMAINING" -gt 0 ] && [ "$SEASON" -lt "$MAX_SEASONS" ]; then
+            echo "needs_more=true" >> "$GITHUB_OUTPUT"
+            echo "Will trigger season $(($SEASON + 1))"
+          else
+            echo "needs_more=false" >> "$GITHUB_OUTPUT"
+            if [ "$SEASON" -ge "$MAX_SEASONS" ]; then
+              echo "Reached max seasons ($MAX_SEASONS)"
+            else
+              echo "All pairs have >= ${{ inputs.min_battles_per_pair || '2' }} battles"
+            fi
+          fi
+
+      - name: Trigger next season
+        if: steps.check.outputs.needs_more == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NEXT_SEASON=$(( ${{ inputs.season || '1' }} + 1 ))
+          gh workflow run run-season.yml \
+            -f max_parallel="${{ inputs.max_parallel || '20' }}" \
+            -f rounds="${{ inputs.rounds || '35' }}" \
+            -f season="$NEXT_SEASON" \
+            -f max_seasons="${{ inputs.max_seasons || '5' }}" \
+            -f min_battles_per_pair="${{ inputs.min_battles_per_pair || '2' }}"
+          echo "Triggered season $NEXT_SEASON"
