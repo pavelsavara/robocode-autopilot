@@ -119,6 +119,12 @@ jobs:
           echo "Robots loaded:"
           ls /opt/robocode/robots/*.jar 2>/dev/null | wc -l
 
+      # Checkout repo to get latest run-battle.mjs
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: rumble/scripts
+          path: repo
+
       # Run this chunk's battles with recording enabled
       - name: Run battles (chunk ${{ matrix.chunk }})
         run: |
@@ -130,7 +136,7 @@ jobs:
           "
           echo "Running $(node -e "console.log(JSON.parse(require('fs').readFileSync('chunk-battles.json','utf-8')).length)") battles..."
 
-          node /opt/rumble/run-battle.mjs \
+          node repo/rumble/scripts/run-battle.mjs \
             --robocode-dir /opt/robocode \
             --battles chunk-battles.json \
             --out results/ \
