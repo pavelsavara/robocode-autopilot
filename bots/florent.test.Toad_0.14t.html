@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>florent.test.Toad 0.14t — Robocode Rumble</title>
+  <style>
+:root {
+  --bg: #333;
+  --surface: #444;
+  --surface2: #4a4a4a;
+  --border: #555;
+  --text: #e0e0e0;
+  --text-muted: #aaa;
+  --accent: #4a8f3f;
+  --accent-light: #6abf5e;
+  --link: #8cc63f;
+  --link-hover: #afe06a;
+  --header-bg: #222;
+  --gold: #f5c518;
+  --silver: #c0c0c0;
+  --bronze: #cd7f32;
+  --th-bg: #3a3a3a;
+  --row-hover: rgba(74,143,63,0.12);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+.container { max-width: 1100px; margin: 0 auto; padding: 0 1rem; }
+header { background: var(--header-bg); border-bottom: 3px solid var(--accent); padding: 0; margin-bottom: 1.5rem; }
+.header-inner { display: flex; align-items: center; gap: 1rem; padding: 0.6rem 0; }
+.header-logo img { height: 48px; width: auto; }
+.header-text h1 { font-size: 1.5rem; letter-spacing: 0.02em; }
+.header-text h1 a { color: var(--text); text-decoration: none; }
+.header-text h1 span { color: var(--accent-light); }
+.header-text .tagline { color: var(--accent-light); font-size: 0.75rem; font-style: italic; }
+header .meta { color: var(--text-muted); font-size: 0.8rem; margin-left: auto; text-align: right; white-space: nowrap; }
+.content-card { background: var(--surface); border-radius: 6px; padding: 1rem; margin-bottom: 1.5rem; border: 1px solid var(--border); }
+h2 { font-size: 1.1rem; margin-bottom: 0.75rem; color: var(--text); border-bottom: 2px solid var(--accent); padding-bottom: 0.3rem; }
+table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 6px; overflow: hidden; }
+th { background: var(--th-bg); color: var(--text); padding: 0.5rem 0.7rem; text-align: left; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; cursor: pointer; user-select: none; white-space: nowrap; border-bottom: 2px solid var(--accent); }
+th:hover { background: #484848; }
+td { padding: 0.4rem 0.7rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+tr:hover td { background: var(--row-hover); }
+.rank { font-weight: bold; text-align: center; width: 3rem; }
+.rank-1 { color: var(--gold); }
+.rank-2 { color: var(--silver); }
+.rank-3 { color: var(--bronze); }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+a { color: var(--link); text-decoration: none; }
+a:hover { color: var(--link-hover); text-decoration: underline; }
+.bar { height: 6px; background: var(--th-bg); border-radius: 3px; position: relative; }
+.bar-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+.flag { width: 18px; height: 12px; vertical-align: middle; margin-right: 4px; }
+.bot-summary { display: flex; gap: 2rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.bot-stats { flex: 1; min-width: 250px; }
+.bot-stats table { width: auto; }
+.bot-stats td, .bot-stats th { padding: 0.3rem 0.8rem; }
+.bot-meta { margin-bottom: 1rem; }
+.bot-meta table { width: auto; }
+.bot-meta td, .bot-meta th { padding: 0.25rem 0.6rem; font-size: 0.85rem; }
+.bot-meta th { background: none; border-bottom: none; text-transform: none; font-size: 0.85rem; color: var(--text-muted); cursor: default; }
+.score-chart { flex: 0 0 240px; }
+.score-chart svg { border: 1px solid var(--border); border-radius: 4px; }
+.compare-link { font-size: 0.8rem; }
+.compare-header { display: flex; gap: 2rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.compare-bot { flex: 1; min-width: 200px; }
+.compare-bot table { width: 100%; }
+footer { text-align: center; color: var(--text-muted); font-size: 0.78rem; margin-top: 2rem; padding: 1rem 0; border-top: 1px solid var(--border); background: var(--header-bg); }
+footer a { color: var(--link); }
+</style>
+</head>
+<body>
+<header><div class="container">
+  <div class="header-inner">
+    <div class="header-logo"><img src="../flags/robocode_logo_tanks.png" alt="Robocode"></div>
+    <div class="header-text">
+      <h1><a href="../index.html">Rumble</a> &rsaquo; <img class="flag" src="../flags/FRA.gif" alt="FRA" title="FRA">florent.test.Toad 0.14t</h1>
+      <div class="tagline">Build the best - destroy the rest!</div>
+    </div>
+  </div>
+</div></header>
+<div class="container">
+
+<div class="content-card">
+<div class="bot-summary">
+  <div class="bot-stats">
+    <table>
+      <tr><th>Rank</th><td>#38</td></tr>
+      <tr><th>APS</th><td>43.97</td></tr>
+      <tr><th>PWIN</th><td>26.67</td></tr>
+      <tr><th>ANPP</th><td>49.71</td></tr>
+      <tr><th>Vote</th><td>26.7%</td></tr>
+      <tr><th>Survival</th><td>39.6%</td></tr>
+      <tr><th>Pairings</th><td>45</td></tr>
+      <tr><th>Battles</th><td>45</td></tr>
+    </table>
+  </div>
+  <div class="score-chart">
+    <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:4px;">
+      Score Distribution &mdash;
+      <span style="color:rgb(204,37,41);">&#9679; APS</span>
+      <span style="color:rgb(62,150,81);">&#9679; Survival</span>
+    </div>
+    <svg width="230" height="230" viewBox="0 0 230 230" xmlns="http://www.w3.org/2000/svg">
+<rect width="230" height="230" fill="#3a3a3a"/>
+<line x1="0" y1="115" x2="230" y2="115" stroke="#555" stroke-width="0.5" stroke-dasharray="2,2"/>
+<circle cx="13.3" cy="14.8" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="13.3" cy="0.0" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="103.1" cy="81.0" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="103.1" cy="59.1" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="88.4" cy="82.2" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="88.4" cy="65.7" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="109.5" cy="85.7" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="109.5" cy="72.3" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="92.6" cy="93.2" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="92.6" cy="78.9" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="102.2" cy="98.4" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="102.2" cy="85.4" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="94.5" cy="101.2" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="94.5" cy="98.6" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="113.7" cy="105.1" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="113.7" cy="98.6" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="107.0" cy="105.5" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="107.0" cy="105.1" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="91.3" cy="107.6" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="91.3" cy="98.6" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="99.3" cy="108.0" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="99.3" cy="98.6" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="97.9" cy="111.1" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="97.9" cy="105.1" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="105.8" cy="120.6" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="105.8" cy="124.9" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="101.5" cy="123.4" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="101.5" cy="157.7" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="108.5" cy="123.9" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="108.5" cy="131.4" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="123.6" cy="124.3" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="123.6" cy="124.9" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="104.0" cy="125.7" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="104.0" cy="131.4" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="106.8" cy="126.4" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="106.8" cy="131.4" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="100.2" cy="127.0" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="100.2" cy="131.4" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="104.7" cy="128.1" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="104.7" cy="131.4" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="123.2" cy="128.4" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="123.2" cy="131.4" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="130.0" cy="128.9" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="130.0" cy="131.4" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="106.4" cy="131.4" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="106.4" cy="138.0" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="114.4" cy="135.1" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="114.4" cy="138.0" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="103.1" cy="136.9" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="103.1" cy="144.6" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="121.6" cy="137.5" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="121.6" cy="144.6" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="132.5" cy="137.5" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="132.5" cy="151.1" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="118.6" cy="138.2" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="118.6" cy="157.7" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="128.4" cy="138.9" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="128.4" cy="151.1" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="127.6" cy="141.0" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="127.6" cy="170.9" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="106.5" cy="141.9" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="106.5" cy="164.3" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="126.5" cy="142.5" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="126.5" cy="157.7" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="110.7" cy="143.3" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="110.7" cy="164.3" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="136.4" cy="147.6" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="136.4" cy="184.0" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="144.6" cy="150.3" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="144.6" cy="190.6" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="128.7" cy="151.2" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="128.7" cy="170.9" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="119.5" cy="151.8" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="119.5" cy="177.4" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="111.3" cy="151.9" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="111.3" cy="170.9" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="101.3" cy="152.2" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="101.3" cy="170.9" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="128.2" cy="154.6" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="128.2" cy="184.0" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="136.7" cy="157.0" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="136.7" cy="190.6" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="167.1" cy="164.7" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="167.1" cy="203.7" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="156.8" cy="168.5" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="156.8" cy="203.7" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="170.5" cy="183.3" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="170.5" cy="203.7" r="2.5" fill="rgba(62,150,81,0.8)"/><circle cx="184.3" cy="191.0" r="2.5" fill="rgba(204,37,41,0.8)"/><circle cx="184.3" cy="230.0" r="2.5" fill="rgba(62,150,81,0.8)"/>
+</svg>
+    <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">
+      Opponent APS (X) vs. Pairing Score (Y)
+    </div>
+  </div>
+</div>
+<h2>Head-to-Head Results</h2>
+<table>
+  <thead><tr>
+    <th data-sort="num">#</th>
+    <th>Flag</th>
+    <th data-sort="str">Opponent</th>
+    <th></th>
+    <th data-sort="num">APS</th>
+    <th data-sort="num">Surv%</th>
+    <th data-sort="num">My Score</th>
+    <th data-sort="num">Opp Score</th>
+    <th data-sort="num">Battles</th>
+    <th data-sort="str">Won</th>
+  </tr></thead>
+  <tbody>
+<tr>
+    <td>1</td>
+    <td><img class="flag" src="../flags/CAN.gif" alt="CAN" title="CAN"></td>
+    <td><a href="ags.rougedc.RougeDC_willow.html">ags.rougedc.RougeDC willow</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_ags.rougedc.RougeDC_willow.html">compare</a></td>
+    <td class="num">93.57</td>
+    <td class="num">100.0</td>
+    <td class="num">4905</td>
+    <td class="num">337</td>
+    <td class="num">1</td>
+    <td>&#10003;</td>
+  </tr>
+<tr>
+    <td>2</td>
+    <td><img class="flag" src="../flags/SWE.gif" alt="SWE" title="SWE"></td>
+    <td><a href="pulsar.PulsarMax_0.8.9.html">pulsar.PulsarMax 0.8.9</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_pulsar.PulsarMax_0.8.9.html">compare</a></td>
+    <td class="num">64.78</td>
+    <td class="num">74.3</td>
+    <td class="num">3082</td>
+    <td class="num">1676</td>
+    <td class="num">1</td>
+    <td>&#10003;</td>
+  </tr>
+<tr>
+    <td>3</td>
+    <td><img class="flag" src="../flags/ZAF.gif" alt="ZAF" title="ZAF"></td>
+    <td><a href="jk.mini.CunobelinDC_1.2.html">jk.mini.CunobelinDC 1.2</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_jk.mini.CunobelinDC_1.2.html">compare</a></td>
+    <td class="num">64.26</td>
+    <td class="num">71.4</td>
+    <td class="num">3217</td>
+    <td class="num">1789</td>
+    <td class="num">1</td>
+    <td>&#10003;</td>
+  </tr>
+<tr>
+    <td>4</td>
+    <td><img class="flag" src="../flags/NONE.gif" alt="NONE" title="NONE"></td>
+    <td><a href="oog.mega.saguaro.Saguaro_1.0.html">oog.mega.saguaro.Saguaro 1.0</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_oog.mega.saguaro.Saguaro_1.0.html">compare</a></td>
+    <td class="num">62.75</td>
+    <td class="num">68.6</td>
+    <td class="num">3132</td>
+    <td class="num">1859</td>
+    <td class="num">1</td>
+    <td>&#10003;</td>
+  </tr>
+<tr>
+    <td>5</td>
+    <td><img class="flag" src="../flags/DEU.gif" alt="DEU" title="DEU"></td>
+    <td><a href="fromHell.CHCl3_1.4.2.html">fromHell.CHCl3 1.4.2</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_fromHell.CHCl3_1.4.2.html">compare</a></td>
+    <td class="num">59.48</td>
+    <td class="num">65.7</td>
+    <td class="num">3134</td>
+    <td class="num">2135</td>
+    <td class="num">1</td>
+    <td>&#10003;</td>
+  </tr>
+<tr>
+    <td>6</td>
+    <td><img class="flag" src="../flags/CAN.gif" alt="CAN" title="CAN"></td>
+    <td><a href="ags.Midboss_1q.fast.html">ags.Midboss 1q.fast</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_ags.Midboss_1q.fast.html">compare</a></td>
+    <td class="num">57.23</td>
+    <td class="num">62.9</td>
+    <td class="num">3047</td>
+    <td class="num">2277</td>
+    <td class="num">1</td>
+    <td>&#10003;</td>
+  </tr>
+<tr>
+    <td>7</td>
+    <td><img class="flag" src="../flags/USA.gif" alt="USA" title="USA"></td>
+    <td><a href="dft.Cardigan_1.09.html">dft.Cardigan 1.09</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_dft.Cardigan_1.09.html">compare</a></td>
+    <td class="num">56.02</td>
+    <td class="num">57.1</td>
+    <td class="num">2958</td>
+    <td class="num">2322</td>
+    <td class="num">1</td>
+    <td>&#10003;</td>
+  </tr>
+<tr>
+    <td>8</td>
+    <td><img class="flag" src="../flags/CAN.gif" alt="CAN" title="CAN"></td>
+    <td><a href="darkcanuck.Holden_1.13a.html">darkcanuck.Holden 1.13a</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_darkcanuck.Holden_1.13a.html">compare</a></td>
+    <td class="num">54.30</td>
+    <td class="num">57.1</td>
+    <td class="num">3159</td>
+    <td class="num">2659</td>
+    <td class="num">1</td>
+    <td>&#10003;</td>
+  </tr>
+<tr>
+    <td>9</td>
+    <td><img class="flag" src="../flags/USA.gif" alt="USA" title="USA"></td>
+    <td><a href="cjm.chalk.Chalk_2.6.Be.html">cjm.chalk.Chalk 2.6.Be</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_cjm.chalk.Chalk_2.6.Be.html">compare</a></td>
+    <td class="num">54.11</td>
+    <td class="num">54.3</td>
+    <td class="num">2567</td>
+    <td class="num">2177</td>
+    <td class="num">1</td>
+    <td>&#10003;</td>
+  </tr>
+<tr>
+    <td>10</td>
+    <td><img class="flag" src="../flags/USA.gif" alt="USA" title="USA"></td>
+    <td><a href="dft.Cyanide_1.90.html">dft.Cyanide 1.90</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_dft.Cyanide_1.90.html">compare</a></td>
+    <td class="num">53.22</td>
+    <td class="num">57.1</td>
+    <td class="num">2588</td>
+    <td class="num">2275</td>
+    <td class="num">1</td>
+    <td>&#10003;</td>
+  </tr>
+<tr>
+    <td>11</td>
+    <td><img class="flag" src="../flags/USA.gif" alt="USA" title="USA"></td>
+    <td><a href="wcsv.PowerHouse.PowerHouse_1.7e3.html">wcsv.PowerHouse.PowerHouse 1.7e3</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_wcsv.PowerHouse.PowerHouse_1.7e3.html">compare</a></td>
+    <td class="num">53.06</td>
+    <td class="num">57.1</td>
+    <td class="num">2646</td>
+    <td class="num">2341</td>
+    <td class="num">1</td>
+    <td>&#10003;</td>
+  </tr>
+<tr>
+    <td>12</td>
+    <td><img class="flag" src="../flags/MAN.gif" alt="MAN" title="MAN"></td>
+    <td><a href="pez.rumble.Ali_0.4.9.html">pez.rumble.Ali 0.4.9</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_pez.rumble.Ali_0.4.9.html">compare</a></td>
+    <td class="num">51.68</td>
+    <td class="num">54.3</td>
+    <td class="num">2366</td>
+    <td class="num">2212</td>
+    <td class="num">1</td>
+    <td>&#10003;</td>
+  </tr>
+<tr>
+    <td>13</td>
+    <td><img class="flag" src="../flags/DEU.gif" alt="DEU" title="DEU"></td>
+    <td><a href="fromHell.BlackBox_0.0.2.html">fromHell.BlackBox 0.0.2</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_fromHell.BlackBox_0.0.2.html">compare</a></td>
+    <td class="num">47.55</td>
+    <td class="num">45.7</td>
+    <td class="num">2462</td>
+    <td class="num">2716</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>14</td>
+    <td><img class="flag" src="../flags/DEU.gif" alt="DEU" title="DEU"></td>
+    <td><a href="cb.Domogled_1.2.html">cb.Domogled 1.2</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_cb.Domogled_1.2.html">compare</a></td>
+    <td class="num">46.33</td>
+    <td class="num">31.4</td>
+    <td class="num">2326</td>
+    <td class="num">2695</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>15</td>
+    <td><img class="flag" src="../flags/JPN.gif" alt="JPN" title="JPN"></td>
+    <td><a href="cs.s2.Seraphim_2.3.1.html">cs.s2.Seraphim 2.3.1</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_cs.s2.Seraphim_2.3.1.html">compare</a></td>
+    <td class="num">46.15</td>
+    <td class="num">42.9</td>
+    <td class="num">2491</td>
+    <td class="num">2907</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>16</td>
+    <td><img class="flag" src="../flags/JPN.gif" alt="JPN" title="JPN"></td>
+    <td><a href="cs.Nene_1.0.5.html">cs.Nene 1.0.5</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_cs.Nene_1.0.5.html">compare</a></td>
+    <td class="num">45.94</td>
+    <td class="num">45.7</td>
+    <td class="num">2241</td>
+    <td class="num">2637</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>17</td>
+    <td><img class="flag" src="../flags/BRA.gif" alt="BRA" title="BRA"></td>
+    <td><a href="axeBots.SilverSurfer_2.53.33fix.html">axeBots.SilverSurfer 2.53.33fix</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_axeBots.SilverSurfer_2.53.33fix.html">compare</a></td>
+    <td class="num">45.34</td>
+    <td class="num">42.9</td>
+    <td class="num">2357</td>
+    <td class="num">2842</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>18</td>
+    <td><img class="flag" src="../flags/ZAF.gif" alt="ZAF" title="ZAF"></td>
+    <td><a href="jk.precise.Wintermute_0.8.html">jk.precise.Wintermute 0.8</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_jk.precise.Wintermute_0.8.html">compare</a></td>
+    <td class="num">45.05</td>
+    <td class="num">42.9</td>
+    <td class="num">2177</td>
+    <td class="num">2655</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>19</td>
+    <td><img class="flag" src="../flags/USA.gif" alt="USA" title="USA"></td>
+    <td><a href="wcsv.Engineer.Engineer_0.5.4.html">wcsv.Engineer.Engineer 0.5.4</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_wcsv.Engineer.Engineer_0.5.4.html">compare</a></td>
+    <td class="num">44.77</td>
+    <td class="num">42.9</td>
+    <td class="num">2177</td>
+    <td class="num">2686</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>20</td>
+    <td><img class="flag" src="../flags/FRA.gif" alt="FRA" title="FRA"></td>
+    <td><a href="florent.XSeries.X2_0.17.html">florent.XSeries.X2 0.17</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_florent.XSeries.X2_0.17.html">compare</a></td>
+    <td class="num">44.31</td>
+    <td class="num">42.9</td>
+    <td class="num">2220</td>
+    <td class="num">2790</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>21</td>
+    <td><img class="flag" src="../flags/USA.gif" alt="USA" title="USA"></td>
+    <td><a href="tjk.deBroglie_rev0108.html">tjk.deBroglie rev0108</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_tjk.deBroglie_rev0108.html">compare</a></td>
+    <td class="num">44.17</td>
+    <td class="num">42.9</td>
+    <td class="num">2365</td>
+    <td class="num">2989</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>22</td>
+    <td><img class="flag" src="../flags/CAN.gif" alt="CAN" title="CAN"></td>
+    <td><a href="darkcanuck.Pris_0.92.html">darkcanuck.Pris 0.92</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_darkcanuck.Pris_0.92.html">compare</a></td>
+    <td class="num">43.95</td>
+    <td class="num">42.9</td>
+    <td class="num">2517</td>
+    <td class="num">3210</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>23</td>
+    <td><img class="flag" src="../flags/USA.gif" alt="USA" title="USA"></td>
+    <td><a href="kc.serpent.Hydra_0.21.html">kc.serpent.Hydra 0.21</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_kc.serpent.Hydra_0.21.html">compare</a></td>
+    <td class="num">42.87</td>
+    <td class="num">40.0</td>
+    <td class="num">2190</td>
+    <td class="num">2919</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>24</td>
+    <td><img class="flag" src="../flags/VEN.gif" alt="VEN" title="VEN"></td>
+    <td><a href="zyx.mega.YersiniaPestis_3.0.html">zyx.mega.YersiniaPestis 3.0</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_zyx.mega.YersiniaPestis_3.0.html">compare</a></td>
+    <td class="num">41.26</td>
+    <td class="num">40.0</td>
+    <td class="num">2069</td>
+    <td class="num">2946</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>25</td>
+    <td><img class="flag" src="../flags/USA.gif" alt="USA" title="USA"></td>
+    <td><a href="davidalves.Firebird_0.25.html">davidalves.Firebird 0.25</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_davidalves.Firebird_0.25.html">compare</a></td>
+    <td class="num">40.48</td>
+    <td class="num">37.1</td>
+    <td class="num">2021</td>
+    <td class="num">2972</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>26</td>
+    <td><img class="flag" src="../flags/USA.gif" alt="USA" title="USA"></td>
+    <td><a href="davidalves.Phoenix_1.02.html">davidalves.Phoenix 1.02</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_davidalves.Phoenix_1.02.html">compare</a></td>
+    <td class="num">40.22</td>
+    <td class="num">37.1</td>
+    <td class="num">2107</td>
+    <td class="num">3132</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>27</td>
+    <td><img class="flag" src="../flags/USA.gif" alt="USA" title="USA"></td>
+    <td><a href="kc.serpent.WaveSerpent_2.11.html">kc.serpent.WaveSerpent 2.11</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_kc.serpent.WaveSerpent_2.11.html">compare</a></td>
+    <td class="num">40.20</td>
+    <td class="num">34.3</td>
+    <td class="num">2009</td>
+    <td class="num">2988</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>28</td>
+    <td><img class="flag" src="../flags/ZAF.gif" alt="ZAF" title="ZAF"></td>
+    <td><a href="jk.melee.Neuromancer_7.12.html">jk.melee.Neuromancer 7.12</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_jk.melee.Neuromancer_7.12.html">compare</a></td>
+    <td class="num">39.90</td>
+    <td class="num">31.4</td>
+    <td class="num">1989</td>
+    <td class="num">2996</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>29</td>
+    <td><img class="flag" src="../flags/NLD.gif" alt="NLD" title="NLD"></td>
+    <td><a href="gh.GresSuffurd_0.4.13.html">gh.GresSuffurd 0.4.13</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_gh.GresSuffurd_0.4.13.html">compare</a></td>
+    <td class="num">39.62</td>
+    <td class="num">34.3</td>
+    <td class="num">2021</td>
+    <td class="num">3080</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>30</td>
+    <td><img class="flag" src="../flags/BRA.gif" alt="BRA" title="BRA"></td>
+    <td><a href="mn.Combat_3.25.0.html">mn.Combat 3.25.0</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_mn.Combat_3.25.0.html">compare</a></td>
+    <td class="num">38.71</td>
+    <td class="num">25.7</td>
+    <td class="num">1878</td>
+    <td class="num">2973</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>31</td>
+    <td><img class="flag" src="../flags/USA.gif" alt="USA" title="USA"></td>
+    <td><a href="sheldor.mini.Foilist_1.3.1.html">sheldor.mini.Foilist 1.3.1</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_sheldor.mini.Foilist_1.3.1.html">compare</a></td>
+    <td class="num">38.31</td>
+    <td class="num">28.6</td>
+    <td class="num">1800</td>
+    <td class="num">2899</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>32</td>
+    <td><img class="flag" src="../flags/USA.gif" alt="USA" title="USA"></td>
+    <td><a href="voidious.Dookious_1.573c.html">voidious.Dookious 1.573c</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_voidious.Dookious_1.573c.html">compare</a></td>
+    <td class="num">38.06</td>
+    <td class="num">31.4</td>
+    <td class="num">1883</td>
+    <td class="num">3065</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>33</td>
+    <td><img class="flag" src="../flags/DEU.gif" alt="DEU" title="DEU"></td>
+    <td><a href="Krabb.sliNk.Garm_0.9u.html">Krabb.sliNk.Garm 0.9u</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_Krabb.sliNk.Garm_0.9u.html">compare</a></td>
+    <td class="num">37.68</td>
+    <td class="num">28.6</td>
+    <td class="num">1841</td>
+    <td class="num">3045</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>34</td>
+    <td><img class="flag" src="../flags/DEU.gif" alt="DEU" title="DEU"></td>
+    <td><a href="cb.fire.Firestarter_2.0f.html">cb.fire.Firestarter 2.0f</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_cb.fire.Firestarter_2.0f.html">compare</a></td>
+    <td class="num">35.84</td>
+    <td class="num">20.0</td>
+    <td class="num">1639</td>
+    <td class="num">2934</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>35</td>
+    <td><img class="flag" src="../flags/BRA.gif" alt="BRA" title="BRA"></td>
+    <td><a href="rsalesc.mega.Knight_0.6.28.html">rsalesc.mega.Knight 0.6.28</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_rsalesc.mega.Knight_0.6.28.html">compare</a></td>
+    <td class="num">34.65</td>
+    <td class="num">17.1</td>
+    <td class="num">1664</td>
+    <td class="num">3138</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>36</td>
+    <td><img class="flag" src="../flags/TUR.gif" alt="TUR" title="TUR"></td>
+    <td><a href="dsekercioglu.mega.Raven_3.56j8.html">dsekercioglu.mega.Raven 3.56j8</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_dsekercioglu.mega.Raven_3.56j8.html">compare</a></td>
+    <td class="num">34.28</td>
+    <td class="num">25.7</td>
+    <td class="num">1600</td>
+    <td class="num">3068</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>37</td>
+    <td><img class="flag" src="../flags/DEU.gif" alt="DEU" title="DEU"></td>
+    <td><a href="mue.Ascendant_1.2.27.html">mue.Ascendant 1.2.27</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_mue.Ascendant_1.2.27.html">compare</a></td>
+    <td class="num">34.01</td>
+    <td class="num">22.9</td>
+    <td class="num">1822</td>
+    <td class="num">3535</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>38</td>
+    <td><img class="flag" src="../flags/MAN.gif" alt="MAN" title="MAN"></td>
+    <td><a href="pez.rumble.CassiusClay_2rho.02no.html">pez.rumble.CassiusClay 2rho.02no</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_pez.rumble.CassiusClay_2rho.02no.html">compare</a></td>
+    <td class="num">33.97</td>
+    <td class="num">25.7</td>
+    <td class="num">1655</td>
+    <td class="num">3217</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>39</td>
+    <td><img class="flag" src="../flags/USA.gif" alt="USA" title="USA"></td>
+    <td><a href="ar.horizon.Horizon_1.2.2.html">ar.horizon.Horizon 1.2.2</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_ar.horizon.Horizon_1.2.2.html">compare</a></td>
+    <td class="num">33.83</td>
+    <td class="num">25.7</td>
+    <td class="num">1641</td>
+    <td class="num">3210</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>40</td>
+    <td><img class="flag" src="../flags/TUR.gif" alt="TUR" title="TUR"></td>
+    <td><a href="dsekercioglu.mega.WhiteFang_2.8.1.html">dsekercioglu.mega.WhiteFang 2.8.1</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_dsekercioglu.mega.WhiteFang_2.8.1.html">compare</a></td>
+    <td class="num">32.80</td>
+    <td class="num">20.0</td>
+    <td class="num">1626</td>
+    <td class="num">3331</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>41</td>
+    <td><img class="flag" src="../flags/RUS.gif" alt="RUS" title="RUS"></td>
+    <td><a href="lxx.Tomcat_3.68.html">lxx.Tomcat 3.68</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_lxx.Tomcat_3.68.html">compare</a></td>
+    <td class="num">31.72</td>
+    <td class="num">17.1</td>
+    <td class="num">1530</td>
+    <td class="num">3294</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>42</td>
+    <td><img class="flag" src="../flags/CHN.gif" alt="CHN" title="CHN"></td>
+    <td><a href="aaa.r.ScalarR_0.005h.053-noshield.html">aaa.r.ScalarR 0.005h.053-noshield</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_aaa.r.ScalarR_0.005h.053-noshield.html">compare</a></td>
+    <td class="num">28.37</td>
+    <td class="num">11.4</td>
+    <td class="num">1363</td>
+    <td class="num">3441</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>43</td>
+    <td><img class="flag" src="../flags/USA.gif" alt="USA" title="USA"></td>
+    <td><a href="voidious.Diamond_1.8.22.html">voidious.Diamond 1.8.22</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_voidious.Diamond_1.8.22.html">compare</a></td>
+    <td class="num">26.76</td>
+    <td class="num">11.4</td>
+    <td class="num">1184</td>
+    <td class="num">3241</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>44</td>
+    <td><img class="flag" src="../flags/ZAF.gif" alt="ZAF" title="ZAF"></td>
+    <td><a href="jk.mega.DrussGT_3.1.7.html">jk.mega.DrussGT 3.1.7</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_jk.mega.DrussGT_3.1.7.html">compare</a></td>
+    <td class="num">20.31</td>
+    <td class="num">11.4</td>
+    <td class="num">1039</td>
+    <td class="num">4077</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+<tr>
+    <td>45</td>
+    <td><img class="flag" src="../flags/USA.gif" alt="USA" title="USA"></td>
+    <td><a href="kc.mega.BeepBoop_2.0.html">kc.mega.BeepBoop 2.0</a></td>
+    <td class="compare-link"><a href="../compare/florent.test.Toad_0.14t_vs_kc.mega.BeepBoop_2.0.html">compare</a></td>
+    <td class="num">16.94</td>
+    <td class="num">0.0</td>
+    <td class="num">711</td>
+    <td class="num">3487</td>
+    <td class="num">1</td>
+    <td></td>
+  </tr>
+  </tbody>
+</table>
+</div></div>
+<footer><div class="container">
+  <a href="https://github.com/pavelsavara/robocode-autopilot">pavelsavara/robocode-autopilot</a> &middot; Powered by GitHub Actions
+</div></footer>
+<script>
+document.querySelectorAll('th[data-sort]').forEach(th => {
+  th.addEventListener('click', () => {
+    const table = th.closest('table');
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    const col = th.cellIndex;
+    const type = th.dataset.sort;
+    const asc = th.classList.toggle('sort-asc');
+    table.querySelectorAll('th').forEach(h => { if (h !== th) h.classList.remove('sort-asc', 'sort-desc'); });
+    if (!asc) th.classList.add('sort-desc');
+    rows.sort((a, b) => {
+      let va = a.cells[col]?.textContent.trim() ?? '';
+      let vb = b.cells[col]?.textContent.trim() ?? '';
+      if (type === 'num') { va = parseFloat(va) || 0; vb = parseFloat(vb) || 0; }
+      const cmp = type === 'num' ? va - vb : va.localeCompare(vb);
+      return asc ? cmp : -cmp;
+    });
+    rows.forEach(r => tbody.appendChild(r));
+  });
+});
+</script>
+</body>
+</html>
