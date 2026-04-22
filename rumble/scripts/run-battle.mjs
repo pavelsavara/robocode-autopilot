@@ -46,15 +46,6 @@ function runSingleBattle(botA, botB) {
     const classA = botA.replace(/\s+\S+$/, '');
     const classB = botB.replace(/\s+\S+$/, '');
 
-    // Debug: log first battle details
-    if (!runSingleBattle._logged) {
-        runSingleBattle._logged = true;
-        console.error(`[DEBUG] robocodeDir=${robocodeDir}`);
-        console.error(`[DEBUG] selectedRobots=${classA},${classB}`);
-        console.error(`[DEBUG] battleFile=${battleFile}`);
-        console.error(`[DEBUG] resultsFile=${resultsFile}`);
-    }
-
     const battleContent = [
         '#Battle Properties',
         `robocode.battleField.width=${fieldWidth}`,

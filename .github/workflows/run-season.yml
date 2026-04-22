@@ -110,42 +110,58 @@ jobs:
       # Fetch robot JARs from robots branch
       - name: Fetch robot JARs
         run: |
-          apk add --no-cache git git-lfs unzip
+          apk add --no-cache git git-lfs unzip zip
           git lfs install
           git clone --depth=1 --branch=robots --single-branch \
             https://github.com/${{ github.repository }}.git /tmp/robots || true
           cd /tmp/robots && git lfs pull && cd -
           cp /tmp/robots/*.jar /opt/robocode/robots/ 2>/dev/null || true
-          echo "Robots loaded:"
-          ls /opt/robocode/robots/*.jar 2>/dev/null | wc -l
+          echo "Robots loaded: $(ls /opt/robocode/robots/*.jar 2>/dev/null | wc -l)"
 
-          # Verify JARs are real (not LFS pointers)
-          echo "--- JAR verification ---"
-          FIRST_JAR=$(ls /opt/robocode/robots/*.jar 2>/dev/null | head -1)
-          if [ -n "$FIRST_JAR" ]; then
-            echo "First JAR: $FIRST_JAR ($(stat -c%s "$FIRST_JAR") bytes)"
-            head -c 2 "$FIRST_JAR" | od -An -tx1
-          fi
+          # Validate JARs — remove corrupt ones that would abort Robocode's scanner
+          echo "--- Validating JARs ---"
+          CORRUPT=0
+          for jar in /opt/robocode/robots/*.jar; do
+            if ! unzip -t "$jar" > /dev/null 2>&1; then
+              echo "CORRUPT — removing: $(basename "$jar")"
+              rm "$jar"
+              CORRUPT=$((CORRUPT + 1))
+            fi
+          done
+          echo "Removed $CORRUPT corrupt JARs. Remaining: $(ls /opt/robocode/robots/*.jar 2>/dev/null | wc -l)"
 
-          # Check for stale robot database
-          echo "--- robots/ directory contents ---"
-          ls -la /opt/robocode/robots/ | head -20
-          echo "--- robots/.data/ ---"
-          ls -la /opt/robocode/robots/.data/ 2>/dev/null || echo "No .data/ directory"
-          echo "--- robocode.properties ---"
-          cat /opt/robocode/robocode.properties 2>/dev/null || echo "No robocode.properties"
+          # Inject .properties files into JARs that lack them
+          # (Robocode's repository scanner requires .properties to register robots)
+          echo "--- Checking for missing .properties ---"
+          INJECTED=0
+          for jar in /opt/robocode/robots/*.jar; do
+            if unzip -l "$jar" 2>/dev/null | grep -q '\.properties$'; then
+              continue
+            fi
+            jarname=$(basename "$jar" .jar)
+            classname=$(echo "$jarname" | sed 's/_.*//')
+            version=$(echo "$jarname" | sed 's/^[^_]*_//')
+            proppath=$(echo "$classname" | sed 's/\./\//g').properties
+            mkdir -p "/tmp/propgen/$(dirname "$proppath")"
+            printf "robot.classname=%s\nrobot.version=%s\n" "$classname" "$version" > "/tmp/propgen/$proppath"
+            (cd /tmp/propgen && zip -g "$jar" "$proppath")
+            rm -rf /tmp/propgen
+            INJECTED=$((INJECTED + 1))
+            echo "Injected properties: $(basename "$jar") -> $proppath"
+          done
+          echo "Injected .properties into $INJECTED JARs"
 
           # Remove stale robot database to force re-scan
           rm -rf /opt/robocode/robots/.data 2>/dev/null || true
 
-      # Pre-flight: verify Robocode engine works
+      # Pre-flight: verify Robocode engine works with a competition bot
       - name: Pre-flight test
         run: |
-          echo "--- libs/ contents ---"
-          ls /opt/robocode/libs/
+          # Pick a bot from the middle of the alphabet to verify scanner indexes all JARs
+          TEST_BOT="kc.mega.BeepBoop"
+          echo "Testing battle: sample.Fire vs $TEST_BOT"
 
-          echo "--- Testing with sample robots ---"
-          cat > /tmp/test.battle <<'EOF'
+          cat > /tmp/test.battle <<EOF
           #Battle Properties
           robocode.battleField.width=800
           robocode.battleField.height=600
@@ -153,7 +169,7 @@ jobs:
           robocode.battle.gunCoolingRate=0.1
           robocode.battle.rules.inactivityTime=450
           robocode.battle.hideEnemyNames=true
-          robocode.battle.selectedRobots=sample.Fire,sample.Crazy
+          robocode.battle.selectedRobots=sample.Fire,$TEST_BOT
           EOF
 
           java -cp '/opt/robocode/libs/*' \
@@ -173,95 +189,18 @@ jobs:
             -results /tmp/test-results.txt \
             -nodisplay 2>&1 || true
 
-          echo "--- Sample battle results ---"
+          echo "--- Results ---"
           cat /tmp/test-results.txt 2>/dev/null || echo "No results file"
 
-          echo "--- Testing with competition bot (no version) ---"
-          FIRST_JAR=$(ls /opt/robocode/robots/*.jar 2>/dev/null | head -1)
-          FIRST_BOT=$(basename "$FIRST_JAR" .jar | sed 's/_/ /')
-          BOT_CLASS=$(echo "$FIRST_BOT" | cut -d' ' -f1)
-          echo "Testing bot: $BOT_CLASS (from $FIRST_JAR)"
-
-          cat > /tmp/test2.battle <<EOF
-          #Battle Properties
-          robocode.battleField.width=800
-          robocode.battleField.height=600
-          robocode.battle.numRounds=1
-          robocode.battle.gunCoolingRate=0.1
-          robocode.battle.rules.inactivityTime=450
-          robocode.battle.hideEnemyNames=true
-          robocode.battle.selectedRobots=sample.Fire,$BOT_CLASS
-          EOF
-
-          java -cp '/opt/robocode/libs/*' \
-            -Xmx512M \
-            -XX:+IgnoreUnrecognizedVMOptions \
-            '--add-opens=java.base/sun.net.www.protocol.jar=ALL-UNNAMED' \
-            '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED' \
-            '--add-opens=java.base/java.lang=ALL-UNNAMED' \
-            '--add-opens=java.base/java.io=ALL-UNNAMED' \
-            '--add-opens=java.base/java.net=ALL-UNNAMED' \
-            '--add-opens=java.base/java.util=ALL-UNNAMED' \
-            -DNOSECURITY=true \
-            -Djava.awt.headless=true \
-            robocode.Robocode \
-            -cwd /opt/robocode \
-            -battle /tmp/test2.battle \
-            -results /tmp/test2-results.txt \
-            -nodisplay 2>&1 || true
-
-          echo "--- Competition bot results ---"
-          cat /tmp/test2-results.txt 2>/dev/null || echo "No results file"
-
-          echo "--- Testing aw.Gilgalad (known-JAR bot) ---"
-          cat > /tmp/test3.battle <<'EOF'
-          #Battle Properties
-          robocode.battleField.width=800
-          robocode.battleField.height=600
-          robocode.battle.numRounds=1
-          robocode.battle.gunCoolingRate=0.1
-          robocode.battle.rules.inactivityTime=450
-          robocode.battle.hideEnemyNames=true
-          robocode.battle.selectedRobots=sample.Fire,aw.Gilgalad
-          EOF
-
-          java -cp '/opt/robocode/libs/*' \
-            -Xmx512M \
-            -XX:+IgnoreUnrecognizedVMOptions \
-            '--add-opens=java.base/sun.net.www.protocol.jar=ALL-UNNAMED' \
-            '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED' \
-            '--add-opens=java.base/java.lang=ALL-UNNAMED' \
-            '--add-opens=java.base/java.io=ALL-UNNAMED' \
-            '--add-opens=java.base/java.net=ALL-UNNAMED' \
-            '--add-opens=java.base/java.util=ALL-UNNAMED' \
-            -DNOSECURITY=true \
-            -Djava.awt.headless=true \
-            robocode.Robocode \
-            -cwd /opt/robocode \
-            -battle /tmp/test3.battle \
-            -results /tmp/test3-results.txt \
-            -nodisplay 2>&1 || true
-
-          echo "--- aw.Gilgalad results ---"
-          cat /tmp/test3-results.txt 2>/dev/null || echo "No results file"
-
-          echo "--- .data/ directory after scans ---"
-          ls -la /opt/robocode/robots/.data/ 2>/dev/null || echo "No .data/ directory"
-          ls -la /opt/robocode/robots/.robotcache/ 2>/dev/null || echo "No .robotcache/ directory"
-          find /opt/robocode/robots/ -type d -name '.?*' 2>/dev/null || echo "No hidden dirs"
-
-          echo "=== JAR contents comparison ==="
-          echo "--- Working JAR: EFD.AdvancedEFD ---"
-          unzip -l /opt/robocode/robots/EFD.AdvancedEFD_0.4.5a.jar 2>&1 | head -30
-          echo "--- Failing JAR: aw.Gilgalad ---"
-          unzip -l /opt/robocode/robots/aw.Gilgalad_1.99.5c.jar 2>&1 | head -30
-          echo "--- Failing JAR: aaa.r.ScalarR ---"
-          unzip -l /opt/robocode/robots/aaa.r.ScalarR_0.005h.053-noshield.jar 2>&1 | head -30
-          echo "--- Properties files in JARs ---"
-          for jar in EFD.AdvancedEFD_0.4.5a.jar aw.Gilgalad_1.99.5c.jar aaa.r.ScalarR_0.005h.053-noshield.jar Krabb.sliNk.Garm_0.9u.jar axeBots.Musashi_2.18.jar; do
-            echo "$jar:"
-            unzip -l /opt/robocode/robots/$jar 2>&1 | grep -i '\.properties' || echo "  (no .properties files)"
-          done
+          # Verify the test bot was found (results should have 2 bot lines)
+          BOT_LINES=$(grep -c '^\s*[12]' /tmp/test-results.txt 2>/dev/null || echo 0)
+          if [ "$BOT_LINES" -lt 2 ]; then
+            echo "::error::Pre-flight test failed: $TEST_BOT not found by Robocode"
+            echo "--- .data/ contents ---"
+            ls /opt/robocode/robots/.data/ 2>/dev/null || echo "No .data/"
+            exit 1
+          fi
+          echo "Pre-flight OK: $TEST_BOT loaded successfully"
 
       # Checkout repo to get latest run-battle.mjs
       - uses: actions/checkout@v6
@@ -328,13 +267,22 @@ jobs:
       # Merge new results with historical
       - name: Merge results
         run: |
+          # Debug: show what was downloaded
+          echo "Downloaded artifacts:"
+          find all-results/ -type f 2>/dev/null || echo "No all-results/ directory"
+
           # Append new chunk results (timestamped to avoid overwriting historical)
           RUN_ID="${{ github.run_id }}"
-          for f in all-results/results-chunk-*/results.json; do
-            chunk=$(basename $(dirname "$f") | sed 's/results-chunk-//')
+          MERGED=0
+          for f in $(find all-results/ -name 'results.json' -type f 2>/dev/null); do
+            chunk=$(echo "$f" | grep -o 'chunk-[0-9]*' | grep -o '[0-9]*')
             cp "$f" "results/run-${RUN_ID}-chunk-${chunk}.json"
+            MERGED=$((MERGED + 1))
           done
-          echo "Total result files: $(ls results/*.json 2>/dev/null | wc -l)"
+          echo "Merged $MERGED chunk(s). Total result files: $(ls results/*.json 2>/dev/null | wc -l)"
+          if [ "$MERGED" -eq 0 ]; then
+            echo "::warning::No result chunks found to merge"
+          fi
 
       # Compute rankings from all results (historical + new)
       - name: Compute rankings
