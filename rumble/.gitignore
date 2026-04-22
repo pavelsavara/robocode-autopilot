@@ -1,0 +1,13 @@
+# Test outputs
+test-*
+node_modules/
+# Bot JARs (stored on data/robots branch)
+robots/
+# Generated site (deployed to gh-pages)
+site/
+# Battle data (local runs only, not committed)
+results/
+rankings.json
+battles.json
+participants.txt
+NUL

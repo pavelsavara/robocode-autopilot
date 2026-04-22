@@ -1,0 +1,51 @@
+# build-docker.yml — Build and push the battle runner Docker image to GHCR.
+# Downloads a pre-built Robocode release (no source build needed).
+name: Build Docker Image
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download Robocode release
+        run: |
+          curl -fSL -o robocode-setup.jar \
+            "https://github.com/robo-code/robocode/releases/download/v1.10.1.0/robocode-1.10.1.0-setup.jar"
+          mkdir -p robocode-home
+          cd robocode-home
+          unzip -o ../robocode-setup.jar \
+            libs/* robots/* compilers/* battles/* robocode.bat robocode.sh \
+            -x 'net/*' 'META-INF/*'
+          ls -la libs/
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile.battle
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/battle-runner:latest
+
+      - name: Make package public
+        run: |
+          gh api --method PUT \
+            /user/packages/container/robocode-autopilot%2Fbattle-runner/visibility \
+            -f visibility=public || echo "Could not set visibility (may need manual config)"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

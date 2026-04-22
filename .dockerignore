@@ -1,0 +1,6 @@
+# Ignore everything
+**
+
+# Allow pre-built Robocode installation and battle runner script
+!/robocode-home
+!/rumble/scripts/run-battle.mjs
