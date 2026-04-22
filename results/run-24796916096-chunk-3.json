@@ -1,0 +1,37 @@
+[
+  {
+    "timestamp": "2026-04-22T19:01:31.624Z",
+    "rounds": 35,
+    "field": "800x600",
+    "elapsed_ms": 134697,
+    "bot_a": {
+      "name": "rsalesc.roborio.Roborio 1.2.4",
+      "total_score": 2784,
+      "score_pct": 51,
+      "survival": 950,
+      "survival_bonus": 190,
+      "bullet_damage": 1485,
+      "bullet_bonus": 159,
+      "ram_damage": 0,
+      "ram_bonus": 0,
+      "firsts": 20,
+      "seconds": 15,
+      "thirds": 0
+    },
+    "bot_b": {
+      "name": "jk.melee.Neuromancer 7.12",
+      "total_score": 2652,
+      "score_pct": 49,
+      "survival": 750,
+      "survival_bonus": 150,
+      "bullet_damage": 1594,
+      "bullet_bonus": 158,
+      "ram_damage": 0,
+      "ram_bonus": 0,
+      "firsts": 16,
+      "seconds": 19,
+      "thirds": 0
+    },
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/14195529.br"
+  }
+]

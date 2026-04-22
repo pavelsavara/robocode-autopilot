@@ -1,8 +1,8 @@
 {
-  "generated": "2026-04-22T18:57:47.095Z",
+  "generated": "2026-04-22T19:02:23.079Z",
   "total_bots": 50,
   "total_pairings": 1225,
-  "total_battles": 2446,
+  "total_battles": 2447,
   "rankings": [
     {
       "name": "kc.mega.BeepBoop 2.0",
@@ -61,13 +61,13 @@
     },
     {
       "name": "rsalesc.roborio.Roborio 1.2.4",
-      "aps": 60.54,
-      "survival": 70.06,
+      "aps": 60.59,
+      "survival": 70.17,
       "vote": 59.18,
       "pwin": 59.18,
       "pairings": 49,
-      "battles": 96,
-      "anpp": 69.18,
+      "battles": 97,
+      "anpp": 69.25,
       "rank": 6
     },
     {
@@ -237,13 +237,13 @@
     },
     {
       "name": "jk.melee.Neuromancer 7.12",
-      "aps": 51.35,
-      "survival": 55.99,
+      "aps": 51.29,
+      "survival": 55.9,
       "vote": 57.14,
       "pwin": 57.14,
       "pairings": 49,
-      "battles": 97,
-      "anpp": 58.84,
+      "battles": 98,
+      "anpp": 58.78,
       "rank": 22
     },
     {
