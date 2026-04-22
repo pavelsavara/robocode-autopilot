@@ -119,6 +119,25 @@ jobs:
           echo "Robots loaded:"
           ls /opt/robocode/robots/*.jar 2>/dev/null | wc -l
 
+          # Verify JARs are real (not LFS pointers)
+          echo "--- JAR verification ---"
+          FIRST_JAR=$(ls /opt/robocode/robots/*.jar 2>/dev/null | head -1)
+          if [ -n "$FIRST_JAR" ]; then
+            echo "First JAR: $FIRST_JAR ($(stat -c%s "$FIRST_JAR") bytes)"
+            head -c 2 "$FIRST_JAR" | od -An -tx1
+          fi
+
+          # Check for stale robot database
+          echo "--- robots/ directory contents ---"
+          ls -la /opt/robocode/robots/ | head -20
+          echo "--- robots/.data/ ---"
+          ls -la /opt/robocode/robots/.data/ 2>/dev/null || echo "No .data/ directory"
+          echo "--- robocode.properties ---"
+          cat /opt/robocode/robocode.properties 2>/dev/null || echo "No robocode.properties"
+
+          # Remove stale robot database to force re-scan
+          rm -rf /opt/robocode/robots/.data 2>/dev/null || true
+
       # Checkout repo to get latest run-battle.mjs
       - uses: actions/checkout@v6
         with:
