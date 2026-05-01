@@ -27,7 +27,7 @@ class SpatialFeaturesTest {
         // Us at (100, 100), opponent at (400, 500)
         wb.setOurState(100, 100, 0, 0, 0, 0, 100, 0);
         wb.setTick(0);
-        wb.setOpponentScan(400, 500, 0, 0, 100);
+        wb.setOpponentScan("TestBot", 400, 500, 0, 0, 100);
 
         processor.process(wb);
 
@@ -41,7 +41,7 @@ class SpatialFeaturesTest {
         // Us at (400, 300), opponent directly north at (400, 500)
         wb.setOurState(400, 300, 0, 0, 0, 0, 100, 0);
         wb.setTick(0);
-        wb.setOpponentScan(400, 500, 0, 0, 100);
+        wb.setOpponentScan("TestBot", 400, 500, 0, 0, 100);
 
         processor.process(wb);
 
@@ -55,7 +55,7 @@ class SpatialFeaturesTest {
         // Us at (400, 300), opponent east at (600, 300)
         wb.setOurState(400, 300, 0, 0, 0, 0, 100, 0);
         wb.setTick(0);
-        wb.setOpponentScan(600, 300, 0, 0, 100);
+        wb.setOpponentScan("TestBot", 600, 300, 0, 0, 100);
 
         processor.process(wb);
 
@@ -68,7 +68,7 @@ class SpatialFeaturesTest {
         // Opponent at (50, 100) on 800x600 field
         wb.setOurState(400, 300, 0, 0, 0, 0, 100, 0);
         wb.setTick(0);
-        wb.setOpponentScan(50, 100, 0, 0, 100);
+        wb.setOpponentScan("TestBot", 50, 100, 0, 0, 100);
 
         processor.process(wb);
 
@@ -82,7 +82,7 @@ class SpatialFeaturesTest {
         // Opponent at center (400, 300) on 800x600 field
         wb.setOurState(100, 100, 0, 0, 0, 0, 100, 0);
         wb.setTick(0);
-        wb.setOpponentScan(400, 300, 0, 0, 100);
+        wb.setOpponentScan("TestBot", 400, 300, 0, 0, 100);
 
         processor.process(wb);
 

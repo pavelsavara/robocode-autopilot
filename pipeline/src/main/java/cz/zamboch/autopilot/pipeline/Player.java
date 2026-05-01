@@ -93,6 +93,7 @@ public final class Player {
                     robotA.getRadarHeading(),
                     robotB.getX(), robotB.getY())) {
                 wbA.setOpponentScan(
+                        robotB.getShortName(),
                         robotB.getX(), robotB.getY(),
                         robotB.getBodyHeading(), robotB.getVelocity(), robotB.getEnergy());
             }
@@ -104,6 +105,7 @@ public final class Player {
                     robotB.getRadarHeading(),
                     robotA.getX(), robotA.getY())) {
                 wbB.setOpponentScan(
+                        robotA.getShortName(),
                         robotA.getX(), robotA.getY(),
                         robotA.getBodyHeading(), robotA.getVelocity(), robotA.getEnergy());
             }

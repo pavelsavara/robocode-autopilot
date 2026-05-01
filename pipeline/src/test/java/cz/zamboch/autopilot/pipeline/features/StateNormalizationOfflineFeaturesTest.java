@@ -26,7 +26,7 @@ class StateNormalizationOfflineFeaturesTest {
     void energyRatioEqualEnergies() {
         wb.setOurState(400, 300, 0, 0, 0, 0, 50, 0);
         wb.setTick(0);
-        wb.setOpponentScan(500, 400, 0, 0, 50);
+        wb.setOpponentScan("TestBot", 500, 400, 0, 0, 50);
         wb.setFeature(Feature.BEARING_TO_OPPONENT_ABS, 0.0);
 
         feat.process(wb);
@@ -37,7 +37,7 @@ class StateNormalizationOfflineFeaturesTest {
     void energyRatioWinning() {
         wb.setOurState(400, 300, 0, 0, 0, 0, 90, 0);
         wb.setTick(0);
-        wb.setOpponentScan(500, 400, 0, 0, 10);
+        wb.setOpponentScan("TestBot", 500, 400, 0, 0, 10);
         wb.setFeature(Feature.BEARING_TO_OPPONENT_ABS, 0.0);
 
         feat.process(wb);
@@ -48,7 +48,7 @@ class StateNormalizationOfflineFeaturesTest {
     void energyRatioBothZero() {
         wb.setOurState(400, 300, 0, 0, 0, 0, 0, 0);
         wb.setTick(0);
-        wb.setOpponentScan(500, 400, 0, 0, 0);
+        wb.setOpponentScan("TestBot", 500, 400, 0, 0, 0);
         wb.setFeature(Feature.BEARING_TO_OPPONENT_ABS, 0.0);
 
         feat.process(wb);
@@ -61,7 +61,7 @@ class StateNormalizationOfflineFeaturesTest {
         // opponent due north (bearing 0)
         wb.setOurState(400, 300, Math.PI / 2, 0, 0, 8, 100, 0);
         wb.setTick(0);
-        wb.setOpponentScan(400, 500, 0, 0, 80);
+        wb.setOpponentScan("TestBot", 400, 500, 0, 0, 80);
         wb.setFeature(Feature.BEARING_TO_OPPONENT_ABS, 0.0);
 
         feat.process(wb);
@@ -74,7 +74,7 @@ class StateNormalizationOfflineFeaturesTest {
         // Center of 800x600 field: min is 300-18 from N or S
         wb.setOurState(400, 300, 0, 0, 0, 0, 100, 0);
         wb.setTick(0);
-        wb.setOpponentScan(500, 400, 0, 0, 80);
+        wb.setOpponentScan("TestBot", 500, 400, 0, 0, 80);
         wb.setFeature(Feature.BEARING_TO_OPPONENT_ABS, 0.0);
 
         feat.process(wb);
@@ -87,7 +87,7 @@ class StateNormalizationOfflineFeaturesTest {
         // Near south-west corner
         wb.setOurState(30, 25, 0, 0, 0, 0, 100, 0);
         wb.setTick(0);
-        wb.setOpponentScan(500, 400, 0, 0, 80);
+        wb.setOpponentScan("TestBot", 500, 400, 0, 0, 80);
         wb.setFeature(Feature.BEARING_TO_OPPONENT_ABS, 0.0);
 
         feat.process(wb);

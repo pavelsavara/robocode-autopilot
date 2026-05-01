@@ -25,7 +25,7 @@ class TransformerTest {
         wb.onRoundStart(0, 800, 600, 0.1, 10);
         wb.setOurState(100, 100, 0, 0, 0, 0, 100, 0);
         wb.setTick(0);
-        wb.setOpponentScan(400, 500, Math.PI / 4, 5.0, 80);
+        wb.setOpponentScan("TestBot", 400, 500, Math.PI / 4, 5.0, 80);
 
         t.process(wb);
 
@@ -75,7 +75,7 @@ class TransformerTest {
         wb.onRoundStart(0, 800, 600, 0.1, 10);
         wb.setOurState(400, 300, 0, 0, 0, 0, 100, 1.5);
         wb.setTick(0);
-        wb.setOpponentScan(500, 400, 0, 0, 90);
+        wb.setOpponentScan("TestBot", 500, 400, 0, 0, 90);
 
         t.process(wb);
 
@@ -123,14 +123,14 @@ class TransformerTest {
 
         // First scan at tick 0 (establishes prev heading)
         wb.setTick(0);
-        wb.setOpponentScan(500, 400, Math.PI, -3.5, 95);
+        wb.setOpponentScan("TestBot", 500, 400, Math.PI, -3.5, 95);
         t.process(wb);
         wb.advanceTick();
 
         // Second scan at tick 1 (consecutive — enables heading delta)
         wb.setTick(1);
         wb.setOurState(400, 300, 0, 0, 0, 0, 100, 1.9);
-        wb.setOpponentScan(500, 400, Math.PI + 0.1, -3.5, 95);
+        wb.setOpponentScan("TestBot", 500, 400, Math.PI + 0.1, -3.5, 95);
         t.process(wb);
 
         // All 12 features should be set

@@ -416,3 +416,11 @@ jobs:
             -f min_battles_per_pair="${{ inputs.min_battles_per_pair || '2' }}" \
             -f participants="${{ inputs.participants || 'rumble/top50.txt' }}"
           echo "Triggered season $NEXT_SEASON"
+
+      - name: Trigger Stage 2 processing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run process-recordings.yml \
+            -f source_run_id="${{ github.run_id }}"
+          echo "Triggered Stage 2 processing for run ${{ github.run_id }}"

@@ -171,7 +171,7 @@ class BulletValidationTest {
                     if (isFirstTick || Player.radarSweepIntersects(
                             us.getX(), us.getY(), prevRadarHeading,
                             us.getRadarHeading(), opp.getX(), opp.getY())) {
-                        wbA.setOpponentScan(opp.getX(), opp.getY(),
+                        wbA.setOpponentScan(opp.getShortName(), opp.getX(), opp.getY(),
                                 opp.getBodyHeading(), opp.getVelocity(), opp.getEnergy());
                     }
                 }

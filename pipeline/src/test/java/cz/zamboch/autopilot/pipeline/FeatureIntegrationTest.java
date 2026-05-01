@@ -93,7 +93,7 @@ class FeatureIntegrationTest {
                     if (isFirstTick || Player.radarSweepIntersects(
                             us.getX(), us.getY(), prevRadarHeadingA,
                             us.getRadarHeading(), opp.getX(), opp.getY())) {
-                        wbA.setOpponentScan(opp.getX(), opp.getY(),
+                        wbA.setOpponentScan("TestBot", opp.getX(), opp.getY(),
                                 opp.getBodyHeading(), opp.getVelocity(), opp.getEnergy());
                     }
                 }
@@ -162,7 +162,7 @@ class FeatureIntegrationTest {
                     if (isFirstTick || Player.radarSweepIntersects(
                             us.getX(), us.getY(), prevRadarHeading,
                             us.getRadarHeading(), opp.getX(), opp.getY())) {
-                        wbA.setOpponentScan(opp.getX(), opp.getY(),
+                        wbA.setOpponentScan("TestBot", opp.getX(), opp.getY(),
                                 opp.getBodyHeading(), opp.getVelocity(), opp.getEnergy());
                     }
                 }
@@ -227,7 +227,7 @@ class FeatureIntegrationTest {
                     if (isFirstTick || Player.radarSweepIntersects(
                             us.getX(), us.getY(), prevRadarHeading,
                             us.getRadarHeading(), opp.getX(), opp.getY())) {
-                        wbA.setOpponentScan(opp.getX(), opp.getY(),
+                        wbA.setOpponentScan("TestBot", opp.getX(), opp.getY(),
                                 opp.getBodyHeading(), opp.getVelocity(), opp.getEnergy());
                     }
                 }
@@ -353,7 +353,7 @@ class FeatureIntegrationTest {
                     if (isFirstTick || Player.radarSweepIntersects(
                             us.getX(), us.getY(), prevRadarHeading,
                             us.getRadarHeading(), opp.getX(), opp.getY())) {
-                        wbA.setOpponentScan(opp.getX(), opp.getY(),
+                        wbA.setOpponentScan("TestBot", opp.getX(), opp.getY(),
                                 opp.getBodyHeading(), opp.getVelocity(), opp.getEnergy());
                     }
                 }

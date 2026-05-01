@@ -25,7 +25,7 @@ class TargetingGeometryOfflineFeaturesTest {
     private void scanWithFeatures(double latVel, double distance, double vel) {
         wb.setOurState(400, 300, 0, 0, 0, 0, 100, 0);
         wb.setTick(0);
-        wb.setOpponentScan(500, 400, 0, vel, 80);
+        wb.setOpponentScan("TestBot", 500, 400, 0, vel, 80);
         wb.setFeature(Feature.OPPONENT_LATERAL_VELOCITY, latVel);
         wb.setFeature(Feature.DISTANCE, distance);
         wb.setFeature(Feature.OPPONENT_VELOCITY, vel);

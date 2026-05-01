@@ -32,7 +32,7 @@ class WaveTrackingOfflineFeaturesTest {
     void computesAllWaveFeaturesOnFire() {
         wb.setOurState(400, 300, 0, 0, 0, 0, 100, 0);
         wb.setTick(0);
-        wb.setOpponentScan(500, 400, 0, 0, 80);
+        wb.setOpponentScan("TestBot", 500, 400, 0, 0, 80);
 
         wb.setFeature(Feature.OPPONENT_FIRED, 1.0);
         wb.setFeature(Feature.OPPONENT_FIRE_POWER, 2.0);
@@ -54,7 +54,7 @@ class WaveTrackingOfflineFeaturesTest {
     void skipWhenNoFire() {
         wb.setOurState(400, 300, 0, 0, 0, 0, 100, 0);
         wb.setTick(0);
-        wb.setOpponentScan(500, 400, 0, 0, 80);
+        wb.setOpponentScan("TestBot", 500, 400, 0, 0, 80);
         wb.setFeature(Feature.OPPONENT_FIRED, 0.0);
 
         feat.process(wb);
@@ -67,7 +67,7 @@ class WaveTrackingOfflineFeaturesTest {
     void skipWhenFiredNotSet() {
         wb.setOurState(400, 300, 0, 0, 0, 0, 100, 0);
         wb.setTick(0);
-        wb.setOpponentScan(500, 400, 0, 0, 80);
+        wb.setOpponentScan("TestBot", 500, 400, 0, 0, 80);
         // OPPONENT_FIRED not set at all
 
         feat.process(wb);
@@ -79,7 +79,7 @@ class WaveTrackingOfflineFeaturesTest {
     void bulletSpeedMinPower() {
         wb.setOurState(400, 300, 0, 0, 0, 0, 100, 0);
         wb.setTick(0);
-        wb.setOpponentScan(500, 400, 0, 0, 80);
+        wb.setOpponentScan("TestBot", 500, 400, 0, 0, 80);
         wb.setFeature(Feature.OPPONENT_FIRED, 1.0);
         wb.setFeature(Feature.OPPONENT_FIRE_POWER, 0.1);
         wb.setFeature(Feature.DISTANCE, 500.0);
@@ -95,7 +95,7 @@ class WaveTrackingOfflineFeaturesTest {
     void bulletSpeedMaxPower() {
         wb.setOurState(400, 300, 0, 0, 0, 0, 100, 0);
         wb.setTick(0);
-        wb.setOpponentScan(500, 400, 0, 0, 80);
+        wb.setOpponentScan("TestBot", 500, 400, 0, 0, 80);
         wb.setFeature(Feature.OPPONENT_FIRED, 1.0);
         wb.setFeature(Feature.OPPONENT_FIRE_POWER, 3.0);
         wb.setFeature(Feature.DISTANCE, 500.0);
@@ -111,7 +111,7 @@ class WaveTrackingOfflineFeaturesTest {
     void lateralVelocityDefaultsToZeroWhenMissing() {
         wb.setOurState(400, 300, 0, 0, 0, 0, 100, 0);
         wb.setTick(0);
-        wb.setOpponentScan(500, 400, 0, 0, 80);
+        wb.setOpponentScan("TestBot", 500, 400, 0, 0, 80);
         wb.setFeature(Feature.OPPONENT_FIRED, 1.0);
         wb.setFeature(Feature.OPPONENT_FIRE_POWER, 1.0);
         wb.setFeature(Feature.DISTANCE, 300.0);
@@ -126,7 +126,7 @@ class WaveTrackingOfflineFeaturesTest {
     void meaRangeCheck() {
         wb.setOurState(400, 300, 0, 0, 0, 0, 100, 0);
         wb.setTick(0);
-        wb.setOpponentScan(500, 400, 0, 0, 80);
+        wb.setOpponentScan("TestBot", 500, 400, 0, 0, 80);
         wb.setFeature(Feature.OPPONENT_FIRED, 1.0);
         wb.setFeature(Feature.OPPONENT_FIRE_POWER, 1.5);
         wb.setFeature(Feature.DISTANCE, 400.0);

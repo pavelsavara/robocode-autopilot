@@ -3,6 +3,7 @@ package cz.zamboch;
 import cz.zamboch.autopilot.core.Transformer;
 import cz.zamboch.autopilot.core.Whiteboard;
 import cz.zamboch.autopilot.core.features.EnergyFeatures;
+import cz.zamboch.autopilot.core.features.IdentityFeatures;
 import cz.zamboch.autopilot.core.features.MovementFeatures;
 import cz.zamboch.autopilot.core.features.SpatialFeatures;
 import cz.zamboch.autopilot.core.features.TimingFeatures;
@@ -69,6 +70,7 @@ public final class Autopilot extends AdvancedRobot {
         double oppY = getY() + e.getDistance() * Math.cos(absBearing);
 
         whiteboard.setOpponentScan(
+                e.getName(),
                 oppX,
                 oppY,
                 Math.toRadians(e.getHeading()),
@@ -110,6 +112,7 @@ public final class Autopilot extends AdvancedRobot {
         t.register(new MovementFeatures());
         t.register(new EnergyFeatures());
         t.register(new TimingFeatures());
+        t.register(new IdentityFeatures());
         t.resolveDependencies();
         return t;
     }

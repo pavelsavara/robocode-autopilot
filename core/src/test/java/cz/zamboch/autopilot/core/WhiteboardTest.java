@@ -62,10 +62,10 @@ class WhiteboardTest {
     @Test
     void setOpponentScanUpdatesPrevValues() {
         wb.setTick(0);
-        wb.setOpponentScan(100, 200, 1.0, 3.0, 90);
+        wb.setOpponentScan("TestBot", 100, 200, 1.0, 3.0, 90);
         wb.advanceTick();
         wb.setTick(1);
-        wb.setOpponentScan(110, 210, 1.1, 4.0, 85);
+        wb.setOpponentScan("TestBot", 110, 210, 1.1, 4.0, 85);
 
         assertEquals(90, wb.getPrevOpponentEnergy(), 0.001);
         assertEquals(1.0, wb.getPrevOpponentHeading(), 0.001);
@@ -78,7 +78,7 @@ class WhiteboardTest {
     @Test
     void scanAvailableResetsByAdvanceTick() {
         wb.setTick(0);
-        wb.setOpponentScan(100, 200, 0, 0, 100);
+        wb.setOpponentScan("TestBot", 100, 200, 0, 0, 100);
         assertTrue(wb.isScanAvailableThisTick());
         wb.advanceTick();
         assertFalse(wb.isScanAvailableThisTick());
@@ -274,7 +274,7 @@ class WhiteboardTest {
     @Test
     void prevOpponentResetOnRoundStart() {
         wb.setTick(0);
-        wb.setOpponentScan(100, 200, 1.0, 3.0, 90);
+        wb.setOpponentScan("TestBot", 100, 200, 1.0, 3.0, 90);
         wb.onRoundStart(1, 800, 600, 0.1, 10);
         assertTrue(Double.isNaN(wb.getPrevOpponentHeading()));
         assertTrue(Double.isNaN(wb.getPrevOpponentVelocity()));

@@ -27,7 +27,7 @@ class OpponentPredictionOfflineFeaturesTest {
         // Opponent at (400, 300) heading 0 (north = +Y in robocode)
         wb.setOurState(100, 100, 0, 0, 0, 0, 100, 0);
         wb.setTick(0);
-        wb.setOpponentScan(400, 300, 0, 0, 80);
+        wb.setOpponentScan("TestBot", 400, 300, 0, 0, 80);
         wb.setFeature(Feature.OPPONENT_FIRED, 0.0);
         wb.setFeature(Feature.OPPONENT_FIRE_POWER, 0.0);
 
@@ -43,7 +43,7 @@ class OpponentPredictionOfflineFeaturesTest {
         // heading PI/2 (east): dx=1, dy=0
         wb.setOurState(100, 100, 0, 0, 0, 0, 100, 0);
         wb.setTick(0);
-        wb.setOpponentScan(400, 300, Math.PI / 2, 0, 80);
+        wb.setOpponentScan("TestBot", 400, 300, Math.PI / 2, 0, 80);
         wb.setFeature(Feature.OPPONENT_FIRED, 0.0);
         wb.setFeature(Feature.OPPONENT_FIRE_POWER, 0.0);
 
@@ -58,7 +58,7 @@ class OpponentPredictionOfflineFeaturesTest {
         // heading PI/4 (NE): dx=sin(PI/4)≈0.707, dy=cos(PI/4)≈0.707
         wb.setOurState(100, 100, 0, 0, 0, 0, 100, 0);
         wb.setTick(0);
-        wb.setOpponentScan(400, 300, Math.PI / 4, 0, 80);
+        wb.setOpponentScan("TestBot", 400, 300, Math.PI / 4, 0, 80);
         wb.setFeature(Feature.OPPONENT_FIRED, 0.0);
         wb.setFeature(Feature.OPPONENT_FIRE_POWER, 0.0);
 
@@ -72,7 +72,7 @@ class OpponentPredictionOfflineFeaturesTest {
         // No fire detected yet — gun heat starts at 3.0 and cools
         wb.setOurState(100, 100, 0, 0, 0, 0, 100, 0);
         wb.setTick(10);
-        wb.setOpponentScan(400, 300, 0, 0, 80);
+        wb.setOpponentScan("TestBot", 400, 300, 0, 0, 80);
         wb.setFeature(Feature.OPPONENT_FIRED, 0.0);
         wb.setFeature(Feature.OPPONENT_FIRE_POWER, 0.0);
 
@@ -88,7 +88,7 @@ class OpponentPredictionOfflineFeaturesTest {
         wb.setLastOpponentFire(5, 2.0);
         wb.setOurState(100, 100, 0, 0, 0, 0, 100, 0);
         wb.setTick(10);
-        wb.setOpponentScan(400, 300, 0, 0, 80);
+        wb.setOpponentScan("TestBot", 400, 300, 0, 0, 80);
         wb.setFeature(Feature.OPPONENT_FIRED, 0.0);
         wb.setFeature(Feature.OPPONENT_FIRE_POWER, 0.0);
 
@@ -104,7 +104,7 @@ class OpponentPredictionOfflineFeaturesTest {
         wb.setLastOpponentFire(0, 1.0);
         wb.setOurState(100, 100, 0, 0, 0, 0, 100, 0);
         wb.setTick(100);
-        wb.setOpponentScan(400, 300, 0, 0, 80);
+        wb.setOpponentScan("TestBot", 400, 300, 0, 0, 80);
         wb.setFeature(Feature.OPPONENT_FIRED, 0.0);
         wb.setFeature(Feature.OPPONENT_FIRE_POWER, 0.0);
 

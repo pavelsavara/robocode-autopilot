@@ -47,7 +47,7 @@ class TimingFeaturesTest {
     void ticksSinceScanOnScanTick() {
         wb.setOurState(400, 300, 0, 0, 0, 0, 100, 0);
         wb.setTick(5);
-        wb.setOpponentScan(600, 300, 0, 0, 100);
+        wb.setOpponentScan("TestBot", 600, 300, 0, 0, 100);
 
         processor.process(wb);
 
@@ -61,7 +61,7 @@ class TimingFeaturesTest {
 
         // Scan at tick 3
         wb.setTick(3);
-        wb.setOpponentScan(600, 300, 0, 0, 100);
+        wb.setOpponentScan("TestBot", 600, 300, 0, 0, 100);
         processor.process(wb);
 
         // Advance to tick 8 (5 ticks later, no scan)

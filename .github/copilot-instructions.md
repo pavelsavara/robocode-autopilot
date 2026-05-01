@@ -27,6 +27,8 @@
   Features read from `Whiteboard`, compute, and write back via `wb.setFeature()`.
   Never store mutable fields (e.g. `prevVelocity`, counters) in a feature class.
 - All features — core and pipeline-only — use the `Feature` enum and `wb.setFeature()`/`wb.getFeature()`.
+- String-valued data (e.g. opponent name) is stored as a `Whiteboard` field with a getter,
+  and exposed to the feature system as a stable numeric hash (FNV-1a 32-bit) via `setFeature()`.
 - Use `CsvRowWriter` for all CSV formatting — never raw `OutputStream` + `StringBuilder`.
 
 ## Robot JARs

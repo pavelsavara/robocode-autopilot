@@ -118,7 +118,7 @@ class PhaseHFeaturesTest {
                     if (firstTick || Player.radarSweepIntersects(
                             rA.getX(), rA.getY(), prevRadar,
                             rA.getRadarHeading(), rB.getX(), rB.getY())) {
-                        wb.setOpponentScan(rB.getX(), rB.getY(),
+                        wb.setOpponentScan("TestBot", rB.getX(), rB.getY(),
                                 rB.getBodyHeading(), rB.getVelocity(), rB.getEnergy());
                     }
                 }
@@ -238,7 +238,7 @@ class PhaseHFeaturesTest {
                     if (firstTick || Player.radarSweepIntersects(
                             rA.getX(), rA.getY(), prevRadar,
                             rA.getRadarHeading(), rB.getX(), rB.getY())) {
-                        wb.setOpponentScan(rB.getX(), rB.getY(),
+                        wb.setOpponentScan("TestBot", rB.getX(), rB.getY(),
                                 rB.getBodyHeading(), rB.getVelocity(), rB.getEnergy());
                     }
                 }
@@ -295,7 +295,7 @@ class PhaseHFeaturesTest {
                     if (firstTick || Player.radarSweepIntersects(
                             rA.getX(), rA.getY(), prevRadar,
                             rA.getRadarHeading(), rB.getX(), rB.getY())) {
-                        wb.setOpponentScan(rB.getX(), rB.getY(),
+                        wb.setOpponentScan("TestBot", rB.getX(), rB.getY(),
                                 rB.getBodyHeading(), rB.getVelocity(), rB.getEnergy());
                     }
                 }

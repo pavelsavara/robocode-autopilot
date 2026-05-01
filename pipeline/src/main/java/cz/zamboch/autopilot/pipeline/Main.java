@@ -5,6 +5,7 @@ import cz.zamboch.autopilot.core.Whiteboard;
 import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.pipeline.features.CombatStateOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.EnergyOfflineFeatures;
+import cz.zamboch.autopilot.pipeline.features.IdentityOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.MovementOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.MovementSegmentationOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.OpponentPredictionOfflineFeatures;
@@ -159,6 +160,7 @@ public final class Main {
 
     static Transformer createTransformer() {
         Transformer t = new Transformer();
+        t.register(new IdentityOfflineFeatures());
         t.register(new SpatialOfflineFeatures());
         t.register(new MovementOfflineFeatures());
         t.register(new EnergyOfflineFeatures());

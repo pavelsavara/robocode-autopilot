@@ -82,7 +82,7 @@ try {
         '--repo', REPO,
         '--pattern', 'csv-chunk-*',
         '--dir', tmpDir
-    ], { stdio: 'inherit', timeout: 600_000 });
+    ], { stdio: 'inherit', timeout: 3_600_000 });
 } catch (e) {
     // gh run download may error on existing files — that's OK
     console.log('  (some artifacts may have already existed)');

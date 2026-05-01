@@ -18,9 +18,9 @@ class MainTest {
     void createTransformerRegistersAllFeatures() {
         Transformer t = Main.createTransformer();
 
-        // Should have 10 registered features (4 offline subclasses + 6 pipeline-only)
+        // Should have 11 registered features (5 offline subclasses + 6 pipeline-only)
         List<IInGameFeatures> features = t.getFeatures();
-        assertEquals(10, features.size());
+        assertEquals(11, features.size());
     }
 
     @Test
@@ -31,7 +31,7 @@ class MainTest {
         wb.onRoundStart(0, 800, 600, 0.1, 10);
         wb.setOurState(400, 300, 0, 0, 0, 0, 100, 2.0);
         wb.setTick(0);
-        wb.setOpponentScan(500, 400, Math.PI, -3.5, 95);
+        wb.setOpponentScan("TestBot", 500, 400, Math.PI, -3.5, 95);
 
         t.process(wb);
 

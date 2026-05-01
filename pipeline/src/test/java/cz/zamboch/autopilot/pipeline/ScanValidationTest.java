@@ -54,8 +54,8 @@ class ScanValidationTest {
 
         Whiteboard wbA = new Whiteboard() {
             @Override
-            public void setOpponentScan(double x, double y, double heading, double velocity, double energy) {
-                super.setOpponentScan(x, y, heading, velocity, energy);
+            public void setOpponentScan(String name, double x, double y, double heading, double velocity, double energy) {
+                super.setOpponentScan(name, x, y, heading, velocity, energy);
                 scanCountA[0]++;
                 // Validate against god-view
                 if (godViewB[0] != null) {
@@ -79,8 +79,8 @@ class ScanValidationTest {
 
         Whiteboard wbB = new Whiteboard() {
             @Override
-            public void setOpponentScan(double x, double y, double heading, double velocity, double energy) {
-                super.setOpponentScan(x, y, heading, velocity, energy);
+            public void setOpponentScan(String name, double x, double y, double heading, double velocity, double energy) {
+                super.setOpponentScan(name, x, y, heading, velocity, energy);
                 scanCountB[0]++;
                 if (godViewA[0] != null) {
                     double gvX = godViewA[0][0];
@@ -144,7 +144,7 @@ class ScanValidationTest {
                     if (isFirstTick || Player.radarSweepIntersects(
                             rA.getX(), rA.getY(), prevRadarHeadingA, rA.getRadarHeading(),
                             rB.getX(), rB.getY())) {
-                        wbA.setOpponentScan(rB.getX(), rB.getY(), rB.getBodyHeading(),
+                        wbA.setOpponentScan("TestBot", rB.getX(), rB.getY(), rB.getBodyHeading(),
                                 rB.getVelocity(), rB.getEnergy());
                     }
                 }
@@ -153,7 +153,7 @@ class ScanValidationTest {
                     if (isFirstTick || Player.radarSweepIntersects(
                             rB.getX(), rB.getY(), prevRadarHeadingB, rB.getRadarHeading(),
                             rA.getX(), rA.getY())) {
-                        wbB.setOpponentScan(rA.getX(), rA.getY(), rA.getBodyHeading(),
+                        wbB.setOpponentScan("TestBot", rA.getX(), rA.getY(), rA.getBodyHeading(),
                                 rA.getVelocity(), rA.getEnergy());
                     }
                 }
@@ -210,8 +210,8 @@ class ScanValidationTest {
 
                 Whiteboard wbA = new Whiteboard() {
                     @Override
-                    public void setOpponentScan(double x, double y, double heading, double velocity, double energy) {
-                        super.setOpponentScan(x, y, heading, velocity, energy);
+                    public void setOpponentScan(String name, double x, double y, double heading, double velocity, double energy) {
+                        super.setOpponentScan(name, x, y, heading, velocity, energy);
                         scanTicks[0]++;
                     }
                 };

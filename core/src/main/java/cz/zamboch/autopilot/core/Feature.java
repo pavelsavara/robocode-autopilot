@@ -5,6 +5,12 @@ package cz.zamboch.autopilot.core;
  */
 public enum Feature {
 
+    // === Identity (no dependencies) ===
+
+    /** Stable hash of opponent robot name. Unit: integer (32-bit).
+     *  Eq: FNV-1a hash of opponent name string. Bot fingerprint / segmentation key. */
+    OPPONENT_NAME_HASH,
+
     // === Spatial (no dependencies) ===
 
     /** Euclidean distance to opponent. Unit: px. Eq: hypot(oppX-ourX, oppY-ourY).

@@ -15,6 +15,7 @@ public class Whiteboard {
     private String battleId;
 
     // Opponent state (from last scan — may be stale)
+    private String opponentName;
     private double opponentX, opponentY, opponentHeading, opponentVelocity, opponentEnergy;
     private double prevOpponentEnergy;
     private double prevOpponentHeading = Double.NaN;
@@ -156,6 +157,7 @@ public class Whiteboard {
     public int getRound() { return round; }
     public String getBattleId() { return battleId; }
 
+    public String getOpponentName() { return opponentName; }
     public double getOpponentX() { return opponentX; }
     public double getOpponentY() { return opponentY; }
     public double getOpponentHeading() { return opponentHeading; }
@@ -210,7 +212,10 @@ public class Whiteboard {
         this.ourGunHeat = gunHeat;
     }
 
-    public void setOpponentScan(double x, double y, double heading, double velocity, double energy) {
+    public void setOpponentScan(String name, double x, double y, double heading, double velocity, double energy) {
+        if (this.opponentName == null) {
+            this.opponentName = name;
+        }
         this.prevOpponentEnergy = this.opponentEnergy;
         this.prevOpponentHeading = this.opponentHeading;
         this.prevOpponentVelocity = this.opponentVelocity;

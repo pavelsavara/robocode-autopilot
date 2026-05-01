@@ -23,12 +23,14 @@ Build a competitive Robocode robot powered by machine learning, trained on data 
 - 3-module Gradle project: `core` (in-game logic), `pipeline` (offline processing), `robot` (competition bot)
 - Java 8 target (required for Robocode engine compatibility)
 - **28 features implemented** out of 443 specified in the catalog
+- **Opponent identity**: `opponentName` captured from first scan event, `OPPONENT_NAME_HASH` (FNV-1a 32-bit) as numeric feature for ML segmentation
 - Pipeline: `.br` file → Loader → Player (scan synthesis, event replay) → Whiteboard → Transformer → CsvWriter
 - Dual-perspective output (both robots' views per battle)
 - All 23 unit + integration tests passing
 - Output: `ticks.csv`, `waves.csv`, `scores.csv` per battle per robot perspective
 
-**Implemented features (28):**
+**Implemented features (28 + 1 identity):**
+- Identity (1): opponent name hash (FNV-1a 32-bit of opponent name string — stable bot fingerprint)
 - Core 12: distance, bearing, opponent velocity/lateral/advancing, heading delta, energy, fired detection, fire power, gun heat, ticks since scan, opponent wall distance
 - Phase H (16): lateral direction, velocity delta, is decelerating, time since direction change, angular velocity, max turn rate, distance norm, energy ratio, our lateral velocity, our wall distance, opponent wall ahead distance, opponent inferred gun heat, combat state features
 
@@ -85,15 +87,40 @@ download-csv.mjs → output/csv/{battleId}/{perspective}/ticks.csv
 
 ### Step 2: Expanded Intuition Analysis
 
-Once Stage 2 CI produces CSVs from the full 50-bot dataset:
-- Download CSVs locally
-- Re-run existing 4 notebooks on the larger dataset
-- Expand analysis with:
-  - Per-bot behavioral fingerprinting (50 bots instead of 5)
-  - Cross-bot clustering to discover movement archetypes
-  - Feature importance analysis with the full dataset
-  - Temporal pattern analysis (35 rounds gives real time-series data)
-  - Correlation analysis between features and round outcomes
+**⚠️ CSV re-generation required:** The `opponent_name_hash` column was added to `ticks.csv` after the initial pipeline runs. Must re-run `process-recordings.yml` on CI and re-download CSVs before the expanded analysis.
+
+Re-run and expand the intuition notebooks on the full 50-bot × 35-round × 5-battle dataset.
+See [initial findings](archive/2026-05-01-intuition-initial.md) for what the 5-bot dataset revealed.
+
+**Data prep:**
+- Download CSVs from all 5 season process-recordings runs via `download-csv.mjs`
+- Expected: ~6000 battles × 2 perspectives × ~500 ticks/round × 35 rounds ≈ 200M+ tick rows
+
+**Questions the larger dataset can answer:**
+
+*Movement prediction (Domain A) — the core ML challenge:*
+1. **Can we predict opponent position N ticks ahead?** Train regression on `opponent_x(t+N), opponent_y(t+N)` from current features. Baseline: linear extrapolation vs. circular vs. ML. Error in pixels at N=5,10,20.
+2. **Do movement patterns differ by bot archetype?** Cluster bots by their movement feature distributions (lateral velocity variance, direction change rate, wall hugging fraction). How many distinct archetypes emerge from 50 bots?
+3. **Are movement patterns periodic/predictable?** Autocorrelation of `opponent_lateral_velocity` at various lags. Which bots are oscillators vs. random movers?
+4. **Does opponent movement change across rounds?** Compare feature distributions in rounds 1-5 vs. 30-35 for adaptive bots (DrussGT, Diamond) vs. static bots.
+
+*Targeting/firing (Domain B, C):*
+5. **Can we predict opponent fire POWER (not just timing)?** The initial analysis showed fire timing is trivial (gun heat). But fire power selection varies — do bots change power based on distance, energy, or our movement?
+6. **What determines round outcomes?** With ~6000 × 35 = 210K rounds (vs. 100 in initial analysis), can we build a reliable round-winner model? Which tick-level features best predict who wins?
+
+*Bot fingerprinting (Domain E):*
+7. **Can we identify a bot from its behavior alone?** Train a classifier: given 50 ticks of feature data, predict which of the 50 bots is playing. Which features are most discriminative?
+8. **How quickly can we identify a bot?** Accuracy vs. number of observed ticks. Can we classify within the first 20 ticks of round 1?
+9. **Do bot pairings affect behavior?** Does DrussGT play differently against Diamond vs. against Saguaro? Interaction effects in the feature space.
+
+*Game state analysis:*
+10. **Do the 3 game-state clusters hold at scale?** Re-run K-Means/DBSCAN on 50-bot data. Do more clusters emerge? Are they bot-specific or universal?
+11. **Are there "winning" game states?** Which cluster (close/mid/long range) correlates with better outcomes for which bot types?
+
+**Notebook plan:**
+- `05_movement_prediction.ipynb` — Questions 1-4 (position prediction, archetypes, periodicity, adaptation)
+- `06_bot_fingerprinting.ipynb` — Questions 7-9 (identification, speed, pairings)
+- `07_round_outcomes.ipynb` — Questions 5-6, 10-11 (power prediction, win factors, game states)
 
 ### Step 3: ML Architecture Design
 

@@ -29,7 +29,7 @@ class MovementFeaturesTest {
     void computesVelocityFromScan() {
         wb.setOurState(400, 300, 0, 0, 0, 0, 100, 0);
         wb.setTick(0);
-        wb.setOpponentScan(600, 300, 0, 5.5, 100);
+        wb.setOpponentScan("TestBot", 600, 300, 0, 5.5, 100);
 
         spatial.process(wb);
         processor.process(wb);
@@ -47,7 +47,7 @@ class MovementFeaturesTest {
         // Lateral = 8 * sin(-PI/2) = -8
         wb.setOurState(400, 300, 0, 0, 0, 0, 100, 0);
         wb.setTick(0);
-        wb.setOpponentScan(600, 300, 0, 8, 100);
+        wb.setOpponentScan("TestBot", 600, 300, 0, 8, 100);
 
         spatial.process(wb);
         processor.process(wb);
@@ -65,7 +65,7 @@ class MovementFeaturesTest {
         // advancing = -6 * cos(PI) = 6 (positive = approaching)
         wb.setOurState(400, 300, 0, 0, 0, 0, 100, 0);
         wb.setTick(0);
-        wb.setOpponentScan(400, 500, Math.PI, 6, 100);
+        wb.setOpponentScan("TestBot", 400, 500, Math.PI, 6, 100);
 
         spatial.process(wb);
         processor.process(wb);
@@ -80,7 +80,7 @@ class MovementFeaturesTest {
 
         // First scan — sets prevOpponentHeading
         wb.setTick(0);
-        wb.setOpponentScan(600, 300, 1.0, 5, 100);
+        wb.setOpponentScan("TestBot", 600, 300, 1.0, 5, 100);
         spatial.process(wb);
         processor.process(wb);
 
@@ -91,7 +91,7 @@ class MovementFeaturesTest {
         wb.advanceTick();
 
         // Second scan — now heading delta should be computed
-        wb.setOpponentScan(600, 300, 1.2, 5, 100);
+        wb.setOpponentScan("TestBot", 600, 300, 1.2, 5, 100);
         spatial.process(wb);
         processor.process(wb);
 
@@ -105,14 +105,14 @@ class MovementFeaturesTest {
 
         // First scan: heading just below 2*PI
         wb.setTick(0);
-        wb.setOpponentScan(600, 300, 6.0, 5, 100);
+        wb.setOpponentScan("TestBot", 600, 300, 6.0, 5, 100);
         spatial.process(wb);
         processor.process(wb);
 
         wb.advanceTick();
 
         // Second scan: heading just above 0 — small positive turn
-        wb.setOpponentScan(600, 300, 0.3, 5, 100);
+        wb.setOpponentScan("TestBot", 600, 300, 0.3, 5, 100);
         spatial.process(wb);
         processor.process(wb);
 
