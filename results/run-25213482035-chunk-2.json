@@ -1,0 +1,10 @@
+[
+  {
+    "error": true,
+    "bot_a": "aaa.r.ScalarR 0.005h.053-noshield",
+    "bot_b": "rsalesc.mega.Knight 0.6.28",
+    "message": "Battle failed: exit code 143",
+    "stderr": "",
+    "stdout": "Loaded net.sf.robocode.api\nLoaded net.sf.robocode.core\nLoading plugins from /opt/robocode/libs\nLoaded net.sf.robocode.sound\nLoaded net.sf.robocode.host\nLoaded net.sf.robocode.ui\nLoaded net.sf.robocode.battle\nLoaded net.sf.robocode.repository\nLoaded net.sf.robocode.ui.editor\nInitializing version check date.\nWarning: Robocode is running without a security manager.\n  Robots have full access to your system.\n  You should only run robots which you trust!\n"
+  }
+]
