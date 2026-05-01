@@ -1,8 +1,8 @@
 {
-  "generated": "2026-05-01T12:02:44.058Z",
+  "generated": "2026-05-01T12:07:05.702Z",
   "total_bots": 50,
   "total_pairings": 1225,
-  "total_battles": 6107,
+  "total_battles": 6108,
   "rankings": [
     {
       "name": "kc.mega.BeepBoop 2.0",
@@ -50,13 +50,13 @@
     },
     {
       "name": "rsalesc.mega.Knight 0.6.28",
-      "aps": 60.71,
-      "survival": 74.24,
+      "aps": 60.74,
+      "survival": 74.28,
       "vote": 91.84,
       "pwin": 91.84,
       "pairings": 49,
-      "battles": 235,
-      "anpp": 59.69,
+      "battles": 236,
+      "anpp": 59.75,
       "rank": 5
     },
     {
@@ -226,13 +226,13 @@
     },
     {
       "name": "jk.melee.Neuromancer 7.12",
-      "aps": 51.63,
-      "survival": 56.62,
+      "aps": 51.6,
+      "survival": 56.58,
       "vote": 59.18,
       "pwin": 59.18,
       "pairings": 49,
-      "battles": 244,
-      "anpp": 43.23,
+      "battles": 245,
+      "anpp": 43.18,
       "rank": 21
     },
     {
