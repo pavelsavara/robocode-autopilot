@@ -34,6 +34,11 @@ on:
         required: false
         default: '2'
         type: string
+      participants:
+        description: 'Participants file (relative to repo root)'
+        required: false
+        default: 'rumble/top50.txt'
+        type: string
 
 permissions:
   contents: write
@@ -72,7 +77,7 @@ jobs:
           fi
 
           node rumble/scripts/plan-battles.mjs \
-            --participants rumble/top50.txt \
+            --participants ${{ inputs.participants || 'rumble/top50.txt' }} \
             --chunks ${{ inputs.max_parallel || '20' }} \
             --min-battles ${{ inputs.min_battles_per_pair || '2' }} \
             $RESULTS_FLAG \
@@ -375,7 +380,7 @@ jobs:
 
           # Plan with min-battles filter to count how many pairs still need battles
           node rumble/scripts/plan-battles.mjs \
-            --participants rumble/top50.txt \
+            --participants ${{ inputs.participants || 'rumble/top50.txt' }} \
             --chunks 1 \
             --min-battles ${{ inputs.min_battles_per_pair || '2' }} \
             $RESULTS_FLAG \
@@ -408,5 +413,6 @@ jobs:
             -f rounds="${{ inputs.rounds || '35' }}" \
             -f season="$NEXT_SEASON" \
             -f max_seasons="${{ inputs.max_seasons || '5' }}" \
-            -f min_battles_per_pair="${{ inputs.min_battles_per_pair || '2' }}"
+            -f min_battles_per_pair="${{ inputs.min_battles_per_pair || '2' }}" \
+            -f participants="${{ inputs.participants || 'rumble/top50.txt' }}"
           echo "Triggered season $NEXT_SEASON"
