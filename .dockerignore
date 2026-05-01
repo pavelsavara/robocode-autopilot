@@ -4,3 +4,6 @@
 # Allow pre-built Robocode installation and battle runner script
 !/robocode-home
 !/rumble/scripts/run-battle.mjs
+
+# Allow pipeline distribution (for Dockerfile.pipeline)
+!/pipeline/build/install/pipeline

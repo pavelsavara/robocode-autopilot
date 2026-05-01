@@ -1,0 +1,155 @@
+# process-recordings.yml — Run Stage 2 feature extraction on battle recordings.
+# Produces CSV artifacts (ticks.csv, waves.csv, scores.csv per battle per perspective).
+#
+# Triggers:
+#   - Auto after run-season.yml completes successfully
+#   - Manual with a specific run ID for reprocessing
+
+name: Process Recordings
+
+on:
+  workflow_run:
+    workflows: ["Run Rumble Season"]
+    types: [completed]
+
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: 'Run ID of the season run to process (leave empty for latest)'
+        required: false
+        type: string
+      max_parallel:
+        description: 'Maximum parallel processing jobs'
+        required: false
+        default: '20'
+        type: string
+
+permissions:
+  contents: read
+  packages: read
+  actions: read
+
+jobs:
+  # ─── Step 1: Discover recording chunks and plan processing ───
+  plan:
+    runs-on: ubuntu-latest
+    # Only run on successful season completions (or manual trigger)
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      total_chunks: ${{ steps.plan.outputs.total_chunks }}
+      source_run_id: ${{ steps.plan.outputs.source_run_id }}
+    steps:
+      - name: Determine source run
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Determine which run to pull recordings from
+          if [ -n "${{ inputs.source_run_id }}" ]; then
+            RUN_ID="${{ inputs.source_run_id }}"
+            echo "Using manually specified run: $RUN_ID"
+          elif [ "${{ github.event_name }}" = "workflow_run" ]; then
+            RUN_ID="${{ github.event.workflow_run.id }}"
+            echo "Using triggering run: $RUN_ID"
+          else
+            # Find latest successful run-season run
+            RUN_ID=$(gh api "repos/${{ github.repository }}/actions/workflows/run-season.yml/runs?status=success&per_page=1" \
+              --jq '.workflow_runs[0].id')
+            echo "Using latest successful season run: $RUN_ID"
+          fi
+
+          echo "source_run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+
+          # List recording artifacts from that run
+          ARTIFACTS=$(gh api "repos/${{ github.repository }}/actions/runs/$RUN_ID/artifacts" \
+            --jq '[.artifacts[] | select(.name | startswith("recordings-chunk-")) | .name] | sort')
+
+          CHUNK_COUNT=$(echo "$ARTIFACTS" | jq 'length')
+          echo "Found $CHUNK_COUNT recording chunks in run $RUN_ID"
+
+          if [ "$CHUNK_COUNT" -eq 0 ]; then
+            echo "::error::No recording artifacts found in run $RUN_ID"
+            echo "total_chunks=0" >> "$GITHUB_OUTPUT"
+            echo 'matrix={"chunk":[]}' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Build matrix from chunk indices
+          MATRIX=$(echo "$ARTIFACTS" | jq -c '{chunk: [range(length)]}')
+          # Also save artifact names for lookup
+          echo "$ARTIFACTS" > /tmp/artifact-names.json
+
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          echo "total_chunks=$CHUNK_COUNT" >> "$GITHUB_OUTPUT"
+
+      - name: Save artifact names
+        if: steps.plan.outputs.total_chunks != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUN_ID="${{ steps.plan.outputs.source_run_id }}"
+          gh api "repos/${{ github.repository }}/actions/runs/$RUN_ID/artifacts" \
+            --jq '[.artifacts[] | select(.name | startswith("recordings-chunk-")) | .name] | sort' \
+            > artifact-names.json
+
+      - uses: actions/upload-artifact@v7
+        if: steps.plan.outputs.total_chunks != '0'
+        with:
+          name: processing-plan
+          path: artifact-names.json
+
+  # ─── Step 2: Process recording chunks in parallel ───
+  process:
+    needs: [plan]
+    if: needs.plan.outputs.total_chunks != '0'
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/pavelsavara/robocode-autopilot/pipeline-runner:latest
+    strategy:
+      matrix: ${{ fromJson(needs.plan.outputs.matrix) }}
+      max-parallel: 20
+      fail-fast: false
+    steps:
+      # Download the artifact name list
+      - uses: actions/download-artifact@v8
+        with:
+          name: processing-plan
+
+      # Determine which recording artifact to download
+      - name: Resolve artifact name
+        id: resolve
+        run: |
+          ARTIFACT_NAME=$(jq -r '.[${{ matrix.chunk }}]' artifact-names.json)
+          echo "artifact_name=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
+          echo "Processing chunk ${{ matrix.chunk }}: $ARTIFACT_NAME"
+
+      # Download recording artifact from the source run
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ steps.resolve.outputs.artifact_name }}
+          path: /data/recordings
+          github-token: ${{ github.token }}
+          run-id: ${{ needs.plan.outputs.source_run_id }}
+
+      - name: List recordings
+        run: |
+          echo "Downloaded .br files:"
+          find /data/recordings -name '*.br' | wc -l
+
+      # Run Stage 2 pipeline
+      - name: Process recordings
+        run: |
+          mkdir -p /data/csv
+          /opt/pipeline/bin/pipeline \
+            --input /data/recordings \
+            --output /data/csv
+
+      # Upload CSV output
+      - uses: actions/upload-artifact@v7
+        with:
+          name: csv-chunk-${{ matrix.chunk }}
+          path: /data/csv/
+          retention-days: 90

@@ -1,0 +1,13 @@
+# Stage 2 pipeline runner image.
+# Processes .br battle recordings into CSV feature files.
+# Built from the Gradle installDist output (see build-docker-pipeline.yml).
+FROM eclipse-temurin:21-jre-alpine
+
+RUN apk add --no-cache jq
+
+# Copy pre-built pipeline distribution (bin/ + lib/)
+COPY pipeline/build/install/pipeline/ /opt/pipeline/
+
+WORKDIR /data
+
+ENTRYPOINT ["/opt/pipeline/bin/pipeline"]
