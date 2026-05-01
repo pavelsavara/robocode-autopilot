@@ -36,3 +36,4 @@ build/
 # Pipeline output
 output/
 intuition/.venv/
+recordings/**/*.br
