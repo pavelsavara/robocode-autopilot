@@ -53,7 +53,7 @@ function runSingleBattle(botA, botB) {
         `robocode.battle.numRounds=${rounds}`,
         'robocode.battle.gunCoolingRate=0.1',
         'robocode.battle.rules.inactivityTime=450',
-        'robocode.battle.hideEnemyNames=true',
+        'robocode.battle.hideEnemyNames=false',
         `robocode.battle.selectedRobots=${classA},${classB}`,
         '',
     ].join('\n');
