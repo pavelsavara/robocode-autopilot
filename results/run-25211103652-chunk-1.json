@@ -1,0 +1,37 @@
+[
+  {
+    "timestamp": "2026-05-01T10:26:33.946Z",
+    "rounds": 5,
+    "field": "800x600",
+    "elapsed_ms": 8853,
+    "bot_a": {
+      "name": "voidious.Diamond 1.8.22",
+      "total_score": 369,
+      "score_pct": 59,
+      "survival": 200,
+      "survival_bonus": 40,
+      "bullet_damage": 111,
+      "bullet_bonus": 19,
+      "ram_damage": 0,
+      "ram_bonus": 0,
+      "firsts": 4,
+      "seconds": 1,
+      "thirds": 0
+    },
+    "bot_b": {
+      "name": "oog.mega.saguaro.Saguaro 1.0",
+      "total_score": 261,
+      "score_pct": 41,
+      "survival": 50,
+      "survival_bonus": 10,
+      "bullet_damage": 188,
+      "bullet_bonus": 13,
+      "ram_damage": 0,
+      "ram_bonus": 0,
+      "firsts": 1,
+      "seconds": 4,
+      "thirds": 0
+    },
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/67953143.br"
+  }
+]

@@ -1,51 +1,51 @@
 {
-  "generated": "2026-04-22T19:11:05.135Z",
+  "generated": "2026-05-01T10:27:14.676Z",
   "total_bots": 50,
   "total_pairings": 1225,
-  "total_battles": 2447,
+  "total_battles": 2457,
   "rankings": [
     {
       "name": "kc.mega.BeepBoop 2.0",
-      "aps": 79.79,
-      "survival": 94.77,
+      "aps": 79.87,
+      "survival": 94.91,
       "vote": 100,
       "pwin": 100,
       "pairings": 49,
-      "battles": 96,
-      "anpp": 104.79,
+      "battles": 100,
+      "anpp": 105.34,
       "rank": 1
     },
     {
       "name": "aaa.r.ScalarR 0.005h.053-noshield",
-      "aps": 71.77,
-      "survival": 84.43,
+      "aps": 71.43,
+      "survival": 83.9,
       "vote": 97.96,
       "pwin": 97.96,
       "pairings": 49,
-      "battles": 97,
-      "anpp": 86.34,
+      "battles": 101,
+      "anpp": 85.75,
       "rank": 2
     },
     {
       "name": "jk.mega.DrussGT 3.1.7",
-      "aps": 69.8,
-      "survival": 79.17,
+      "aps": 69.68,
+      "survival": 79.2,
       "vote": 93.88,
       "pwin": 93.88,
       "pairings": 49,
-      "battles": 98,
-      "anpp": 81.47,
+      "battles": 102,
+      "anpp": 81.44,
       "rank": 3
     },
     {
       "name": "voidious.Diamond 1.8.22",
-      "aps": 67.6,
-      "survival": 78.89,
+      "aps": 67.17,
+      "survival": 78.45,
       "vote": 95.92,
       "pwin": 95.92,
       "pairings": 49,
-      "battles": 98,
-      "anpp": 79.8,
+      "battles": 102,
+      "anpp": 79.24,
       "rank": 4
     },
     {
@@ -56,7 +56,7 @@
       "pwin": 89.8,
       "pairings": 49,
       "battles": 96,
-      "anpp": 71.33,
+      "anpp": 71.37,
       "rank": 5
     },
     {
@@ -67,7 +67,7 @@
       "pwin": 59.18,
       "pairings": 49,
       "battles": 97,
-      "anpp": 69.25,
+      "anpp": 69.29,
       "rank": 6
     },
     {
@@ -78,7 +78,7 @@
       "pwin": 71.43,
       "pairings": 49,
       "battles": 98,
-      "anpp": 68.11,
+      "anpp": 68.21,
       "rank": 7
     },
     {
@@ -89,7 +89,7 @@
       "pwin": 87.76,
       "pairings": 49,
       "battles": 98,
-      "anpp": 69.22,
+      "anpp": 69.26,
       "rank": 8
     },
     {
@@ -100,7 +100,7 @@
       "pwin": 89.8,
       "pairings": 49,
       "battles": 98,
-      "anpp": 68.75,
+      "anpp": 68.77,
       "rank": 9
     },
     {
@@ -111,7 +111,7 @@
       "pwin": 79.59,
       "pairings": 49,
       "battles": 98,
-      "anpp": 67.79,
+      "anpp": 67.89,
       "rank": 10
     },
     {
@@ -122,7 +122,7 @@
       "pwin": 75.51,
       "pairings": 49,
       "battles": 98,
-      "anpp": 65.23,
+      "anpp": 65.27,
       "rank": 11
     },
     {
@@ -133,7 +133,7 @@
       "pwin": 79.59,
       "pairings": 49,
       "battles": 98,
-      "anpp": 64.99,
+      "anpp": 65.06,
       "rank": 12
     },
     {
@@ -144,7 +144,7 @@
       "pwin": 79.59,
       "pairings": 49,
       "battles": 98,
-      "anpp": 64.33,
+      "anpp": 64.39,
       "rank": 13
     },
     {
@@ -155,7 +155,7 @@
       "pwin": 65.31,
       "pairings": 49,
       "battles": 98,
-      "anpp": 63.32,
+      "anpp": 63.38,
       "rank": 14
     },
     {
@@ -166,7 +166,7 @@
       "pwin": 73.47,
       "pairings": 49,
       "battles": 98,
-      "anpp": 63.8,
+      "anpp": 63.85,
       "rank": 15
     },
     {
@@ -177,7 +177,7 @@
       "pwin": 73.47,
       "pairings": 49,
       "battles": 98,
-      "anpp": 63.12,
+      "anpp": 63.17,
       "rank": 16
     },
     {
@@ -188,7 +188,7 @@
       "pwin": 71.43,
       "pairings": 49,
       "battles": 98,
-      "anpp": 62.7,
+      "anpp": 62.74,
       "rank": 17
     },
     {
@@ -199,7 +199,7 @@
       "pwin": 63.27,
       "pairings": 49,
       "battles": 98,
-      "anpp": 62.49,
+      "anpp": 62.55,
       "rank": 18
     },
     {
@@ -210,7 +210,7 @@
       "pwin": 59.18,
       "pairings": 49,
       "battles": 98,
-      "anpp": 61.19,
+      "anpp": 61.24,
       "rank": 19
     },
     {
@@ -221,7 +221,7 @@
       "pwin": 65.31,
       "pairings": 49,
       "battles": 98,
-      "anpp": 60.14,
+      "anpp": 60.22,
       "rank": 20
     },
     {
@@ -232,7 +232,7 @@
       "pwin": 57.14,
       "pairings": 49,
       "battles": 98,
-      "anpp": 58.83,
+      "anpp": 58.89,
       "rank": 21
     },
     {
@@ -243,7 +243,7 @@
       "pwin": 57.14,
       "pairings": 49,
       "battles": 98,
-      "anpp": 58.78,
+      "anpp": 58.8,
       "rank": 22
     },
     {
@@ -254,7 +254,7 @@
       "pwin": 65.31,
       "pairings": 49,
       "battles": 98,
-      "anpp": 59.23,
+      "anpp": 59.31,
       "rank": 23
     },
     {
@@ -265,7 +265,7 @@
       "pwin": 48.98,
       "pairings": 49,
       "battles": 98,
-      "anpp": 56.05,
+      "anpp": 56.11,
       "rank": 24
     },
     {
@@ -276,7 +276,7 @@
       "pwin": 48.98,
       "pairings": 49,
       "battles": 98,
-      "anpp": 54.17,
+      "anpp": 54.23,
       "rank": 25
     },
     {
@@ -287,7 +287,7 @@
       "pwin": 34.69,
       "pairings": 49,
       "battles": 98,
-      "anpp": 53.43,
+      "anpp": 53.5,
       "rank": 26
     },
     {
@@ -298,8 +298,19 @@
       "pwin": 40.82,
       "pairings": 49,
       "battles": 98,
-      "anpp": 53.17,
+      "anpp": 53.22,
       "rank": 27
+    },
+    {
+      "name": "oog.mega.saguaro.Saguaro 1.0",
+      "aps": 46.59,
+      "survival": 41.22,
+      "vote": 30.61,
+      "pwin": 30.61,
+      "pairings": 49,
+      "battles": 102,
+      "anpp": 51.55,
+      "rank": 28
     },
     {
       "name": "jk.precise.Wintermute 0.8",
@@ -309,8 +320,8 @@
       "pwin": 32.65,
       "pairings": 49,
       "battles": 98,
-      "anpp": 52.09,
-      "rank": 28
+      "anpp": 52.15,
+      "rank": 29
     },
     {
       "name": "fromHell.BlackBox 0.0.2",
@@ -320,8 +331,8 @@
       "pwin": 34.69,
       "pairings": 49,
       "battles": 98,
-      "anpp": 51.19,
-      "rank": 29
+      "anpp": 51.26,
+      "rank": 30
     },
     {
       "name": "sheldor.mini.Foilist 1.3.1",
@@ -331,18 +342,7 @@
       "pwin": 38.78,
       "pairings": 49,
       "battles": 98,
-      "anpp": 49.77,
-      "rank": 30
-    },
-    {
-      "name": "oog.mega.saguaro.Saguaro 1.0",
-      "aps": 45.79,
-      "survival": 40.5,
-      "vote": 30.61,
-      "pwin": 30.61,
-      "pairings": 49,
-      "battles": 98,
-      "anpp": 50.39,
+      "anpp": 49.83,
       "rank": 31
     },
     {
@@ -353,7 +353,7 @@
       "pwin": 28.57,
       "pairings": 49,
       "battles": 98,
-      "anpp": 50.67,
+      "anpp": 50.74,
       "rank": 32
     },
     {
@@ -364,7 +364,7 @@
       "pwin": 18.37,
       "pairings": 49,
       "battles": 98,
-      "anpp": 50.09,
+      "anpp": 50.14,
       "rank": 33
     },
     {
@@ -375,7 +375,7 @@
       "pwin": 26.53,
       "pairings": 49,
       "battles": 98,
-      "anpp": 50.08,
+      "anpp": 50.12,
       "rank": 34
     },
     {
@@ -386,7 +386,7 @@
       "pwin": 28.57,
       "pairings": 49,
       "battles": 98,
-      "anpp": 50.45,
+      "anpp": 50.49,
       "rank": 35
     },
     {
@@ -397,7 +397,7 @@
       "pwin": 28.57,
       "pairings": 49,
       "battles": 98,
-      "anpp": 50.32,
+      "anpp": 50.35,
       "rank": 36
     },
     {
@@ -408,7 +408,7 @@
       "pwin": 20.41,
       "pairings": 49,
       "battles": 98,
-      "anpp": 49.34,
+      "anpp": 49.39,
       "rank": 37
     },
     {
@@ -419,7 +419,7 @@
       "pwin": 42.86,
       "pairings": 49,
       "battles": 98,
-      "anpp": 49.75,
+      "anpp": 49.8,
       "rank": 38
     },
     {
@@ -430,7 +430,7 @@
       "pwin": 38.78,
       "pairings": 49,
       "battles": 98,
-      "anpp": 49.09,
+      "anpp": 49.16,
       "rank": 39
     },
     {
@@ -441,7 +441,7 @@
       "pwin": 24.49,
       "pairings": 49,
       "battles": 98,
-      "anpp": 48.61,
+      "anpp": 48.64,
       "rank": 40
     },
     {
@@ -452,7 +452,7 @@
       "pwin": 42.86,
       "pairings": 49,
       "battles": 98,
-      "anpp": 48.47,
+      "anpp": 48.5,
       "rank": 41
     },
     {
@@ -463,7 +463,7 @@
       "pwin": 12.24,
       "pairings": 49,
       "battles": 98,
-      "anpp": 46.99,
+      "anpp": 47.06,
       "rank": 42
     },
     {
@@ -474,7 +474,7 @@
       "pwin": 26.53,
       "pairings": 49,
       "battles": 98,
-      "anpp": 46.62,
+      "anpp": 46.66,
       "rank": 43
     },
     {
@@ -496,7 +496,7 @@
       "pwin": 26.53,
       "pairings": 49,
       "battles": 98,
-      "anpp": 45.7,
+      "anpp": 45.75,
       "rank": 45
     },
     {
@@ -507,7 +507,7 @@
       "pwin": 10.2,
       "pairings": 49,
       "battles": 98,
-      "anpp": 44.34,
+      "anpp": 44.4,
       "rank": 46
     },
     {
@@ -518,7 +518,7 @@
       "pwin": 10.2,
       "pairings": 49,
       "battles": 98,
-      "anpp": 43.72,
+      "anpp": 43.79,
       "rank": 47
     },
     {
@@ -529,7 +529,7 @@
       "pwin": 20.41,
       "pairings": 49,
       "battles": 98,
-      "anpp": 42.91,
+      "anpp": 42.94,
       "rank": 48
     },
     {
@@ -540,7 +540,7 @@
       "pwin": 4.08,
       "pairings": 49,
       "battles": 98,
-      "anpp": 40.5,
+      "anpp": 40.55,
       "rank": 49
     },
     {
@@ -551,7 +551,7 @@
       "pwin": 0,
       "pairings": 49,
       "battles": 98,
-      "anpp": -50.01,
+      "anpp": -50.5,
       "rank": 50
     }
   ]

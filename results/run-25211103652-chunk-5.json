@@ -1,0 +1,37 @@
+[
+  {
+    "timestamp": "2026-05-01T10:26:51.136Z",
+    "rounds": 5,
+    "field": "800x600",
+    "elapsed_ms": 20398,
+    "bot_a": {
+      "name": "kc.mega.BeepBoop 2.0",
+      "total_score": 540,
+      "score_pct": 86,
+      "survival": 250,
+      "survival_bonus": 50,
+      "bullet_damage": 200,
+      "bullet_bonus": 40,
+      "ram_damage": 0,
+      "ram_bonus": 0,
+      "firsts": 5,
+      "seconds": 0,
+      "thirds": 0
+    },
+    "bot_b": {
+      "name": "jk.mega.DrussGT 3.1.7",
+      "total_score": 90,
+      "score_pct": 14,
+      "survival": 0,
+      "survival_bonus": 0,
+      "bullet_damage": 90,
+      "bullet_bonus": 0,
+      "ram_damage": 0,
+      "ram_bonus": 0,
+      "firsts": 0,
+      "seconds": 5,
+      "thirds": 0
+    },
+    "record_file": "/__w/robocode-autopilot/robocode-autopilot/recordings/f1a8ff27.br"
+  }
+]
