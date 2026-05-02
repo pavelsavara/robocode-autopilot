@@ -34,9 +34,47 @@ public final class Player {
     private double prevRadarB = Double.NaN;
     private final Map<Integer, BulletState> prevBulletStates = new HashMap<Integer, BulletState>();
 
+    // Last seen robot snapshots — used by finalizeRound() to determine the round winner.
+    private IRobotSnapshot lastRobotA;
+    private IRobotSnapshot lastRobotB;
+
     public Player(Whiteboard wbA, Whiteboard wbB) {
         this.wbA = wbA;
         this.wbB = wbB;
+    }
+
+    /**
+     * Called by the pipeline at round end (just before the score row is emitted)
+     * to credit the round winner. Robocode determines the winner by which robot
+     * is still alive at the final tick of the round; simultaneous-KO ticks count
+     * as a tie (no increment).
+     */
+    public void finalizeRound() {
+        if (lastRobotA == null || lastRobotB == null) {
+            return;
+        }
+        boolean aDead = lastRobotA.getState() == RobotState.DEAD;
+        boolean bDead = lastRobotB.getState() == RobotState.DEAD;
+        if (aDead && !bDead) {
+            wbA.incrementRoundsLost();
+            wbB.incrementRoundsWon();
+        } else if (bDead && !aDead) {
+            wbA.incrementRoundsWon();
+            wbB.incrementRoundsLost();
+        } else if (!aDead && !bDead) {
+            // Round timeout: the robot with higher remaining energy wins; equal energy = tie.
+            double eA = lastRobotA.getEnergy();
+            double eB = lastRobotB.getEnergy();
+            if (eA > eB) {
+                wbA.incrementRoundsWon();
+                wbB.incrementRoundsLost();
+            } else if (eB > eA) {
+                wbA.incrementRoundsLost();
+                wbB.incrementRoundsWon();
+            }
+            // else: tie → no increment
+        }
+        // both dead → tie → no increment
     }
 
     /**
@@ -114,6 +152,10 @@ public final class Player {
         prevRadarA = robotA.getRadarHeading();
         prevRadarB = robotB.getRadarHeading();
 
+        // Remember last-seen robot snapshots for round-winner detection.
+        lastRobotA = robotA;
+        lastRobotB = robotB;
+
         return newRound;
     }
 
@@ -138,8 +180,10 @@ public final class Player {
             if (prev == null) {
                 if (owner == indexA) {
                     wbA.incrementOurShotsFired();
+                    wbA.setLastOurFire(turn.getTurn(), power);
                 } else if (owner == indexB) {
                     wbB.incrementOurShotsFired();
+                    wbB.setLastOurFire(turn.getTurn(), power);
                 }
             }
 

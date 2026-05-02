@@ -1,5 +1,7 @@
 package cz.zamboch.autopilot.core;
 
+import cz.zamboch.autopilot.core.util.RingBuffer;
+
 /**
  * Central state store per robot perspective. Receives robocode events,
  * accumulates per-tick data, and provides lookback history.
@@ -35,6 +37,26 @@ public class Whiteboard {
     // Opponent fire tracking (set by EnergyFeatures on detected fire)
     private long lastOpponentFireTick = -1;
     private double lastOpponentFirePower;
+
+    // Our fire tracking (set by Player on first sighting of a new bullet whose owner is us)
+    private long lastOurFireTick = -1;
+    private double lastOurFirePower;
+
+    // Radar history (for scan-coverage features)
+    private double prevOurRadarHeading = Double.NaN;
+
+    // Velocity-change tracking (#96)
+    private long lastVelocityChangeTick = -1;
+    private double lastSignificantOpponentVelocity = Double.NaN;
+
+    // Distance-since-direction-change accumulator (#97)
+    private double distanceSinceDirChange;
+
+    // Rolling history buffers (largest window = 50 for scan coverage)
+    private final RingBuffer<Double> latVelHistory30 = new RingBuffer<Double>(30);
+    private final RingBuffer<Double> velHistory30 = new RingBuffer<Double>(30);
+    private final RingBuffer<Double> headingDeltaHistory30 = new RingBuffer<Double>(30);
+    private final RingBuffer<Long> scanTickHistory50 = new RingBuffer<Long>(50);
 
     // Battle constants
     private int battlefieldWidth, battlefieldHeight;
@@ -101,6 +123,16 @@ public class Whiteboard {
         ticksSinceDirectionChange = 0;
         lastOpponentFireTick = -1;
         lastOpponentFirePower = 0;
+        lastOurFireTick = -1;
+        lastOurFirePower = 0;
+        prevOurRadarHeading = Double.NaN;
+        lastVelocityChangeTick = -1;
+        lastSignificantOpponentVelocity = Double.NaN;
+        distanceSinceDirChange = 0;
+        latVelHistory30.clear();
+        velHistory30.clear();
+        headingDeltaHistory30.clear();
+        scanTickHistory50.clear();
         ourShotsFiredThisRound = 0;
         opponentShotsDetectedThisRound = 0;
         damageDealtThisRound = 0;
@@ -173,6 +205,16 @@ public class Whiteboard {
     public long getTicksSinceDirectionChange() { return ticksSinceDirectionChange; }
     public long getLastOpponentFireTick() { return lastOpponentFireTick; }
     public double getLastOpponentFirePower() { return lastOpponentFirePower; }
+    public long getLastOurFireTick() { return lastOurFireTick; }
+    public double getLastOurFirePower() { return lastOurFirePower; }
+    public double getPrevOurRadarHeading() { return prevOurRadarHeading; }
+    public long getLastVelocityChangeTick() { return lastVelocityChangeTick; }
+    public double getLastSignificantOpponentVelocity() { return lastSignificantOpponentVelocity; }
+    public double getDistanceSinceDirChange() { return distanceSinceDirChange; }
+    public RingBuffer<Double> getLatVelHistory30() { return latVelHistory30; }
+    public RingBuffer<Double> getVelHistory30() { return velHistory30; }
+    public RingBuffer<Double> getHeadingDeltaHistory30() { return headingDeltaHistory30; }
+    public RingBuffer<Long> getScanTickHistory50() { return scanTickHistory50; }
     public boolean isScanAvailableThisTick() { return scanAvailableThisTick; }
     public boolean isWeHitOpponentThisTick() { return weHitOpponentThisTick; }
     public boolean isOpponentHitWallThisTick() { return opponentHitWallThisTick; }
@@ -241,6 +283,16 @@ public class Whiteboard {
         this.lastOpponentFireTick = tick;
         this.lastOpponentFirePower = power;
     }
+    public void setLastOurFire(long tick, double power) {
+        this.lastOurFireTick = tick;
+        this.lastOurFirePower = power;
+    }
+    public void setPrevOurRadarHeading(double heading) { this.prevOurRadarHeading = heading; }
+    public void setLastVelocityChange(long tick, double velocity) {
+        this.lastVelocityChangeTick = tick;
+        this.lastSignificantOpponentVelocity = velocity;
+    }
+    public void setDistanceSinceDirChange(double distance) { this.distanceSinceDirChange = distance; }
     public void addDamageDealt(double damage) { damageDealt += damage; damageDealtThisRound += damage; }
     public void addDamageReceived(double damage) { damageReceived += damage; damageReceivedThisRound += damage; }
     public void incrementOurBulletHitCount() { ourBulletHitCount++; ourBulletHitCountThisRound++; }

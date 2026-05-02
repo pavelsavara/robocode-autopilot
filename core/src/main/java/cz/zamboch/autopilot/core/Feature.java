@@ -177,5 +177,101 @@ public enum Feature {
 
     /** Win rate across completed rounds. Unit: [0,1].
      *  Eq: roundsWon / max(1, roundsWon + roundsLost). Match-level trend. */
-    SCORE_WIN_RATE;
+    SCORE_WIN_RATE,
+
+    // === Tier 1: Wave / MEA / timing (TICKS file) ===
+
+    /** Bullet speed of our last fired bullet. Unit: px/tick. Eq: 20 - 3*ourFirePower. */
+    OUR_BULLET_SPEED,
+    /** Travel time of our hypothetical bullet to opponent. Unit: ticks. Eq: distance/ourBulletSpeed. */
+    OUR_BULLET_TRAVEL_TIME,
+    /** Maximum escape angle for our bullet. Unit: rad. Eq: asin(8/ourBulletSpeed). */
+    MEA_FOR_OUR_BULLET,
+    /** Bullet speed of opponent's last detected bullet. Unit: px/tick. Eq: 20 - 3*opponentFirePower. */
+    OPPONENT_BULLET_SPEED,
+    /** MEA for opponent's last detected bullet. Unit: rad. Eq: asin(8/opponentBulletSpeed). */
+    MEA_FOR_OPPONENT_BULLET,
+    /** Ticks since we last fired. Unit: ticks. Eq: tick - lastOurFireTick. */
+    TICKS_SINCE_WE_FIRED,
+    /** Ticks since opponent last fired (energy-drop detection). Unit: ticks. */
+    TICKS_SINCE_OPPONENT_FIRED,
+    /** Distance our last bullet has traveled. Unit: px. Eq: ourBulletSpeed*ticks_since_we_fired. */
+    OUR_WAVE_DISTANCE,
+    /** Distance our last bullet still has to travel to opponent. Unit: px (negative = wave passed). */
+    OUR_WAVE_REMAINING,
+    /** Distance opponent's last bullet has traveled. Unit: px. */
+    OPPONENT_WAVE_DISTANCE,
+    /** Distance opponent's last bullet still has to travel to us. Unit: px. */
+    OPPONENT_WAVE_REMAINING,
+    /** Estimated ticks until opponent's last bullet reaches us. Unit: ticks. */
+    OPPONENT_WAVE_ETA,
+
+    // === Tier 1: Targeting + GuessFactor (TICKS file) ===
+
+    /** Linear-prediction target angle (exact non-iterative). Unit: rad.
+     *  Eq: bearing + asin(oppVel/ourBulletSpeed * sin(oppHeading-bearing)). */
+    LINEAR_TARGET_ANGLE,
+    /** Offset from current bearing to linear target angle. Unit: rad. */
+    LINEAR_TARGET_OFFSET,
+    /** Circular-prediction target angle (iterative). Unit: rad. */
+    CIRCULAR_TARGET_ANGLE,
+    /** Offset from bearing to circular target angle. Unit: rad. */
+    CIRCULAR_TARGET_OFFSET,
+    /** Angular offset from our gun heading to opponent bearing. Unit: rad.
+     *  Eq: normalRelativeAngle(bearing - ourGunHeading). */
+    GF_BEARING_OFFSET,
+    /** Current GF position at bullet power 1.0. Unit: GF [-1,1].
+     *  Eq: clamp(gf_bearing_offset * lateralDir / mea_at_power_1). */
+    GF_CURRENT_AT_POWER_1,
+    /** Current GF position at bullet power 1.5. Unit: GF [-1,1]. */
+    GF_CURRENT_AT_POWER_1_5,
+    /** Current GF position at bullet power 2.0. Unit: GF [-1,1]. */
+    GF_CURRENT_AT_POWER_2,
+    /** Where we sit in opponent's GF space (proxy: our_lateral_velocity / 8). Unit: GF [-1,1]. */
+    OPPONENT_GUESS_FACTOR,
+
+    // === Tier 2: Movement history / segmentation (TICKS file) ===
+
+    /** Rolling mean of opponent_lateral_velocity over last 10 scans. Unit: px/tick. */
+    OPPONENT_AVG_LATERAL_VELOCITY_10,
+    /** Rolling mean over last 30 scans. Unit: px/tick. */
+    OPPONENT_AVG_LATERAL_VELOCITY_30,
+    /** Std-dev of opponent_heading_delta over last 10 scans. Unit: rad/tick. */
+    OPPONENT_HEADING_DELTA_VARIABILITY_10,
+    /** Std-dev of opponent_velocity over last 10 scans. Unit: px/tick. */
+    OPPONENT_VELOCITY_VARIABILITY_10,
+    /** Ticks since opponent_velocity last changed by >=1 px/tick. Unit: ticks. */
+    OPPONENT_TIME_SINCE_VELOCITY_CHANGE,
+    /** Cumulative distance opponent traveled since last lateral-direction reversal. Unit: px. */
+    OPPONENT_DISTANCE_SINCE_DIRECTION_CHANGE,
+
+    // === Tier 2: Battlefield geometry (TICKS file) ===
+
+    /** Distance from opponent to battlefield center. Unit: px.
+     *  Eq: hypot(oppX - bfW/2, oppY - bfH/2). */
+    OPPONENT_CENTER_DISTANCE,
+    /** Min distance from opponent to any of the 4 corners (18px inset). Unit: px. */
+    OPPONENT_CORNER_PROXIMITY,
+
+    // === Tier 3: Scan coverage (TICKS file) ===
+
+    /** Ticks between current scan and previous scan. Unit: ticks. */
+    TICKS_BETWEEN_SCANS,
+    /** Fraction of last 20 ticks that had a scan. Unit: [0,1]. */
+    SCAN_COVERAGE_20,
+    /** Fraction of last 50 ticks that had a scan. Unit: [0,1]. */
+    SCAN_COVERAGE_50,
+    /** Width of radar sweep arc this tick. Unit: rad.
+     *  Eq: |normalRelativeAngle(radarHeading - prevRadarHeading)|. */
+    SCAN_ARC_WIDTH,
+    /** Whether radar is locked (5+ consecutive scans with gap <=2). Unit: boolean. */
+    RADAR_LOCKED,
+    /** Sign of radar sweep direction: +1=CW, -1=CCW, 0=none. Unit: {-1,0,1}. */
+    RADAR_TURN_DIRECTION,
+
+    // === Tier 3: Danger assessment (TICKS file) ===
+
+    /** Fraction of MEA arc reachable before opponent's bullet arrives. Unit: [0,1].
+     *  Eq: min(1, opponent_wave_eta * MAX_VELOCITY / (mea * distance)). */
+    ESCAPE_ANGLE_COVERAGE;
 }

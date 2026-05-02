@@ -3,16 +3,22 @@ package cz.zamboch.autopilot.pipeline;
 import cz.zamboch.autopilot.core.Transformer;
 import cz.zamboch.autopilot.core.Whiteboard;
 import cz.zamboch.autopilot.core.Feature;
+import cz.zamboch.autopilot.pipeline.features.BattlefieldGeometryOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.CombatStateOfflineFeatures;
+import cz.zamboch.autopilot.pipeline.features.DangerOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.EnergyOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.IdentityOfflineFeatures;
+import cz.zamboch.autopilot.pipeline.features.MovementHistoryOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.MovementOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.MovementSegmentationOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.OpponentPredictionOfflineFeatures;
+import cz.zamboch.autopilot.pipeline.features.ScanCoverageOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.SpatialOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.StateNormalizationOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.TargetingGeometryOfflineFeatures;
+import cz.zamboch.autopilot.pipeline.features.TargetingOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.TimingOfflineFeatures;
+import cz.zamboch.autopilot.pipeline.features.WaveOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.WaveTrackingOfflineFeatures;
 import robocode.BattleRules;
 import robocode.control.snapshot.ITurnSnapshot;
@@ -118,6 +124,7 @@ public final class Main {
                 public void accept(int roundIndex, ITurnSnapshot turn) {
                     // Write score for previous round BEFORE player resets counters
                     if (roundIndex != prevRoundHolder[0] && prevRoundHolder[0] >= 0) {
+                        player.finalizeRound();
                         csvA.writeScoreRow(wbA, lastTickHolder[0] + 1);
                         csvB.writeScoreRow(wbB, lastTickHolder[0] + 1);
                     }
@@ -149,6 +156,7 @@ public final class Main {
 
             // Write score row for the final round
             if (prevRoundHolder[0] >= 0) {
+                player.finalizeRound();
                 csvA.writeScoreRow(wbA, lastTickHolder[0] + 1);
                 csvB.writeScoreRow(wbB, lastTickHolder[0] + 1);
             }
@@ -171,6 +179,15 @@ public final class Main {
         t.register(new OpponentPredictionOfflineFeatures());
         t.register(new WaveTrackingOfflineFeatures());
         t.register(new CombatStateOfflineFeatures());
+        // Tier 1
+        t.register(new WaveOfflineFeatures());
+        t.register(new TargetingOfflineFeatures());
+        // Tier 2
+        t.register(new MovementHistoryOfflineFeatures());
+        t.register(new BattlefieldGeometryOfflineFeatures());
+        // Tier 3
+        t.register(new ScanCoverageOfflineFeatures());
+        t.register(new DangerOfflineFeatures());
         t.resolveDependencies();
         return t;
     }

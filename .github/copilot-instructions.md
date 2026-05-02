@@ -49,3 +49,39 @@
   university-level statistics or linear algebra.
 - Use pandas, scikit-learn, matplotlib, seaborn. Python 3.10 venv in `intuition/.venv/`.
 - Notebooks read data from `../output/csv/`. They are self-contained and produce inline plots.
+
+### Data scale & sampling
+- The full rumble dataset is **~1900 battles, ~3900 ticks.csv files, ~20 GB on disk**.
+  Loading everything via `pd.concat` will OOM VS Code (the notebook host shares process limits with the editor).
+- All notebooks must use **stratified per-robot sampling** via the shared helper
+  `intuition/_loader.py` (`from _loader import load_stratified`). This:
+  - Indexes the CSV tree once, groups files by `robot_name`.
+  - Picks the top-N most-played robots and a few battles per robot.
+  - Optionally row-subsamples each `ticks.csv` (typical: 10–20%).
+  - Downcasts `float64 → float32` and `int64 → smallest int` to halve RAM.
+- Targets: **~1M tick rows, ~300 MB pandas memory**. Below this, plotting and
+  sklearn fits stay responsive; above it, KDE / boxplot / sklearn easily OOM.
+- For plotting on the loaded frame, **subsample again** (50k rows for histograms,
+  ~2k rows per robot for boxplots). The visual fidelity of a 50-bin histogram
+  saturates around 50k points.
+
+### Running notebooks headlessly (outside the VS Code extension host)
+- The VS Code notebook host shares memory with the editor; a kernel OOM crashes
+  the whole window. To avoid this, execute notebooks in a separate `python`
+  subprocess via `nbconvert`. Outputs (plots, tables) are written back into the
+  `.ipynb` on disk and VS Code's file watcher picks them up automatically.
+- Close the notebook tab in VS Code first (so the editor isn't competing for the
+  file lock), then run from the workspace root:
+
+  ```powershell
+  .\intuition\.venv\Scripts\python.exe -m jupyter nbconvert `
+      --to notebook --execute intuition\<name>.ipynb `
+      --inplace --ExecutePreprocessor.timeout=1200 --allow-errors
+  ```
+
+  Reopen the notebook to view results. The `--allow-errors` flag keeps execution
+  going past a failing cell so you see all problems in one run; remove it once
+  the notebook is clean.
+- For batch runs across all notebooks, loop over `intuition/0*.ipynb`.
+- `papermill` (`pip install papermill`) is a cleaner alternative with parameter
+  injection via tagged cells; same isolation guarantee.
