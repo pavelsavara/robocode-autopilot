@@ -130,10 +130,58 @@ def numeric_feature_cols(
     df: pd.DataFrame,
     extra_exclude: Iterable[str] = (),
 ) -> list[str]:
-    """Return numeric feature columns, excluding metadata."""
+    """Return numeric feature columns, excluding metadata.
+
+    Excluded by default:
+      - row keys: battle_id, round, tick, scan_available, robot_name
+      - identity hashes: opponent_name_hash, opponent_bot_id_hash,
+        opponent_version_hash (these are categorical IDs, not behavioral signals —
+        feeding them into a generic regressor lets the model memorize the bot
+        instead of learning behavior).
+      - fingerprinting labels: observer_bot, opponent_bot
+
+    NOT excluded (kept as real features):
+      - battlefield_width / battlefield_height / gun_cooling_rate /
+        num_rounds_total — small-int per-battle constants with genuine predictive
+        value (e.g. battlefield size affects optimal distance distribution).
+        Pass them via `extra_exclude` if you want pure tick-level behavior.
+    """
     meta = {
         'battle_id', 'round', 'tick', 'scan_available', 'robot_name',
-        'opponent_name_hash', 'observer_bot', 'opponent_bot',
+        'opponent_name_hash', 'opponent_bot_id_hash', 'opponent_version_hash',
+        'observer_bot', 'opponent_bot',
     }
     meta.update(extra_exclude)
     return [c for c in df.select_dtypes(include='number').columns if c not in meta]
+
+
+# Columns in scores.csv that are constant across all rounds of a battle.
+# Notebooks needing them on tick rows should merge via `attach_battle_constants`.
+BATTLE_CONSTANT_COLS = (
+    'opponent_name_hash',
+    'opponent_bot_id_hash',
+    'opponent_version_hash',
+    'battlefield_width',
+    'battlefield_height',
+    'gun_cooling_rate',
+    'num_rounds_total',
+)
+
+
+def attach_battle_constants(
+    target: pd.DataFrame,
+    scores: pd.DataFrame,
+    cols: Iterable[str] = BATTLE_CONSTANT_COLS,
+) -> pd.DataFrame:
+    """Left-join per-battle constant columns from scores.csv onto another frame.
+
+    `scores` is the result of `load_stratified('scores.csv', ...)`.  Each battle
+    has multiple round rows but the constants are identical across rounds, so we
+    deduplicate on `(battle_id, robot_name)` first.
+
+    Use this when a ticks/waves notebook needs the bot-id hash, battlefield size,
+    or gun cooling rate without bloating ticks.csv.
+    """
+    keep = ['battle_id', 'robot_name'] + [c for c in cols if c in scores.columns]
+    const = scores[keep].drop_duplicates(['battle_id', 'robot_name'])
+    return target.merge(const, on=['battle_id', 'robot_name'], how='left')

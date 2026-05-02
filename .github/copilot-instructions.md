@@ -31,6 +31,56 @@
   and exposed to the feature system as a stable numeric hash (FNV-1a 32-bit) via `setFeature()`.
 - Use `CsvRowWriter` for all CSV formatting — never raw `OutputStream` + `StringBuilder`.
 
+## CSV layout — pick the right granularity
+Three output files per `<battle>/<robot>/`:
+- **ticks.csv** — one row per simulation tick (~3,000 rows/battle). Hot loop. Keep it lean —
+  every column costs ~8 bytes × millions of rows across the dataset.
+- **waves.csv** — one row per detected opponent fire (~50–200 rows/battle). Wave-relative
+  snapshot of distance, bullet power/speed, MEA, lateral velocity at fire instant.
+- **scores.csv** — one row per round (~10–35 rows/battle). Round outcomes AND per-battle constants.
+
+### Slow-moving dimensions belong in scores.csv, NOT ticks.csv
+Any value that is **constant for a whole battle** (or even a whole round) is wasteful as a
+ticks.csv column — it gets duplicated 3,000× per battle for no information gain. Put it in
+scores.csv where it costs ~10× per battle. Notebooks deduplicate via
+`scores.drop_duplicates('battle_id')` or join into ticks via `pd.merge(ticks, scores_const, on='battle_id')`.
+
+Examples of slow-moving dimensions (currently in scores.csv via `IdentityOfflineFeatures`):
+- `opponent_name_hash` / `opponent_bot_id_hash` / `opponent_version_hash` — bot identity.
+  The name is split on the first ASCII space (Robocode's `getName()` returns
+  `"<class> <version>"`); `bot_id_hash` survives version bumps and is the primary
+  fingerprint for ML segmentation. `version_hash` distinguishes patches.
+- `battlefield_width` / `battlefield_height` / `gun_cooling_rate` / `num_rounds_total` —
+  battle rules, identical for every tick of every round.
+
+Per-round (not per-battle) values like `damage_dealt`, `win_rate`, `our_hit_rate` also
+live in scores.csv — that's their natural granularity.
+
+When adding a new feature, ask: **does it change every tick?** If not, route it to scores.csv.
+Per-tick state-of-the-world (positions, velocities, distances, gun heat, wave countdowns)
+stays in ticks.csv. Per-fire-event snapshots stay in waves.csv.
+
+### Don't leak outcomes into learning features
+The three CSVs are separated on purpose: **inputs and outcomes must not mix**.
+- **ticks.csv** and **waves.csv** are *inputs* — state-of-world snapshots an in-game robot
+  could observe at that moment. They are safe to use as training features.
+- **scores.csv** holds *outcomes* (`damage_dealt`, `damage_received`, `our_hit_rate`,
+  `opponent_hit_rate`, `win_rate`, …) AND per-battle constants. The constants are safe;
+  the outcomes are the labels.
+- `waves.csv` records each opponent fire at the **moment of detection** (one tick after
+  the energy drop). It contains NO hit/miss column. If you ever add one (e.g. `wave_was_hit`,
+  `realised_dodge_fraction`), it lives in waves.csv only — never copy it back into ticks.csv,
+  that would let the model see the answer.
+- `intuition/_loader.py::BATTLE_CONSTANT_COLS` whitelists exactly the columns that
+  `attach_battle_constants()` will merge from scores into ticks/waves. Outcomes are
+  deliberately excluded. Mirror that whitelist in any custom merge.
+- `opponent_energy` is a soft outcome — fine for short-horizon movement prediction, but
+  for round-outcome models it correlates almost perfectly with `win_rate` late in a round.
+  Cap to early-round ticks or exclude it.
+- Each battle writes two perspective directories (`<battle_id>/RobotA/`, `.../RobotB/`).
+  A model trained on RobotA's perspective must never read RobotB's CSVs — that's perfect
+  leakage. Pick a side and stick with it.
+
 ## Robot JARs
 - Robot JARs are stored on the `robots` branch (Git LFS).
 - Download missing robots from the **Robocode Archive**: https://robocode-archive.strangeautomata.com/robots/

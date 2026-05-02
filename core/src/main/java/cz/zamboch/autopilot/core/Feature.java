@@ -7,9 +7,17 @@ public enum Feature {
 
     // === Identity (no dependencies) ===
 
-    /** Stable hash of opponent robot name. Unit: integer (32-bit).
-     *  Eq: FNV-1a hash of opponent name string. Bot fingerprint / segmentation key. */
+    /** Stable hash of full opponent robot name (incl. version). Unit: integer (32-bit).
+     *  Eq: FNV-1a hash of opponent name string. Tightest segmentation — same exact build. */
     OPPONENT_NAME_HASH,
+
+    /** Stable hash of opponent bot family (part before first space). Unit: integer (32-bit).
+     *  Eq: FNV-1a hash of substring(0, indexOf(' ')). Survives version bumps — primary fingerprint. */
+    OPPONENT_BOT_ID_HASH,
+
+    /** Stable hash of opponent version (part after first space). Unit: integer (32-bit).
+     *  Eq: FNV-1a hash of substring(indexOf(' ')+1). 0 if no version. Distinguishes patches. */
+    OPPONENT_VERSION_HASH,
 
     // === Spatial (no dependencies) ===
 

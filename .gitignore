@@ -37,3 +37,4 @@ build/
 output/
 intuition/.venv/
 recordings/**/*.br
+**\__pycache__\**

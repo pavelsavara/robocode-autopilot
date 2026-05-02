@@ -18,6 +18,8 @@ public class Whiteboard {
 
     // Opponent state (from last scan — may be stale)
     private String opponentName;
+    private String opponentBotId;     // part before first space (e.g. "DrussGT")
+    private String opponentVersion;   // part after first space (e.g. "3.1.7"), "" if none
     private double opponentX, opponentY, opponentHeading, opponentVelocity, opponentEnergy;
     private double prevOpponentEnergy;
     private double prevOpponentHeading = Double.NaN;
@@ -190,6 +192,8 @@ public class Whiteboard {
     public String getBattleId() { return battleId; }
 
     public String getOpponentName() { return opponentName; }
+    public String getOpponentBotId() { return opponentBotId; }
+    public String getOpponentVersion() { return opponentVersion; }
     public double getOpponentX() { return opponentX; }
     public double getOpponentY() { return opponentY; }
     public double getOpponentHeading() { return opponentHeading; }
@@ -257,6 +261,14 @@ public class Whiteboard {
     public void setOpponentScan(String name, double x, double y, double heading, double velocity, double energy) {
         if (this.opponentName == null) {
             this.opponentName = name;
+            int sp = name == null ? -1 : name.indexOf(' ');
+            if (sp < 0) {
+                this.opponentBotId = name == null ? "" : name;
+                this.opponentVersion = "";
+            } else {
+                this.opponentBotId = name.substring(0, sp);
+                this.opponentVersion = name.substring(sp + 1);
+            }
         }
         this.prevOpponentEnergy = this.opponentEnergy;
         this.prevOpponentHeading = this.opponentHeading;

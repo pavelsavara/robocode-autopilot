@@ -12,7 +12,11 @@ import cz.zamboch.autopilot.core.Whiteboard;
  */
 public class IdentityFeatures implements IInGameFeatures {
 
-    private static final Feature[] OUTPUTS = { Feature.OPPONENT_NAME_HASH };
+    private static final Feature[] OUTPUTS = {
+            Feature.OPPONENT_NAME_HASH,
+            Feature.OPPONENT_BOT_ID_HASH,
+            Feature.OPPONENT_VERSION_HASH
+    };
     private static final Feature[] DEPS = {};
 
     // FNV-1a 32-bit constants
@@ -31,10 +35,13 @@ public class IdentityFeatures implements IInGameFeatures {
         String name = wb.getOpponentName();
         if (name != null) {
             wb.setFeature(Feature.OPPONENT_NAME_HASH, fnv1a32(name));
+            wb.setFeature(Feature.OPPONENT_BOT_ID_HASH, fnv1a32(wb.getOpponentBotId()));
+            wb.setFeature(Feature.OPPONENT_VERSION_HASH, fnv1a32(wb.getOpponentVersion()));
         }
     }
 
-    static int fnv1a32(String s) {
+    public static int fnv1a32(String s) {
+        if (s == null) return 0;
         int hash = FNV_OFFSET_BASIS;
         for (int i = 0; i < s.length(); i++) {
             hash ^= s.charAt(i);
