@@ -81,6 +81,55 @@ The three CSVs are separated on purpose: **inputs and outcomes must not mix**.
   A model trained on RobotA's perspective must never read RobotB's CSVs — that's perfect
   leakage. Pick a side and stick with it.
 
+### "God view" vs target-relative leakage — what each CSV is allowed to contain
+There are two different worries. The first is largely solved by the pipeline; the second
+is a per-notebook decision.
+
+**God view (never allowed in any CSV).** A row must contain only what the live in-game
+robot at that perspective could itself observe via the Robocode API. Concretely:
+- ✅ Allowed: own state (`getX`, `getEnergy`, `getGunHeat`, …), `ScannedRobotEvent`-derived
+  values (opponent distance, bearing, velocity, energy, heading), and anything *derived*
+  from those by us (`opponent_lateral_velocity`, wave kinematics from energy drops, etc.).
+- ❌ Forbidden: opponent absolute `(x, y)`, opponent gun aim, opponent's planned next
+  action, anything pulled from the sibling `<battle>/<other-robot>/` directory, and any
+  outcome of an event that hasn't happened yet (e.g. "this bullet will hit"). The pipeline
+  writes one perspective per directory from independent `Whiteboard`s and only from
+  observables, so this category is structurally prevented today. Keep it that way: any new
+  feature in core or pipeline must be derivable from the same `ScannedRobotEvent` stream
+  the live robot sees.
+
+**Target-relative leakage (caller's responsibility).** A column can be a perfectly valid
+in-game observation AND still be useless when paired with the wrong target — because it
+is computed from the same event the target flags, or is an algebraic function of it.
+This is what tripped notebook 04 (R²/accuracy ≈ 1.000 by tautology) and notebook 07.
+Three patterns to recognise:
+- **Event-relative wave columns leak `opponent_fired`.** All of `ticks_since_opponent_fired`,
+  `opponent_wave_distance`, `opponent_wave_remaining`, `opponent_bullet_speed`,
+  `mea_for_opponent_bullet`, `escape_angle_coverage`, `gf_current_at_power_{1, 1_5, 2}`
+  are recomputed/reset on the fire-detection tick. They are correct in-game features for
+  movement/dodge models, but if your target is `opponent_fired` (or anything fire-time
+  relative), exclude them. See `_loader.py::WAVE_DERIVED_COLS`.
+- **Algebraic identities of the target.** When predicting `opponent_fire_power`, exclude
+  `opponent_bullet_speed` (= `20 − 3·power`) and `mea_for_opponent_bullet` (= `arcsin(8/speed)`).
+  Same column, different name. See `_loader.py::FIRE_POWER_LEAKAGE_COLS`.
+- **Redundant feature pairs.** `opponent_guess_factor ≡ our_lateral_velocity / 8`,
+  `distance ≡ distance_norm × battlefield_diagonal`, and `gf_current_at_power_{1, 1_5}`
+  largely collapse onto `gf_current_at_power_2`. Not leakage, but model-confusing
+  duplicates. Drop via `_loader.py::drop_redundant_features()`.
+
+**Workflow when adding a new ML notebook.**
+1. Pick the prediction target. Write down the tick (or wave row) on which the target
+   is observed.
+2. List every feature whose value at that exact row is a deterministic function of the
+   target — algebraic, simulator physics, or "resets on the same event". Exclude them.
+3. Build the feature list via `numeric_feature_cols(df, extra_exclude=…)` then
+   `drop_redundant_features(...)`. Do NOT hand-roll
+   `[c for c in df.columns if c not in (...)]` — string columns (`battle_id`,
+   `observer_bot`, `opponent_bot`) silently sneak into `np.concatenate` and crash sklearn
+   with `could not convert string to float: '<some hex id>'` deep inside `RandomForest.fit`.
+4. If R² ≈ 1.000 or accuracy ≈ 1.000 on a non-trivial task, assume leakage and rerun the
+   diagnosis. Honest baselines on Robocode data are rarely above ~0.9.
+
 ## Robot JARs
 - Robot JARs are stored on the `robots` branch (Git LFS).
 - Download missing robots from the **Robocode Archive**: https://robocode-archive.strangeautomata.com/robots/

@@ -27,6 +27,9 @@ from typing import Iterable
 
 import pandas as pd
 
+# Default CSV root. May be overridden per-call. To load multiple chunked
+# download trees at once (e.g. output/csv-25250609244/csv-chunk-N/...), pass a
+# list of roots to build_robot_index/load_stratified.
 CSV_ROOT_DEFAULT = Path('../output/csv')
 
 
@@ -39,8 +42,21 @@ def _downcast(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _iter_roots(roots) -> list[Path]:
+    """Normalize a single root or iterable of roots into a list of Paths."""
+    if isinstance(roots, (str, Path)):
+        return [Path(roots)]
+    return [Path(r) for r in roots]
+
+
+# Cache mapping (battle_id, robot_name) -> directory holding ticks/waves/scores.
+# Populated by build_robot_index() and consumed by load_stratified() so we
+# don't reconstruct paths and can support chunked / multi-root layouts.
+_PATH_INDEX: dict[tuple[str, str], Path] = {}
+
+
 def build_robot_index(
-    csv_root: Path = CSV_ROOT_DEFAULT,
+    csv_root=CSV_ROOT_DEFAULT,
     max_robots: int = 50,
     battles_per_robot: int = 3,
     seed: int = 42,
@@ -48,34 +64,48 @@ def build_robot_index(
 ) -> set[tuple[str, str]]:
     """Pick a stratified subset of (battle_id, robot_name) pairs.
 
+    `csv_root` may be a single Path or an iterable of Paths. Each root is
+    walked with rglob('ticks.csv'); the parent dir is taken as the robot name
+    and the grand-parent as the battle id, so any nested layout works
+    (e.g. .../csv-chunk-N/<battle>/<robot>/ticks.csv).
+
     Strategy:
-      1. Walk the CSV tree once and group ticks.csv files by robot_name.
-      2. Keep the top `max_robots` by appearance count (so each has enough data).
+      1. Walk all roots once and group ticks.csv files by robot_name.
+      2. Keep the top `max_robots` by appearance count.
       3. Randomly pick `battles_per_robot` battles from each kept robot.
 
-    Returns a set of (battle_id, robot_name) tuples to load.
+    Side effect: populates module-level _PATH_INDEX so load_stratified can
+    locate the actual files.
     """
     rng = random.Random(seed)
+    roots = _iter_roots(csv_root)
     robot_to_files: dict[str, list[tuple[str, Path]]] = defaultdict(list)
-    for ticks_path in csv_root.rglob('ticks.csv'):
-        robot_name = ticks_path.parent.name
-        battle_id  = ticks_path.parent.parent.name
-        robot_to_files[robot_name].append((battle_id, ticks_path))
+    for root in roots:
+        if not root.exists():
+            if verbose:
+                print(f"⚠ CSV root does not exist: {root}")
+            continue
+        for ticks_path in root.rglob('ticks.csv'):
+            robot_name = ticks_path.parent.name
+            battle_id  = ticks_path.parent.parent.name
+            robot_to_files[robot_name].append((battle_id, ticks_path))
 
     total_files = sum(len(v) for v in robot_to_files.values())
     if verbose:
         print(f"Indexed {total_files} ticks.csv files across "
-              f"{len(robot_to_files)} distinct robots.")
+              f"{len(robot_to_files)} distinct robots from {len(roots)} root(s).")
 
     sorted_robots = sorted(robot_to_files.items(), key=lambda kv: -len(kv[1]))
     selected_robots = [name for name, _ in sorted_robots[:max_robots]]
 
     selection: set[tuple[str, str]] = set()
+    _PATH_INDEX.clear()
     for robot in selected_robots:
         files = robot_to_files[robot]
         picked = rng.sample(files, min(battles_per_robot, len(files)))
-        for battle_id, _ in picked:
+        for battle_id, ticks_path in picked:
             selection.add((battle_id, robot))
+            _PATH_INDEX[(battle_id, robot)] = ticks_path.parent
 
     if verbose:
         print(f"Selected {len(selected_robots)} robots × ~{battles_per_robot} battles "
@@ -86,12 +116,16 @@ def build_robot_index(
 def load_stratified(
     filename: str,
     selection: Iterable[tuple[str, str]],
-    csv_root: Path = CSV_ROOT_DEFAULT,
+    csv_root=CSV_ROOT_DEFAULT,
     row_frac: float = 1.0,
     seed: int = 42,
     verbose: bool = True,
 ) -> pd.DataFrame:
     """Load `filename` from each (battle_id, robot) pair in `selection`.
+
+    If `build_robot_index()` populated _PATH_INDEX (recommended), the cached
+    directory is used directly. Otherwise we fall back to `csv_root / battle /
+    robot / filename` for each root in `csv_root` (single Path or list).
 
     Args:
       filename:  e.g. 'ticks.csv', 'waves.csv', 'scores.csv'.
@@ -99,10 +133,22 @@ def load_stratified(
       row_frac:  fraction of rows to keep per file (1.0 = keep all).
                  Use 0.1–0.2 for ticks.csv; keep 1.0 for waves/scores.
     """
+    roots = _iter_roots(csv_root)
     frames = []
     for battle_id, robot in sorted(selection):
-        csv_path = csv_root / battle_id / robot / filename
-        if not csv_path.exists():
+        csv_path = None
+        cached_dir = _PATH_INDEX.get((battle_id, robot))
+        if cached_dir is not None:
+            candidate = cached_dir / filename
+            if candidate.exists():
+                csv_path = candidate
+        if csv_path is None:
+            for root in roots:
+                candidate = root / battle_id / robot / filename
+                if candidate.exists():
+                    csv_path = candidate
+                    break
+        if csv_path is None:
             continue
         df = pd.read_csv(csv_path)
         if row_frac < 1.0 and len(df) > 0:
@@ -166,6 +212,129 @@ BATTLE_CONSTANT_COLS = (
     'gun_cooling_rate',
     'num_rounds_total',
 )
+
+
+# Wave-tracking columns in ticks.csv that reset/update at the moment
+# `opponent_fired = 1`. Including any of these as features when predicting
+# `opponent_fired` is leakage — see planning/archive/2026-05-02-intuition-4.md.
+# Pass via `extra_exclude=WAVE_DERIVED_COLS` for an honest fire-event task.
+#
+# `opponent_inferred_gun_heat` is included here too: in Robocode the opponent
+# can fire only when gun_heat == 0, and our inference resets it to 1 + power/5
+# the same tick we detect the energy drop. So values close to 0 perfectly
+# predict "is_about_to_fire". For predicting `opponent_fired` this is the
+# strongest single leak (RF importance ≈ 0.91 in nb04 phase 1).
+WAVE_DERIVED_COLS = (
+    'opponent_wave_distance',
+    'opponent_wave_remaining',
+    'opponent_wave_eta',
+    'ticks_since_opponent_fired',
+    'escape_angle_coverage',
+    'mea_for_opponent_bullet',
+    'opponent_bullet_speed',
+    'our_wave_distance',
+    'our_wave_remaining',
+    'opponent_inferred_gun_heat',
+)
+
+
+# Algebraic identities of `opponent_fire_power` once a fire has been detected:
+#   opponent_bullet_speed     = 20 - 3 * opponent_fire_power
+#   mea_for_opponent_bullet   = asin(8 / opponent_bullet_speed)
+# Plus second-order leaks via state that updates at the fire-detection tick:
+#   opponent_inferred_gun_heat — at the fire-detection tick the gun-heat
+#   counter has just been reset to 1 + power/5 (Robocode sets gun heat AFTER
+#   the bullet leaves and our pipeline observes the fire one tick later, when
+#   the energy drop is visible). 1:1 algebraic restatement of the target.
+#   escape_angle_coverage / opponent_wave_* — all recomputed using the new
+#   bullet's MEA at the fire-detection tick, so they encode `bullet_speed`
+#   and hence `power`.
+# See planning/archive/2026-05-02-intuition-5.md §5 (and §5b in the rerun).
+# Including any of these when predicting fire power gives R² = 1.000 trivially.
+FIRE_POWER_LEAKAGE_COLS = (
+    'opponent_fire_power',
+    'opponent_bullet_speed',
+    'mea_for_opponent_bullet',
+    'opponent_inferred_gun_heat',
+    # Wave-tracking columns refreshed at the same tick as the fire event:
+    'opponent_wave_distance',
+    'opponent_wave_remaining',
+    'opponent_wave_eta',
+    'ticks_since_opponent_fired',
+    'escape_angle_coverage',
+    'gf_current_at_power_1',
+    'gf_current_at_power_1_5',
+    'gf_current_at_power_2',
+)
+
+
+# Pairs of features with |r| ≈ 1.000 at full-rumble scale (notebook 02). Drop
+# the partner of whichever you keep, otherwise models double-count the signal.
+# - opponent_guess_factor ≡ our_lateral_velocity (by construction)
+# - distance ≡ distance_norm (linear scaling)
+# - gf_current_at_power_{1, 1_5, 2} pairwise r > 0.999
+REDUNDANT_FEATURE_PAIRS = (
+    ('opponent_guess_factor', 'our_lateral_velocity'),
+    ('distance_norm', 'distance'),
+    ('gf_current_at_power_1', 'gf_current_at_power_2'),
+    ('gf_current_at_power_1_5', 'gf_current_at_power_2'),
+)
+
+
+def drop_redundant_features(cols):
+    """Remove the first member of each REDUNDANT_FEATURE_PAIRS pair from `cols`.
+
+    Keeps the second (the survivor) so models don't double-count.
+    """
+    drop = {a for a, _ in REDUNDANT_FEATURE_PAIRS}
+    return [c for c in cols if c not in drop]
+
+
+# Columns in waves.csv that are inputs (state-of-world at fire-detection
+# instant). No outcome columns exist today — if any future column records hit/
+# miss, it MUST live in waves.csv only and be added to a parallel
+# WAVE_OUTCOME_COLS tuple, not here.
+WAVE_INPUT_COLS = (
+    'wave_bullet_power',
+    'wave_bullet_speed',
+    'wave_fire_distance',
+    'wave_mea',
+    'wave_flight_time',
+    'wave_lateral_velocity_at_fire',
+)
+
+
+def attach_opponent_bot(df, selection, csv_root=CSV_ROOT_DEFAULT):
+    """Add an `opponent_bot` column by reading sibling perspective dir names.
+
+    Each battle dir has exactly two perspective subdirs; given an observer
+    (`robot_name`), the opponent is the other one. Used by notebooks 05/06/07
+    that need to label ticks by who they're observing.
+    """
+    roots = _iter_roots(csv_root)
+    pair_to_opp: dict[tuple[str, str], str] = {}
+    for battle_id, observer in selection:
+        cached_dir = _PATH_INDEX.get((battle_id, observer))
+        if cached_dir is not None:
+            battle_dir = cached_dir.parent
+        else:
+            battle_dir = None
+            for root in roots:
+                candidate = root / battle_id
+                if candidate.is_dir():
+                    battle_dir = candidate
+                    break
+        if battle_dir is None or not battle_dir.is_dir():
+            continue
+        names = [d.name for d in battle_dir.iterdir() if d.is_dir()]
+        others = [n for n in names if n != observer]
+        if others:
+            pair_to_opp[(battle_id, observer)] = others[0]
+
+    keys = list(zip(df['battle_id'].astype(str), df['robot_name'].astype(str)))
+    df = df.copy()
+    df['opponent_bot'] = [pair_to_opp.get(k) for k in keys]
+    return df
 
 
 def attach_battle_constants(

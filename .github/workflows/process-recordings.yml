@@ -147,9 +147,12 @@ jobs:
             --input /data/recordings \
             --output /data/csv
 
-      # Upload CSV output
+      # Upload CSV output. `if-no-files-found: error` ensures an empty /data/csv
+      # (e.g. all recordings in the chunk failed to parse) fails the job loudly
+      # instead of silently uploading nothing and turning the run green.
       - uses: actions/upload-artifact@v7
         with:
           name: csv-chunk-${{ matrix.chunk }}
           path: /data/csv/
           retention-days: 90
+          if-no-files-found: error

@@ -71,17 +71,26 @@ public final class Main {
         }
 
         int processed = 0;
+        int failed = 0;
         for (File brFile : brFiles) {
             try {
                 processBattle(brFile.toPath(), outputDir);
                 processed++;
                 System.out.println("  Processed: " + brFile.getName());
             } catch (Exception e) {
+                failed++;
                 System.err.println("  FAILED: " + brFile.getName() + " — " + e.getMessage());
             }
         }
 
         System.out.println("Done. Processed " + processed + "/" + brFiles.length + " recordings.");
+
+        // Fail the process if nothing succeeded — otherwise CI silently uploads an empty
+        // artifact and reports green. A single corrupt .br must not mask total failure.
+        if (processed == 0) {
+            System.err.println("ERROR: 0 recordings processed successfully (" + failed + " failed). Exiting non-zero.");
+            System.exit(2);
+        }
     }
 
     static void processBattle(Path brFile, final Path outputDir) throws IOException, ClassNotFoundException {
