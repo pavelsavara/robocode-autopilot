@@ -2,6 +2,10 @@ package cz.zamboch.autopilot.core;
 
 import cz.zamboch.autopilot.core.util.RingBuffer;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 /**
  * Central state store per robot perspective. Receives robocode events,
  * accumulates per-tick data, and provides lookback history.
@@ -53,6 +57,10 @@ public class Whiteboard {
 
     // Distance-since-direction-change accumulator (#97)
     private double distanceSinceDirChange;
+
+    // Multi-wave tracking: all active in-flight waves
+    private final List<WaveRecord> opponentWaves = new ArrayList<WaveRecord>();
+    private final List<WaveRecord> ourWaves = new ArrayList<WaveRecord>();
 
     // Rolling history buffers (largest window = 50 for scan coverage)
     private final RingBuffer<Double> latVelHistory30 = new RingBuffer<Double>(30);
@@ -135,6 +143,8 @@ public class Whiteboard {
         velHistory30.clear();
         headingDeltaHistory30.clear();
         scanTickHistory50.clear();
+        opponentWaves.clear();
+        ourWaves.clear();
         ourShotsFiredThisRound = 0;
         opponentShotsDetectedThisRound = 0;
         damageDealtThisRound = 0;
@@ -216,6 +226,37 @@ public class Whiteboard {
     public double getLastSignificantOpponentVelocity() { return lastSignificantOpponentVelocity; }
     public double getDistanceSinceDirChange() { return distanceSinceDirChange; }
     public RingBuffer<Double> getLatVelHistory30() { return latVelHistory30; }
+
+    // Multi-wave tracking
+    public List<WaveRecord> getOpponentWaves() { return opponentWaves; }
+    public List<WaveRecord> getOurWaves() { return ourWaves; }
+
+    /** Add a detected opponent wave (called by MultiWaveFeatures when fire detected). */
+    public void addOpponentWave(WaveRecord wave) { opponentWaves.add(wave); }
+
+    /** Add one of our waves (called by Player/Autopilot when we fire a bullet). */
+    public void addOurWave(WaveRecord wave) { ourWaves.add(wave); }
+
+    /** Remove waves that have passed their target. Called each tick. */
+    public void prunePassedWaves(double distanceToOpponent) {
+        long t = tick;
+        Iterator<WaveRecord> it = opponentWaves.iterator();
+        while (it.hasNext()) {
+            WaveRecord w = it.next();
+            // Opponent wave targets us — use distance from wave origin to our position
+            // Approximate: wave has passed if radius > fireDistance + robot half-size
+            if (w.hasPassed(w.fireDistance, t)) {
+                it.remove();
+            }
+        }
+        it = ourWaves.iterator();
+        while (it.hasNext()) {
+            WaveRecord w = it.next();
+            if (w.hasPassed(distanceToOpponent, t)) {
+                it.remove();
+            }
+        }
+    }
     public RingBuffer<Double> getVelHistory30() { return velHistory30; }
     public RingBuffer<Double> getHeadingDeltaHistory30() { return headingDeltaHistory30; }
     public RingBuffer<Long> getScanTickHistory50() { return scanTickHistory50; }

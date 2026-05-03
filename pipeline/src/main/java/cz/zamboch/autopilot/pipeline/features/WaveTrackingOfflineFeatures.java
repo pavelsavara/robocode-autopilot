@@ -67,7 +67,8 @@ public final class WaveTrackingOfflineFeatures implements IOfflineFeatures {
     public void writeColumnNames(CsvRowWriter row) {
         row.writeHeaders(
                 "wave_bullet_power", "wave_bullet_speed", "wave_fire_distance",
-                "wave_mea", "wave_flight_time", "wave_lateral_velocity_at_fire");
+                "wave_mea", "wave_flight_time", "wave_lateral_velocity_at_fire",
+                "our_x_at_fire", "our_y_at_fire", "opponent_heading_at_fire");
     }
 
     public void writeRowValues(CsvRowWriter row, Whiteboard wb) {
@@ -77,5 +78,9 @@ public final class WaveTrackingOfflineFeatures implements IOfflineFeatures {
         row.writeDouble(wb, Feature.WAVE_MEA, "%.6f");
         row.writeDouble(wb, Feature.WAVE_FLIGHT_TIME, "%.2f");
         row.writeDouble(wb, Feature.WAVE_LATERAL_VELOCITY_AT_FIRE, "%.3f");
+        // Wave origin positions — observer's state at the fire-detection tick
+        row.writeRaw(String.format("%.3f", wb.getOurX()));
+        row.writeRaw(String.format("%.3f", wb.getOurY()));
+        row.writeRaw(String.format("%.6f", wb.getOpponentHeading()));
     }
 }

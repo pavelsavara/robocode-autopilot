@@ -281,5 +281,29 @@ public enum Feature {
 
     /** Fraction of MEA arc reachable before opponent's bullet arrives. Unit: [0,1].
      *  Eq: min(1, opponent_wave_eta * MAX_VELOCITY / (mea * distance)). */
-    ESCAPE_ANGLE_COVERAGE;
+    ESCAPE_ANGLE_COVERAGE,
+
+    // === Absolute positions (no dependencies — reads Whiteboard state directly) ===
+
+    /** Our absolute X position. Unit: px. Direct from StatusEvent.getX(). */
+    OUR_X,
+    /** Our absolute Y position. Unit: px. Direct from StatusEvent.getY(). */
+    OUR_Y,
+    /** Our absolute heading. Unit: rad [0,2PI). Direct from StatusEvent.getHeading(). */
+    OUR_HEADING,
+    /** Our raw velocity (signed). Unit: px/tick. Direct from StatusEvent.getVelocity(). */
+    OUR_VELOCITY,
+    /** Opponent absolute X position. Unit: px. Derived from bearing + distance. */
+    OPPONENT_X,
+    /** Opponent absolute Y position. Unit: px. Derived from bearing + distance. */
+    OPPONENT_Y,
+    /** Opponent absolute heading. Unit: rad [0,2PI). Direct from ScannedRobotEvent. */
+    OPPONENT_HEADING,
+
+    // === Multi-wave tracking (depends on OPPONENT_FIRED) ===
+
+    /** Number of opponent waves currently in flight (not yet reached us). Unit: count. */
+    N_OPPONENT_WAVES_IN_FLIGHT,
+    /** Number of our waves currently in flight (not yet reached opponent). Unit: count. */
+    N_OUR_WAVES_IN_FLIGHT;
 }

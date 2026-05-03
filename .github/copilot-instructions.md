@@ -116,6 +116,18 @@ Three patterns to recognise:
   `distance ≡ distance_norm × battlefield_diagonal`, and `gf_current_at_power_{1, 1_5}`
   largely collapse onto `gf_current_at_power_2`. Not leakage, but model-confusing
   duplicates. Drop via `_loader.py::drop_redundant_features()`.
+- **Meta-leakage (scan quality → label quality).** Scan coverage features
+  (`scan_coverage_20`, `scan_coverage_50`, `scan_arc_width`, `radar_locked`,
+  `radar_turn_direction`, `ticks_between_scans`) measure how well *our* radar
+  tracks the opponent. When coverage is high, fire-detection labels are clean;
+  when low, labels are noisy. Models learn to predict *label reliability*
+  rather than opponent behavior. Exclude via `_loader.py::SCAN_META_COLS`.
+  See `planning/archive/2026-05-03-gbm-intuition-7.md` Finding 2.
+- **Outcome tautology (full-round aggregates).** When predicting round outcome,
+  features aggregated over the *entire* round (e.g. `energy_ratio_mean` across
+  all ticks) encode the outcome itself — high average energy ratio IS winning.
+  For in-game use, restrict to early-window aggregates (first 50–100 ticks).
+  See `planning/archive/2026-05-03-gbm-intuition-7.md` Finding 5.
 
 **Workflow when adding a new ML notebook.**
 1. Pick the prediction target. Write down the tick (or wave row) on which the target

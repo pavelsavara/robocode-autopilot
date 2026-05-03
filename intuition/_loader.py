@@ -150,7 +150,12 @@ def load_stratified(
                     break
         if csv_path is None:
             continue
-        df = pd.read_csv(csv_path)
+        try:
+            df = pd.read_csv(csv_path)
+        except Exception as exc:
+            if verbose:
+                print(f"⚠ Skipping {csv_path}: {exc}")
+            continue
         if row_frac < 1.0 and len(df) > 0:
             df = df.sample(frac=row_frac, random_state=seed)
         df['robot_name'] = robot
@@ -281,6 +286,22 @@ REDUNDANT_FEATURE_PAIRS = (
 )
 
 
+# Scan-quality features that predict label reliability, not opponent behavior.
+# scan_coverage measures how well OUR radar tracks the opponent. High coverage
+# means fire-detection labels are clean; low coverage means noisy labels.
+# Including these in fire-power or fire-timing models is META-LEAKAGE: the model
+# learns to predict label quality rather than opponent strategy.
+# See planning/archive/2026-05-03-gbm-intuition-7.md §1 Finding 2.
+SCAN_META_COLS = (
+    'scan_coverage_20',
+    'scan_coverage_50',
+    'scan_arc_width',
+    'radar_locked',
+    'radar_turn_direction',
+    'ticks_between_scans',
+)
+
+
 def drop_redundant_features(cols):
     """Remove the first member of each REDUNDANT_FEATURE_PAIRS pair from `cols`.
 
@@ -354,3 +375,26 @@ def attach_battle_constants(
     keep = ['battle_id', 'robot_name'] + [c for c in cols if c in scores.columns]
     const = scores[keep].drop_duplicates(['battle_id', 'robot_name'])
     return target.merge(const, on=['battle_id', 'robot_name'], how='left')
+
+
+def compute_strategic_axes(df: pd.DataFrame, num_rounds: int = 35) -> pd.DataFrame:
+    """Add the 4 strategic-axis columns to a ticks/waves DataFrame.
+
+    These are slow-moving context features that condition all predictors.
+    Computed from per-tick observables only (no outcome leakage):
+      - aggression: energy_ratio (already per-tick, ∈ [0,1])
+      - preferred_range: distance (already per-tick, in px)
+      - opponent_family: 0 placeholder (populated after fingerprint runs)
+      - game_phase: round / num_rounds (∈ [0,1])
+
+    For offline training, these approximate what the StrategyComputer would
+    produce in-game. The in-game version will use the round-outcome predictor
+    for aggression; for training we use the raw energy_ratio to avoid outcome
+    leakage.
+    """
+    df = df.copy()
+    df['axis_aggression'] = df['energy_ratio'] if 'energy_ratio' in df.columns else 0.5
+    df['axis_preferred_range'] = df['distance'] if 'distance' in df.columns else 350.0
+    df['axis_opponent_family'] = 0  # placeholder until fingerprint is integrated
+    df['axis_game_phase'] = (df['round'] / max(1, num_rounds)) if 'round' in df.columns else 0.0
+    return df
