@@ -40,3 +40,7 @@ recordings/**/*.br
 **/__pycache__/**
 *.pyc
 
+
+# ML model artifacts
+intuition/models/
+intuition/_nb11_*.png

@@ -5,7 +5,10 @@ import cz.zamboch.autopilot.core.Whiteboard;
 import cz.zamboch.autopilot.core.features.EnergyFeatures;
 import cz.zamboch.autopilot.core.features.IdentityFeatures;
 import cz.zamboch.autopilot.core.features.MovementFeatures;
+import cz.zamboch.autopilot.core.features.MultiWaveFeatures;
+import cz.zamboch.autopilot.core.features.PositionFeatures;
 import cz.zamboch.autopilot.core.features.SpatialFeatures;
+import cz.zamboch.autopilot.core.features.TargetingFeatures;
 import cz.zamboch.autopilot.core.features.TimingFeatures;
 import robocode.AdvancedRobot;
 import robocode.BulletHitEvent;
@@ -108,11 +111,14 @@ public final class Autopilot extends AdvancedRobot {
 
     private static Transformer createTransformer() {
         Transformer t = new Transformer();
+        t.register(new PositionFeatures());
         t.register(new SpatialFeatures());
         t.register(new MovementFeatures());
         t.register(new EnergyFeatures());
         t.register(new TimingFeatures());
         t.register(new IdentityFeatures());
+        t.register(new TargetingFeatures());
+        t.register(new MultiWaveFeatures());
         t.resolveDependencies();
         return t;
     }

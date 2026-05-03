@@ -11,7 +11,9 @@ import cz.zamboch.autopilot.pipeline.features.IdentityOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.MovementHistoryOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.MovementOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.MovementSegmentationOfflineFeatures;
+import cz.zamboch.autopilot.pipeline.features.MultiWaveOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.OpponentPredictionOfflineFeatures;
+import cz.zamboch.autopilot.pipeline.features.PositionOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.ScanCoverageOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.SpatialOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.StateNormalizationOfflineFeatures;
@@ -178,6 +180,7 @@ public final class Main {
     static Transformer createTransformer() {
         Transformer t = new Transformer();
         t.register(new IdentityOfflineFeatures());
+        t.register(new PositionOfflineFeatures());
         t.register(new SpatialOfflineFeatures());
         t.register(new MovementOfflineFeatures());
         t.register(new EnergyOfflineFeatures());
@@ -191,6 +194,8 @@ public final class Main {
         // Tier 1
         t.register(new WaveOfflineFeatures());
         t.register(new TargetingOfflineFeatures());
+        // Multi-wave tracking (depends on OPPONENT_FIRED + DISTANCE)
+        t.register(new MultiWaveOfflineFeatures());
         // Tier 2
         t.register(new MovementHistoryOfflineFeatures());
         t.register(new BattlefieldGeometryOfflineFeatures());
