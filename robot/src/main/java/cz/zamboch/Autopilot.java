@@ -98,6 +98,9 @@ public final class Autopilot extends AdvancedRobot {
 
     @Override
     public void onStatus(StatusEvent e) {
+        if (whiteboard == null) {
+            return;
+        }
         whiteboard.advanceTick();
         whiteboard.setTick(e.getStatus().getTime());
         whiteboard.setOurState(

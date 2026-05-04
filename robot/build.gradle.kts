@@ -17,6 +17,9 @@ tasks.test {
 // Robot JAR: shade core classes into the robot JAR
 tasks.jar {
     from(project(":core").sourceSets.main.get().output)
+    archiveBaseName.set("cz.zamboch.Autopilot")
+    archiveVersion.set(project.version.toString())
+    archiveClassifier.set("")
     manifest {
         attributes["robots"] = "cz.zamboch.Autopilot"
     }
