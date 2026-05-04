@@ -203,15 +203,30 @@ early-window features (first 50–100 ticks) or per-tick streaming features.
 
 ## 6. Revised Honest Baselines
 
-After addressing the leakage findings:
+After excluding scan meta-leakage and outcome tautology:
 
-| Task | Current (inflated) | Expected honest | Honest floor |
+| Task | Inflated | Honest (fixed) | Change |
 |---|---|---|---|
-| Fire power | R²=0.928 | R²≈0.83–0.88 | R²=0.572 (no windows) |
-| Round outcome | Acc=0.882 | Acc≈0.65–0.70 | Acc=0.512 (majority) |
-| Fingerprint | Top-1=0.516 | Top-1=0.516 (unchanged) | Top-1=0.020 (random) |
+| Fire power R² | 0.928 | **0.931** | +0.003 (scan coverage was NOT the driver) |
+| Fire power MAE | 0.097 | **0.094** | −0.003 |
+| Round outcome Acc | 0.882 | **0.520** | −36 pp (**collapsed to majority baseline**) |
+| Round outcome AUC | 0.955 | **0.532** | −42 pp |
+| Fingerprint Top-1 | 0.516 | **0.516** (unchanged) | — |
 
-The fire power model is likely still strong after excluding scan coverage
-(opponent energy variability alone carries 38%). The round outcome model
-will drop significantly but the remaining behavioral features should still
-beat majority baseline.
+**Fire power surprise:** Removing scan coverage features did NOT reduce
+performance — R² actually increased slightly from 0.928 to 0.931.
+The scan features were adding noise, not signal. The model’s 38%
+reliance on `opponent_energy_wstd` is genuine behavioral prediction.
+
+**Round outcome surprise:** Accuracy collapsed from 0.882 to 0.520 (barely
+above majority 0.512). **The first 100 ticks carry almost no signal about
+who wins the round.** The full-round model’s 88% accuracy was entirely
+driven by outcome tautology (`energy_ratio_mean` = outcome restated,
+`tick_count` = round length = who died). This is a confirmed negative
+result: early-game behavioral features (distance, velocity variability,
+wall proximity) do NOT predict round outcome.
+
+Implication for strategic mode switching: a real robot cannot predict
+whether it’s winning from behavioral features alone in the first 100 ticks.
+The mode-switching system needs direct energy tracking (our_energy vs
+opponent_energy at the current tick) rather than statistical aggregates.

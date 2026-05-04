@@ -1,0 +1,28 @@
+package cz.zamboch.autopilot.core.movement;
+
+import cz.zamboch.autopilot.core.Whiteboard;
+import cz.zamboch.autopilot.core.gun.Wave;
+
+import java.util.List;
+
+/**
+ * Scores wave-based danger for a candidate position against
+ * incoming opponent waves.
+ */
+public interface IWaveDanger {
+
+    /**
+     * Danger of a candidate against a single incoming wave.
+     *
+     * @return danger in [0, 1]: 0 = safe, 1 = maximum danger
+     */
+    double danger(CandidatePosition candidate, Wave wave, Whiteboard wb);
+
+    /**
+     * Multi-wave danger: combined danger weighted by bullet damage.
+     * A power-3.0 wave contributes 40x the weight of a power-0.1 wave.
+     *
+     * @return combined danger in [0, 1]
+     */
+    double danger(CandidatePosition candidate, List<Wave> waves, Whiteboard wb);
+}

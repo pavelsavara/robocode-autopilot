@@ -1,5 +1,6 @@
 package cz.zamboch.autopilot.core;
 
+import cz.zamboch.autopilot.core.predictors.PredictorRegistry;
 import cz.zamboch.autopilot.core.util.RingBuffer;
 
 import java.util.ArrayList;
@@ -87,6 +88,9 @@ public class Whiteboard {
     // Computed features (array-backed for performance)
     private final double[] features = new double[Feature.values().length];
     private final boolean[] featureSet = new boolean[Feature.values().length];
+
+    // Predictor registry for complex (non-scalar) predictions
+    private final PredictorRegistry predictorRegistry = new PredictorRegistry();
 
     // === Feature API ===
 
@@ -268,6 +272,8 @@ public class Whiteboard {
     public int getBattlefieldHeight() { return battlefieldHeight; }
     public double getGunCoolingRate() { return gunCoolingRate; }
     public int getNumRounds() { return numRounds; }
+
+    public PredictorRegistry getPredictorRegistry() { return predictorRegistry; }
 
     public int getOurShotsFired() { return ourShotsFired; }
     public int getOpponentShotsDetected() { return opponentShotsDetected; }

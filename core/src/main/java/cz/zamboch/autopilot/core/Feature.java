@@ -305,5 +305,24 @@ public enum Feature {
     /** Number of opponent waves currently in flight (not yet reached us). Unit: count. */
     N_OPPONENT_WAVES_IN_FLIGHT,
     /** Number of our waves currently in flight (not yet reached opponent). Unit: count. */
-    N_OUR_WAVES_IN_FLIGHT;
+    N_OUR_WAVES_IN_FLIGHT,
+
+    // === Predictor outputs (scalar predictions written by IInGameFeatures predictors) ===
+
+    /** Predicted opponent fire power. Unit: energy [0.1,3.0]. From fire-power predictor. */
+    PREDICTED_FIRE_POWER,
+    /** Confidence of fire power prediction. Unit: [0,1]. */
+    PREDICTED_FIRE_POWER_CONFIDENCE,
+    /** Predicted probability of winning the round. Unit: [0,1]. From round-outcome predictor. */
+    PREDICTED_WIN_PROBABILITY,
+    /** Confidence of win probability prediction. Unit: [0,1]. */
+    PREDICTED_WIN_PROBABILITY_CONFIDENCE,
+    /** Predicted opponent lateral velocity at t+5. Unit: px/tick. From movement predictor. */
+    PREDICTED_LAT_VEL_5,
+    /** Confidence of lateral velocity prediction. Unit: [0,1]. */
+    PREDICTED_LAT_VEL_5_CONFIDENCE,
+    /** Predicted probability opponent fires within 3 ticks. Unit: [0,1]. From fire-timing predictor. */
+    PREDICTED_OPPONENT_FIRES_3,
+    /** Confidence of fire timing prediction. Unit: [0,1]. */
+    PREDICTED_OPPONENT_FIRES_3_CONFIDENCE;
 }

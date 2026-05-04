@@ -200,10 +200,10 @@ lag-5 = 0.785, lag-10 = 0.457. Movement is highly correlated within a round.
 
 | Task | Model | Metric | Value | Previous | Lift |
 |---|---|---|---|---|---|
-| Fire power | XGBoost (tuned+window) | R² | **0.928** | 0.572 | +62 % |
-| Fire power | XGBoost (tuned+window) | MAE | **0.097** | 0.319 | −70 % |
-| Round outcome | XGBoost (tuned) | Accuracy | **0.882** | 0.863 | +2 pp |
-| Round outcome | XGBoost (tuned) | AUC | **0.955** | 0.943 | +1 pp |
+| Fire power | XGBoost (tuned+window) | R² | **0.931** | 0.928 (scan leak) | clean |
+| Fire power | XGBoost (tuned+window) | MAE | **0.094** | 0.097 (scan leak) | clean |
+| Round outcome | XGBoost (early 100 ticks) | Accuracy | **0.520** | 0.882 (full-round) | honest |
+| Round outcome | XGBoost (early 100 ticks) | AUC | **0.532** | 0.955 (full-round) | honest |
 | Fingerprint (N=20) | LightGBM (tuned+enriched) | Top-1 | **0.516** | 0.253 | **2×** |
 | GF targeting | MLP [16→128²→64→61] | Loss | 3.47 | uniform 4.11 | −16 % |
 | GF targeting | MLP | ±3 bins | **0.570** | — | new task |
@@ -217,6 +217,16 @@ lag-5 = 0.785, lag-10 = 0.457. Movement is highly correlated within a round.
 Key improvements from tuned run: 20-tick window features (rolling mean/std),
 RandomizedSearchCV hyperparameter tuning, 10× more data (500 battles vs 250),
 8 extra tick-derived fingerprint features (movement variability, direction changes).
+
+**Leakage fixes applied (nb14 findings):**
+- Fire power: excluded `SCAN_META_COLS` (scan coverage predicted label quality,
+  not opponent behavior). R² held at 0.931 — scan coverage was NOT the driver
+  after all; `opponent_energy_wstd` (38%) is the real signal.
+- Round outcome: restricted to first 100 ticks per round, excluded `energy_ratio`,
+  `opponent_fired_sum`, `tick_count`. Accuracy collapsed to 0.520 (barely above
+  majority 0.512). **The first 100 ticks carry almost no signal about who wins.**
+  This is a genuine negative result: early-game state doesn’t predict round outcome.
+  The full-round model’s 88% was entirely driven by outcome tautology.
 
 **Architecture conclusions:**
 - **Windowed-GBM dominates LSTM** for both movement (R² 0.735 vs 0.694) and fire timing
