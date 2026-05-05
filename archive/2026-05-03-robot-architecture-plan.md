@@ -693,7 +693,7 @@ core/src/main/java/cz/zamboch/autopilot/core/
 │   ├── VirtualGunManager.java      ← tracks all guns, selects best
 │   ├── IFirePlan.java              ← multi-shot sequencing interface
 │   ├── SingleShotPlan.java         ← wraps IGunStrategy for single fire
-│   ├── WaveStackPlan.java          ← slow+fast paired fire sequence
+│   ├── DoubleStackPlan.java        ← slow+fast paired fire sequence
 │   ├── TripleStackPlan.java        ← heavy+medium+light 3-shot sequence
 │   └── Wave.java                   ← incoming bullet wave tracking
 ├── movement/

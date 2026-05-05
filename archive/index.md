@@ -1,0 +1,27 @@
+# Archive — Historical Planning Documents
+
+Documents are prefixed with their creation date and are immutable once archived.
+
+## Documents
+
+| Date | Document | Topic |
+|---|---|---|
+| 2026-05-04 | [2026-05-04-plan.md](2026-05-04-plan.md) | Previous project plan (v1) |
+| 2026-05-03 | [2026-05-03-robot-architecture-plan.md](2026-05-03-robot-architecture-plan.md) | Robot decision system design |
+| 2026-05-03 | [2026-05-03-path-planning.md](2026-05-03-path-planning.md) | Reachable envelopes & trajectory planning |
+| 2026-05-03 | [2026-05-03-gbm-intuition-7.md](2026-05-03-gbm-intuition-7.md) | GBM model analysis — leakage findings |
+| 2026-05-03 | [2026-05-03-intuition-6.md](2026-05-03-intuition-6.md) | Wave stacking & multi-wave GF survey |
+| 2026-05-02 | [2026-05-02-plan-sequence.md](2026-05-02-plan-sequence.md) | LSTM / sequence model architecture |
+| 2026-05-02 | [2026-05-02-plan-mlp-targeting.md](2026-05-02-plan-mlp-targeting.md) | MLP GuessFactor targeting design |
+| 2026-05-02 | [2026-05-02-plan-gbm.md](2026-05-02-plan-gbm.md) | GBM architecture plan |
+| 2026-05-02 | [2026-05-02-intuition-5.md](2026-05-02-intuition-5.md) | Honest baselines (post-leakage) |
+| 2026-05-02 | [2026-05-02-intuition-4.md](2026-05-02-intuition-4.md) | Full rumble re-run, leakage discovery |
+| 2026-05-02 | [2026-05-02-intuition-3.md](2026-05-02-intuition-3.md) | Wave analysis & schema evolution |
+| 2026-05-02 | [2026-05-02-features-review.md](2026-05-02-features-review.md) | Feature catalog prioritisation |
+| 2026-05-01 | [2026-05-01-stage-2-plan.md](2026-05-01-stage-2-plan.md) | Feature engineering pipeline design |
+| 2026-05-01 | [2026-05-01-rules-and-known-ideas.md](2026-05-01-rules-and-known-ideas.md) | Game physics & competitive strategy |
+| 2026-05-01 | [2026-05-01-intuition-plan.md](2026-05-01-intuition-plan.md) | Statistical exploration plan |
+| 2026-05-01 | [2026-05-01-intuition-2.md](2026-05-01-intuition-2.md) | Movement prediction & archetypes |
+| 2026-05-01 | [2026-05-01-intuition-1.md](2026-05-01-intuition-1.md) | Initial findings (5-bot dataset) |
+| 2026-05-01 | [2026-05-01-features.md](2026-05-01-features.md) | Complete 443-feature catalog |
+| 2026-05-01 | [2026-05-01-plan.md](2026-05-01-plan.md) | Original project plan (rumble infra) |

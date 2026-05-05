@@ -1,5 +1,33 @@
 # robocode-autopilot Coding Conventions
 
+## Documentation
+- **[Project Plan](../plan.md)** — current roadmap, status, next steps
+- **[Wiki](../wiki/README.md)** — knowledge base (physics, features, leakage, ML results, architecture, pipeline, strategy)
+- **[Archive](../archive/index.md)** — historical documents with date prefixes
+
+### Documentation structure & maintenance
+```
+plan.md         — single living plan (update in place, archive old versions)
+wiki/           — knowledge base pages (living documents, update as facts change)
+  README.md     — index of all wiki pages
+  physics.md    — Robocode game mechanics
+  features.md   — feature catalog (implemented + planned)
+  leakage.md    — data leakage patterns & prevention
+  ml-results.md — honest ML baselines (update after every retrain)
+  architecture.md — robot decision system
+  pipeline.md   — recording → CSV workflow
+  strategy.md   — competitive ideas & top-bot analysis
+archive/        — historical documents (immutable once archived)
+  index.md      — chronological index
+  YYYY-MM-DD-*.md — dated snapshots
+```
+**Rules:**
+- When superseding `plan.md`, move the old version to `archive/` with a date prefix.
+- Wiki pages are living documents — update them when facts change (e.g. new ML results).
+- Archive documents are immutable — never edit them after archiving.
+- New archive entries must be added to `archive/index.md`.
+- Cross-references between docs use relative paths. After moving files, grep for broken links.
+
 ## Java Version
 - Target Java 8 (to match the robocode engine)
 
@@ -122,12 +150,12 @@ Three patterns to recognise:
   tracks the opponent. When coverage is high, fire-detection labels are clean;
   when low, labels are noisy. Models learn to predict *label reliability*
   rather than opponent behavior. Exclude via `_loader.py::SCAN_META_COLS`.
-  See `planning/archive/2026-05-03-gbm-intuition-7.md` Finding 2.
+  See `archive/2026-05-03-gbm-intuition-7.md` Finding 2.
 - **Outcome tautology (full-round aggregates).** When predicting round outcome,
   features aggregated over the *entire* round (e.g. `energy_ratio_mean` across
   all ticks) encode the outcome itself — high average energy ratio IS winning.
   For in-game use, restrict to early-window aggregates (first 50–100 ticks).
-  See `planning/archive/2026-05-03-gbm-intuition-7.md` Finding 5.
+  See `archive/2026-05-03-gbm-intuition-7.md` Finding 5.
 
 **Workflow when adding a new ML notebook.**
 1. Pick the prediction target. Write down the tick (or wave row) on which the target

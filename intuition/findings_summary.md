@@ -1,23 +1,41 @@
-# Intuition Phase � Key Findings
+# Intuition Phase — Key Findings
+
+*Updated: 2026-05-05. Full details: [wiki/ml-results.md](../wiki/ml-results.md).*
 
 ## Dataset
-- 1,003,073 tick rows, 48 predictor features
-- 5 robots: Ali 0.4.9, Ascendant 1.2.27, BeepBoop 2.0, BlackBox 0.0.2, CHCl3 1.4.2, Cardigan 1.09, CassiusClay 2rho.02no, Chalk 2.6.Be, Combat 3.25.0, CunobelinDC 1.2, Cyanide 1.90, Diamond 1.8.22, Domogled 1.2, Dookious 1.573c, DrussGT 3.1.7, Engineer 0.5.4, Firebird 0.25, Firestarter 2.0f, Foilist 1.3.1, Garm 0.9u, Gilgalad 1.99.5c, GresSuffurd 0.4.13, Holden 1.13a, Horizon 1.2.2, Hydra 0.21, Knight 0.6.28, Midboss 1q.fast, Nene 1.0.5, Neuromancer 7.12, Phoenix 1.02, PowerHouse 1.7e3, Pris 0.92, PulsarMax 0.8.9, Raven 3.56j8, Roborio 1.2.4, RougeDC willow, Saguaro 1.0, ScalarR 0.005h.053-noshield, Seraphim 2.3.1, Shadow 3.83c, SilverSurfer 2.53.33fix, Toad 0.14t, Tomcat 3.68, WaveSerpent 2.11, WhiteFang 2.8.1, Wintermute 0.8, X2 0.17, XanderCat 12.9, YersiniaPestis 3.0, deBroglie rev0108
+- ~1,944 battles, 50 bots, ~3.9k ticks.csv files, ~20 GB
+- 1,003,073 tick rows after stratified sampling
+- 50 robots from the top LiteRumble competitors
 
-## ML Baselines
-- **Fire prediction task:** Random Forest (100 trees)
-  - Test accuracy: 0.9313
-  - Train accuracy: 0.9316
+## Honest ML Baselines (Post-Leakage-Fix)
 
-## Top 5 Features for Fire Prediction
-- energy_ratio: 0.0966
-- opponent_energy: 0.0941
-- our_gun_heat: 0.0881
-- scan_coverage_50: 0.0825
-- ticks_since_we_fired: 0.0798
+| Task | Model | Metric | Value |
+|---|---|---|---|
+| Fire power | XGBoost (window) | R² | **0.931** |
+| Fire power | XGBoost (window) | MAE | **0.094** |
+| Fingerprint (50 classes) | LightGBM | Top-1 | **0.516** |
+| Movement N=5 | GBM-window | R² | **0.735** |
+| Fire timing (3-tick) | GBM-window | AUC | **0.863** |
+| Round outcome | XGBoost (early-100) | Acc | **0.520** (needs work) |
 
-## Next Steps
-- Investigate top features in more depth
-- Add more recordings for more training data
-- Explore sequence-based models (LSTM, etc.) for time-series patterns
-- Build features specifically designed for the top predictors
+## Top Features for Fire Power Prediction (Clean)
+| Feature | Importance |
+|---|---|
+| `opponent_energy_wstd` | 38.2% |
+| `opponent_energy_wmean` | 6.3% |
+| `mea_for_our_bullet` | 3.4% |
+| `energy_ratio` | 2.5% |
+| `our_bullet_speed` | 2.2% |
+
+## Key Insight
+20-tick sliding window features (rolling mean/std) are the single most
+important ML innovation. Without them: fire power R²=0.572, movement R²=0.07.
+
+## Leakage Patterns Discovered
+1. **Wave-derived reset** — features reset at fire tick leak `opponent_fired`
+2. **Algebraic identity** — `bullet_speed = 20 − 3×power` leaks fire power
+3. **Scan meta-leakage** — scan coverage predicts label quality, not behavior
+4. **Outcome tautology** — full-round `energy_ratio_mean` IS the outcome
+5. **Cross-round pooling** — destroyed temporal structure in movement analysis
+
+See [wiki/leakage.md](../wiki/leakage.md) for the full taxonomy.

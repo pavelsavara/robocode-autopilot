@@ -3,12 +3,12 @@ package cz.zamboch.autopilot.core.gun;
 import cz.zamboch.autopilot.core.Whiteboard;
 
 /**
- * Wave-stack fire plan: fires a slow bullet (power 3.0, speed 11)
+ * Double-stack fire plan: fires a slow bullet (power 3.0, speed 11)
  * followed by a fast bullet (power 0.1, speed 19.7). The two bullets
  * converge at ~400 px. Each aimed independently by the current best
  * gun strategy at its respective fire tick.
  */
-public final class WaveStackPlan implements IFirePlan {
+public final class DoubleStackPlan implements IFirePlan {
 
     private static final double POWER_HEAVY = 3.0;
     private static final double POWER_LIGHT = 0.1;
@@ -20,7 +20,7 @@ public final class WaveStackPlan implements IFirePlan {
     /**
      * @param angleSupplier callback returning the current best fire angle
      */
-    public WaveStackPlan(AngleSupplier angleSupplier) {
+    public DoubleStackPlan(AngleSupplier angleSupplier) {
         this.angleSupplier = angleSupplier;
     }
 
@@ -51,7 +51,7 @@ public final class WaveStackPlan implements IFirePlan {
 
     @Override
     public String getName() {
-        return "wave-stack";
+        return "double-stack";
     }
 
     /** Callback interface to get the current best fire angle. */

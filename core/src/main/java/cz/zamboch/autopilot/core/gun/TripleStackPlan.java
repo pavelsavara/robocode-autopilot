@@ -14,13 +14,13 @@ public final class TripleStackPlan implements IFirePlan {
     private static final double POWER_LIGHT = 0.1;
     private static final double[] POWERS = {POWER_HEAVY, POWER_MEDIUM, POWER_LIGHT};
 
-    private final WaveStackPlan.AngleSupplier angleSupplier;
+    private final DoubleStackPlan.AngleSupplier angleSupplier;
     private int shotIndex;
 
     /**
      * @param angleSupplier callback returning the current best fire angle
      */
-    public TripleStackPlan(WaveStackPlan.AngleSupplier angleSupplier) {
+    public TripleStackPlan(DoubleStackPlan.AngleSupplier angleSupplier) {
         this.angleSupplier = angleSupplier;
     }
 

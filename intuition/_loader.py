@@ -221,7 +221,7 @@ BATTLE_CONSTANT_COLS = (
 
 # Wave-tracking columns in ticks.csv that reset/update at the moment
 # `opponent_fired = 1`. Including any of these as features when predicting
-# `opponent_fired` is leakage — see planning/archive/2026-05-02-intuition-4.md.
+# `opponent_fired` is leakage — see archive/2026-05-02-intuition-4.md.
 # Pass via `extra_exclude=WAVE_DERIVED_COLS` for an honest fire-event task.
 #
 # `opponent_inferred_gun_heat` is included here too: in Robocode the opponent
@@ -254,7 +254,7 @@ WAVE_DERIVED_COLS = (
 #   escape_angle_coverage / opponent_wave_* — all recomputed using the new
 #   bullet's MEA at the fire-detection tick, so they encode `bullet_speed`
 #   and hence `power`.
-# See planning/archive/2026-05-02-intuition-5.md §5 (and §5b in the rerun).
+# See archive/2026-05-02-intuition-5.md §5 (and §5b in the rerun).
 # Including any of these when predicting fire power gives R² = 1.000 trivially.
 FIRE_POWER_LEAKAGE_COLS = (
     'opponent_fire_power',
@@ -291,7 +291,7 @@ REDUNDANT_FEATURE_PAIRS = (
 # means fire-detection labels are clean; low coverage means noisy labels.
 # Including these in fire-power or fire-timing models is META-LEAKAGE: the model
 # learns to predict label quality rather than opponent strategy.
-# See planning/archive/2026-05-03-gbm-intuition-7.md §1 Finding 2.
+# See archive/2026-05-03-gbm-intuition-7.md §1 Finding 2.
 SCAN_META_COLS = (
     'scan_coverage_20',
     'scan_coverage_50',

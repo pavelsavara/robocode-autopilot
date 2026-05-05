@@ -624,7 +624,7 @@ which bot family we're fighting. This unlocks **family-specific priors**:
 - **Adaptation rate per family**: The KS adaptation detector (nb09) has
   different thresholds per family. Pre-calibrated offline.
 - **Wave-stacking vulnerability per family**: Pre-computed from nb12.
-  If the family uses equal-weighted surfing, activate the `WaveStackPlan`.
+  If the family uses equal-weighted surfing, activate the `DoubleStackPlan`.
 
 **Data structure**: A `FamilyProfile` loaded from a resource file:
 ```java
