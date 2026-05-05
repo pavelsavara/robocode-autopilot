@@ -6,5 +6,8 @@ junit = "5.11.0"
 robocode-api = { module = "net.sf.robocode:robocode.api", version.ref = "robocode" }
 robocode-battle = { module = "net.sf.robocode:robocode.battle", version.ref = "robocode" }
 robocode-core = { module = "net.sf.robocode:robocode.core", version.ref = "robocode" }
+robocode-host = { module = "net.sf.robocode:robocode.host", version.ref = "robocode" }
+robocode-repository = { module = "net.sf.robocode:robocode.repository", version.ref = "robocode" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }

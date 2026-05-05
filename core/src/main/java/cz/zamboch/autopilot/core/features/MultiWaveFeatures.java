@@ -5,9 +5,11 @@ import cz.zamboch.autopilot.core.IInGameFeatures;
 import cz.zamboch.autopilot.core.WaveRecord;
 import cz.zamboch.autopilot.core.Whiteboard;
 
+import java.util.List;
+
 /**
  * Tracks multi-wave state: adds newly detected opponent fires to the wave list,
- * prunes passed waves, and emits wave-count features.
+ * prunes passed waves, and emits wave-count and wave-pressure features.
  *
  * Depends on OPPONENT_FIRED, OPPONENT_FIRE_POWER, and DISTANCE (to know
  * when to add a wave and when to prune).
@@ -16,7 +18,10 @@ public class MultiWaveFeatures implements IInGameFeatures {
 
     private static final Feature[] OUTPUTS = {
             Feature.N_OPPONENT_WAVES_IN_FLIGHT,
-            Feature.N_OUR_WAVES_IN_FLIGHT
+            Feature.N_OUR_WAVES_IN_FLIGHT,
+            Feature.NEAREST_OPPONENT_WAVE_GAP,
+            Feature.TOTAL_OPPONENT_WAVE_DAMAGE,
+            Feature.NEAREST_OUR_WAVE_GAP
     };
 
     private static final Feature[] DEPS = {
@@ -53,5 +58,50 @@ public class MultiWaveFeatures implements IInGameFeatures {
                 wb.getOpponentWaves().size());
         wb.setFeature(Feature.N_OUR_WAVES_IN_FLIGHT,
                 wb.getOurWaves().size());
+
+        // Emit pressure features
+        wb.setFeature(Feature.NEAREST_OPPONENT_WAVE_GAP,
+                computeNearestGap(wb.getOpponentWaves()));
+        wb.setFeature(Feature.TOTAL_OPPONENT_WAVE_DAMAGE,
+                computeTotalDamage(wb.getOpponentWaves()));
+        wb.setFeature(Feature.NEAREST_OUR_WAVE_GAP,
+                computeNearestGap(wb.getOurWaves()));
+    }
+
+    /**
+     * Compute the minimum tick-gap between adjacent waves (sorted by fire tick).
+     * Returns 0 when fewer than 2 waves are in flight.
+     */
+    static long computeNearestGap(List<WaveRecord> waves) {
+        int n = waves.size();
+        if (n < 2) {
+            return 0;
+        }
+        // Find the minimum fire-tick gap between any pair of waves.
+        // Waves are roughly ordered by fire tick (added chronologically,
+        // pruned from the front), so adjacent pairs dominate — but we
+        // check all pairs for correctness with small N.
+        long minGap = Long.MAX_VALUE;
+        for (int i = 0; i < n; i++) {
+            long ti = waves.get(i).fireTick;
+            for (int j = i + 1; j < n; j++) {
+                long gap = Math.abs(waves.get(j).fireTick - ti);
+                if (gap < minGap) {
+                    minGap = gap;
+                }
+            }
+        }
+        return minGap;
+    }
+
+    /**
+     * Sum of potential damage from all in-flight waves.
+     */
+    static double computeTotalDamage(List<WaveRecord> waves) {
+        double total = 0;
+        for (int i = 0; i < waves.size(); i++) {
+            total += waves.get(i).damage();
+        }
+        return total;
     }
 }

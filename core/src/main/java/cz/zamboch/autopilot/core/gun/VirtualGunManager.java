@@ -6,13 +6,13 @@ import cz.zamboch.autopilot.core.strategy.IGunStrategy;
 import cz.zamboch.autopilot.core.strategy.VirtualBullet;
 import cz.zamboch.autopilot.core.util.RoboMath;
 
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 /**
  * Tracks multiple gun strategies via virtual bullets, selects the best
  * performer based on rolling hit rate, and controls gun aiming.
+ *
+ * <p>Uses pre-allocated bullet pools (no per-scan allocation).
  */
 public final class VirtualGunManager {
 
@@ -20,9 +20,15 @@ public final class VirtualGunManager {
     private static final double HIT_RATE_EPSILON = 0.02;
     private static final double AIM_THRESHOLD = 0.02; // ~1.1 degrees
 
+    /** Max virtual bullets in flight per strategy. Longest flight: ~40 ticks. */
+    private static final int BULLET_POOL_SIZE = 64;
+
     private final List<IGunStrategy> strategies;
-    private final List<List<VirtualBullet>> virtualBullets;
-    private final int[][] hitHistory; // [strategyIndex][ringIndex] = 0/1
+    /** Pre-allocated bullet pools: [strategy][slot]. */
+    private final VirtualBullet[][] bulletPool;
+    /** Number of active bullets per strategy. */
+    private final int[] bulletCount;
+    private final int[][] hitHistory;
     private final int[] historyIndex;
     private final int[] historyCount;
     private final int[] hitCounts;
@@ -33,13 +39,16 @@ public final class VirtualGunManager {
     public VirtualGunManager(List<IGunStrategy> strategies) {
         this.strategies = strategies;
         int n = strategies.size();
-        this.virtualBullets = new ArrayList<List<VirtualBullet>>(n);
+        this.bulletPool = new VirtualBullet[n][BULLET_POOL_SIZE];
+        this.bulletCount = new int[n];
         this.hitHistory = new int[n][WINDOW];
         this.historyIndex = new int[n];
         this.historyCount = new int[n];
         this.hitCounts = new int[n];
         for (int i = 0; i < n; i++) {
-            virtualBullets.add(new ArrayList<VirtualBullet>());
+            for (int j = 0; j < BULLET_POOL_SIZE; j++) {
+                bulletPool[i][j] = new VirtualBullet();
+            }
         }
     }
 
@@ -53,25 +62,23 @@ public final class VirtualGunManager {
         double distance = wb.getFeature(Feature.DISTANCE);
         double bulletSpeed = 20.0 - 3.0 * firePower;
 
-        // Check existing virtual bullets for hits/misses
         checkVirtualBullets(wb);
 
-        // Record new virtual bullets for each strategy
         for (int i = 0; i < strategies.size(); i++) {
             double angle = strategies.get(i).getFireAngle(wb);
-            if (!Double.isNaN(angle)) {
-                VirtualBullet vb = new VirtualBullet(ourX, ourY, angle,
-                        bulletSpeed, tick, distance);
-                virtualBullets.get(i).add(vb);
+            if (!Double.isNaN(angle) && bulletCount[i] < BULLET_POOL_SIZE) {
+                bulletPool[i][bulletCount[i]].set(
+                        ourX, ourY, angle, bulletSpeed, tick, distance);
+                bulletCount[i]++;
             }
         }
 
-        // Select best strategy
         selectBest(wb);
     }
 
     /**
      * Check all virtual bullets against current opponent position.
+     * Removes passed bullets by swapping with the last active slot.
      */
     private void checkVirtualBullets(Whiteboard wb) {
         double oppX = wb.getOpponentX();
@@ -79,17 +86,25 @@ public final class VirtualGunManager {
         long tick = wb.getTick();
 
         for (int i = 0; i < strategies.size(); i++) {
-            Iterator<VirtualBullet> it = virtualBullets.get(i).iterator();
-            while (it.hasNext()) {
-                VirtualBullet vb = it.next();
+            int j = 0;
+            while (j < bulletCount[i]) {
+                VirtualBullet vb = bulletPool[i][j];
                 if (vb.hasPassed(tick)) {
-                    // Check if the bullet would have hit
                     double actualBearing = Math.atan2(oppX - vb.startX, oppY - vb.startY);
                     double angleDiff = Math.abs(RoboMath.normalRelativeAngle(vb.heading - actualBearing));
                     double hitAngle = Math.atan2(18, vb.fireDistance);
                     boolean hit = angleDiff <= hitAngle;
                     recordResult(i, hit ? 1 : 0);
-                    it.remove();
+                    // Swap-remove: move last active bullet into this slot
+                    bulletCount[i]--;
+                    if (j < bulletCount[i]) {
+                        VirtualBullet last = bulletPool[i][bulletCount[i]];
+                        bulletPool[i][j] = last;
+                        bulletPool[i][bulletCount[i]] = vb;
+                    }
+                    // Don't increment j — re-check the swapped-in bullet
+                } else {
+                    j++;
                 }
             }
         }
@@ -164,9 +179,8 @@ public final class VirtualGunManager {
 
     /** Reset for a new round. */
     public void onRoundStart() {
-        for (List<VirtualBullet> list : virtualBullets) {
-            list.clear();
+        for (int i = 0; i < strategies.size(); i++) {
+            bulletCount[i] = 0;
         }
-        // Keep hit history across rounds
     }
 }

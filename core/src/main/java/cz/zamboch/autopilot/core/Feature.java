@@ -307,6 +307,22 @@ public enum Feature {
     /** Number of our waves currently in flight (not yet reached opponent). Unit: count. */
     N_OUR_WAVES_IN_FLIGHT,
 
+    // === Multi-wave pressure (depends on multi-wave tracking) ===
+
+    /** Minimum tick-gap between adjacent opponent waves in flight. Unit: ticks.
+     *  Eq: min over consecutive wave pairs of |fireTick_i - fireTick_j|.
+     *  When only 0-1 waves in flight, set to 0. Low values = tight pressure. */
+    NEAREST_OPPONENT_WAVE_GAP,
+
+    /** Total potential damage from all opponent waves currently in flight. Unit: energy.
+     *  Eq: sum of damage(power) for each wave. High values = dangerous multi-wave state. */
+    TOTAL_OPPONENT_WAVE_DAMAGE,
+
+    /** Minimum tick-gap between adjacent our waves in flight. Unit: ticks.
+     *  Eq: min over consecutive wave pairs of |fireTick_i - fireTick_j|.
+     *  Low values = we are applying tight wave pressure. */
+    NEAREST_OUR_WAVE_GAP,
+
     // === Predictor outputs (scalar predictions written by IInGameFeatures predictors) ===
 
     /** Predicted opponent fire power. Unit: energy [0.1,3.0]. From fire-power predictor. */

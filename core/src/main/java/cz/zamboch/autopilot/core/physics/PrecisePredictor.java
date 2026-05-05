@@ -32,4 +32,26 @@ public final class PrecisePredictor {
         }
         return state;
     }
+
+    /**
+     * Zero-allocation simulation: writes final state into the provided
+     * mutable state object. Use in tight loops (path planning).
+     *
+     * @param start initial state (copied into {@code out})
+     * @param accel acceleration per tick
+     * @param turnRate turn rate per tick (radians)
+     * @param ticks number of ticks to simulate
+     * @param bfW battlefield width
+     * @param bfH battlefield height
+     * @param out receives the final state — mutated in place
+     */
+    public static void simulate(RobotState start, double accel,
+                                double turnRate, int ticks,
+                                int bfW, int bfH,
+                                MutableRobotState out) {
+        out.copyFrom(start);
+        for (int i = 0; i < ticks; i++) {
+            out.step(accel, turnRate, bfW, bfH);
+        }
+    }
 }
