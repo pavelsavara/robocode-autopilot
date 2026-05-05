@@ -85,58 +85,6 @@ public final class ReachableEnvelope {
     }
 
     /**
-     * Get a random subsample of reachable candidates with ±1px jitter.
-     * This is the primary online method — prevents exploitable grid patterns.
-     *
-     * @param current starting robot state
-     * @param bfW battlefield width
-     * @param bfH battlefield height
-     * @param maxCandidates maximum number of candidates to return
-     * @return subsampled, jittered candidate positions
-     */
-    public static CandidatePosition[] getCandidates(
-            RobotState current, int bfW, int bfH, int maxCandidates) {
-        int vi = (int) Math.round(Math.abs(current.velocity));
-        byte[] data = getOffsets(vi);
-
-        double sinH = Math.sin(current.heading);
-        double cosH = Math.cos(current.heading);
-
-        // Reservoir sampling with jitter
-        CandidatePosition[] reservoir = new CandidatePosition[maxCandidates];
-        int seen = 0;
-
-        for (int i = 0; i < data.length; i += 2) {
-            double dx = data[i] + (RNG.nextDouble() * 2 - 1) * JITTER;
-            double dy = data[i + 1] + (RNG.nextDouble() * 2 - 1) * JITTER;
-            double rx = dx * cosH + dy * sinH;
-            double ry = -dx * sinH + dy * cosH;
-            double x = current.x + rx;
-            double y = current.y + ry;
-
-            if (x < MARGIN || x > bfW - MARGIN
-                    || y < MARGIN || y > bfH - MARGIN) {
-                continue;
-            }
-
-            if (seen < maxCandidates) {
-                reservoir[seen] = new CandidatePosition(x, y, 0.0, HORIZON);
-            } else {
-                int j = RNG.nextInt(seen + 1);
-                if (j < maxCandidates) {
-                    reservoir[j] = new CandidatePosition(x, y, 0.0, HORIZON);
-                }
-            }
-            seen++;
-        }
-
-        int count = Math.min(seen, maxCandidates);
-        CandidatePosition[] result = new CandidatePosition[count];
-        System.arraycopy(reservoir, 0, result, 0, count);
-        return result;
-    }
-
-    /**
      * Zero-allocation subsample: writes into a pre-allocated buffer with jitter.
      * The primary online method for per-tick path planning.
      *
@@ -212,5 +160,82 @@ public final class ReachableEnvelope {
             }
         }
         return new int[]{surviving, numPoints};
+    }
+
+    /**
+     * Zero-allocation scan of all reachable positions to compute distance range
+     * to a target and GF range against a wave. All results written into
+     * {@code out[0..3]}: [minDist, maxDist, minGF, maxGF].
+     *
+     * <p>If no wave is provided (waveOriginX/Y = NaN), GF fields are set to 0.
+     *
+     * @param current our robot state
+     * @param bfW battlefield width
+     * @param bfH battlefield height
+     * @param targetX opponent X for distance computation
+     * @param targetY opponent Y for distance computation
+     * @param waveOriginX wave firer's X (NaN to skip GF)
+     * @param waveOriginY wave firer's Y
+     * @param waveBulletSpeed bullet speed for MEA computation
+     * @param fireBearing bearing from wave origin to us at fire time
+     * @param out receives [minDist, maxDist, minGF, maxGF, surviving, total]
+     */
+    public static void scanEnvelope(
+            RobotState current, int bfW, int bfH,
+            double targetX, double targetY,
+            double waveOriginX, double waveOriginY,
+            double waveBulletSpeed, double fireBearing,
+            double[] out) {
+        int vi = (int) Math.round(Math.abs(current.velocity));
+        byte[] data = getOffsets(vi);
+
+        double sinH = Math.sin(current.heading);
+        double cosH = Math.cos(current.heading);
+
+        boolean hasWave = !Double.isNaN(waveOriginX);
+        double mea = hasWave ? Math.asin(8.0 / waveBulletSpeed) : 1.0;
+
+        double minDist = Double.MAX_VALUE;
+        double maxDist = 0;
+        double minGF = Double.MAX_VALUE;
+        double maxGF = -Double.MAX_VALUE;
+        int surviving = 0;
+
+        for (int i = 0; i < data.length; i += 2) {
+            double rx = data[i] * cosH + data[i + 1] * sinH;
+            double ry = -data[i] * sinH + data[i + 1] * cosH;
+            double x = current.x + rx;
+            double y = current.y + ry;
+
+            if (x < MARGIN || x > bfW - MARGIN
+                    || y < MARGIN || y > bfH - MARGIN) {
+                continue;
+            }
+            surviving++;
+
+            double d = Math.hypot(x - targetX, y - targetY);
+            if (d < minDist) minDist = d;
+            if (d > maxDist) maxDist = d;
+
+            if (hasWave) {
+                double candBearing = Math.atan2(x - waveOriginX, y - waveOriginY);
+                double offset = candBearing - fireBearing;
+                // Inline normalRelativeAngle to avoid method call overhead
+                while (offset > Math.PI) offset -= 2 * Math.PI;
+                while (offset < -Math.PI) offset += 2 * Math.PI;
+                double gf = offset / mea;
+                if (gf < -1.0) gf = -1.0;
+                if (gf > 1.0) gf = 1.0;
+                if (gf < minGF) minGF = gf;
+                if (gf > maxGF) maxGF = gf;
+            }
+        }
+
+        out[0] = surviving > 0 ? minDist : 0;
+        out[1] = maxDist;
+        out[2] = hasWave && surviving > 0 ? minGF : 0;
+        out[3] = hasWave && surviving > 0 ? maxGF : 0;
+        out[4] = surviving;
+        out[5] = data.length / 2;
     }
 }

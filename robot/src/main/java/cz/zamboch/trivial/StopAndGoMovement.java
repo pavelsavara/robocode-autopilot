@@ -15,14 +15,15 @@ public final class StopAndGoMovement implements IMovementStrategy {
     private int direction = 1;
 
     @Override
-    public MovementCommand getCommand(Whiteboard wb, StrategyParams params) {
+    public void getCommand(Whiteboard wb, StrategyParams params, MovementCommand out) {
         double fireProb = wb.getFeature(Feature.PREDICTED_OPPONENT_FIRES_3);
 
         // If opponent likely firing, stop
         if (fireProb > 0.3 || wb.getFeature(Feature.OPPONENT_FIRED) > 0.5) {
             // Stop — but reverse direction for next move
             direction = -direction;
-            return new MovementCommand(0, 0);
+            out.set(0, 0);
+            return;
         }
 
         // Move perpendicular to bearing
@@ -40,7 +41,7 @@ public final class StopAndGoMovement implements IMovementStrategy {
             ahead = 80;
         }
 
-        return new MovementCommand(ahead, turn);
+        out.set(ahead, turn);
     }
 
     @Override

@@ -15,7 +15,7 @@ public final class RandomDodgeMovement implements IMovementStrategy {
     private long nextChangeAt;
 
     @Override
-    public MovementCommand getCommand(Whiteboard wb, StrategyParams params) {
+    public void getCommand(Whiteboard wb, StrategyParams params, MovementCommand out) {
         long tick = wb.getTick();
 
         if (tick >= nextChangeAt) {
@@ -28,7 +28,7 @@ public final class RandomDodgeMovement implements IMovementStrategy {
 
         // Random turn angle, small magnitude
         double turn = (Math.random() - 0.5) * 0.3;
-        return new MovementCommand(direction * 100, turn);
+        out.set(direction * 100, turn);
     }
 
     @Override

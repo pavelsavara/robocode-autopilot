@@ -184,6 +184,7 @@ public final class Autopilot extends AdvancedRobot {
         t.register(new IdentityFeatures());
         t.register(new TargetingFeatures());
         t.register(new MultiWaveFeatures());
+        t.register(new cz.zamboch.autopilot.core.features.EnvelopeFeatures());
         // Scalar predictors (participate in dependency chain)
         t.register(new TrivialFirePowerPredictor());
         t.register(new TrivialRoundOutcomePredictor());

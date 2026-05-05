@@ -7,6 +7,7 @@ import cz.zamboch.autopilot.pipeline.features.BattlefieldGeometryOfflineFeatures
 import cz.zamboch.autopilot.pipeline.features.CombatStateOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.DangerOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.EnergyOfflineFeatures;
+import cz.zamboch.autopilot.pipeline.features.EnvelopeOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.IdentityOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.MovementHistoryOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.MovementOfflineFeatures;
@@ -196,6 +197,8 @@ public final class Main {
         t.register(new TargetingOfflineFeatures());
         // Multi-wave tracking (depends on OPPONENT_FIRED + DISTANCE)
         t.register(new MultiWaveOfflineFeatures());
+        // Envelope features (depends on position + velocity + waves)
+        t.register(new EnvelopeOfflineFeatures());
         // Tier 2
         t.register(new MovementHistoryOfflineFeatures());
         t.register(new BattlefieldGeometryOfflineFeatures());

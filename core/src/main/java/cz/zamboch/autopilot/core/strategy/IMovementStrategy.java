@@ -9,10 +9,10 @@ import cz.zamboch.autopilot.core.Whiteboard;
 public interface IMovementStrategy {
 
     /**
-     * Compute the movement command for this tick.
-     * The manager calls all strategies but only executes the active one.
+     * Compute the movement command for this tick. Writes into {@code out}
+     * to avoid per-tick allocation.
      */
-    MovementCommand getCommand(Whiteboard wb, StrategyParams params);
+    void getCommand(Whiteboard wb, StrategyParams params, MovementCommand out);
 
     /** Human-readable name. */
     String getName();

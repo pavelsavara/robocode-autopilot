@@ -15,6 +15,7 @@ public final class MovementStrategyManager {
 
     private final List<IMovementStrategy> strategies;
     private final double[] damagePerRound;
+    private final MovementCommand sharedCommand = new MovementCommand();
     private int activeIndex;
     private int roundsPlayed;
 
@@ -24,9 +25,10 @@ public final class MovementStrategyManager {
         this.activeIndex = 0;
     }
 
-    /** Get the command from the currently active strategy. */
+    /** Get the command from the currently active strategy. Zero allocation. */
     public MovementCommand getActiveCommand(Whiteboard wb, StrategyParams params) {
-        return strategies.get(activeIndex).getCommand(wb, params);
+        strategies.get(activeIndex).getCommand(wb, params, sharedCommand);
+        return sharedCommand;
     }
 
     /** Get the currently active strategy name. */

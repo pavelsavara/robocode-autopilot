@@ -17,7 +17,7 @@ public final class OrbitalMovement implements IMovementStrategy {
     private int direction = 1; // +1 = clockwise, -1 = counter-clockwise
 
     @Override
-    public MovementCommand getCommand(Whiteboard wb, StrategyParams params) {
+    public void getCommand(Whiteboard wb, StrategyParams params, MovementCommand out) {
         double bearing = wb.getFeature(Feature.BEARING_TO_OPPONENT_ABS);
         double distance = wb.getFeature(Feature.DISTANCE);
         double ourHeading = wb.getOurHeading();
@@ -55,7 +55,7 @@ public final class OrbitalMovement implements IMovementStrategy {
             ahead = 100;
         }
 
-        return new MovementCommand(ahead, turn);
+        out.set(ahead, turn);
     }
 
     @Override

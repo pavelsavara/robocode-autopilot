@@ -42,22 +42,28 @@ final class ReachableEnvelopeTest {
     @Test
     void subsampledCandidatesRespectMax() {
         RobotState state = RobotState.at(400, 300, 0, 4);
-        CandidatePosition[] sub = ReachableEnvelope.getCandidates(state, BFW, BFH, 30);
-        assertTrue(sub.length <= 30);
-        assertTrue(sub.length > 0);
+        CandidatePosition[] buf = new CandidatePosition[30];
+        for (int i = 0; i < 30; i++) buf[i] = new CandidatePosition();
+        int n = ReachableEnvelope.getCandidatesInto(state, BFW, BFH, buf, 30);
+        assertTrue(n <= 30);
+        assertTrue(n > 0);
     }
 
     @Test
     void jitterProducesDifferentPositions() {
         RobotState state = RobotState.at(400, 300, 0, 4);
-        CandidatePosition[] a = ReachableEnvelope.getCandidates(state, BFW, BFH, 30);
-        CandidatePosition[] b = ReachableEnvelope.getCandidates(state, BFW, BFH, 30);
+        CandidatePosition[] buf = new CandidatePosition[30];
+        for (int i = 0; i < 30; i++) buf[i] = new CandidatePosition();
 
-        // With jitter + random subsampling, highly unlikely to get identical results
+        ReachableEnvelope.getCandidatesInto(state, BFW, BFH, buf, 30);
+        double[] ax = new double[30], ay = new double[30];
+        for (int i = 0; i < 30; i++) { ax[i] = buf[i].x; ay[i] = buf[i].y; }
+
+        ReachableEnvelope.getCandidatesInto(state, BFW, BFH, buf, 30);
+
         boolean anyDifferent = false;
-        int minLen = Math.min(a.length, b.length);
-        for (int i = 0; i < minLen; i++) {
-            if (a[i].x != b[i].x || a[i].y != b[i].y) {
+        for (int i = 0; i < 30; i++) {
+            if (ax[i] != buf[i].x || ay[i] != buf[i].y) {
                 anyDifferent = true;
                 break;
             }

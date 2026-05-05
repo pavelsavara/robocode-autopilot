@@ -16,3 +16,5 @@ for (int i = 0; i < n; i++) {
     // score buf[i] using simState and gfBuf
 }
 ```
+
+Also add them into CSV files

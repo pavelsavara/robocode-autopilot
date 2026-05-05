@@ -323,6 +323,26 @@ public enum Feature {
      *  Low values = we are applying tight wave pressure. */
     NEAREST_OUR_WAVE_GAP,
 
+    // === Reachable envelope features (depends on position + velocity) ===
+
+    /** Fraction of open-space reachable envelope surviving wall clamp. Unit: [0,1].
+     *  Eq: countReachable(surviving) / countReachable(total).
+     *  Low values = physically constrained (corner/wall). */
+    ENVELOPE_FILL_RATIO,
+
+    /** Minimum distance to opponent achievable at t+10 from reachable envelope. Unit: px.
+     *  Tells the strategy layer "how close can I get?" */
+    REACHABLE_DISTANCE_MIN,
+
+    /** Maximum distance to opponent achievable at t+10 from reachable envelope. Unit: px.
+     *  Tells the strategy layer "how far can I retreat?" */
+    REACHABLE_DISTANCE_MAX,
+
+    /** GF range width reachable before nearest opponent wave breaks. Unit: GF [0,2].
+     *  Eq: max reachable GF - min reachable GF at wave-break positions.
+     *  Low values = trapped, high = full dodge freedom. 0 = no wave in flight. */
+    REACHABLE_GF_RANGE,
+
     // === Predictor outputs (scalar predictions written by IInGameFeatures predictors) ===
 
     /** Predicted opponent fire power. Unit: energy [0.1,3.0]. From fire-power predictor. */
