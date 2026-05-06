@@ -107,9 +107,17 @@ public final class Autopilot extends AdvancedRobot {
 
             // Fire when ready
             if (gunManager.shouldFire(whiteboard) && getEnergy() > currentParams.firePowerBudget) {
-                setFire(currentParams.firePowerBudget);
+                double firePower = currentParams.firePowerBudget;
+                setFire(firePower);
                 whiteboard.incrementOurShotsFired();
-                whiteboard.setLastOurFire(whiteboard.getTick(), currentParams.firePowerBudget);
+                whiteboard.setLastOurFire(whiteboard.getTick(), firePower);
+                // Track our wave for multi-wave features
+                double speed = 20.0 - 3.0 * firePower;
+                double dist = whiteboard.hasFeature(Feature.DISTANCE)
+                        ? whiteboard.getFeature(Feature.DISTANCE) : 0;
+                whiteboard.addOurWave(new cz.zamboch.autopilot.core.WaveRecord(
+                        getX(), getY(), speed, firePower,
+                        whiteboard.getTick(), dist));
             }
 
             execute();

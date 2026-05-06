@@ -181,9 +181,22 @@ public final class Player {
                 if (owner == indexA) {
                     wbA.incrementOurShotsFired();
                     wbA.setLastOurFire(turn.getTurn(), power);
+                    // Track our wave for multi-wave features
+                    double speed = 20.0 - 3.0 * power;
+                    double dist = Math.hypot(wbA.getOurX() - wbA.getOpponentX(),
+                            wbA.getOurY() - wbA.getOpponentY());
+                    wbA.addOurWave(new cz.zamboch.autopilot.core.WaveRecord(
+                            wbA.getOurX(), wbA.getOurY(), speed, power,
+                            turn.getTurn(), dist));
                 } else if (owner == indexB) {
                     wbB.incrementOurShotsFired();
                     wbB.setLastOurFire(turn.getTurn(), power);
+                    double speed = 20.0 - 3.0 * power;
+                    double dist = Math.hypot(wbB.getOurX() - wbB.getOpponentX(),
+                            wbB.getOurY() - wbB.getOpponentY());
+                    wbB.addOurWave(new cz.zamboch.autopilot.core.WaveRecord(
+                            wbB.getOurX(), wbB.getOurY(), speed, power,
+                            turn.getTurn(), dist));
                 }
             }
 

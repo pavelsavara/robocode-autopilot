@@ -286,11 +286,15 @@ FIRE_POWER_LEAKAGE_COLS = (
 # - opponent_guess_factor ≡ our_lateral_velocity (by construction)
 # - distance ≡ distance_norm (linear scaling)
 # - gf_current_at_power_{1, 1_5, 2} pairwise r > 0.999
+# - reachable_distance_min/max ≡ distance (r=1.00/0.99) — envelope distance
+#   range at t+10 is almost entirely determined by current distance
 REDUNDANT_FEATURE_PAIRS = (
     ('opponent_guess_factor', 'our_lateral_velocity'),
     ('distance_norm', 'distance'),
     ('gf_current_at_power_1', 'gf_current_at_power_2'),
     ('gf_current_at_power_1_5', 'gf_current_at_power_2'),
+    ('reachable_distance_min', 'distance'),
+    ('reachable_distance_max', 'distance'),
 )
 
 
