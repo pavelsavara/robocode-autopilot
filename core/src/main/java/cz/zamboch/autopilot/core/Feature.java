@@ -343,6 +343,30 @@ public enum Feature {
      *  Low values = trapped, high = full dodge freedom. 0 = no wave in flight. */
     REACHABLE_GF_RANGE,
 
+    // === Per-tick combat progress (reads Whiteboard cumulative counters) ===
+
+    /** Cumulative bullet damage dealt this round up to this tick. Unit: energy.
+     *  Observable in-game via onBulletHit events. */
+    CUMULATIVE_DAMAGE_DEALT,
+
+    /** Cumulative bullet damage received this round up to this tick. Unit: energy.
+     *  Observable in-game via onHitByBullet events. */
+    CUMULATIVE_DAMAGE_RECEIVED,
+
+    /** Our bullet hit rate so far this round. Unit: [0,1].
+     *  Eq: ourBulletHitCount / max(1, ourShotsFired). */
+    CUMULATIVE_OUR_HIT_RATE,
+
+    /** Opponent bullet hit rate so far this round. Unit: [0,1].
+     *  Eq: oppBulletHitCount / max(1, oppShotsDetected). */
+    CUMULATIVE_OPPONENT_HIT_RATE,
+
+    /** Our shots fired so far this round. Unit: count. */
+    CUMULATIVE_OUR_SHOTS_FIRED,
+
+    /** Opponent shots detected so far this round. Unit: count. */
+    CUMULATIVE_OPPONENT_SHOTS_DETECTED,
+
     // === Predictor outputs (scalar predictions written by IInGameFeatures predictors) ===
 
     /** Predicted opponent fire power. Unit: energy [0.1,3.0]. From fire-power predictor. */

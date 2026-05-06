@@ -13,6 +13,7 @@ import cz.zamboch.autopilot.core.strategy.IRadarStrategy;
 import cz.zamboch.autopilot.core.strategy.MovementCommand;
 import cz.zamboch.autopilot.core.strategy.StrategyComputer;
 import cz.zamboch.autopilot.core.strategy.StrategyParams;
+import cz.zamboch.autopilot.core.features.CombatProgressFeatures;
 import cz.zamboch.autopilot.core.features.EnergyFeatures;
 import cz.zamboch.autopilot.core.features.EnvelopeFeatures;
 import cz.zamboch.autopilot.core.features.IdentityFeatures;
@@ -202,6 +203,7 @@ public final class Autopilot extends AdvancedRobot {
         t.register(new TargetingFeatures());
         t.register(new MultiWaveFeatures());
         t.register(new EnvelopeFeatures());
+        t.register(new CombatProgressFeatures());
         // Scalar predictors (participate in dependency chain)
         t.register(new TrivialFirePowerPredictor());
         t.register(new TrivialRoundOutcomePredictor());

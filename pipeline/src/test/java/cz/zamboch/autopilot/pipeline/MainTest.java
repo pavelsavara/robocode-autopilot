@@ -18,9 +18,9 @@ class MainTest {
     void createTransformerRegistersAllFeatures() {
         Transformer t = Main.createTransformer();
 
-        // Should have 20 registered features (11 originals + 6 Tier 1/2/3 + 2 position/wave additions + 1 envelope)
+        // Should have 21 registered features (11 originals + 6 Tier 1/2/3 + 2 position/wave + 1 envelope + 1 combat progress)
         List<IInGameFeatures> features = t.getFeatures();
-        assertEquals(20, features.size());
+        assertEquals(21, features.size());
     }
 
     @Test

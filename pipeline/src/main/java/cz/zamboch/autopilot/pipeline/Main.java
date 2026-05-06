@@ -4,6 +4,7 @@ import cz.zamboch.autopilot.core.Transformer;
 import cz.zamboch.autopilot.core.Whiteboard;
 import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.pipeline.features.BattlefieldGeometryOfflineFeatures;
+import cz.zamboch.autopilot.pipeline.features.CombatProgressOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.CombatStateOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.DangerOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.EnergyOfflineFeatures;
@@ -205,6 +206,8 @@ public final class Main {
         // Tier 3
         t.register(new ScanCoverageOfflineFeatures());
         t.register(new DangerOfflineFeatures());
+        // Per-tick combat progress (no dependencies)
+        t.register(new CombatProgressOfflineFeatures());
         t.resolveDependencies();
         return t;
     }
