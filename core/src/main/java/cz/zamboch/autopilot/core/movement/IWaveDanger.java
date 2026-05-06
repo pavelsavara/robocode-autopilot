@@ -1,7 +1,7 @@
 package cz.zamboch.autopilot.core.movement;
 
+import cz.zamboch.autopilot.core.WaveRecord;
 import cz.zamboch.autopilot.core.Whiteboard;
-import cz.zamboch.autopilot.core.gun.Wave;
 
 import java.util.List;
 
@@ -16,7 +16,7 @@ public interface IWaveDanger {
      *
      * @return danger in [0, 1]: 0 = safe, 1 = maximum danger
      */
-    double danger(CandidatePosition candidate, Wave wave, Whiteboard wb);
+    double danger(CandidatePosition candidate, WaveRecord wave, Whiteboard wb);
 
     /**
      * Multi-wave danger: combined danger weighted by bullet damage.
@@ -24,5 +24,5 @@ public interface IWaveDanger {
      *
      * @return combined danger in [0, 1]
      */
-    double danger(CandidatePosition candidate, List<Wave> waves, Whiteboard wb);
+    double danger(CandidatePosition candidate, List<WaveRecord> waves, Whiteboard wb);
 }

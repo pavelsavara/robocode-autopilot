@@ -4,7 +4,12 @@ import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.Transformer;
 import cz.zamboch.autopilot.core.Whiteboard;
 import cz.zamboch.autopilot.core.gun.VirtualGunManager;
+import cz.zamboch.autopilot.core.movement.KeepAllPruner;
 import cz.zamboch.autopilot.core.movement.MovementStrategyManager;
+import cz.zamboch.autopilot.core.movement.PathPlanner;
+import cz.zamboch.autopilot.core.movement.UniformWaveDanger;
+import cz.zamboch.autopilot.core.movement.WallDistancePositionDanger;
+import cz.zamboch.autopilot.core.movement.WaveSurfMovement;
 import cz.zamboch.autopilot.core.predictors.IFingerprintPredictor;
 import cz.zamboch.autopilot.core.predictors.IGfTargetingPredictor;
 import cz.zamboch.autopilot.core.strategy.IGunStrategy;
@@ -229,11 +234,18 @@ public final class Autopilot extends AdvancedRobot {
         return new VirtualGunManager(strategies);
     }
 
-    private static MovementStrategyManager createMoveManager() {
+    private MovementStrategyManager createMoveManager() {
         List<IMovementStrategy> strategies = new ArrayList<IMovementStrategy>();
         strategies.add(new OrbitalMovement());
         strategies.add(new RandomDodgeMovement());
         strategies.add(new StopAndGoMovement());
+        // Wave-surf: uses PathPlanner with hand-tuned danger
+        PathPlanner planner = new PathPlanner(
+                new WallDistancePositionDanger(),
+                new UniformWaveDanger(),
+                new KeepAllPruner(),
+                (int) getBattleFieldWidth(), (int) getBattleFieldHeight());
+        strategies.add(new WaveSurfMovement(planner));
         return new MovementStrategyManager(strategies);
     }
 }
