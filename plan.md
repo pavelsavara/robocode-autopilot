@@ -69,7 +69,16 @@ provides the "am I winning?" signal. The strategy layer now uses:
 
 1. **`ENERGY_RATIO`** (live, per-tick) — direct combat state
 2. **`OPPONENT_STRENGTH_RATING`** (offline lookup) — overall win rate
-3. **`OUR_POSITION_ADVANTAGE`** (offline heatmap) — per-archetype position value
+3. **`OUR_POSITION_ADVANTAGE`** (offline heatmap) — per-opponent position value
+
+**Archetype clustering was attempted and dropped** (see
+[archive/2026-05-06-opponent-profiles.md](archive/2026-05-06-opponent-profiles.md)):
+K-Means on tick-level means failed (silhouette=0.222, BeepBoop + ScalarR in
+same cluster). Named archetypes aren't actionable without specialized
+counter-strategy tools (anti-surfer gun, wall-projected targeting). The
+fingerprint classifier (51.6% top-1) is wrong 48% of the time — too unreliable
+for hard strategy switches. Identity hashes (`OPPONENT_BOT_ID_HASH`) already
+let ML models learn per-bot patterns directly.
 
 **Notebook 15** (`15_opponent_profiles.ipynb`): computes strength ratings,
 generates quarter-field position heatmaps (20px grid).
