@@ -206,7 +206,6 @@ public final class Autopilot extends AdvancedRobot {
         t.register(new CombatProgressFeatures());
         // Scalar predictors (participate in dependency chain)
         t.register(new TrivialFirePowerPredictor());
-        t.register(new TrivialRoundOutcomePredictor());
         t.register(new TrivialMovementPredictor());
         t.register(new TrivialFireTimingPredictor());
         t.resolveDependencies();

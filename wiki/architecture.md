@@ -40,7 +40,6 @@ Two interface types:
 | Predictor | Output feature | Phase 1 impl |
 |---|---|---|
 | Fire Power | `PREDICTED_FIRE_POWER` | Random [1,3] |
-| Round Outcome | `PREDICTED_WIN_PROBABILITY` | Always 0.5 |
 | Movement | `PREDICTED_LAT_VEL_5` | Persist current lat-vel |
 | Fire Timing | `PREDICTED_OPPONENT_FIRES_3` | Always 0.07 |
 

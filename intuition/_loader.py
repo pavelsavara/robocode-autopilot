@@ -240,6 +240,10 @@ WAVE_DERIVED_COLS = (
     'our_wave_distance',
     'our_wave_remaining',
     'opponent_inferred_gun_heat',
+    # Multi-wave features updated at fire detection (include current fire):
+    'n_opponent_waves_in_flight',
+    'total_opponent_wave_damage',
+    'nearest_opponent_wave_gap',
 )
 
 
@@ -270,6 +274,10 @@ FIRE_POWER_LEAKAGE_COLS = (
     'gf_current_at_power_1',
     'gf_current_at_power_1_5',
     'gf_current_at_power_2',
+    # Multi-wave features updated on the same tick (include current fire's wave):
+    'n_opponent_waves_in_flight',
+    'total_opponent_wave_damage',
+    'nearest_opponent_wave_gap',
 )
 
 
@@ -299,6 +307,20 @@ SCAN_META_COLS = (
     'radar_locked',
     'radar_turn_direction',
     'ticks_between_scans',
+)
+
+
+# Cumulative combat progress columns. These are valid in-game observables
+# (the robot tracks them on Whiteboard), but when predicting ROUND OUTCOME
+# they encode the result: high cumulative_damage_dealt = winning. Safe for
+# fire-power, movement, and fire-timing models. Exclude for round-outcome.
+CUMULATIVE_OUTCOME_COLS = (
+    'cumulative_damage_dealt',
+    'cumulative_damage_received',
+    'cumulative_our_hit_rate',
+    'cumulative_opponent_hit_rate',
+    'cumulative_shots_fired',
+    'cumulative_shots_detected',
 )
 
 

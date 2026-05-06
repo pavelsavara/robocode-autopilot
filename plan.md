@@ -62,21 +62,18 @@ Add three features to the Feature enum and pipeline, then re-run CSV generation:
 **Depends on:** Multi-wave `List<Wave>` tracking already in Whiteboard
 (added with `N_OPPONENT_WAVES_IN_FLIGHT` / `N_OUR_WAVES_IN_FLIGHT`).
 
-### 7b. Round Outcome Predictor — Deeper Exploration
+### 7b. Opponent Profiles (replaces Round Outcome Predictor)
 
-The 0.520 result used early-window *behavioral* features only. But:
+The `PREDICTED_WIN_PROBABILITY` predictor was removed — energy ratio alone
+provides the "am I winning?" signal. The strategy layer now uses:
 
-- **Direct energy tracking** (`ENERGY_RATIO` at each tick) is a live observable,
-  not a statistical aggregate. The robot knows its exact energy advantage.
-- Round outcome as a **slow-moving context dimension** feeds every other predictor
-  via `StrategyParams`. Even a modest 0.60–0.65 accuracy beats the trivial
-  energy-ratio heuristic and gives the strategy layer useful signal.
-- Features to explore: energy ratio trend (rising/falling over last 20 ticks),
-  cumulative hit rate differential, wave count differential, distance trend.
+1. **`ENERGY_RATIO`** (live, per-tick) — direct combat state
+2. **`OPPONENT_STRENGTH_RATING`** (offline lookup) — overall win rate
+3. **`OUR_POSITION_ADVANTAGE`** (offline heatmap) — per-archetype position value
 
-**Action:** New notebook (or nb07 redesign) testing these richer per-tick features
-with early-window restriction. If accuracy reaches 0.60+, keep as live predictor.
-If not, fall back to raw energy-ratio heuristic.
+**Notebook 15** (`15_opponent_profiles.ipynb`): computes strength ratings,
+generates quarter-field position heatmaps (20px grid).
+Outputs a Java lookup table (`OpponentProfileData.java`).
 
 ### 7c. Re-run Pipeline
 
@@ -170,7 +167,7 @@ Scan → Whiteboard → Transformer (features + scalar predictors)
 | 04 | Simple ML (leakage audit) | Historical | Educational value only |
 | 05 | Movement prediction | **Stale outputs** | Re-run to match nb11 corrections |
 | 06 | Bot fingerprinting | Current | |
-| 07 | Round outcomes | **Needs redesign** | Add early-window + energy-trend features |
+| 07 | Round outcomes | **Historical** | Replaced by opponent profiles (nb15) |
 | 08 | Wave analysis | Current | |
 | 09 | Adaptation signal | Current (negative result) | |
 | 10 | Online fingerprint | Current | |

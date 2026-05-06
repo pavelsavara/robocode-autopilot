@@ -367,16 +367,27 @@ public enum Feature {
     /** Opponent shots detected so far this round. Unit: count. */
     CUMULATIVE_OPPONENT_SHOTS_DETECTED,
 
+    // === Opponent profile (set once on first scan from offline lookup table) ===
+
+    /** Opponent overall strength rating from offline win-rate data. Unit: [0,1].
+     *  0 = weakest, 1 = strongest in the rumble pool. */
+    OPPONENT_STRENGTH_RATING,
+
+    /** Position advantage at our current cell from per-opponent heatmap. Unit: [-1,1].
+     *  Positive = favourable position, negative = unfavourable. 0 = neutral/unknown. */
+    OUR_POSITION_ADVANTAGE,
+
+    /** Position advantage at opponent's current cell (from their perspective). Unit: [-1,1].
+     *  High = opponent is well-positioned (harder to hit). Low = opponent is trapped.
+     *  Computed from the same heatmap but at the opponent's position. */
+    OPPONENT_POSITION_ADVANTAGE,
+
     // === Predictor outputs (scalar predictions written by IInGameFeatures predictors) ===
 
     /** Predicted opponent fire power. Unit: energy [0.1,3.0]. From fire-power predictor. */
     PREDICTED_FIRE_POWER,
     /** Confidence of fire power prediction. Unit: [0,1]. */
     PREDICTED_FIRE_POWER_CONFIDENCE,
-    /** Predicted probability of winning the round. Unit: [0,1]. From round-outcome predictor. */
-    PREDICTED_WIN_PROBABILITY,
-    /** Confidence of win probability prediction. Unit: [0,1]. */
-    PREDICTED_WIN_PROBABILITY_CONFIDENCE,
     /** Predicted opponent lateral velocity at t+5. Unit: px/tick. From movement predictor. */
     PREDICTED_LAT_VEL_5,
     /** Confidence of lateral velocity prediction. Unit: [0,1]. */

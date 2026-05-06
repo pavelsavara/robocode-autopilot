@@ -162,13 +162,18 @@
 | `N_OPPONENT_WAVES_IN_FLIGHT` | Count of active opponent waves |
 | `N_OUR_WAVES_IN_FLIGHT` | Count of active our waves |
 
+### Opponent Profile (set once per battle from offline lookup)
+| Feature | Range | Source |
+|---|---|---|
+| `OPPONENT_STRENGTH_RATING` | [0, 1] | Offline win-rate data |
+| `OUR_POSITION_ADVANTAGE` | [-1, 1] | Per-opponent position heatmap at our position |
+| `OPPONENT_POSITION_ADVANTAGE` | [-1, 1] | Same heatmap at opponent's position (is opponent trapped?) |
+
 ### Predictor Outputs (written by trivial/ML predictors)
 | Feature | Range | Source |
 |---|---|---|
 | `PREDICTED_FIRE_POWER` | [0.1, 3.0] | Fire power predictor |
 | `PREDICTED_FIRE_POWER_CONFIDENCE` | [0, 1] | |
-| `PREDICTED_WIN_PROBABILITY` | [0, 1] | Round outcome predictor |
-| `PREDICTED_WIN_PROBABILITY_CONFIDENCE` | [0, 1] | |
 | `PREDICTED_LAT_VEL_5` | px/tick | Movement predictor |
 | `PREDICTED_LAT_VEL_5_CONFIDENCE` | [0, 1] | |
 | `PREDICTED_OPPONENT_FIRES_3` | [0, 1] | Fire timing predictor |
