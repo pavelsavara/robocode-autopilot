@@ -37,6 +37,20 @@ public final class ReachableEnvelope {
 
     private ReachableEnvelope() {}
 
+    /**
+     * Force class loading of envelope tables. Call early (e.g. in robot init)
+     * so the static data is ready before the first tick.
+     * No-op if already loaded — the JVM guarantees single class init.
+     */
+    public static void ensureLoaded() {
+        // Touching EnvelopeData.ALL triggers its class initializer
+        // which allocates the byte[][] from the factory methods.
+        // This is a no-op after the first call.
+        if (EnvelopeData.ALL == null) {
+            throw new IllegalStateException("EnvelopeData failed to load");
+        }
+    }
+
     /** Get the interleaved (dx,dy) byte array for the given absolute velocity. */
     private static byte[] getOffsets(int absVelocity) {
         return EnvelopeData.ALL[Math.min(8, Math.max(0, absVelocity))];

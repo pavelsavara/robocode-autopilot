@@ -14,6 +14,7 @@ import cz.zamboch.autopilot.core.strategy.MovementCommand;
 import cz.zamboch.autopilot.core.strategy.StrategyComputer;
 import cz.zamboch.autopilot.core.strategy.StrategyParams;
 import cz.zamboch.autopilot.core.features.EnergyFeatures;
+import cz.zamboch.autopilot.core.features.EnvelopeFeatures;
 import cz.zamboch.autopilot.core.features.IdentityFeatures;
 import cz.zamboch.autopilot.core.features.MovementFeatures;
 import cz.zamboch.autopilot.core.features.MultiWaveFeatures;
@@ -21,6 +22,7 @@ import cz.zamboch.autopilot.core.features.PositionFeatures;
 import cz.zamboch.autopilot.core.features.SpatialFeatures;
 import cz.zamboch.autopilot.core.features.TargetingFeatures;
 import cz.zamboch.autopilot.core.features.TimingFeatures;
+import cz.zamboch.autopilot.core.physics.ReachableEnvelope;
 import cz.zamboch.trivial.*;
 import robocode.AdvancedRobot;
 import robocode.BulletHitEvent;
@@ -48,9 +50,21 @@ public final class Autopilot extends AdvancedRobot {
     private IRadarStrategy radarStrategy;
     private StrategyComputer strategyComputer;
     private StrategyParams currentParams;
+    private boolean initialized;
 
-    @Override
-    public void run() {
+    /**
+     * Initialize all subsystems. Called once per round, from whichever
+     * event fires first (onStatus or run). Safe to call multiple times.
+     */
+    private void ensureInitialized() {
+        if (initialized) {
+            return;
+        }
+        initialized = true;
+
+        // Force class loading of envelope tables early
+        ReachableEnvelope.ensureLoaded();
+
         whiteboard = new Whiteboard();
         transformer = createTransformer();
         gunManager = createGunManager();
@@ -68,6 +82,11 @@ public final class Autopilot extends AdvancedRobot {
                 (int) getBattleFieldHeight(), getGunCoolingRate(),
                 getNumRounds());
         currentParams = strategyComputer.compute(whiteboard);
+    }
+
+    @Override
+    public void run() {
+        ensureInitialized();
 
         setAdjustGunForRobotTurn(true);
         setAdjustRadarForGunTurn(true);
@@ -98,9 +117,7 @@ public final class Autopilot extends AdvancedRobot {
 
     @Override
     public void onStatus(StatusEvent e) {
-        if (whiteboard == null) {
-            return;
-        }
+        ensureInitialized();
         whiteboard.advanceTick();
         whiteboard.setTick(e.getStatus().getTime());
         whiteboard.setOurState(
@@ -184,7 +201,7 @@ public final class Autopilot extends AdvancedRobot {
         t.register(new IdentityFeatures());
         t.register(new TargetingFeatures());
         t.register(new MultiWaveFeatures());
-        t.register(new cz.zamboch.autopilot.core.features.EnvelopeFeatures());
+        t.register(new EnvelopeFeatures());
         // Scalar predictors (participate in dependency chain)
         t.register(new TrivialFirePowerPredictor());
         t.register(new TrivialRoundOutcomePredictor());
