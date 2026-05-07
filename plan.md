@@ -31,10 +31,12 @@ All numbers post-leakage-fix. See [wiki/ml-results.md](wiki/ml-results.md) for d
 
 | Task | Model | Metric | Value | Notes |
 |---|---|---|---|---|
-| Fire power | XGBoost (window) | R² | **0.931** | `opponent_energy_wstd` (38%) drives it |
-| Fire power | XGBoost (window) | MAE | **0.094** | |
-| Round outcome | XGBoost (early 100) | Accuracy | **0.520** | Collapsed — needs deeper exploration |
-| Round outcome | XGBoost (early 100) | AUC | **0.532** | |
+| Fire power | XGBoost (window) | R² | **0.960** | New features +0.029 lift |
+| Fire power | XGBoost (window) | MAE | **0.072** | |
+| Round outcome | XGBoost (early 100) | Accuracy | **0.528** | Dropped — energy ratio sufficient |
+| Round outcome | XGBoost (early 100) | AUC | **0.545** | |
+| Fingerprint (N=20) | LightGBM | Top-1 | **0.488** | Regressed from 0.516 — investigate |
+| Fingerprint (N=20) | LightGBM | Top-1 | **0.516** | Clean, 26× random baseline |
 | Fingerprint (N=20) | LightGBM | Top-1 | **0.516** | Clean, 26× random baseline |
 | GF targeting | MLP [16→128²→64→61] | ±3 bins | **0.570** | Data-starved (11k samples) |
 | Movement N=5 | GBM-window | R² | **0.735** | 20-tick windows are key |

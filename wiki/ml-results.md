@@ -6,10 +6,10 @@
 
 | Task | Model | Metric | Value | Baseline | Lift | Status |
 |---|---|---|---|---|---|---|
-| Fire power | XGBoost (window) | R² | **0.931** | mean 0.572 | +63% | Clean ✅ |
-| Fire power | XGBoost (window) | MAE | **0.094** | mean 0.319 | −71% | Clean ✅ |
-| Round outcome | XGBoost (early-100) | Acc | **0.520** | majority 0.512 | +1pp | ⚠️ Needs work |
-| Round outcome | XGBoost (early-100) | AUC | **0.532** | random 0.500 | +3pp | ⚠️ Needs work |
+| Fire power | XGBoost (window) | R² | **0.960** | mean 0.572 | +68% | Clean ✅ |
+| Fire power | XGBoost (window) | MAE | **0.072** | mean 0.319 | −77% | Clean ✅ |
+| Round outcome | XGBoost (early-100) | Acc | **0.528** | majority 0.510 | +2pp | Dropped ❌ |
+| Round outcome | XGBoost (early-100) | AUC | **0.545** | random 0.500 | +4pp | Dropped ❌ |
 | Fingerprint (50 classes) | LightGBM | Top-1 | **0.516** | random 0.020 | 26× | Clean ✅ |
 | GF targeting | MLP [16→128²→64→61] | ±3 bins | **0.570** | uniform 0.10 | 6× | Data-starved |
 | Movement N=5 | GBM-window | R² | **0.735** | per-tick RF 0.07 | 10× | Clean ✅ |

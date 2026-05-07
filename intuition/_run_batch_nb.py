@@ -9,9 +9,16 @@ Usage: python intuition/_run_batch_nb.py
 import subprocess, sys, time
 
 notebooks = [
-    ('01_data_overview.ipynb', 'Data overview — will show new column stats'),
-    ('02_correlations.ipynb', 'Correlations — new features in heatmap'),
-    ('14_gbm_model_analysis.ipynb', 'GBM analysis — needs retrained models'),
+    ('01_data_overview.ipynb', 'Data overview — column stats + distributions'),
+    ('02_correlations.ipynb', 'Correlations — full heatmap with new features'),
+    ('03_clustering.ipynb', 'Clustering — game state K-Means'),
+    ('05_movement_prediction.ipynb', 'Movement prediction — GBM with new features'),
+    ('06_bot_fingerprinting.ipynb', 'Bot fingerprinting — LightGBM'),
+    ('08_wave_analysis.ipynb', 'Wave analysis'),
+    ('11_scan_gap_density.ipynb', 'Scan gap density'),
+    ('13_multiwave_gf.ipynb', 'Multi-wave GF — with new wave-gap columns'),
+    ('14_gbm_model_analysis.ipynb', 'GBM model analysis'),
+    ('15_opponent_profiles.ipynb', 'Opponent profiles — strength + heatmaps'),
 ]
 
 for nb, desc in notebooks:
