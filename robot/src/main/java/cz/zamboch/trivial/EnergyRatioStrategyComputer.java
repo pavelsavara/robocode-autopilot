@@ -59,7 +59,7 @@ public final class EnergyRatioStrategyComputer extends StrategyComputer {
         double firePower = computeFirePower(opponentEnergy, aggression);
 
         return new StrategyParams(PREFERRED_DISTANCE, aggression,
-                firePower, false, randomWaveSelection);
+                firePower, randomWaveSelection);
     }
 
     /**

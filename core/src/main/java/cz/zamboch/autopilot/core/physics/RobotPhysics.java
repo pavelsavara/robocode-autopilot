@@ -45,20 +45,4 @@ public final class RobotPhysics {
 
         return new RobotState(newX, newY, newHeading, newVelocity);
     }
-
-    /**
-     * Compute bullet speed from fire power.
-     */
-    public static double bulletSpeed(double power) {
-        return 20.0 - 3.0 * power;
-    }
-
-    /**
-     * Compute bullet damage from fire power.
-     */
-    public static double bulletDamage(double power) {
-        return (power <= 1.0)
-                ? 4.0 * power
-                : 6.0 * power - 2.0;
-    }
 }

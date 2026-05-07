@@ -16,7 +16,6 @@ import cz.zamboch.autopilot.core.features.TargetingFeatures;
 import cz.zamboch.autopilot.core.features.TimingFeatures;
 import cz.zamboch.autopilot.core.gun.VcsGun;
 import cz.zamboch.autopilot.core.gun.VirtualGunManager;
-import cz.zamboch.autopilot.core.movement.KeepAllPruner;
 import cz.zamboch.autopilot.core.movement.MovementStrategyManager;
 import cz.zamboch.autopilot.core.movement.PathPlanner;
 import cz.zamboch.autopilot.core.movement.VcsWaveDanger;
@@ -399,7 +398,6 @@ public final class Autopilot extends AdvancedRobot {
         PathPlanner planner = new PathPlanner(
                 new WallDistancePositionDanger(),
                 new VcsWaveDanger(),
-                new KeepAllPruner(),
                 (int) getBattleFieldWidth(), (int) getBattleFieldHeight());
         strategies.add(new WaveSurfMovement(planner));
         return new MovementStrategyManager(strategies);

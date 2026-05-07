@@ -328,8 +328,6 @@ public class Whiteboard {
     public void incrementMoveVcs(int segment, int bin) { moveVcs[segment][bin]++; }
     public int[] getGunVcsSegment(int segment) { return gunVcs[segment]; }
     public int[] getMoveVcsSegment(int segment) { return moveVcs[segment]; }
-    public int[][] getGunVcs() { return gunVcs; }
-    public int[][] getMoveVcs() { return moveVcs; }
 
     // === Opponent interpolation on no-scan ticks (7m) ===
 

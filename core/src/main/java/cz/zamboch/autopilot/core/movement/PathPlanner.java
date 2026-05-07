@@ -32,7 +32,6 @@ public final class PathPlanner {
 
     private final IPositionDanger posDanger;
     private final IWaveDanger waveDanger;
-    private final ICandidatePruner pruner;
     private final int bfW, bfH;
 
     /** Pre-allocated candidate buffer. */
@@ -42,10 +41,9 @@ public final class PathPlanner {
     private int candidateCount;
 
     public PathPlanner(IPositionDanger posDanger, IWaveDanger waveDanger,
-                       ICandidatePruner pruner, int bfW, int bfH) {
+                       int bfW, int bfH) {
         this.posDanger = posDanger;
         this.waveDanger = waveDanger;
-        this.pruner = pruner;
         this.bfW = bfW;
         this.bfH = bfH;
         this.candidates = new CandidatePosition[MAX_CANDIDATES];
@@ -95,10 +93,5 @@ public final class PathPlanner {
         }
 
         return best;
-    }
-
-    /** Number of candidates evaluated in the last plan() call. */
-    public int getLastCandidateCount() {
-        return candidateCount;
     }
 }

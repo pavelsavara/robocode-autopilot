@@ -5,15 +5,30 @@ import cz.zamboch.autopilot.core.Whiteboard;
 import cz.zamboch.autopilot.core.strategy.IGunStrategy;
 import cz.zamboch.autopilot.core.util.RoboMath;
 
+import java.util.Random;
+
 /**
  * Visit Count Statistics gun — maintains a 61-bin GF histogram segmented
  * by distance (3 bins) and lateral velocity direction (2 bins).
- * Fires at the peak bin.
+ *
+ * <p>Fires probabilistically: bins are smoothed with a Gaussian kernel
+ * (σ=1.5 bins) then selected via weighted random sampling. This makes
+ * our targeting harder to profile and avoids always firing at a single
+ * noisy peak, while still concentrating fire near the most-visited GF.</p>
  *
  * <p>The histogram is stored in {@link Whiteboard#getGunVcsSegment} and
  * updated at wave-break time by Whiteboard's prunePassedWaves().</p>
  */
 public final class VcsGun implements IGunStrategy {
+
+    /** Gaussian kernel σ for bin smoothing (in bins, not GF). */
+    private static final double SMOOTH_SIGMA = 1.5;
+    /** Pre-computed kernel: smooth ±4 bins (covers >99% of Gaussian). */
+    private static final int KERNEL_HALF = 4;
+
+    private final Random rng = new Random();
+    /** Scratch buffer for smoothed density — reused each call. */
+    private final double[] smoothed = new double[Whiteboard.VCS_BINS];
 
     @Override
     public double getFireAngle(Whiteboard wb) {
@@ -32,19 +47,49 @@ public final class VcsGun implements IGunStrategy {
         int segment = Whiteboard.vcsSegment(distance, latDir);
         int[] hist = wb.getGunVcsSegment(segment);
 
-        // Find peak bin (default to GF=0 = bin 30)
-        int peakBin = Whiteboard.VCS_BINS / 2;
-        int peakVal = 0;
-        for (int i = 0; i < hist.length; i++) {
-            if (hist[i] > peakVal) {
-                peakVal = hist[i];
-                peakBin = i;
-            }
-        }
+        int selectedBin = sampleSmoothed(hist);
 
-        double gf = Whiteboard.binToGf(peakBin);
+        double gf = Whiteboard.binToGf(selectedBin);
         double offset = gf * mea * latDir;
         return RoboMath.normalAbsoluteAngle(bearing + offset);
+    }
+
+    /**
+     * Smooth the raw histogram with a Gaussian kernel, then sample a bin
+     * with probability proportional to the smoothed density.
+     * Falls back to GF=0 (bin 30) when the histogram is empty.
+     */
+    private int sampleSmoothed(int[] hist) {
+        // Gaussian-smooth into scratch buffer
+        double total = 0;
+        for (int i = 0; i < Whiteboard.VCS_BINS; i++) {
+            double sum = 0;
+            for (int k = -KERNEL_HALF; k <= KERNEL_HALF; k++) {
+                int j = i + k;
+                if (j >= 0 && j < Whiteboard.VCS_BINS) {
+                    double w = Math.exp(-0.5 * (k * k) / (SMOOTH_SIGMA * SMOOTH_SIGMA));
+                    sum += hist[j] * w;
+                }
+            }
+            smoothed[i] = sum;
+            total += sum;
+        }
+
+        if (total <= 0) {
+            // No observations yet — fall back to GF=0
+            return Whiteboard.VCS_BINS / 2;
+        }
+
+        // Weighted random selection
+        double r = rng.nextDouble() * total;
+        double cumulative = 0;
+        for (int i = 0; i < Whiteboard.VCS_BINS; i++) {
+            cumulative += smoothed[i];
+            if (cumulative >= r) {
+                return i;
+            }
+        }
+        return Whiteboard.VCS_BINS - 1;
     }
 
     @Override
@@ -60,10 +105,8 @@ public final class VcsGun implements IGunStrategy {
         int segment = Whiteboard.vcsSegment(distance, latDir);
         int[] hist = wb.getGunVcsSegment(segment);
 
-        // Confidence scales with total observations in this segment
         int total = 0;
         for (int v : hist) total += v;
-        // Ramp from 0 to 1 over ~50 observations
         return Math.min(1.0, total / 50.0);
     }
 

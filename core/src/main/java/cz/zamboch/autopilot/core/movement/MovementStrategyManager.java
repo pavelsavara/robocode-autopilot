@@ -37,11 +37,6 @@ public final class MovementStrategyManager implements IPersistable {
         return sharedCommand;
     }
 
-    /** Get the currently active strategy name. */
-    public String getActiveStrategyName() {
-        return strategies.get(activeIndex).getName();
-    }
-
     /**
      * Called at round end. Records damage taken by the active strategy
      * and selects the best one for the next round.

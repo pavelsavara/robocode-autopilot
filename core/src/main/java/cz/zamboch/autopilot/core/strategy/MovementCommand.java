@@ -14,11 +14,6 @@ public final class MovementCommand {
 
     public MovementCommand() {}
 
-    public MovementCommand(double ahead, double turnRight) {
-        this.ahead = ahead;
-        this.turnRight = turnRight;
-    }
-
     /** Overwrite both fields. */
     public void set(double ahead, double turnRight) {
         this.ahead = ahead;

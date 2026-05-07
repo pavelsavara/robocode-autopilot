@@ -159,29 +159,15 @@ public final class VirtualGunManager implements IPersistable {
         selectedAngle = strategies.get(bestIdx).getFireAngle(wb);
     }
 
-    /** Get the absolute angle the gun should turn toward. */
-    public double getSelectedAngle() {
-        return selectedAngle;
-    }
-
-    /** Get the currently selected strategy. */
-    public IGunStrategy getSelectedStrategy() {
-        return strategies.get(selectedStrategyIndex);
-    }
-
     /** Compute the turn angle from current gun heading to target. */
     public double getGunTurnAngle(Whiteboard wb) {
         return RoboMath.normalRelativeAngle(selectedAngle - wb.getOurGunHeading());
     }
 
-    /** Whether the gun is aimed close enough to fire. */
-    public boolean isAimed(Whiteboard wb) {
-        return Math.abs(getGunTurnAngle(wb)) < AIM_THRESHOLD;
-    }
-
     /** Whether the gun can fire (aimed + cool). */
     public boolean shouldFire(Whiteboard wb) {
-        return wb.getOurGunHeat() <= 0 && isAimed(wb);
+        return wb.getOurGunHeat() <= 0
+                && Math.abs(getGunTurnAngle(wb)) < AIM_THRESHOLD;
     }
 
     /** Reset for a new round. Virtual bullets cleared, hit history preserved. */

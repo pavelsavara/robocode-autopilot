@@ -99,11 +99,6 @@ public final class VcsWaveDanger implements IWaveDanger {
         return totalWeight > 0 ? weightedDanger / totalWeight : 0;
     }
 
-    @Override
-    public double danger(CandidatePosition candidate, List<WaveRecord> waves, Whiteboard wb) {
-        return danger(candidate, waves, wb, false);
-    }
-
     /** Randomly select ONE wave to dodge, proportional to damage × urgency. */
     private double dangerRandomWave(CandidatePosition candidate, List<WaveRecord> waves,
                                      Whiteboard wb, long tick) {

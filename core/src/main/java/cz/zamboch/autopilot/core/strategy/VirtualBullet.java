@@ -20,8 +20,6 @@ public final class VirtualBullet {
     public long fireTick;
     /** Distance to opponent at fire time. */
     public double fireDistance;
-    /** Whether this slot is in use. */
-    public boolean active;
 
     public VirtualBullet() {}
 
@@ -39,7 +37,6 @@ public final class VirtualBullet {
         this.speed = speed;
         this.fireTick = fireTick;
         this.fireDistance = fireDistance;
-        this.active = true;
     }
 
     /** Current distance the bullet has traveled. */
