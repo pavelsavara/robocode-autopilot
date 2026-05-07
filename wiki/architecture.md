@@ -79,17 +79,16 @@ Not active in Phase 1 (`useWaveStacking=false`).
 
 ### 5. Movement Strategy Manager
 
-Round-level strategy competition:
+Round-level strategy competition with per-tick wave surfing:
 | Strategy | Behavior |
 |---|---|
 | `OrbitalMovement` | Circle opponent at preferred distance, reverse on wall |
 | `RandomDodgeMovement` | Forward/reverse randomly every 20–40 ticks |
 | `StopAndGoMovement` | Stop when opponent fires, move between fires |
+| `WaveSurfMovement` | PathPlanner: envelope candidates → danger scoring → lowest-danger position |
 
 **Selection:** First N rounds: rotate through all. Then: pick lowest
 damage-taken strategy and stick with it.
-
-**Phase 2 target:** Replace with per-tick path planning (reachable envelopes).
 
 ### 6. Radar Strategy
 
@@ -102,7 +101,7 @@ Overshoots by 2° to maintain lock.
 
 | Axis | Source | Controls |
 |---|---|---|
-| **Aggression** | win probability + energy ratio | Fire power budget, risk |
+| **Aggression** | energy ratio + opponent strength rating | Fire power budget, risk |
 | **Range** | distance + wall geometry | Preferred engagement distance |
 | **Counter-strategy** | Fingerprint classifier | Per-family GF priors |
 | **Phase** | round / numRounds | Explore (early) → exploit (late) |
@@ -117,11 +116,19 @@ Phase 1: `TrivialStrategyComputer` cycles aggression per round.
 core/src/main/java/cz/zamboch/autopilot/core/
 ├── Feature.java, Whiteboard.java, Transformer.java
 ├── gun/           VirtualGunManager, IFirePlan, Wave, *StackPlan
-├── movement/      MovementStrategyManager, ICandidatePruner, PathPlanner
-├── physics/       RobotPhysics, RobotState, PrecisePredictor, ReachableEnvelope
+├── movement/      MovementStrategyManager, PathPlanner, WaveSurfMovement
+│                  ICandidatePruner, KeepAllPruner
+│                  IPositionDanger, WallDistancePositionDanger
+│                  IWaveDanger, UniformWaveDanger
+│                  CandidatePosition
+├── physics/       RobotPhysics, RobotState, MutableRobotState
+│                  PrecisePredictor, ReachableEnvelope, EnvelopeData
 ├── predictors/    IPredictor<T>, PredictorRegistry, IGfTargetingPredictor
-├── strategy/      IGunStrategy, IMovementStrategy, IRadarStrategy, StrategyComputer
-└── features/      All IInGameFeatures implementations
+├── strategy/      IGunStrategy, IMovementStrategy, IRadarStrategy
+│                  StrategyComputer, StrategyParams, MovementCommand
+│                  VirtualBullet
+└── features/      EnergyFeatures, SpatialFeatures, MovementFeatures, ...
+                   EnvelopeFeatures, MultiWaveFeatures, CombatProgressFeatures
 
 robot/src/main/java/cz/zamboch/
 ├── Autopilot.java              Wiring + event handling
@@ -130,9 +137,9 @@ robot/src/main/java/cz/zamboch/
     ├── OrbitalMovement, RandomDodgeMovement, StopAndGoMovement
     ├── NarrowLockRadar
     ├── TrivialStrategyComputer
-    └── Trivial*Predictor (6 predictors)
+    └── Trivial*Predictor (5 predictors — no round outcome)
 
-pipeline/                       Offline CSV processing only (untouched)
+pipeline/                       Offline CSV processing only
 ```
 
 **Rules:**
@@ -147,9 +154,9 @@ pipeline/                       Offline CSV processing only (untouched)
 | Phase | State | Description |
 |---|---|---|
 | 1 | **Done** | Trivial predictors, full wiring, smoke test |
-| 2 | Next | Multi-wave features, retrain models |
-| 3 | Planned | Distill GBM/MLP models to Java, replace trivial predictors |
-| 4 | Planned | Reachable envelope path planning replaces round-level movement |
+| 2 | **Done** | Multi-wave + envelope + combat progress features, retrained models |
+| 3 | **Done** | Path planning: ReachableEnvelope, WaveSurfMovement, danger scorers |
+| 4 | Planned | Distill GBM/MLP models to Java, replace trivial predictors |
 | 5 | Planned | Online learning (VCS + Bayesian prior blending) |
-| 6 | Planned | Per-family counter-strategies from fingerprint |
+| 6 | Planned | Opponent profiles (strength rating + position heatmaps) |
 | 7 | Future | Adaptation detection + mid-battle strategy switching |
