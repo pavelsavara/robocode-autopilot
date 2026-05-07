@@ -2,10 +2,14 @@ package cz.zamboch.autopilot.core.gun;
 
 import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.Whiteboard;
+import cz.zamboch.autopilot.core.persistence.IPersistable;
 import cz.zamboch.autopilot.core.strategy.IGunStrategy;
 import cz.zamboch.autopilot.core.strategy.VirtualBullet;
 import cz.zamboch.autopilot.core.util.RoboMath;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -13,8 +17,11 @@ import java.util.List;
  * performer based on rolling hit rate, and controls gun aiming.
  *
  * <p>Uses pre-allocated bullet pools (no per-scan allocation).
+ * Hit history persists across rounds and can be saved/loaded across battles.</p>
  */
-public final class VirtualGunManager {
+public final class VirtualGunManager implements IPersistable {
+
+    public static final int SECTION_ID = 1;
 
     private static final int WINDOW = 100;
     private static final double HIT_RATE_EPSILON = 0.02;
@@ -177,10 +184,52 @@ public final class VirtualGunManager {
         return wb.getOurGunHeat() <= 0 && isAimed(wb);
     }
 
-    /** Reset for a new round. */
+    /** Reset for a new round. Virtual bullets cleared, hit history preserved. */
     public void onRoundStart() {
         for (int i = 0; i < strategies.size(); i++) {
             bulletCount[i] = 0;
+        }
+    }
+
+    // === IPersistable (cross-battle persistence) ===
+
+    @Override
+    public int getSectionId() { return SECTION_ID; }
+
+    @Override
+    public void writeTo(DataOutputStream out) throws IOException {
+        int n = strategies.size();
+        out.writeInt(n);
+        for (int i = 0; i < n; i++) {
+            out.writeInt(historyCount[i]);
+            out.writeInt(historyIndex[i]);
+            out.writeInt(hitCounts[i]);
+            for (int j = 0; j < WINDOW; j++) {
+                out.writeInt(hitHistory[i][j]);
+            }
+        }
+    }
+
+    @Override
+    public void readFrom(DataInputStream in, int length) throws IOException {
+        int n = in.readInt();
+        int count = Math.min(n, strategies.size());
+        for (int i = 0; i < count; i++) {
+            historyCount[i] = in.readInt();
+            historyIndex[i] = in.readInt();
+            hitCounts[i] = in.readInt();
+            for (int j = 0; j < WINDOW; j++) {
+                hitHistory[i][j] = in.readInt();
+            }
+        }
+        // Skip extra strategies if file has more than current config
+        for (int i = count; i < n; i++) {
+            in.readInt(); // historyCount
+            in.readInt(); // historyIndex
+            in.readInt(); // hitCounts
+            for (int j = 0; j < WINDOW; j++) {
+                in.readInt();
+            }
         }
     }
 }

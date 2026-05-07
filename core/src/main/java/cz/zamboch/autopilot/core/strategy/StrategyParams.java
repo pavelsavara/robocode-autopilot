@@ -18,16 +18,26 @@ public final class StrategyParams {
     /** Whether to fire slow+fast paired shots. */
     public final boolean useWaveStacking;
 
+    /** Whether to use random wave selection for anti-exploitation movement. */
+    public final boolean randomWaveSelection;
+
     public StrategyParams(double preferredDistance, double aggression,
-                          double firePowerBudget, boolean useWaveStacking) {
+                          double firePowerBudget, boolean useWaveStacking,
+                          boolean randomWaveSelection) {
         this.preferredDistance = preferredDistance;
         this.aggression = aggression;
         this.firePowerBudget = firePowerBudget;
         this.useWaveStacking = useWaveStacking;
+        this.randomWaveSelection = randomWaveSelection;
+    }
+
+    public StrategyParams(double preferredDistance, double aggression,
+                          double firePowerBudget, boolean useWaveStacking) {
+        this(preferredDistance, aggression, firePowerBudget, useWaveStacking, false);
     }
 
     public StrategyParams(double preferredDistance, double aggression,
                           double firePowerBudget) {
-        this(preferredDistance, aggression, firePowerBudget, false);
+        this(preferredDistance, aggression, firePowerBudget, false, false);
     }
 }

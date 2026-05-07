@@ -63,6 +63,20 @@ public class Whiteboard {
     private final List<WaveRecord> opponentWaves = new ArrayList<WaveRecord>();
     private final List<WaveRecord> ourWaves = new ArrayList<WaveRecord>();
 
+    // VCS (Visit Count Statistics) histograms — pre-allocated, persist across rounds
+    // Segments: 3 distance bins × 2 lateral direction = 6
+    public static final int VCS_BINS = 61;
+    public static final int VCS_DISTANCE_BINS = 3;
+    public static final int VCS_DIR_BINS = 2;
+    public static final int VCS_SEGMENTS = VCS_DISTANCE_BINS * VCS_DIR_BINS;
+    private static final double VCS_DIST_CLOSE = 250.0;
+    private static final double VCS_DIST_MID = 500.0;
+
+    /** Gun VCS: where the opponent has been at our wave breaks. Used by VcsGun. */
+    private final int[][] gunVcs = new int[VCS_SEGMENTS][VCS_BINS];
+    /** Move VCS: where opponent bullets hit us (opponent's targeting model). Used by VcsWaveDanger. */
+    private final int[][] moveVcs = new int[VCS_SEGMENTS][VCS_BINS];
+
     // Rolling history buffers (largest window = 50 for scan coverage)
     private final RingBuffer<Double> latVelHistory30 = new RingBuffer<Double>(30);
     private final RingBuffer<Double> velHistory30 = new RingBuffer<Double>(30);
@@ -173,6 +187,13 @@ public class Whiteboard {
         damageReceived = 0;
         ourBulletHitCount = 0;
         opponentBulletHitCount = 0;
+        // VCS histograms: clear for new battle (different opponent)
+        for (int s = 0; s < VCS_SEGMENTS; s++) {
+            for (int b = 0; b < VCS_BINS; b++) {
+                gunVcs[s][b] = 0;
+                moveVcs[s][b] = 0;
+            }
+        }
     }
 
     // === Initialization ===
@@ -247,9 +268,17 @@ public class Whiteboard {
         Iterator<WaveRecord> it = opponentWaves.iterator();
         while (it.hasNext()) {
             WaveRecord w = it.next();
-            // Opponent wave targets us — use distance from wave origin to our position
-            // Approximate: wave has passed if radius > fireDistance + robot half-size
             if (w.hasPassed(w.fireDistance, t)) {
+                // Update move VCS before removing: record our GF at wave break
+                if (!Double.isNaN(w.fireBearing)) {
+                    double candBearing = Math.atan2(ourX - w.originX, ourY - w.originY);
+                    double offset = normalRelAngle(candBearing - w.fireBearing);
+                    double mea = Math.asin(Math.min(1.0, 8.0 / w.bulletSpeed));
+                    double gf = mea > 0 ? offset / mea : 0;
+                    gf = Math.max(-1.0, Math.min(1.0, gf));
+                    int segment = vcsSegment(w.fireDistance, prevLateralDirection);
+                    incrementMoveVcs(segment, gfToBin(gf));
+                }
                 it.remove();
             }
         }
@@ -257,9 +286,65 @@ public class Whiteboard {
         while (it.hasNext()) {
             WaveRecord w = it.next();
             if (w.hasPassed(distanceToOpponent, t)) {
+                // Update gun VCS before removing: record opponent's GF at wave break
+                if (!Double.isNaN(w.fireBearing)) {
+                    double candBearing = Math.atan2(
+                            opponentX - w.originX, opponentY - w.originY);
+                    double offset = normalRelAngle(candBearing - w.fireBearing);
+                    double mea = Math.asin(Math.min(1.0, 8.0 / w.bulletSpeed));
+                    double gf = mea > 0 ? offset / mea : 0;
+                    gf = Math.max(-1.0, Math.min(1.0, gf));
+                    int latDir = opponentVelocity >= 0 ? 1 : -1;
+                    int segment = vcsSegment(distanceToOpponent, latDir);
+                    incrementGunVcs(segment, gfToBin(gf));
+                }
                 it.remove();
             }
         }
+    }
+
+    // === VCS helpers ===
+
+    /** Compute VCS segment index from distance and lateral direction. */
+    public static int vcsSegment(double distance, int lateralDir) {
+        int distBin = distance < VCS_DIST_CLOSE ? 0
+                : distance < VCS_DIST_MID ? 1 : 2;
+        int dirBin = lateralDir >= 0 ? 0 : 1;
+        return distBin * VCS_DIR_BINS + dirBin;
+    }
+
+    /** Convert a GF value in [-1,1] to a histogram bin index in [0, VCS_BINS-1]. */
+    public static int gfToBin(double gf) {
+        int bin = (int) Math.round((gf + 1.0) * 30.0);
+        return Math.max(0, Math.min(VCS_BINS - 1, bin));
+    }
+
+    /** Convert a histogram bin index to GF value. */
+    public static double binToGf(int bin) {
+        return (bin / 30.0) - 1.0;
+    }
+
+    public void incrementGunVcs(int segment, int bin) { gunVcs[segment][bin]++; }
+    public void incrementMoveVcs(int segment, int bin) { moveVcs[segment][bin]++; }
+    public int[] getGunVcsSegment(int segment) { return gunVcs[segment]; }
+    public int[] getMoveVcsSegment(int segment) { return moveVcs[segment]; }
+    public int[][] getGunVcs() { return gunVcs; }
+    public int[][] getMoveVcs() { return moveVcs; }
+
+    // === Opponent interpolation on no-scan ticks (7m) ===
+
+    /** Update opponent position without a scan (dead-reckoning extrapolation). */
+    public void interpolateOpponent(double x, double y) {
+        this.opponentX = x;
+        this.opponentY = y;
+    }
+
+    /** Minimal angle normalisation (avoid pulling in RoboMath from Whiteboard). */
+    private static double normalRelAngle(double angle) {
+        double r = angle % (2 * Math.PI);
+        if (r >= Math.PI) r -= 2 * Math.PI;
+        else if (r < -Math.PI) r += 2 * Math.PI;
+        return r;
     }
     public RingBuffer<Double> getVelHistory30() { return velHistory30; }
     public RingBuffer<Double> getHeadingDeltaHistory30() { return headingDeltaHistory30; }

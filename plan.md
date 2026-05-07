@@ -19,6 +19,7 @@ guns, competing movement strategies, and a 4-axis strategic mode layer.
 | 5. Robot architecture (Phase 1) | **Done** | Trivial predictors, full decision wiring |
 | 6. Wave stacking research | **Done** | Niche tactic; multi-wave defense priority |
 | 7. Feature additions + retrain | **Done** | Multi-wave, envelope, combat features; R² 0.931→0.960 |
+| 7e-m. Robot improvements | **Done** | VCS gun/danger, energy strategy, persistence, interpolation |
 | 8. Path planning | **Done** | ReachableEnvelope, WaveSurfMovement, danger scorers |
 | **9. ML distillation to Java** | **Next** | GBM trees → Java, MLP weights → Java |
 | **10. Online learning** | **Future** | VCS + Bayesian prior blending |
@@ -51,7 +52,7 @@ or R²=0.572 on fire power.
 
 ## Current Milestone: Phase 7 — Feature Additions + Path Planning
 
-### 7a. Multi-Wave Pressure Features
+### 7a. Multi-Wave Pressure Features ✅
 
 Add three features to the Feature enum and pipeline, then re-run CSV generation:
 
@@ -107,7 +108,7 @@ From [archive/2026-05-03-path-planning.md](archive/2026-05-03-path-planning.md):
 | `WaveSurfMovement` | IMovementStrategy using PathPlanner, competes with others | Done |
 | `ICandidatePruner` | `KeepAllPruner` (VCS danger is cheap enough) | Done |
 
-### 7e. Energy-Ratio Strategy Computer
+### 7e. Energy-Ratio Strategy Computer ✅
 
 Replace `TrivialStrategyComputer` with energy-aware logic:
 
@@ -122,7 +123,7 @@ preferredDistance = 350 (stable, not random)
 Also read `OPPONENT_STRENGTH_RATING` when available:
 against strong opponents (>0.7) → default defensive, against weak (<0.3) → aggressive.
 
-### 7f. Inter-Round State Persistence
+### 7f. Inter-Round State Persistence ✅
 
 Currently `ensureInitialized()` creates fresh objects every round. Change to:
 - **Persist across rounds:** VGM hit history, movement damage stats, Whiteboard
@@ -143,7 +144,7 @@ movement manager accumulate strategy performance data.
   old data files
 - Write at battle end (`onBattleEnded`), read at battle start
 
-### 7g. Wave-Time Urgency in Danger Scoring
+### 7g. Wave-Time Urgency in Danger Scoring ✅
 
 Modify `UniformWaveDanger` to weight by wave proximity:
 ```
@@ -160,7 +161,7 @@ surfing unpredictable to opponents that model our dodge pattern
 (a flattening strategy). Without this, we always dodge the highest-damage
 wave, which is exploitable.
 
-### 7h. Kill-Shot Logic
+### 7h. Kill-Shot Logic ✅
 
 In the fire decision:
 ```
@@ -169,7 +170,7 @@ if (opponentEnergy < 0.5) firePower = 0.1;           // minimum to finish
 ```
 Prevents wasting 3.0 power on an opponent with 2.0 energy (overkill = wasted energy).
 
-### 7i. VCS Gun (Visit Count Statistics)
+### 7i. VCS Gun (Visit Count Statistics) ✅
 
 New `VcsGun implements IGunStrategy`:
 - Maintain a 61-bin GF histogram, updated at each wave-break
@@ -184,7 +185,7 @@ The VCS histogram also feeds `IWaveDanger` for movement (7j).
 as they're useful against specific simple opponents (the VGM will naturally
 stop selecting them when VCS outperforms).
 
-### 7j. VCS-Based Wave Danger (replaces UniformWaveDanger)
+### 7j. VCS-Based Wave Danger (replaces UniformWaveDanger) ✅
 
 Replace Gaussian-at-GF=0 with the opponent's actual GF histogram:
 ```
@@ -195,7 +196,7 @@ instead of dodging toward head-on (which is where most bots aim).
 
 Requires VCS data sharing between the gun system (7i) and movement system.
 
-### 7k. Opponent Name Lookup on First Scan
+### 7k. Opponent Name Lookup on First Scan ✅
 
 On the first `onScannedRobot`:
 1. Hash opponent name → `OPPONENT_BOT_ID_HASH`
@@ -212,9 +213,9 @@ cell in the heatmap — this gives a continuous "is my current position good?"
 signal, not just the opening. The heatmap itself is still computed offline
 from round outcomes vs position at early ticks (first 100).
 
-### 7l. Distilled ML Predictor Skeletons
+### 7l. Distilled ML Predictor Skeletons ✅
 
-Create Java skeleton classes in `robot/src/.../distilled/` for Phase 8:
+Created Java skeleton classes in `robot/src/.../distilled/` for Phase 8:
 
 | Class | Interface | Input features | Output |
 |---|---|---|---|
@@ -228,7 +229,7 @@ Each skeleton reads features from Whiteboard, delegates to a generated
 `*Model.java` class (auto-generated from Python export), and writes output.
 Phase 8 fills in the generated model code.
 
-### 7m. Feature Interpolation on No-Scan Ticks
+### 7m. Feature Interpolation on No-Scan Ticks ✅
 
 When `onScannedRobot` doesn't fire (radar miss), opponent features are stale.
 Add to `onStatus`:

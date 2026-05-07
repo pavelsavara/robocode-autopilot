@@ -84,7 +84,7 @@ public final class PathPlanner {
 
             double pd = posDanger.danger(c.x, c.y, wb);
             double wd = waves.isEmpty() ? 0
-                    : waveDanger.danger(c, waves, wb);
+                    : waveDanger.danger(c, waves, wb, params.randomWaveSelection);
 
             c.danger = POS_WEIGHT * pd + WAVE_WEIGHT * wd;
 

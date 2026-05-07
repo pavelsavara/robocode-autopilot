@@ -19,10 +19,19 @@ public interface IWaveDanger {
     double danger(CandidatePosition candidate, WaveRecord wave, Whiteboard wb);
 
     /**
-     * Multi-wave danger: combined danger weighted by bullet damage.
-     * A power-3.0 wave contributes 40x the weight of a power-0.1 wave.
+     * Multi-wave danger: combined danger weighted by bullet damage and urgency.
      *
      * @return combined danger in [0, 1]
      */
     double danger(CandidatePosition candidate, List<WaveRecord> waves, Whiteboard wb);
+
+    /**
+     * Multi-wave danger with random wave selection mode.
+     * When randomWaveSelection is true, randomly pick one wave to dodge
+     * (proportional to damage × urgency) for anti-exploitation.
+     */
+    default double danger(CandidatePosition candidate, List<WaveRecord> waves,
+                          Whiteboard wb, boolean randomWaveSelection) {
+        return danger(candidate, waves, wb);
+    }
 }

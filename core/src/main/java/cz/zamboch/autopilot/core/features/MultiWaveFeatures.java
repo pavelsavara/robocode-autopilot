@@ -42,9 +42,13 @@ public class MultiWaveFeatures implements IInGameFeatures {
             double power = wb.getFeature(Feature.OPPONENT_FIRE_POWER);
             double speed = 20.0 - 3.0 * power;
             double distance = wb.getFeature(Feature.DISTANCE);
+            // Bearing from opponent (firer) to us (target) at fire time
+            double fireBearing = Math.atan2(
+                    wb.getOurX() - wb.getOpponentX(),
+                    wb.getOurY() - wb.getOpponentY());
             WaveRecord wave = new WaveRecord(
                     wb.getOpponentX(), wb.getOpponentY(),
-                    speed, power, wb.getTick(), distance);
+                    speed, power, wb.getTick(), distance, fireBearing);
             wb.addOpponentWave(wave);
         }
 

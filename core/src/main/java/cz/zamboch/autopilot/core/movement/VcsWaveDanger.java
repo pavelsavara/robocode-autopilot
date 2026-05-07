@@ -1,5 +1,6 @@
 package cz.zamboch.autopilot.core.movement;
 
+import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.WaveRecord;
 import cz.zamboch.autopilot.core.Whiteboard;
 import cz.zamboch.autopilot.core.util.RoboMath;
@@ -8,24 +9,26 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Phase 1 wave danger: assumes bots aim roughly at head-on (GF=0)
- * with a Gaussian falloff. No ML model — just a prior that being
- * near GF=0 is dangerous.
+ * VCS-based wave danger: uses the opponent's actual GF histogram
+ * (built from HitByBullet observations) instead of a Gaussian at GF=0.
  *
- * <p>Multi-wave scoring uses urgency-weighted combination: imminent waves
- * (2-3 ticks) dominate; distant waves (30+ ticks) are background.
- * Optionally uses random wave selection for anti-exploitation.</p>
+ * <p>Combines histogram data with a Gaussian prior for early-game
+ * robustness (before we have enough observations).</p>
+ *
+ * <p>Urgency weighting: imminent waves dominate danger scoring.
+ * Optional random wave selection for anti-exploitation movement.</p>
  */
-public final class UniformWaveDanger implements IWaveDanger {
+public final class VcsWaveDanger implements IWaveDanger {
 
-    /** Gaussian std for GF danger — peaks at GF=0, decays toward ±1. */
-    private static final double GF_STD = 0.4;
+    /** Gaussian prior std — used until VCS has enough observations. */
+    private static final double PRIOR_STD = 0.4;
+    /** Prior equivalent to this many observations at GF=0. */
+    private static final double PRIOR_WEIGHT = 10.0;
 
     private final Random rng = new Random();
 
     @Override
     public double danger(CandidatePosition candidate, WaveRecord wave, Whiteboard wb) {
-        // Compute GF of this candidate relative to the wave
         double fireBearing;
         if (!Double.isNaN(wave.fireBearing)) {
             fireBearing = wave.fireBearing;
@@ -34,18 +37,34 @@ public final class UniformWaveDanger implements IWaveDanger {
                     wb.getOurX() - wave.originX,
                     wb.getOurY() - wave.originY);
         }
+
         double candBearing = Math.atan2(
                 candidate.x - wave.originX,
                 candidate.y - wave.originY);
         double offset = RoboMath.normalRelativeAngle(candBearing - fireBearing);
-
         double mea = Math.asin(Math.min(1.0, 8.0 / wave.bulletSpeed));
         double gf = mea > 0 ? offset / mea : 0;
-        if (gf > 1.0) gf = 1.0;
-        if (gf < -1.0) gf = -1.0;
+        gf = Math.max(-1.0, Math.min(1.0, gf));
 
-        // Gaussian danger centered at GF=0
-        return Math.exp(-0.5 * (gf / GF_STD) * (gf / GF_STD));
+        int bin = Whiteboard.gfToBin(gf);
+
+        // Determine segment from wave context
+        int latDir = wb.hasFeature(Feature.OPPONENT_LATERAL_DIRECTION)
+                ? (int) wb.getFeature(Feature.OPPONENT_LATERAL_DIRECTION) : 1;
+        if (latDir == 0) latDir = 1;
+        int segment = Whiteboard.vcsSegment(wave.fireDistance, latDir);
+        int[] hist = wb.getMoveVcsSegment(segment);
+
+        // Total observations in this segment
+        int totalObs = 0;
+        for (int v : hist) totalObs += v;
+
+        // Combine histogram observation with Gaussian prior
+        double histValue = hist[bin];
+        double priorValue = PRIOR_WEIGHT * gaussian(gf);
+
+        double danger = (histValue + priorValue) / (totalObs + PRIOR_WEIGHT);
+        return Math.min(1.0, danger);
     }
 
     @Override
@@ -113,5 +132,9 @@ public final class UniformWaveDanger implements IWaveDanger {
             }
         }
         return danger(candidate, waves.get(waves.size() - 1), wb);
+    }
+
+    private static double gaussian(double gf) {
+        return Math.exp(-0.5 * (gf / PRIOR_STD) * (gf / PRIOR_STD));
     }
 }

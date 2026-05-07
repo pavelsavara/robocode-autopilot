@@ -20,15 +20,25 @@ public final class WaveRecord {
     public final long fireTick;
     /** Distance from firer to target at fire time. */
     public final double fireDistance;
+    /** Bearing from firer to target at fire time (rad). Used for GF computation at wave break. */
+    public final double fireBearing;
 
     public WaveRecord(double originX, double originY, double bulletSpeed,
-                      double bulletPower, long fireTick, double fireDistance) {
+                      double bulletPower, long fireTick, double fireDistance,
+                      double fireBearing) {
         this.originX = originX;
         this.originY = originY;
         this.bulletSpeed = bulletSpeed;
         this.bulletPower = bulletPower;
         this.fireTick = fireTick;
         this.fireDistance = fireDistance;
+        this.fireBearing = fireBearing;
+    }
+
+    /** Backward-compatible constructor — fireBearing defaults to NaN. */
+    public WaveRecord(double originX, double originY, double bulletSpeed,
+                      double bulletPower, long fireTick, double fireDistance) {
+        this(originX, originY, bulletSpeed, bulletPower, fireTick, fireDistance, Double.NaN);
     }
 
     /** Damage this bullet would deal on hit. */
