@@ -6,6 +6,7 @@ Documents are prefixed with their creation date and are immutable once archived.
 
 | Date | Document | Topic |
 |---|---|---|
+| 2026-05-08 | [2026-05-08-retrospective-1.md](2026-05-08-retrospective-1.md) | First local pipeline retrospective — 0% win rate diagnosis |
 | 2026-05-06 | [2026-05-06-opponent-profiles.md](2026-05-06-opponent-profiles.md) | Archetype research — clustering failed, adopted strength + heatmap |
 | 2026-05-04 | [2026-05-04-plan.md](2026-05-04-plan.md) | Previous project plan (v1) |
 | 2026-05-03 | [2026-05-03-robot-architecture-plan.md](2026-05-03-robot-architecture-plan.md) | Robot decision system design |
