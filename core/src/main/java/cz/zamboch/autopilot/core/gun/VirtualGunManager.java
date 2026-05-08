@@ -24,8 +24,8 @@ public final class VirtualGunManager implements IPersistable {
 
     public static final int SECTION_ID = 1;
 
-    private static final int WINDOW = 100;
-    private static final double HIT_RATE_EPSILON = 0.02;
+    private static final int WINDOW = 50;
+    private static final double HIT_RATE_EPSILON = 0.01;
     private static final double AIM_THRESHOLD = 0.02; // ~1.1 degrees
     /** Exploration rate: fraction of shots fired with a random gun. */
     private static final double EXPLORE_RATE = 0.03;

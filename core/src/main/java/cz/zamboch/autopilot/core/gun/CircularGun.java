@@ -21,7 +21,7 @@ public final class CircularGun implements IGunStrategy {
 
     @Override
     public double getConfidence(Whiteboard wb) {
-        return 0.8;
+        return 1.0; // Highest priority — best general-purpose gun
     }
 
     @Override

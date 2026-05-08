@@ -17,7 +17,7 @@ public final class HeadOnGun implements IGunStrategy {
 
     @Override
     public double getConfidence(Whiteboard wb) {
-        return 1.0;
+        return 0.3; // Low priority — only useful against stationary opponents
     }
 
     @Override

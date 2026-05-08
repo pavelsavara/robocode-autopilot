@@ -537,12 +537,12 @@ public final class Autopilot extends AdvancedRobot {
 
     private static VirtualGunManager createGunManager() {
         List<IGunStrategy> strategies = new ArrayList<IGunStrategy>();
-        strategies.add(new HeadOnGun());
-        strategies.add(new LinearGun());
-        strategies.add(new CircularGun());
-        strategies.add(new VcsGun());
-        strategies.add(new VcsSamplingGun());
-        strategies.add(new PredictiveGun());
+        // Order matters for tie-breaking in VGM (lower index wins ties)
+        strategies.add(new CircularGun());    // Best general-purpose
+        strategies.add(new LinearGun());      // Good against smooth movers
+        strategies.add(new VcsGun());         // Learns opponent patterns
+        strategies.add(new PredictiveGun());  // ML-based prediction
+        strategies.add(new HeadOnGun());      // Stationary/slow opponents
         return new VirtualGunManager(strategies);
     }
 
