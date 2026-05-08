@@ -3,17 +3,25 @@ package cz.zamboch.distilled;
 import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.IInGameFeatures;
 import cz.zamboch.autopilot.core.Whiteboard;
+import cz.zamboch.autopilot.core.ml.FeatureMapping;
+import cz.zamboch.autopilot.core.ml.GbmTreeEnsemble;
 
 /**
- * Distilled GBM fire timing predictor skeleton.
- * Phase 8 will generate {@code GbmFireTimingModel.java} with the actual
- * tree if/else code from XGBoost export.
+ * Distilled GBM fire timing predictor. Predicts probability the opponent
+ * fires within the next 3 ticks using a 200-tree XGBoost classifier
+ * loaded from a binary resource.
  *
- * <p>Predicts probability that the opponent fires within the next 3 ticks.
- * Reads tick features, delegates to generated model, writes
- * {@link Feature#PREDICTED_OPPONENT_FIRES_3}.</p>
+ * <p>AUC=0.773 (compact model, 200 trees × depth 6).</p>
  */
 public final class GbmFireTimingPredictor implements IInGameFeatures {
+
+    private GbmTreeEnsemble model;
+    private Feature[] featureIndex;
+    private double[] inputBuffer;
+    private boolean loaded;
+
+    /** Whether the binary model was successfully loaded (vs heuristic fallback). */
+    public boolean isModelLoaded() { return model != null; }
 
     @Override
     public Feature[] getOutputFeatures() {
@@ -25,17 +33,34 @@ public final class GbmFireTimingPredictor implements IInGameFeatures {
 
     @Override
     public Feature[] getDependencies() {
-        return new Feature[]{Feature.OPPONENT_INFERRED_GUN_HEAT};
+        return new Feature[]{Feature.OPPONENT_INFERRED_GUN_HEAT, Feature.DISTANCE_WMEAN};
     }
 
     @Override
     public void process(Whiteboard wb) {
-        // Phase 8: extract features, call GbmFireTimingModel.predict(features)
-        // For now, use gun heat as a simple heuristic
-        double gunHeat = wb.hasFeature(Feature.OPPONENT_INFERRED_GUN_HEAT)
-                ? wb.getFeature(Feature.OPPONENT_INFERRED_GUN_HEAT) : 1.0;
-        double prob = gunHeat <= 0.0 ? 0.5 : 0.07;
-        wb.setFeature(Feature.PREDICTED_OPPONENT_FIRES_3, prob);
-        wb.setFeature(Feature.PREDICTED_OPPONENT_FIRES_3_CONFIDENCE, 0.0);
+        if (!loaded) {
+            try {
+                model = FireTimingData.load();
+                featureIndex = FeatureMapping.buildIndex(FireTimingData.FEATURE_NAMES);
+                inputBuffer = new double[FireTimingData.FEATURE_NAMES.length];
+                loaded = true;
+            } catch (Exception e) {
+                loaded = true;
+            }
+        }
+
+        if (model != null) {
+            FeatureMapping.extract(wb, featureIndex, inputBuffer);
+            double raw = model.predictRaw(inputBuffer);
+            double prob = GbmTreeEnsemble.sigmoid(raw);
+            wb.setFeature(Feature.PREDICTED_OPPONENT_FIRES_3, prob);
+            wb.setFeature(Feature.PREDICTED_OPPONENT_FIRES_3_CONFIDENCE, 0.8);
+        } else {
+            double gunHeat = wb.hasFeature(Feature.OPPONENT_INFERRED_GUN_HEAT)
+                    ? wb.getFeature(Feature.OPPONENT_INFERRED_GUN_HEAT) : 1.0;
+            double prob = gunHeat <= 0.0 ? 0.5 : 0.07;
+            wb.setFeature(Feature.PREDICTED_OPPONENT_FIRES_3, prob);
+            wb.setFeature(Feature.PREDICTED_OPPONENT_FIRES_3_CONFIDENCE, 0.0);
+        }
     }
 }

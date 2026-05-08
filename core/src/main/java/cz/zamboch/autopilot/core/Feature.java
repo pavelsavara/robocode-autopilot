@@ -382,6 +382,51 @@ public enum Feature {
      *  Computed from the same heatmap but at the opponent's position. */
     OPPONENT_POSITION_ADVANTAGE,
 
+    // === 20-tick sliding window statistics (TICKS file) ===
+    // Computed over the last 20 ticks of 10 base features. Mean + std per feature.
+    // These are the single most important innovation for all ML tasks.
+
+    /** Rolling 20-tick mean of DISTANCE. */
+    DISTANCE_WMEAN,
+    /** Rolling 20-tick std of DISTANCE. */
+    DISTANCE_WSTD,
+    /** Rolling 20-tick mean of BEARING_TO_OPPONENT_ABS. */
+    BEARING_TO_OPPONENT_ABS_WMEAN,
+    /** Rolling 20-tick std of BEARING_TO_OPPONENT_ABS. */
+    BEARING_TO_OPPONENT_ABS_WSTD,
+    /** Rolling 20-tick mean of OPPONENT_DIST_TO_WALL_MIN. */
+    OPPONENT_DIST_TO_WALL_MIN_WMEAN,
+    /** Rolling 20-tick std of OPPONENT_DIST_TO_WALL_MIN. */
+    OPPONENT_DIST_TO_WALL_MIN_WSTD,
+    /** Rolling 20-tick mean of OUR_GUN_HEAT. */
+    OUR_GUN_HEAT_WMEAN,
+    /** Rolling 20-tick std of OUR_GUN_HEAT. */
+    OUR_GUN_HEAT_WSTD,
+    /** Rolling 20-tick mean of TICKS_SINCE_SCAN. */
+    TICKS_SINCE_SCAN_WMEAN,
+    /** Rolling 20-tick std of TICKS_SINCE_SCAN. */
+    TICKS_SINCE_SCAN_WSTD,
+    /** Rolling 20-tick mean of OPPONENT_ENERGY. */
+    OPPONENT_ENERGY_WMEAN,
+    /** Rolling 20-tick std of OPPONENT_ENERGY. */
+    OPPONENT_ENERGY_WSTD,
+    /** Rolling 20-tick mean of OUR_X. */
+    OUR_X_WMEAN,
+    /** Rolling 20-tick std of OUR_X. */
+    OUR_X_WSTD,
+    /** Rolling 20-tick mean of OUR_Y. */
+    OUR_Y_WMEAN,
+    /** Rolling 20-tick std of OUR_Y. */
+    OUR_Y_WSTD,
+    /** Rolling 20-tick mean of OUR_HEADING. */
+    OUR_HEADING_WMEAN,
+    /** Rolling 20-tick std of OUR_HEADING. */
+    OUR_HEADING_WSTD,
+    /** Rolling 20-tick mean of OUR_VELOCITY. */
+    OUR_VELOCITY_WMEAN,
+    /** Rolling 20-tick std of OUR_VELOCITY. */
+    OUR_VELOCITY_WSTD,
+
     // === Predictor outputs (scalar predictions written by IInGameFeatures predictors) ===
 
     /** Predicted opponent fire power. Unit: energy [0.1,3.0]. From fire-power predictor. */

@@ -3,17 +3,24 @@ package cz.zamboch.distilled;
 import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.IInGameFeatures;
 import cz.zamboch.autopilot.core.Whiteboard;
+import cz.zamboch.autopilot.core.ml.FeatureMapping;
+import cz.zamboch.autopilot.core.ml.GbmTreeEnsemble;
 
 /**
- * Distilled GBM fire power predictor skeleton.
- * Phase 8 will generate {@code GbmFirePowerModel.java} with the actual
- * tree if/else code from XGBoost export.
+ * Distilled GBM fire power predictor. Predicts opponent fire power
+ * using a 200-tree XGBoost model loaded from a binary resource.
  *
- * <p>Reads ~80 tick features from Whiteboard, maps them to the model's
- * input vector, delegates to the generated model, and writes
- * {@link Feature#PREDICTED_FIRE_POWER}.</p>
+ * <p>R²=0.906, MAE=0.148 (compact model, 200 trees × depth 6).</p>
  */
 public final class GbmFirePowerPredictor implements IInGameFeatures {
+
+    private GbmTreeEnsemble model;
+    private Feature[] featureIndex;
+    private double[] inputBuffer;
+    private boolean loaded;
+
+    /** Whether the binary model was successfully loaded (vs heuristic fallback). */
+    public boolean isModelLoaded() { return model != null; }
 
     @Override
     public Feature[] getOutputFeatures() {
@@ -25,23 +32,35 @@ public final class GbmFirePowerPredictor implements IInGameFeatures {
 
     @Override
     public Feature[] getDependencies() {
-        return new Feature[]{Feature.OPPONENT_ENERGY, Feature.ENERGY_RATIO};
+        return new Feature[]{Feature.OPPONENT_ENERGY, Feature.ENERGY_RATIO,
+                Feature.DISTANCE_WMEAN};
     }
 
     @Override
     public void process(Whiteboard wb) {
-        // Phase 8: extract features, call GbmFirePowerModel.predict(features)
-        // For now, fall back to a simple heuristic
-        double opponentEnergy = wb.getOpponentEnergy();
-        double power;
-        if (opponentEnergy > 50) {
-            power = 2.0;
-        } else if (opponentEnergy > 20) {
-            power = 1.5;
-        } else {
-            power = 1.0;
+        if (!loaded) {
+            try {
+                model = FirePowerData.load();
+                featureIndex = FeatureMapping.buildIndex(FirePowerData.FEATURE_NAMES);
+                inputBuffer = new double[FirePowerData.FEATURE_NAMES.length];
+                loaded = true;
+            } catch (Exception e) {
+                loaded = true; // don't retry
+            }
         }
-        wb.setFeature(Feature.PREDICTED_FIRE_POWER, power);
-        wb.setFeature(Feature.PREDICTED_FIRE_POWER_CONFIDENCE, 0.0);
+
+        if (model != null) {
+            FeatureMapping.extract(wb, featureIndex, inputBuffer);
+            double pred = model.predictRaw(inputBuffer);
+            pred = Math.max(0.1, Math.min(3.0, pred));
+            wb.setFeature(Feature.PREDICTED_FIRE_POWER, pred);
+            wb.setFeature(Feature.PREDICTED_FIRE_POWER_CONFIDENCE, 0.9);
+        } else {
+            // Fallback heuristic
+            double opponentEnergy = wb.getOpponentEnergy();
+            double power = opponentEnergy > 50 ? 2.0 : opponentEnergy > 20 ? 1.5 : 1.0;
+            wb.setFeature(Feature.PREDICTED_FIRE_POWER, power);
+            wb.setFeature(Feature.PREDICTED_FIRE_POWER_CONFIDENCE, 0.0);
+        }
     }
 }

@@ -14,6 +14,7 @@ import cz.zamboch.autopilot.core.features.PositionFeatures;
 import cz.zamboch.autopilot.core.features.SpatialFeatures;
 import cz.zamboch.autopilot.core.features.TargetingFeatures;
 import cz.zamboch.autopilot.core.features.TimingFeatures;
+import cz.zamboch.autopilot.core.features.WindowFeatures;
 import cz.zamboch.autopilot.core.gun.VcsGun;
 import cz.zamboch.autopilot.core.gun.VirtualGunManager;
 import cz.zamboch.autopilot.core.movement.MovementStrategyManager;
@@ -79,6 +80,11 @@ public final class Autopilot extends AdvancedRobot {
     private StrategyComputer strategyComputer;
     private StrategyParams currentParams;
     private PersistenceManager persistence;
+
+    // Keep references to predictors for model-load diagnostics
+    private GbmFirePowerPredictor firePowerPredictor;
+    private GbmMovementPredictor movementPredictor;
+    private GbmFireTimingPredictor fireTimingPredictor;
 
     /** True after one-time subsystem creation (round 0). */
     private boolean firstInit;
@@ -150,6 +156,16 @@ public final class Autopilot extends AdvancedRobot {
         setAdjustRadarForRobotTurn(true);
 
         while (true) {
+            // Signal model load status via body color (readable by Control API tests)
+            if (firePowerPredictor != null
+                    && firePowerPredictor.isModelLoaded()
+                    && movementPredictor.isModelLoaded()
+                    && fireTimingPredictor.isModelLoaded()) {
+                setBodyColor(java.awt.Color.GREEN);
+            } else if (firePowerPredictor != null) {
+                setBodyColor(java.awt.Color.RED);
+            }
+
             // Movement — every tick
             MovementCommand cmd = moveManager.getActiveCommand(whiteboard, currentParams);
             setAhead(cmd.ahead);
@@ -372,10 +388,15 @@ public final class Autopilot extends AdvancedRobot {
         t.register(new MultiWaveFeatures());
         t.register(new EnvelopeFeatures());
         t.register(new CombatProgressFeatures());
-        // Distilled ML predictors (skeleton — Phase 8 fills in models)
-        t.register(new GbmFirePowerPredictor());
-        t.register(new GbmMovementPredictor());
-        t.register(new GbmFireTimingPredictor());
+        // 20-tick sliding window statistics (key for ML models)
+        t.register(new WindowFeatures());
+        // Distilled ML predictors
+        firePowerPredictor = new GbmFirePowerPredictor();
+        movementPredictor = new GbmMovementPredictor();
+        fireTimingPredictor = new GbmFireTimingPredictor();
+        t.register(firePowerPredictor);
+        t.register(movementPredictor);
+        t.register(fireTimingPredictor);
         t.resolveDependencies();
         return t;
     }
