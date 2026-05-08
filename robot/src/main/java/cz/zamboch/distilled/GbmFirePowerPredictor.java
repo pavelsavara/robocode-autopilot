@@ -14,10 +14,28 @@ import cz.zamboch.autopilot.core.ml.GbmTreeEnsemble;
  */
 public final class GbmFirePowerPredictor implements IInGameFeatures {
 
-    private GbmTreeEnsemble model;
-    private Feature[] featureIndex;
-    private double[] inputBuffer;
-    private boolean loaded;
+    // Static model loaded at class-load time (during robot instantiation)
+    private static final GbmTreeEnsemble STATIC_MODEL;
+    private static final Feature[] STATIC_FEATURE_INDEX;
+    static {
+        GbmTreeEnsemble m = null;
+        Feature[] fi = null;
+        try {
+            m = FirePowerData.load();
+            fi = FeatureMapping.buildIndex(FirePowerData.FEATURE_NAMES);
+        } catch (Exception e) {
+            // model stays null — heuristic fallback will be used
+        }
+        STATIC_MODEL = m;
+        STATIC_FEATURE_INDEX = fi;
+    }
+
+    /** Force class loading (and thus static model init). Call from robot constructor. */
+    public static void ensureLoaded() { /* touching this class triggers the static block */ }
+
+    private final GbmTreeEnsemble model = STATIC_MODEL;
+    private final Feature[] featureIndex = STATIC_FEATURE_INDEX;
+    private final double[] inputBuffer = STATIC_MODEL != null ? new double[FirePowerData.FEATURE_NAMES.length] : null;
 
     /** Tree budget — set externally by Autopilot's TickBudget. */
     private int maxTrees = 200;
@@ -28,19 +46,8 @@ public final class GbmFirePowerPredictor implements IInGameFeatures {
     /** Set the maximum trees to evaluate per tick (for CPU throttling). */
     public void setMaxTrees(int n) { maxTrees = n; }
 
-    /** Eagerly load the model. Call once at init instead of lazy-loading on first process(). */
-    public void loadModel() {
-        if (!loaded) {
-            try {
-                model = FirePowerData.load();
-                featureIndex = FeatureMapping.buildIndex(FirePowerData.FEATURE_NAMES);
-                inputBuffer = new double[FirePowerData.FEATURE_NAMES.length];
-                loaded = true;
-            } catch (Exception e) {
-                loaded = true; // don't retry
-            }
-        }
-    }
+    /** @deprecated Use static ensureLoaded() instead. Kept for API compatibility. */
+    public void loadModel() { /* no-op: model loaded statically */ }
 
     @Override
     public Feature[] getOutputFeatures() {
@@ -58,10 +65,6 @@ public final class GbmFirePowerPredictor implements IInGameFeatures {
 
     @Override
     public void process(Whiteboard wb) {
-        if (!loaded) {
-            loadModel();
-        }
-
         if (model != null) {
             FeatureMapping.extract(wb, featureIndex, inputBuffer);
             double pred = model.predictRaw(inputBuffer, maxTrees);

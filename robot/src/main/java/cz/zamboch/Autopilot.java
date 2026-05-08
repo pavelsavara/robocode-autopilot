@@ -114,8 +114,12 @@ public final class Autopilot extends AdvancedRobot {
         if (!firstInit) {
             firstInit = true;
 
-            // Force class loading of envelope tables early
+            // Force class loading of envelope tables and ML models early
+            // (static initializers decode Base64 model data — must happen before first tick)
             ReachableEnvelope.ensureLoaded();
+            GbmFirePowerPredictor.ensureLoaded();
+            GbmMovementPredictor.ensureLoaded();
+            GbmFireTimingPredictor.ensureLoaded();
 
             whiteboard = new Whiteboard();
             transformer = createTransformer();
