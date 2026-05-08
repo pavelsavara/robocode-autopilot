@@ -20,6 +20,7 @@ import cz.zamboch.autopilot.core.gun.CircularGun;
 import cz.zamboch.autopilot.core.gun.HeadOnGun;
 import cz.zamboch.autopilot.core.gun.LinearGun;
 import cz.zamboch.autopilot.core.gun.VcsGun;
+import cz.zamboch.autopilot.core.gun.VcsSamplingGun;
 import cz.zamboch.autopilot.core.gun.VirtualGunManager;
 import cz.zamboch.autopilot.core.movement.MovementStrategyManager;
 import cz.zamboch.autopilot.core.movement.PathPlanner;
@@ -468,6 +469,7 @@ public final class Autopilot extends AdvancedRobot {
         strategies.add(new LinearGun());
         strategies.add(new CircularGun());
         strategies.add(new VcsGun());
+        strategies.add(new VcsSamplingGun());
         strategies.add(new PredictiveGun());
         return new VirtualGunManager(strategies);
     }

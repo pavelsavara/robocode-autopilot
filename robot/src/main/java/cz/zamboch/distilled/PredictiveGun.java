@@ -9,10 +9,10 @@ import cz.zamboch.autopilot.core.util.RoboMath;
  * Predictive gun — uses the GBM movement prediction ({@code PREDICTED_LAT_VEL_5})
  * to aim where the opponent WILL be, not where they are now.
  *
- * <p>Iteratively simulates the opponent forward using predicted lateral velocity
- * until the bullet would intercept. This is similar to the circular gun but uses
- * the ML model's 5-tick-ahead lateral velocity prediction instead of assuming
- * constant turn rate.</p>
+ * <p>Simulates the opponent forward using the predicted lateral velocity directly
+ * (perpendicular to our bearing line) plus the current advancing velocity
+ * (along the bearing line). No heading-delta conversion — the ML prediction
+ * is used as-is, avoiding lossy conversions.</p>
  *
  * <p>Competes in the VirtualGunManager alongside head-on, linear, circular,
  * and VCS guns. Expected to outperform circular for opponents whose movement
@@ -27,31 +27,30 @@ public final class PredictiveGun implements IGunStrategy {
     public double getFireAngle(Whiteboard wb) {
         double bearing = wb.getFeature(Feature.BEARING_TO_OPPONENT_ABS);
 
-        if (!wb.hasFeature(Feature.PREDICTED_LAT_VEL_5)
-                || !wb.hasFeature(Feature.DISTANCE)
+        if (!wb.hasFeature(Feature.DISTANCE)
                 || !wb.hasFeature(Feature.OPPONENT_VELOCITY)) {
             return bearing;
         }
 
-        double predictedLatVel = wb.getFeature(Feature.PREDICTED_LAT_VEL_5);
         double distance = wb.getFeature(Feature.DISTANCE);
-        double oppVel = wb.getFeature(Feature.OPPONENT_VELOCITY);
-        double oppHeading = wb.getOpponentHeading();
 
-        // Compute the predicted heading delta that would produce the predicted
-        // lateral velocity, given current velocity and bearing.
-        // lateralVel = vel × sin(heading - bearing)
-        // We want heading' such that vel × sin(heading' - bearing) = predictedLatVel
-        // So heading' - bearing = asin(predictedLatVel / vel)
-        // headingDelta ≈ (heading' - bearing) - (heading - bearing) = asin(pLV/v) - asin(cLV/v)
-        // Simpler: use iterative simulation with blended velocity.
+        // Use predicted lateral velocity if available, else current (= linear gun)
+        double latVel;
+        if (wb.hasFeature(Feature.PREDICTED_LAT_VEL_5)) {
+            latVel = wb.getFeature(Feature.PREDICTED_LAT_VEL_5);
+        } else if (wb.hasFeature(Feature.OPPONENT_LATERAL_VELOCITY)) {
+            latVel = wb.getFeature(Feature.OPPONENT_LATERAL_VELOCITY);
+        } else {
+            return bearing;
+        }
+
+        double advVel = wb.hasFeature(Feature.OPPONENT_ADVANCING_VELOCITY)
+                ? wb.getFeature(Feature.OPPONENT_ADVANCING_VELOCITY) : 0;
 
         double ourPower = wb.getLastOurFireTick() >= 0
                 ? wb.getLastOurFirePower() : DEFAULT_FIRE_POWER;
         double ourSpeed = 20.0 - 3.0 * ourPower;
 
-        // Iterative forward simulation: project opponent using a blend of
-        // current and predicted lateral velocity over the bullet flight time.
         double oppX = wb.getOpponentX();
         double oppY = wb.getOpponentY();
         double ourX = wb.getOurX();
@@ -59,40 +58,20 @@ public final class PredictiveGun implements IGunStrategy {
         int bfW = wb.getBattlefieldWidth();
         int bfH = wb.getBattlefieldHeight();
 
-        // Estimate heading delta from predicted lateral velocity change.
-        // Current lateral vel: oppVel × sin(oppHeading - bearing)
-        double currentLatVel = oppVel * Math.sin(oppHeading - bearing);
-        double latVelDelta = predictedLatVel - currentLatVel;
+        // Decompose lateral and advancing velocity into absolute dx/dy.
+        // Lateral = perpendicular to bearing, advancing = along bearing.
+        double sinB = Math.sin(bearing);
+        double cosB = Math.cos(bearing);
+        // Lateral direction: perpendicular to bearing (right-hand rule)
+        double dxPerTick = latVel * cosB + advVel * sinB;
+        double dyPerTick = -latVel * sinB + advVel * cosB;
 
-        // Convert lat-vel change to approximate heading change rate over 5 ticks.
-        // dLatVel = vel × cos(relHeading) × dHeading
-        // dHeading ≈ dLatVel / (vel × cos(relHeading))
-        double relHeading = oppHeading - bearing;
-        double cosRel = Math.cos(relHeading);
-        double headingDelta;
-        if (Math.abs(oppVel * cosRel) > 0.5) {
-            headingDelta = (latVelDelta / 5.0) / (oppVel * cosRel);
-            // Clamp to physically possible turn rate
-            double maxTurn = Math.toRadians(10.0 - 0.75 * Math.abs(oppVel));
-            headingDelta = Math.max(-maxTurn, Math.min(maxTurn, headingDelta));
-        } else {
-            // Low velocity or perpendicular — fall back to zero turn rate (linear)
-            headingDelta = 0;
-        }
-
-        // Add current heading delta (from TargetingFeatures) as base turn rate,
-        // adjusted toward predicted
-        double currentHeadingDelta = wb.hasFeature(Feature.OPPONENT_HEADING_DELTA)
-                ? wb.getFeature(Feature.OPPONENT_HEADING_DELTA) : 0;
-        double blendedDelta = 0.5 * currentHeadingDelta + 0.5 * headingDelta;
-
-        // Forward simulation
-        double px = oppX, py = oppY, ph = oppHeading;
+        // Iterative forward simulation
+        double px = oppX, py = oppY;
         int t = 0;
         while (++t < MAX_ITER) {
-            ph += blendedDelta;
-            px += oppVel * Math.sin(ph);
-            py += oppVel * Math.cos(ph);
+            px += dxPerTick;
+            py += dyPerTick;
 
             // Wall clamping
             px = Math.max(18, Math.min(bfW - 18, px));
