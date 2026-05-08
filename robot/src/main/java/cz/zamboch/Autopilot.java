@@ -295,10 +295,8 @@ public final class Autopilot extends AdvancedRobot {
         // Virtual gun tracking
         gunManager.onScan(whiteboard, currentParams.firePowerBudget);
 
-        // Periodic strategy refresh (every 50 ticks)
-        if (whiteboard.getTick() % 50 == 0) {
-            currentParams = strategyComputer.compute(whiteboard);
-        }
+        // Refresh strategy every scan (compute() is pure arithmetic, negligible cost)
+        currentParams = strategyComputer.compute(whiteboard);
     }
 
     @Override

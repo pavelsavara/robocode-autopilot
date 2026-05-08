@@ -97,10 +97,13 @@ public final class VirtualGunManager implements IPersistable {
             while (j < bulletCount[i]) {
                 VirtualBullet vb = bulletPool[i][j];
                 if (vb.hasPassed(tick)) {
-                    double actualBearing = Math.atan2(oppX - vb.startX, oppY - vb.startY);
-                    double angleDiff = Math.abs(RoboMath.normalRelativeAngle(vb.heading - actualBearing));
-                    double hitAngle = Math.atan2(18, vb.fireDistance);
-                    boolean hit = angleDiff <= hitAngle;
+                    // Euclidean hit check: simulate bullet position, check distance to opponent
+                    double travelDist = vb.distanceTraveled(tick);
+                    double bulletX = vb.startX + travelDist * Math.sin(vb.heading);
+                    double bulletY = vb.startY + travelDist * Math.cos(vb.heading);
+                    double dx = bulletX - oppX;
+                    double dy = bulletY - oppY;
+                    boolean hit = (dx * dx + dy * dy) <= 18.0 * 18.0;
                     recordResult(i, hit ? 1 : 0);
                     // Swap-remove: move last active bullet into this slot
                     bulletCount[i]--;
