@@ -25,6 +25,8 @@ public final class EnergyRatioStrategyComputer extends StrategyComputer {
     public StrategyParams compute(Whiteboard wb) {
         double ourEnergy = wb.getOurEnergy();
         double opponentEnergy = wb.getOpponentEnergy();
+        double distance = wb.hasFeature(Feature.DISTANCE)
+                ? wb.getFeature(Feature.DISTANCE) : 300;
 
         // Energy ratio [0,1]: 1.0 = we have all the energy
         double energyRatio = (ourEnergy + opponentEnergy) > 0
@@ -37,8 +39,11 @@ public final class EnergyRatioStrategyComputer extends StrategyComputer {
             aggression = 0.8;
         } else if (energyRatio > 0.4) {
             aggression = 0.5;
-        } else {
+        } else if (energyRatio > 0.25) {
             aggression = 0.2;
+        } else {
+            // Critically losing — conserve energy, focus on dodging
+            aggression = 0.05;
         }
 
         // Adjust aggression based on offline opponent strength rating
@@ -77,33 +82,41 @@ public final class EnergyRatioStrategyComputer extends StrategyComputer {
             }
         }
 
-        // Fire power with kill-shot logic (7h)
-        double firePower = computeFirePower(opponentEnergy, aggression);
+        // Fire power with kill-shot logic (7h) and distance scaling
+        double firePower = computeFirePower(opponentEnergy, ourEnergy, aggression, distance);
 
         return new StrategyParams(PREFERRED_DISTANCE, aggression,
                 firePower, randomWaveSelection);
     }
 
     /**
-     * Compute fire power with kill-shot logic.
-     * Prevents overkill on near-dead opponents and scales with aggression.
+     * Compute fire power with kill-shot logic and distance awareness.
+     * Higher power at close range, lower at long range for accuracy.
      */
-    private static double computeFirePower(double opponentEnergy, double aggression) {
+    private static double computeFirePower(double opponentEnergy, double ourEnergy,
+                                            double aggression, double distance) {
         if (opponentEnergy < 0.5) {
-            // Minimum power to finish off
             return 0.1;
         }
         if (opponentEnergy < 4.0) {
-            // Exact kill: fire just enough to finish them
-            // Damage = 4*power for power<=1, 6*power-2 for power>1
-            // Solve for power: if target energy < 4 → power = energy/4 (always <=1)
             return Math.max(0.1, Math.min(3.0, opponentEnergy / 4.0));
         }
-        if (opponentEnergy < 20.0) {
-            // Low opponent energy → finish shot with high power
+        if (ourEnergy < 5.0) {
+            return 0.5;
+        }
+        if (opponentEnergy < 20.0 && ourEnergy > 20.0) {
             return 3.0;
         }
-        // Normal combat: power scales with aggression [1.0 + 0.0 ... 1.0 + 1.0]
-        return Math.max(0.1, Math.min(3.0, 1.0 + aggression));
+        // Base power: 2.0 + aggression scale [0, 1.0]
+        // Distance adjustment: close range gets +0.5, long range gets -0.5
+        double distAdj = 0;
+        if (distance < 200) {
+            distAdj = 0.5;
+        } else if (distance > 500) {
+            distAdj = -0.5;
+        }
+        double desired = Math.max(1.0, Math.min(3.0, 2.0 + aggression * 0.5 + distAdj));
+        double maxAffordable = Math.max(0.5, ourEnergy / 3.0);
+        return Math.min(desired, Math.min(3.0, maxAffordable));
     }
 }

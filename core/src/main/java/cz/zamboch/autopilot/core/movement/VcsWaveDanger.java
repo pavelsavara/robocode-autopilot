@@ -68,6 +68,10 @@ public final class VcsWaveDanger implements IWaveDanger {
         return Math.min(1.0, danger);
     }
 
+    private static double gaussian(double gf) {
+        return Math.exp(-0.5 * (gf / PRIOR_STD) * (gf / PRIOR_STD));
+    }
+
     @Override
     public double danger(CandidatePosition candidate, List<WaveRecord> waves,
                          Whiteboard wb, boolean randomWaveSelection) {
@@ -128,9 +132,5 @@ public final class VcsWaveDanger implements IWaveDanger {
             }
         }
         return danger(candidate, waves.get(waves.size() - 1), wb);
-    }
-
-    private static double gaussian(double gf) {
-        return Math.exp(-0.5 * (gf / PRIOR_STD) * (gf / PRIOR_STD));
     }
 }

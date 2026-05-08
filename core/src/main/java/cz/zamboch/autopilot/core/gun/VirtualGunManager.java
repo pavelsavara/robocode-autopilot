@@ -11,6 +11,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Tracks multiple gun strategies via virtual bullets, selects the best
@@ -26,11 +27,14 @@ public final class VirtualGunManager implements IPersistable {
     private static final int WINDOW = 100;
     private static final double HIT_RATE_EPSILON = 0.02;
     private static final double AIM_THRESHOLD = 0.02; // ~1.1 degrees
+    /** Exploration rate: fraction of shots fired with a random gun. */
+    private static final double EXPLORE_RATE = 0.03;
 
     /** Max virtual bullets in flight per strategy. Longest flight: ~40 ticks. */
     private static final int BULLET_POOL_SIZE = 64;
 
     private final List<IGunStrategy> strategies;
+    private final Random rng = new Random();
     /** Pre-allocated bullet pools: [strategy][slot]. */
     private final VirtualBullet[][] bulletPool;
     /** Number of active bullets per strategy. */
@@ -158,8 +162,18 @@ public final class VirtualGunManager implements IPersistable {
             }
         }
 
-        selectedStrategyIndex = bestIdx;
-        selectedAngle = strategies.get(bestIdx).getFireAngle(wb);
+        // ε-greedy exploration: occasionally use a random gun to gather data
+        // Only explore after initial convergence (first 30 data points)
+        int totalData = 0;
+        for (int i = 0; i < strategies.size(); i++) {
+            totalData += historyCount[i];
+        }
+        if (totalData > 30 && rng.nextDouble() < EXPLORE_RATE) {
+            selectedStrategyIndex = rng.nextInt(strategies.size());
+        } else {
+            selectedStrategyIndex = bestIdx;
+        }
+        selectedAngle = strategies.get(selectedStrategyIndex).getFireAngle(wb);
     }
 
     /** Compute the turn angle from current gun heading to target. */

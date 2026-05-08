@@ -108,7 +108,7 @@ def build_robot_index(
             _PATH_INDEX[(battle_id, robot)] = ticks_path.parent
 
     if verbose:
-        print(f"Selected {len(selected_robots)} robots × ~{battles_per_robot} battles "
+        print(f"Selected {len(selected_robots)} robots x ~{battles_per_robot} battles "
               f"= {len(selection)} (battle, robot) pairs to load.")
     return selection
 
@@ -171,8 +171,8 @@ def load_stratified(
     if verbose:
         mem_mb = combined.memory_usage(deep=True).sum() / 1024 ** 2
         n_robots = combined['robot_name'].nunique()
-        print(f"Loaded {len(frames)} {filename} files → "
-              f"{combined.shape[0]:,} rows × {combined.shape[1]} cols, "
+        print(f"Loaded {len(frames)} {filename} files -> "
+              f"{combined.shape[0]:,} rows x {combined.shape[1]} cols, "
               f"{n_robots} robots (~{mem_mb:.1f} MB)")
     return combined
 

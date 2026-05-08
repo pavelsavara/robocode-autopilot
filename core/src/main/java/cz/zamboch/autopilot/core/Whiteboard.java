@@ -329,6 +329,22 @@ public class Whiteboard {
     public int[] getGunVcsSegment(int segment) { return gunVcs[segment]; }
     public int[] getMoveVcsSegment(int segment) { return moveVcs[segment]; }
 
+    /**
+     * Initialize VCS histograms with a Gaussian prior centered at GF=0.
+     * Gives the VCS gun reasonable starting data before it has observed hits.
+     * Called at battle start if no persisted histograms are loaded.
+     */
+    public void initVcsPrior(int strength) {
+        for (int s = 0; s < VCS_SEGMENTS; s++) {
+            for (int b = 0; b < VCS_BINS; b++) {
+                double gf = binToGf(b);
+                // Gaussian kernel σ=0.3 centered at GF=0
+                int prior = (int) Math.round(strength * Math.exp(-0.5 * (gf / 0.3) * (gf / 0.3)));
+                gunVcs[s][b] += prior;
+            }
+        }
+    }
+
     // === Opponent interpolation on no-scan ticks (7m) ===
 
     /** Update opponent position without a scan (dead-reckoning extrapolation). */

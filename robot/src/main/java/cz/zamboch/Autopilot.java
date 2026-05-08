@@ -172,6 +172,10 @@ public final class Autopilot extends AdvancedRobot {
             } catch (Exception e) {
                 log("DATA_LOAD error: " + e.getMessage());
             }
+
+            // Initialize VCS gun histogram with Gaussian prior at GF=0
+            // so the VCS gun has reasonable aim before observing actual hits
+            whiteboard.initVcsPrior(3);
         }
 
         // Per-round initialisation
@@ -227,9 +231,9 @@ public final class Autopilot extends AdvancedRobot {
             }
             setTurnGunRightRadians(gunTurn);
 
-            // Fire when ready
-            if (gunManager.shouldFire(whiteboard) && getEnergy() > currentParams.firePowerBudget) {
-                double firePower = currentParams.firePowerBudget;
+            // Fire when ready — ensure we keep enough energy to survive a hit
+            double firePower = currentParams.firePowerBudget;
+            if (gunManager.shouldFire(whiteboard) && getEnergy() > firePower + 0.1) {
                 setFire(firePower);
                 whiteboard.incrementOurShotsFired();
                 whiteboard.setLastOurFire(whiteboard.getTick(), firePower);
@@ -544,7 +548,7 @@ public final class Autopilot extends AdvancedRobot {
 
     private MovementStrategyManager createMoveManager() {
         List<IMovementStrategy> strategies = new ArrayList<IMovementStrategy>();
-        // WaveSurf FIRST — it's the primary strategy; Orbital is a fallback only
+        // WaveSurf FIRST — better than orbital (33% vs 81% opponent HR)
         PathPlanner planner = new PathPlanner(
                 new WallDistancePositionDanger(),
                 new VcsWaveDanger(),

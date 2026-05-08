@@ -13,7 +13,7 @@ import cz.zamboch.autopilot.core.util.RoboMath;
  */
 public final class OrbitalMovement implements IMovementStrategy {
 
-    private static final double WALL_MARGIN = 50;
+    private static final double WALL_MARGIN = 80;
     private int direction = 1; // +1 = clockwise, -1 = counter-clockwise
 
     @Override
@@ -38,21 +38,22 @@ public final class OrbitalMovement implements IMovementStrategy {
         double turn = RoboMath.normalRelativeAngle(desiredAngle - ourHeading);
 
         // Wall avoidance: reverse direction if we're near a wall
-        double wallDist = wb.getFeature(Feature.OUR_DIST_TO_WALL_MIN);
+        double wallDist = wb.hasFeature(Feature.OUR_DIST_TO_WALL_MIN)
+                ? wb.getFeature(Feature.OUR_DIST_TO_WALL_MIN) : 200;
         if (wallDist < WALL_MARGIN) {
             direction = -direction;
             turn = RoboMath.normalRelativeAngle(
                     bearing + direction * Math.PI / 2 - ourHeading);
         }
 
-        // Move ahead if facing roughly correct direction, else turn first
+        // Move at max speed — large ahead value maintains velocity
         double ahead;
         if (Math.abs(turn) > Math.PI / 2) {
             // Reverse: turn the short way and go backward
             turn = RoboMath.normalRelativeAngle(turn + Math.PI);
-            ahead = -100;
+            ahead = -150;
         } else {
-            ahead = 100;
+            ahead = 150;
         }
 
         out.set(ahead, turn);

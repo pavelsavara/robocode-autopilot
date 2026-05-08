@@ -3,6 +3,7 @@ param(
     [int]$BattlesPerOpponent = 5,
     [int]$Rounds = 35,
     [int]$OpponentLimit = 0,
+    [string[]]$Opponents = @(),
     [switch]$SkipBuild,
     [switch]$SkipBattles,
     [switch]$SkipPipeline,
@@ -73,9 +74,20 @@ if (-not $SkipBattles) {
     Log ("  Valid JARs: " + $validJarNames.Count + ", Corrupt: " + $corruptCount + " (skipped)")
 
     # Enumerate valid opponent JARs only
-    $opponentJars = Get-ChildItem $robotsDir -Filter "*.jar" |
-        Where-Object { $_.Name -notlike "$ourBotPrefix*" -and $validJarNames.ContainsKey($_.Name) } |
-        Sort-Object Name
+    if ($Opponents.Count -gt 0) {
+        # Use specified opponent class names, match to valid JARs
+        $opponentJars = @()
+        foreach ($opp in $Opponents) {
+            $matched = Get-ChildItem $robotsDir -Filter "*.jar" |
+                Where-Object { $_.Name -notlike "$ourBotPrefix*" -and $validJarNames.ContainsKey($_.Name) -and $_.BaseName -like "$opp*" }
+            if ($matched) { $opponentJars += $matched | Select-Object -First 1 }
+            else { LogWarn "No JAR found matching opponent '$opp'" }
+        }
+    } else {
+        $opponentJars = Get-ChildItem $robotsDir -Filter "*.jar" |
+            Where-Object { $_.Name -notlike "$ourBotPrefix*" -and $validJarNames.ContainsKey($_.Name) } |
+            Sort-Object Name
+    }
 
     if ($opponentJars.Count -eq 0) { LogError "No valid opponent JARs found"; exit 1 }
     if ($OpponentLimit -gt 0 -and $opponentJars.Count -gt $OpponentLimit) {

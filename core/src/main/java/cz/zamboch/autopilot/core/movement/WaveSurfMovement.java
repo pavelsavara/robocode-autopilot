@@ -26,11 +26,19 @@ public final class WaveSurfMovement implements IMovementStrategy {
     private static final double DODGE_RAMP_HIGH = 0.8;
     private static final int FLIP_MIN_TICKS = 15;
     private static final int FLIP_RANGE_TICKS = 31; // 15..45 inclusive
+    /** Re-evaluate target at most every N ticks to prevent oscillation. */
+    private static final int COMMIT_TICKS = 5;
 
     private final PathPlanner planner;
     private final Random rng = new Random();
     private int preemptiveDir = 1;
     private long nextFlipTick = 0;
+    /** Committed target angle — prevents oscillation by holding direction. */
+    private double committedAngle = Double.NaN;
+    /** Tick when committed target was last updated. */
+    private long commitTick = -100;
+    /** Number of opponent waves when we last committed. */
+    private int commitWaveCount = 0;
 
     public WaveSurfMovement(PathPlanner planner) {
         this.planner = planner;
@@ -41,39 +49,42 @@ public final class WaveSurfMovement implements IMovementStrategy {
         CandidatePosition target = planner.plan(wb, params);
 
         if (target == null) {
-            // No wave candidates — check if fire is predicted
+            // No wave candidates — orbital movement
+            committedAngle = Double.NaN;
             double dodgeScale = getDodgeScale(wb);
             if (dodgeScale > 0) {
                 preemptiveLateralMove(wb, out, dodgeScale);
             } else {
-                out.set(0, 0);
+                defaultLateralMove(wb, out);
             }
             return;
         }
 
-        // Compute movement toward target position
-        double ourX = wb.getOurX();
-        double ourY = wb.getOurY();
+        // Direction commitment: only re-evaluate when a new wave appears
+        // or after COMMIT_TICKS have elapsed. This prevents oscillation.
+        int currentWaves = wb.getOpponentWaves().size();
+        boolean shouldRecommit = Double.isNaN(committedAngle)
+                || currentWaves != commitWaveCount
+                || (wb.getTick() - commitTick) >= COMMIT_TICKS;
+
+        if (shouldRecommit) {
+            double dx = target.x - wb.getOurX();
+            double dy = target.y - wb.getOurY();
+            committedAngle = Math.atan2(dx, dy);
+            commitTick = wb.getTick();
+            commitWaveCount = currentWaves;
+        }
+
         double ourHeading = wb.getOurHeading();
+        double turn = RoboMath.normalRelativeAngle(committedAngle - ourHeading);
 
-        double dx = target.x - ourX;
-        double dy = target.y - ourY;
-        double targetAngle = Math.atan2(dx, dy); // Robocode heading convention
-
-        double turn = RoboMath.normalRelativeAngle(targetAngle - ourHeading);
-
-        // If target is behind us, go backward
         double ahead;
         if (Math.abs(turn) > Math.PI / 2) {
             turn = RoboMath.normalRelativeAngle(turn + Math.PI);
-            ahead = -Math.hypot(dx, dy);
+            ahead = -150;
         } else {
-            ahead = Math.hypot(dx, dy);
+            ahead = 150;
         }
-
-        // Clamp ahead to reasonable values
-        if (ahead > 100) ahead = 100;
-        if (ahead < -100) ahead = -100;
 
         out.set(ahead, turn);
     }
@@ -97,9 +108,8 @@ public final class WaveSurfMovement implements IMovementStrategy {
 
     /**
      * Pre-emptive lateral movement proportional to predicted fire probability.
-     * Moves perpendicular to bearing line, with speed ramping from 0 to 60
-     * as P(fire) goes from 0.3 to 0.8. Direction reverses at random
-     * intervals (15-45 ticks) for unpredictability.
+     * Moves perpendicular to bearing line at max speed when P(fire) is high.
+     * Direction reverses at random intervals (15-45 ticks) for unpredictability.
      */
     private void preemptiveLateralMove(Whiteboard wb, MovementCommand out, double scale) {
         if (!wb.hasFeature(Feature.BEARING_TO_OPPONENT_ABS) || scale <= 0) {
@@ -114,16 +124,51 @@ public final class WaveSurfMovement implements IMovementStrategy {
         double perpAngle = bearing + preemptiveDir * Math.PI / 2;
         double turn = RoboMath.normalRelativeAngle(perpAngle - ourHeading);
 
-        double fullAhead = 60;
+        // Always use large ahead value for max speed
         double ahead;
         if (Math.abs(turn) > Math.PI / 2) {
             turn = RoboMath.normalRelativeAngle(turn + Math.PI);
-            ahead = -fullAhead * scale;
+            ahead = -150;
         } else {
-            ahead = fullAhead * scale;
+            ahead = 150;
         }
 
         // Reverse direction at random intervals for unpredictability
+        if (wb.getTick() >= nextFlipTick) {
+            preemptiveDir = -preemptiveDir;
+            nextFlipTick = wb.getTick() + FLIP_MIN_TICKS + rng.nextInt(FLIP_RANGE_TICKS);
+        }
+
+        out.set(ahead, turn);
+    }
+
+    /**
+     * Default lateral movement when no waves are active and no fire is predicted.
+     * Orbits the opponent perpendicular to the bearing line at max speed,
+     * reversing direction randomly to avoid predictability.
+     */
+    private void defaultLateralMove(Whiteboard wb, MovementCommand out) {
+        if (!wb.hasFeature(Feature.BEARING_TO_OPPONENT_ABS)) {
+            out.set(0, 0);
+            return;
+        }
+
+        double bearing = wb.getFeature(Feature.BEARING_TO_OPPONENT_ABS);
+        double ourHeading = wb.getOurHeading();
+
+        // Move perpendicular to bearing (orbit the opponent) at max speed
+        double perpAngle = bearing + preemptiveDir * Math.PI / 2;
+        double turn = RoboMath.normalRelativeAngle(perpAngle - ourHeading);
+
+        double ahead;
+        if (Math.abs(turn) > Math.PI / 2) {
+            turn = RoboMath.normalRelativeAngle(turn + Math.PI);
+            ahead = -150;
+        } else {
+            ahead = 150;
+        }
+
+        // Random direction reversal for unpredictability
         if (wb.getTick() >= nextFlipTick) {
             preemptiveDir = -preemptiveDir;
             nextFlipTick = wb.getTick() + FLIP_MIN_TICKS + rng.nextInt(FLIP_RANGE_TICKS);

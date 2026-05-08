@@ -18,6 +18,8 @@ public class PositionFeatures implements IInGameFeatures {
             Feature.OUR_Y,
             Feature.OUR_HEADING,
             Feature.OUR_VELOCITY,
+            Feature.OUR_DIST_TO_WALL_MIN,
+            Feature.OUR_LATERAL_VELOCITY,
             Feature.OPPONENT_X,
             Feature.OPPONENT_Y,
             Feature.OPPONENT_HEADING
@@ -35,6 +37,26 @@ public class PositionFeatures implements IInGameFeatures {
         wb.setFeature(Feature.OUR_Y, wb.getOurY());
         wb.setFeature(Feature.OUR_HEADING, wb.getOurHeading());
         wb.setFeature(Feature.OUR_VELOCITY, wb.getOurVelocity());
+
+        // Our distance to nearest wall (18px robot half-width offset)
+        double ourX = wb.getOurX();
+        double ourY = wb.getOurY();
+        int bfW = wb.getBattlefieldWidth();
+        int bfH = wb.getBattlefieldHeight();
+        double distN = bfH - ourY - 18;
+        double distS = ourY - 18;
+        double distE = bfW - ourX - 18;
+        double distW = ourX - 18;
+        wb.setFeature(Feature.OUR_DIST_TO_WALL_MIN,
+                Math.min(Math.min(distN, distS), Math.min(distE, distW)));
+
+        // Our lateral velocity relative to opponent bearing
+        if (wb.hasFeature(Feature.BEARING_TO_OPPONENT_ABS)) {
+            double absBearing = wb.getFeature(Feature.BEARING_TO_OPPONENT_ABS);
+            double relHeading = RoboMath.normalRelativeAngle(wb.getOurHeading() - absBearing);
+            wb.setFeature(Feature.OUR_LATERAL_VELOCITY,
+                    wb.getOurVelocity() * Math.sin(relHeading));
+        }
 
         // Opponent state only available on scan ticks
         if (wb.isScanAvailableThisTick()) {
