@@ -9,16 +9,16 @@ for the original design document.
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│                    Autopilot.java                         │
+│                    Autopilot.java                        │
 │                                                          │
 │  onStatus → Whiteboard.advanceTick()                     │
-│             TickBudget.tickStart()                        │
-│             interpolateIfNoScan() [dead-reckoning]        │
+│             TickBudget.tickStart()                       │
+│             interpolateIfNoScan() [dead-reckoning]       │
 │  onScannedRobot → Whiteboard.setOpponentState()          │
-│                   Push TickBudget → predictors            │
-│                   Transformer.process()                   │
-│                   VirtualGunManager.onScan()              │
-│                   StrategyComputer.compute() [every 50t]  │
+│                   Push TickBudget → predictors           │
+│                   Transformer.process()                  │
+│                   VirtualGunManager.onScan()             │
+│                   StrategyComputer.compute() [every 50t] │
 │                                                          │
 │  run() loop:                                             │
 │    ML model load status logging [tick 10]                │
@@ -53,7 +53,6 @@ Two interface types:
 | Predictor | Output type | Implementation |
 |---|---|---|
 | GF Targeting | `double[61]` GF distribution | `MlpGfTargeting` (uniform — deferred, data-starved) |
-| Fingerprint | `FingerprintResult` (classId + probs) | `GbmFingerprint` (uniform — deferred, 19MB) |
 
 ### 3. Virtual Gun Manager
 
@@ -79,8 +78,6 @@ Round-level strategy competition with per-tick wave surfing:
 | Strategy | Behavior |
 |---|---|
 | `OrbitalMovement` | Circle opponent at preferred distance, reverse on wall |
-| `RandomDodgeMovement` | Forward/reverse randomly every 20–40 ticks |
-| `StopAndGoMovement` | Stop when opponent fires, move between fires |
 | `WaveSurfMovement` | PathPlanner: envelope candidates → VCS danger scoring → lowest-danger position |
 
 **Selection:** First N rounds: rotate through all. Then: pick lowest
@@ -117,8 +114,11 @@ Overshoots by 2° to maintain lock.
 | `WindowFeatures` | O(1) incremental 20-tick mean/std for 10 base features |
 | `TickBudget` | Adaptive CPU throttle: halves trees on skipped turn, recovers 5%/tick |
 | `PersistenceManager` | Versioned binary save/load via `RobocodeFileOutputStream` |
+| `DefaultDataFile` | Base64-embedded `autopilot.dat` fallback for first battle on new machine |
+| `VcsHistogramStore` | Per-opponent VCS histograms (keyed by bot name hash, LRU 30 entries) |
 
 Models are embedded as Base64 strings in Java source (~440 KB each).
+Persistence data (~44 KB) is embedded as a Base64 fallback for first-battle priors.
 No file I/O at runtime — works inside Robocode's security sandbox.
 
 ---
@@ -136,6 +136,7 @@ core/src/main/java/cz/zamboch/autopilot/core/
 ├── physics/       RobotPhysics, RobotState, MutableRobotState
 │                  PrecisePredictor, ReachableEnvelope, EnvelopeData
 ├── predictors/    IPredictor<T>, PredictorRegistry, IGfTargetingPredictor
+│                  (fingerprint predictor removed — 19MB, 51.6% accuracy)
 ├── strategy/      IGunStrategy, IMovementStrategy, IRadarStrategy
 │                  StrategyComputer, StrategyParams, MovementCommand
 │                  VirtualBullet
@@ -150,11 +151,11 @@ robot/src/main/java/cz/zamboch/
 ├── distilled/                  ML model data + predictors
 │   ├── GbmFirePowerPredictor, GbmMovementPredictor, GbmFireTimingPredictor
 │   ├── FirePowerData, MovementData, FireTimingData (Base64-embedded trees)
-│   ├── MlpGfTargeting, GbmFingerprint (skeletons — deferred)
+│   ├── MlpGfTargeting (skeleton — deferred)
 │   └── OpponentProfileData (strength rating stub)
 └── trivial/                    Simple strategies
     ├── HeadOnGun, LinearGun, CircularGun
-    ├── OrbitalMovement, RandomDodgeMovement, StopAndGoMovement
+    ├── OrbitalMovement
     ├── NarrowLockRadar
     └── EnergyRatioStrategyComputer
 

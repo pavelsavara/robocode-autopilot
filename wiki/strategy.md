@@ -152,7 +152,7 @@ Our approach is **offline-first:**
 
 This gives us data that single-battle ML bots never have: knowledge of
 how *each bot family* behaves, pre-computed GF distributions, and
-fingerprint-based opponent identification from the first 20 fires.
+name-hash-based opponent identification from the first scan.
 
 ---
 

@@ -46,12 +46,34 @@ public final class EnergyRatioStrategyComputer extends StrategyComputer {
         if (wb.hasFeature(Feature.OPPONENT_STRENGTH_RATING)) {
             double strength = wb.getFeature(Feature.OPPONENT_STRENGTH_RATING);
             if (strength > 0.7) {
-                // Strong opponent → more defensive, random wave selection
+                // Strong opponent -> more defensive, random wave selection
                 aggression = Math.max(0.1, aggression - 0.2);
                 randomWaveSelection = true;
             } else if (strength < 0.3) {
-                // Weak opponent → more aggressive
+                // Weak opponent -> more aggressive
                 aggression = Math.min(1.0, aggression + 0.2);
+            }
+        }
+
+        // Wire PREDICTED_FIRE_POWER into dodge urgency (Phase 11 - 8b-2).
+        // If the ML model predicts high-power bullets, increase dodge urgency
+        // by reducing aggression (which makes us fire less and dodge more).
+        // If model predicts low power, we can be more aggressive.
+        double dodgeUrgencyBoost = 0;
+        if (wb.hasFeature(Feature.PREDICTED_FIRE_POWER)
+                && wb.hasFeature(Feature.PREDICTED_FIRE_POWER_CONFIDENCE)) {
+            double confidence = wb.getFeature(Feature.PREDICTED_FIRE_POWER_CONFIDENCE);
+            if (confidence > 0.3) {
+                double predictedPower = wb.getFeature(Feature.PREDICTED_FIRE_POWER);
+                if (predictedPower > 2.5) {
+                    // High power bullets incoming -> dodge harder (reduce aggression)
+                    dodgeUrgencyBoost = -0.15;
+                    randomWaveSelection = true;
+                } else if (predictedPower < 0.5) {
+                    // Opponent conserving energy -> be more aggressive
+                    dodgeUrgencyBoost = 0.1;
+                }
+                aggression = Math.max(0.1, Math.min(1.0, aggression + dodgeUrgencyBoost));
             }
         }
 

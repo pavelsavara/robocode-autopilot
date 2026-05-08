@@ -15,15 +15,15 @@ guns, competing movement strategies, and a 4-axis strategic mode layer.
 | 1. Battle recording & rumble | **Done** | 50-bot rumble, CI, ~1944 battles |
 | 2. Feature engineering pipeline | **Done** | 80+ features, ticks/waves/scores CSV |
 | 3. Statistical exploration | **Done** | 14 notebooks, honest baselines |
-| 4. GBM model training | **Done** | Fire power R²=0.960, fingerprint 0.516 |
+| 4. GBM model training | **Done** | Fire power R²=0.960 |
 | 5. Robot architecture (Phase 1) | **Done** | Trivial predictors, full decision wiring |
 | 6. Wave stacking research | **Done** | Niche tactic; multi-wave defense priority |
 | 7. Feature additions + retrain | **Done** | Multi-wave, envelope, combat features; R² 0.931→0.960 |
 | 7e-m. Robot improvements | **Done** | VCS gun/danger, energy strategy, persistence, interpolation |
 | 8. Path planning | **Done** | ReachableEnvelope, WaveSurfMovement, danger scorers |
 | 9. ML distillation to Java | **Done** | 3 GBM models (300KB each), Base64 embedded, adaptive TickBudget |
-| **10. Local pipeline + retrospective** | **Next** | Build→battle→record→CSV→notebook loop |
-| **11. Wire predictions + VCS persistence** | Future | PredictiveGun, dodge urgency, per-opponent VCS |
+| **10. Local pipeline + retrospective** | **Done** | Build→battle→record→CSV→notebook loop |
+| **11. Wire predictions + VCS persistence** | **Done** | PredictiveGun, dodge urgency, per-opponent VCS |
 | **12. Online learning** | Future | Bayesian blending, adaptation detection |
 
 ---
@@ -39,7 +39,6 @@ All numbers post-leakage-fix. See [wiki/ml-results.md](wiki/ml-results.md) for d
 | Fire power | XGBoost (compact 200t) | R² | **0.906** | Distilled to Java |
 | Round outcome | XGBoost (early 100) | Accuracy | **0.528** | Dropped — energy ratio sufficient |
 | Round outcome | XGBoost (early 100) | AUC | **0.545** | |
-| Fingerprint (N=20) | LightGBM | Top-1 | **0.516** | Deferred (19MB) |
 | GF targeting | MLP [16→128²→64→61] | ±3 bins | **0.570** | Deferred (data-starved) |
 | Movement N=5 | GBM-window (compact) | R² | **0.739** | Distilled to Java |
 | Movement N=5 | LSTM | MAE | **2.08** | Not distilled |
@@ -142,7 +141,7 @@ movement manager accumulate strategy performance data.
 - Structure: `[magic:4][version:4][sectionCount:4][sections...]`
 - Each section: `[sectionId:4][length:4][data:length]`
 - Subsystems register sections dynamically (VGM stats, VCS histograms,
-  opponent profile cache, fingerprint results)
+  opponent profile cache)
 - Version constant in Whiteboard — bump on schema change → auto-invalidate
   old data files
 - Write at battle end (`onBattleEnded`), read at battle start
@@ -226,7 +225,6 @@ Created Java skeleton classes in `robot/src/.../distilled/` for Phase 8:
 | `GbmFireTimingPredictor` | `IInGameFeatures` | 80 tick features → `PREDICTED_OPPONENT_FIRES_3` | Tree if/else |
 | `GbmMovementPredictor` | `IInGameFeatures` | 80 tick features → `PREDICTED_LAT_VEL_5` | Tree if/else |
 | `MlpGfTargeting` | `IGfTargetingPredictor` | 18 features → `double[61]` | Matrix multiply + ReLU |
-| `GbmFingerprint` | `IFingerprintPredictor` | 18 features → `FingerprintResult` | Tree if/else |
 
 Each skeleton reads features from Whiteboard, delegates to a generated
 `*Model.java` class (auto-generated from Python export), and writes output.
@@ -266,7 +264,7 @@ Keeps movement decisions fresh during 1-3 tick scan gaps.
 - Models embedded as Base64 strings (no file I/O, Robocode sandbox compatible)
 - `RobocodeFileOutputStream` for data file writes
 
-**Deferred:** Fingerprint (19MB, marginal), MLP targeting (data-starved), LSTM.
+**Deferred:** MLP targeting (data-starved), LSTM. Fingerprint dropped (19MB, 51.6% accuracy).
 
 ### Phase 8b: Wire Predictions into Consumers
 
@@ -365,19 +363,24 @@ Use `_loader.py` with custom root path pointing to `output/local/csv/`.
 - Filter to our robot's perspective only (`observer_bot` contains `Autopilot`)
 - Explain statistics at high-school math level per project conventions
 
-### Phase 11: Wire Predictions + VCS Persistence
+### Phase 11: Wire Predictions + VCS Persistence ✅
 
-All 3 model outputs are currently dead writes. Wire them into gameplay:
+All 3 model outputs wired into gameplay consumers:
 
-- **PredictiveGun** (movement prediction → aiming): uses `PREDICTED_LAT_VEL_5`
-- **Fire power prediction → strategy layer**: wire `PREDICTED_FIRE_POWER` into dodge urgency
-- **Fire timing → earlier dodge**: wire `PREDICTED_OPPONENT_FIRES_3` into wave surf timing
-- **VCS Histogram Persistence**: per-opponent gun+movement histograms in data file
+- **PredictiveGun** ✅ — `PREDICTED_LAT_VEL_5` → iterative forward simulation gun (already in VGM)
+- **Fire power prediction → strategy layer** ✅ — `PREDICTED_FIRE_POWER` → `EnergyRatioStrategyComputer`
+  dodge urgency: high predicted power (>2.5) reduces aggression, enables random wave selection;
+  low predicted power (<0.5) increases aggression
+- **Fire timing → earlier dodge** ✅ — `PREDICTED_OPPONENT_FIRES_3` → `WaveSurfMovement`
+  pre-emptive lateral movement when P(fire) > 0.7 and no active waves
+- **VCS Histogram Persistence** ✅ — `VcsHistogramStore` (section ID=4) persists gun+move
+  VCS histograms per-opponent (keyed by `OPPONENT_BOT_ID_HASH`), loaded on first scan,
+  saved at battle end, LRU eviction at 30 entries (~88 KB)
 
 ### Phase 12: Online Learning & Adaptation
 
 - **Bayesian blending**: MLP prior + VCS online via λ = K/(K+n) mixing
-- **Per-family GF priors** loaded from resource files after fingerprint identification
+- **Per-family GF priors** loaded from resource files after name-hash identification
 - **Adaptation detector** (KS-distance) for mid-battle strategy switching
 - **GF flattening**: intentionally randomize dodge direction to make our
   GF profile harder to learn (anti-profiling defense)

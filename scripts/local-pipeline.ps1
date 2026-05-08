@@ -4,7 +4,8 @@ param(
     [int]$Rounds = 35,
     [switch]$SkipBuild,
     [switch]$SkipBattles,
-    [switch]$SkipPipeline
+    [switch]$SkipPipeline,
+    [switch]$SkipRetrain
 )
 
 $ErrorActionPreference = 'Stop'
@@ -165,3 +166,69 @@ Log 'Pipeline complete!'
 Log ('  Recordings: ' + $recordingsDir)
 Log ('  Results:    ' + $resultsDir)
 Log ('  CSVs:       ' + $csvDir)
+
+# --- 10d. Retrain models and regenerate Java code ---
+if (-not $SkipRetrain) {
+    Log "STEP 10d: Retraining GBM models on local battle data..."
+    $pythonExe = Join-Path $projectRoot "intuition\.venv\Scripts\python.exe"
+    if (-not (Test-Path $pythonExe)) {
+        LogError "Python venv not found at $pythonExe"
+        exit 1
+    }
+
+    # Check CSV files exist
+    $csvFiles = Get-ChildItem $csvDir -Filter "ticks.csv" -Recurse -ErrorAction SilentlyContinue
+    if (-not $csvFiles -or $csvFiles.Count -eq 0) {
+        LogError "No ticks.csv files found in $csvDir - cannot retrain"
+        exit 1
+    }
+    Log ("  Found " + $csvFiles.Count + " ticks.csv files for training")
+
+    # Train all 3 models pointing at local CSV output
+    $trainScript = Join-Path $projectRoot "intuition\train_distill.py"
+    Log "  Training fire_power, movement, fire_timing models..."
+    Push-Location (Join-Path $projectRoot "intuition")
+    try {
+        & $pythonExe $trainScript --task all --roots $csvDir 2>&1 | ForEach-Object { Write-Host "  $_" }
+        if ($LASTEXITCODE -ne 0) { LogError "Model training failed"; exit 1 }
+        Log "  Models trained successfully"
+    } finally {
+        Pop-Location
+    }
+
+    # Export models to Java Base64 classes
+    $exportScript = Join-Path $projectRoot "intuition\export_gbm_java.py"
+    Log "  Exporting models to Java..."
+    Push-Location (Join-Path $projectRoot "intuition")
+    try {
+        & $pythonExe $exportScript --all 2>&1 | ForEach-Object { Write-Host "  $_" }
+        if ($LASTEXITCODE -ne 0) { LogError "Model export failed"; exit 1 }
+        Log "  Java model classes regenerated"
+    } finally {
+        Pop-Location
+    }
+
+    # Export data file (VCS priors) as embedded Java fallback
+    $dataFilePath = Join-Path $RobocodeDir "robots\.data\cz\zamboch\Autopilot.data\autopilot.dat"
+    if (Test-Path $dataFilePath) {
+        $exportDataScript = Join-Path $projectRoot "intuition\export_data_java.py"
+        Log "  Exporting data file as embedded fallback..."
+        & $pythonExe $exportDataScript $dataFilePath 2>&1 | ForEach-Object { Write-Host "  $_" }
+        if ($LASTEXITCODE -ne 0) { LogWarn "Data file export failed (non-fatal)" }
+    } else {
+        LogWarn "  No data file found at $dataFilePath (will be created after first battle)"
+    }
+
+    # Rebuild robot JAR with updated models
+    Log "  Rebuilding robot JAR with new models..."
+    & .\gradlew.bat :robot:jar 2>&1 | ForEach-Object { Write-Host "  $_" }
+    if ($LASTEXITCODE -ne 0) { LogError "Rebuild failed"; exit 1 }
+
+    $jarFile = Get-ChildItem "robot\build\libs" -Filter "$ourBotPrefix-*.jar" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    Copy-Item $jarFile.FullName (Join-Path $robotsDir $jarFile.Name) -Force
+    Log ("  Rebuilt and deployed: " + $jarFile.Name)
+} else {
+    Log "STEP 10d: Skipped"
+}
+
+Log 'Full pipeline complete!'

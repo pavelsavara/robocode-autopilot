@@ -10,7 +10,6 @@
 | Fire power | XGBoost (200t, compact) | R² | **0.906** | — | −5.6% vs full | **Distilled** ✅ |
 | Fire power | XGBoost (200t, compact) | MAE | **0.148** | mean 0.319 | −54% | **Distilled** ✅ |
 | Round outcome | XGBoost (early-100) | Acc | **0.528** | majority 0.510 | +2pp | Dropped ❌ |
-| Fingerprint (50 classes) | LightGBM | Top-1 | **0.516** | random 0.020 | 26× | Deferred (19MB) |
 | GF targeting | MLP [16→128²→64→61] | ±3 bins | **0.570** | uniform 0.10 | 6× | Deferred (data-starved) |
 | Movement N=5 | GBM-window (200t, compact) | R² | **0.739** | per-tick RF 0.07 | 10× | **Distilled** ✅ |
 | Movement N=5 | LSTM | MAE | **2.08** | GBM 2.36 | −12% | Not distilled |
@@ -26,7 +25,7 @@
 |---|---|---|---|
 | Fire power | R²=0.572 | R²=0.931 | +63% |
 | Movement | R²=0.07 | R²=0.735 | 10× |
-| Fingerprint | Top-1=0.253 | Top-1=0.516 | 2× |
+
 
 Rolling mean and standard deviation over the last 20 ticks of opponent state
 (energy, velocity, heading) is the single most important ML innovation.
@@ -89,29 +88,8 @@ truncation via `TickBudget` handles varying CPU limits.
 | Fire timing | AUC=0.863 | AUC=0.773 | 315 KB | 415 KB |
 
 **Deferred models:**
-- Fingerprint: 19 MB (25K trees × 50 classes). VCS learns fast enough online.
 - MLP GF targeting: data-starved (11K samples, 57%).
 - LSTM movement: requires recurrent state; GBM sufficient.
-
-### Fingerprint Classifier (Top-1=0.516)
-
-**Training:** LightGBM multi-class, 20 opponent fires, 18 features
-(10 wave-based + 8 tick-derived). GroupKFold.
-
-**Top features:**
-| Rank | Feature | Type |
-|---|---|---|
-| 1 | `mean_dist` (preferred distance) | Wave |
-| 2 | `std_dist` | Wave |
-| 3 | `tick_heading_delta_std` (movement smoothness) | Tick-derived |
-| 4 | `tick_direction_changes` | Tick-derived |
-| 5 | `mean_power` | Wave |
-
-**Signal:** Preferred engagement distance (#1) and movement smoothness (#3)
-are the strongest bot identifiers. BeepBoop fights at ~300px with smooth
-movement; DrussGT at ~400px; random bots wander.
-
-**No leakage.** All 18 features are behavioral observations. Cleanest model.
 
 ### GF Targeting MLP (±3 bins = 0.570)
 

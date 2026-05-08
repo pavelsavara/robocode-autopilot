@@ -24,7 +24,6 @@ import cz.zamboch.autopilot.core.movement.WallDistancePositionDanger;
 import cz.zamboch.autopilot.core.movement.WaveSurfMovement;
 import cz.zamboch.autopilot.core.persistence.PersistenceManager;
 import cz.zamboch.autopilot.core.physics.ReachableEnvelope;
-import cz.zamboch.autopilot.core.predictors.IFingerprintPredictor;
 import cz.zamboch.autopilot.core.predictors.IGfTargetingPredictor;
 import cz.zamboch.autopilot.core.strategy.IGunStrategy;
 import cz.zamboch.autopilot.core.strategy.IMovementStrategy;
@@ -33,18 +32,16 @@ import cz.zamboch.autopilot.core.strategy.MovementCommand;
 import cz.zamboch.autopilot.core.strategy.StrategyComputer;
 import cz.zamboch.autopilot.core.strategy.StrategyParams;
 import cz.zamboch.autopilot.core.util.RoboMath;
-import cz.zamboch.distilled.GbmFingerprint;
 import cz.zamboch.distilled.GbmFirePowerPredictor;
 import cz.zamboch.distilled.GbmFireTimingPredictor;
 import cz.zamboch.distilled.GbmMovementPredictor;
+import cz.zamboch.distilled.DefaultDataFile;
 import cz.zamboch.distilled.MlpGfTargeting;
 import cz.zamboch.distilled.PredictiveGun;
 import cz.zamboch.trivial.EnergyRatioStrategyComputer;
 import cz.zamboch.trivial.NarrowLockRadar;
 import cz.zamboch.trivial.OpponentProfileData;
 import cz.zamboch.trivial.OrbitalMovement;
-import cz.zamboch.trivial.RandomDodgeMovement;
-import cz.zamboch.trivial.StopAndGoMovement;
 import robocode.AdvancedRobot;
 import robocode.BattleEndedEvent;
 import robocode.BulletHitEvent;
@@ -122,8 +119,6 @@ public final class Autopilot extends AdvancedRobot {
             // Register distribution predictors
             whiteboard.getPredictorRegistry().register(
                     IGfTargetingPredictor.class, new MlpGfTargeting());
-            whiteboard.getPredictorRegistry().register(
-                    IFingerprintPredictor.class, new GbmFingerprint());
 
             // Set up cross-battle persistence
             persistence = new PersistenceManager();
@@ -151,7 +146,14 @@ public final class Autopilot extends AdvancedRobot {
                         fis.close();
                     }
                 } else {
-                    out.println("DATA_LOAD no file (first battle on this machine)");
+                    // No data file — try embedded fallback from training battles
+                    byte[] embedded = DefaultDataFile.decode();
+                    if (embedded.length > 0) {
+                        String status = persistence.loadWithStatus(embedded);
+                        out.println("DATA_LOAD embedded " + embedded.length + "b: " + status);
+                    } else {
+                        out.println("DATA_LOAD no file, no embedded fallback");
+                    }
                 }
             } catch (Exception e) {
                 out.println("DATA_LOAD error: " + e.getMessage());
@@ -455,8 +457,6 @@ public final class Autopilot extends AdvancedRobot {
     private MovementStrategyManager createMoveManager() {
         List<IMovementStrategy> strategies = new ArrayList<IMovementStrategy>();
         strategies.add(new OrbitalMovement());
-        strategies.add(new RandomDodgeMovement());
-        strategies.add(new StopAndGoMovement());
         // Wave-surf: uses PathPlanner with VCS-based wave danger
         PathPlanner planner = new PathPlanner(
                 new WallDistancePositionDanger(),

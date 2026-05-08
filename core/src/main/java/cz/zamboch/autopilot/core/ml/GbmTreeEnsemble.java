@@ -12,7 +12,7 @@ package cz.zamboch.autopilot.core.ml;
  *
  * <p>For regression (fire power, movement): output = base_score + sum(tree outputs).</p>
  * <p>For binary classification (fire timing): output = sigmoid(base_score + sum).</p>
- * <p>For multi-class (fingerprint): one set of trees per class, softmax over sums.</p>
+ * <p>For multi-class: one set of trees per class, softmax over sums.</p>
  *
  * <p>All arrays are pre-allocated at construction. Zero per-tick allocation.</p>
  */

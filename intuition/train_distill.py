@@ -85,13 +85,20 @@ def add_window_features(df: pd.DataFrame, base_cols: list[str],
 
 # ── Data loading ─────────────────────────────────────────────────────
 
-def load_data(verbose=True):
-    """Load ticks + scores with stratified sampling."""
+def load_data(csv_root=None, verbose=True):
+    """Load ticks + scores with stratified sampling.
+
+    If csv_root is provided, data is loaded from that directory instead of
+    the default output/csv/.
+    """
+    root_kwargs = {'csv_root': csv_root} if csv_root else {}
     selection = build_robot_index(max_robots=50, battles_per_robot=2,
-                                  seed=42, verbose=verbose)
+                                  seed=42, verbose=verbose, **root_kwargs)
     # row_frac=1.0: need consecutive ticks for shift-based targets
-    ticks = load_stratified('ticks.csv', selection, row_frac=1.0, verbose=verbose)
-    scores = load_stratified('scores.csv', selection, verbose=verbose)
+    ticks = load_stratified('ticks.csv', selection, row_frac=1.0, verbose=verbose,
+                            **root_kwargs)
+    scores = load_stratified('scores.csv', selection, verbose=verbose,
+                             **root_kwargs)
     return ticks, scores, selection
 
 
@@ -328,11 +335,28 @@ def _save(model, metrics: dict, task: str):
 
 # ── CLI ──────────────────────────────────────────────────────────────
 
+def _parse_args():
+    task = 'all'
+    roots = None
+    i = 1
+    while i < len(sys.argv):
+        arg = sys.argv[i]
+        if arg == '--task' and i + 1 < len(sys.argv):
+            task = sys.argv[i + 1]; i += 2
+        elif arg == '--roots' and i + 1 < len(sys.argv):
+            roots = sys.argv[i + 1]; i += 2
+        elif arg in ('fire_power', 'fire_timing', 'movement', 'all'):
+            task = arg; i += 1
+        else:
+            i += 1
+    return task, roots
+
+
 if __name__ == '__main__':
-    task = sys.argv[1] if len(sys.argv) > 1 else 'all'
+    task, roots = _parse_args()
 
     print("Loading data...")
-    ticks, scores, selection = load_data()
+    ticks, scores, selection = load_data(csv_root=roots)
 
     all_metrics = {}
     if task in ('fire_power', 'all'):
