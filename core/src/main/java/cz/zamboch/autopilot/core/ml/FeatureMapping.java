@@ -149,8 +149,6 @@ public final class FeatureMapping {
 
         // Opponent profile
         put("opponent_strength_rating", Feature.OPPONENT_STRENGTH_RATING);
-        put("our_position_advantage", Feature.OUR_POSITION_ADVANTAGE);
-        put("opponent_position_advantage", Feature.OPPONENT_POSITION_ADVANTAGE);
     }
 
     private static void put(String csvName, Feature feature) {

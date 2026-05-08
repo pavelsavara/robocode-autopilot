@@ -26,7 +26,7 @@ import numpy as np
 
 MODEL_ROOT = Path(__file__).parent / 'models' / 'distill'
 JAVA_OUT = Path(__file__).parent.parent / 'robot' / 'src' / 'main' / 'java' / 'cz' / 'zamboch' / 'distilled'
-RES_OUT = Path(__file__).parent.parent / 'robot' / 'src' / 'main' / 'resources'
+RES_OUT = Path(__file__).parent.parent / 'robot' / 'src' / 'main' / 'resources' / 'cz' / 'zamboch' / 'distilled'
 FIXTURE_OUT = Path(__file__).parent.parent / 'robot' / 'src' / 'test' / 'resources' / 'distilled'
 
 
@@ -240,24 +240,26 @@ def export_model(task: str):
     total_nodes = sum(len(t) for t in trees)
     print(f"  Total nodes: {total_nodes:,} (no padding)")
 
-    # Generate Java class
+    # Serialize to compact binary
+    binary_data = _serialize_trees(n_trees, base_score, num_class, trees)
+    print(f"  Binary size: {len(binary_data):,} bytes")
+
+    # Base64 encode
+    import base64
+    b64 = base64.b64encode(binary_data).decode('ascii')
+    print(f"  Base64 size: {len(b64):,} chars ({len(b64) // 1024} KB)")
+
+    # Generate Java class with embedded Base64 strings
     class_name = _task_to_class_name(task)
-    java_code = _generate_java_binary_loader(
-        class_name, task, n_trees, max_nodes, base_score, num_class,
-        feature_cols, total_nodes
+    java_code = _generate_java_embedded(
+        class_name, task, n_trees, base_score, num_class,
+        feature_cols, total_nodes, b64
     )
 
     JAVA_OUT.mkdir(parents=True, exist_ok=True)
     java_path = JAVA_OUT / f'{class_name}Data.java'
     java_path.write_text(java_code, encoding='utf-8')
-    print(f"  Java class: {java_path}")
-
-    # Write binary data file (variable-length trees)
-    # Write binary data file to resources directory
-    RES_OUT.mkdir(parents=True, exist_ok=True)
-    bin_path = RES_OUT / f'{_task_to_resource_name(task)}.bin'
-    _write_binary(bin_path, n_trees, max_nodes, base_score, num_class, trees)
-    print(f"  Binary data: {bin_path} ({bin_path.stat().st_size / 1e6:.1f} MB)")
+    print(f"  Java class: {java_path} ({len(java_code) // 1024} KB)")
 
     # Generate test fixtures
     _generate_fixtures(task, model_data, feature_cols, task_meta)
@@ -272,67 +274,85 @@ def _task_to_resource_name(task: str) -> str:
     return task.replace('_', '-')
 
 
-def _write_binary(path: Path, n_trees: int, max_nodes: int,
-                  base_score: float, num_class: int,
-                  trees: list[list[dict]]):
-    """Write tree data in a compact variable-length binary format.
+def _serialize_trees(n_trees: int, base_score: float, num_class: int,
+                     trees: list[list[dict]]) -> bytes:
+    """Serialize tree data to compact binary.
 
-    Uses int16 for feature indices and child pointers, float32 for thresholds
-    and leaf values. This halves the size vs the int32/float64 format.
-
-    Format:
-      Header: [nTrees:int32][baseScore:float32][numClass:int16]
-      Per tree:
-        [nNodes:int16]
-        [featureIndex: int16[nNodes]]  — −1 = leaf
-        [threshold: float32[nNodes]]
-        [leftChild: int16[nNodes]]
-        [rightChild: int16[nNodes]]
-        [leafValue: float32[nNodes]]
+    Format: [nTrees:i32][baseScore:f32][numClass:i16]
+    Per tree: [nNodes:i16][feat:i16*n][thresh:f32*n][left:i16*n][right:i16*n][leaf:f32*n]
     """
-    with open(path, 'wb') as f:
-        f.write(struct.pack('>i', n_trees))
-        f.write(struct.pack('>f', float(base_score)))
-        f.write(struct.pack('>h', num_class))
+    import io
+    buf = io.BytesIO()
+    buf.write(struct.pack('>i', n_trees))
+    buf.write(struct.pack('>f', float(base_score)))
+    buf.write(struct.pack('>h', num_class))
 
-        for tree_nodes in trees:
-            n = len(tree_nodes)
-            f.write(struct.pack('>h', n))
-            for node in tree_nodes:
-                f.write(struct.pack('>h', node['feature']))
-            for node in tree_nodes:
-                t = node.get('threshold', float('nan'))
-                f.write(struct.pack('>f', float(t) if not np.isnan(t) else float('nan')))
-            for node in tree_nodes:
-                f.write(struct.pack('>h', node['left']))
-            for node in tree_nodes:
-                f.write(struct.pack('>h', node['right']))
-            for node in tree_nodes:
-                f.write(struct.pack('>f', float(node['value'])))
+    for tree_nodes in trees:
+        n = len(tree_nodes)
+        buf.write(struct.pack('>h', n))
+        for node in tree_nodes:
+            buf.write(struct.pack('>h', node['feature']))
+        for node in tree_nodes:
+            t = node.get('threshold', float('nan'))
+            buf.write(struct.pack('>f', float(t) if not np.isnan(t) else float('nan')))
+        for node in tree_nodes:
+            buf.write(struct.pack('>h', node['left']))
+        for node in tree_nodes:
+            buf.write(struct.pack('>h', node['right']))
+        for node in tree_nodes:
+            buf.write(struct.pack('>f', float(node['value'])))
+
+    return buf.getvalue()
 
 
-def _generate_java_binary_loader(class_name: str, task: str,
-                                  n_trees: int, max_nodes: int,
-                                  base_score: float, num_class: int,
-                                  feature_cols: list[str],
-                                  total_nodes: int) -> str:
-    """Generate a Java class that loads variable-length tree data from a binary resource."""
+# Max bytes per Java string constant (UTF-8 in class file). Leave headroom.
+_JAVA_STRING_CHUNK = 60_000
 
-    # Build feature name → index mapping as a Java string array
+
+def _generate_java_embedded(class_name: str, task: str,
+                             n_trees: int, base_score: float, num_class: int,
+                             feature_cols: list[str],
+                             total_nodes: int, b64: str) -> str:
+    """Generate a Java class with model data embedded as Base64 string constants.
+
+    No file I/O needed — works inside Robocode's security sandbox.
+    """
     feat_names_java = ', '.join(f'"{c}"' for c in feature_cols)
 
-    resource_name = _task_to_resource_name(task)
+    # Split Base64 into chunks that fit in a single Java string constant
+    chunks = [b64[i:i + _JAVA_STRING_CHUNK] for i in range(0, len(b64), _JAVA_STRING_CHUNK)]
+
+    # Build chunk declarations
+    chunk_decls = []
+    chunk_refs = []
+    for i, chunk in enumerate(chunks):
+        chunk_decls.append(f'    private static final String D{i} = "{chunk}";')
+        chunk_refs.append(f'D{i}')
+
+    chunk_decls_str = '\n'.join(chunk_decls)
+    if len(chunks) == 1:
+        decode_expr = 'java.util.Base64.getDecoder().decode(D0)'
+    else:
+        # Use StringBuilder to prevent javac from folding string constants
+        sb_lines = ['            StringBuilder sb = new StringBuilder(%d);' % len(b64)]
+        for ref in chunk_refs:
+            sb_lines.append(f'            sb.append({ref});')
+        sb_lines.append('            byte[] raw = java.util.Base64.getDecoder().decode(sb.toString());')
+        decode_expr = None  # handled inline
+
+    if decode_expr:
+        decode_block = f'            byte[] raw = {decode_expr};'
+    else:
+        decode_block = '\n'.join(sb_lines)
 
     return f'''package cz.zamboch.distilled;
 
 import cz.zamboch.autopilot.core.ml.GbmTreeEnsemble;
 
-import java.io.DataInputStream;
-import java.io.InputStream;
-
 /**
- * Auto-generated data loader for the {task} GBM model.
- * Loads variable-length tree arrays from the binary resource file.
+ * Auto-generated model data for the {task} GBM model.
+ * Tree data is embedded as Base64-encoded string constants — no file I/O,
+ * works inside Robocode's security sandbox.
  *
  * <p>Model: {n_trees} trees, {total_nodes:,} total nodes, {num_class} class(es),
  * {len(feature_cols)} input features. Base score: {base_score}.</p>
@@ -346,89 +366,69 @@ public final class {class_name}Data {{
         {feat_names_java}
     }};
 
-    /** Number of trees. */
     public static final int N_TREES = {n_trees};
-
-    /** Base score (global bias). */
     public static final double BASE_SCORE = {base_score};
-
-    /** Number of output classes (1 = regression/binary). */
     public static final int N_CLASSES = {num_class};
 
+    // Base64-encoded tree data (split to stay under 64KB per string constant)
+{chunk_decls_str}
+
     /**
-     * Load the tree ensemble from the embedded binary resource.
-     * Called once at robot startup.
-     *
-     * <p>Binary format: variable-length trees, each preceded by its node count.
-     * Trees are flattened into a single contiguous array with an offset table.</p>
+     * Decode and load the tree ensemble from embedded Base64 data.
+     * Called once at robot startup. No file I/O.
      */
     public static GbmTreeEnsemble load() {{
         try {{
-            InputStream is = {class_name}Data.class.getResourceAsStream(
-                    "/{resource_name}.bin");
-            if (is == null) {{
-                throw new RuntimeException("{resource_name}.bin not found in JAR");
-            }}
-            DataInputStream dis = new DataInputStream(is);
+{decode_block}
+            java.nio.ByteBuffer bb = java.nio.ByteBuffer.wrap(raw);
 
-            int nTrees = dis.readInt();
-            float baseScoreF = dis.readFloat();
-            double baseScore = baseScoreF;
-            int nClasses = dis.readShort();
+            int nTrees = bb.getInt();
+            double baseScore = bb.getFloat();
+            int nClasses = bb.getShort();
 
             int[] offsets = new int[nTrees];
             int totalNodes = 0;
 
-            // Compact format: int16 features/children, float32 thresholds/leaves
-            int[][] allFeat = new int[nTrees][];
-            float[][] allThresh = new float[nTrees][];
-            int[][] allLeft = new int[nTrees][];
-            int[][] allRight = new int[nTrees][];
-            float[][] allLeaf = new float[nTrees][];
+            int[] featureIndex;
+            double[] threshold;
+            int[] leftChild;
+            int[] rightChild;
+            double[] leafValue;
 
+            // First pass: compute total nodes
+            int pos = bb.position();
             for (int t = 0; t < nTrees; t++) {{
-                int n = dis.readShort();
-                offsets[t] = totalNodes;
+                int n = bb.getShort();
                 totalNodes += n;
-
-                allFeat[t] = new int[n];
-                allThresh[t] = new float[n];
-                allLeft[t] = new int[n];
-                allRight[t] = new int[n];
-                allLeaf[t] = new float[n];
-
-                for (int i = 0; i < n; i++) allFeat[t][i] = dis.readShort();
-                for (int i = 0; i < n; i++) allThresh[t][i] = dis.readFloat();
-                for (int i = 0; i < n; i++) allLeft[t][i] = dis.readShort();
-                for (int i = 0; i < n; i++) allRight[t][i] = dis.readShort();
-                for (int i = 0; i < n; i++) allLeaf[t][i] = dis.readFloat();
+                bb.position(bb.position() + n * 14); // skip: 2+4+2+2+4 bytes per node
             }}
-            dis.close();
 
-            // Widen to double arrays for GbmTreeEnsemble
-            int[] featureIndex = new int[totalNodes];
-            double[] threshold = new double[totalNodes];
-            int[] leftChild = new int[totalNodes];
-            int[] rightChild = new int[totalNodes];
-            double[] leafValue = new double[totalNodes];
+            // Allocate flat arrays
+            featureIndex = new int[totalNodes];
+            threshold = new double[totalNodes];
+            leftChild = new int[totalNodes];
+            rightChild = new int[totalNodes];
+            leafValue = new double[totalNodes];
 
+            // Second pass: read data
+            bb.position(pos);
+            int offset = 0;
             for (int t = 0; t < nTrees; t++) {{
-                int off = offsets[t];
-                int n = allFeat[t].length;
-                for (int i = 0; i < n; i++) {{
-                    featureIndex[off + i] = allFeat[t][i];
-                    threshold[off + i] = allThresh[t][i];
-                    leftChild[off + i] = allLeft[t][i];
-                    rightChild[off + i] = allRight[t][i];
-                    leafValue[off + i] = allLeaf[t][i];
-                }}
+                int n = bb.getShort();
+                offsets[t] = offset;
+                for (int i = 0; i < n; i++) featureIndex[offset + i] = bb.getShort();
+                for (int i = 0; i < n; i++) threshold[offset + i] = bb.getFloat();
+                for (int i = 0; i < n; i++) leftChild[offset + i] = bb.getShort();
+                for (int i = 0; i < n; i++) rightChild[offset + i] = bb.getShort();
+                for (int i = 0; i < n; i++) leafValue[offset + i] = bb.getFloat();
+                offset += n;
             }}
 
             return new GbmTreeEnsemble(nTrees, offsets,
                     featureIndex, threshold, leftChild, rightChild,
                     leafValue, baseScore, nClasses);
         }} catch (Exception e) {{
-            throw new RuntimeException("Failed to load {task} model", e);
+            throw new RuntimeException("Failed to decode {task} model", e);
         }}
     }}
 }}

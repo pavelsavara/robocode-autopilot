@@ -373,15 +373,6 @@ public enum Feature {
      *  0 = weakest, 1 = strongest in the rumble pool. */
     OPPONENT_STRENGTH_RATING,
 
-    /** Position advantage at our current cell from per-opponent heatmap. Unit: [-1,1].
-     *  Positive = favourable position, negative = unfavourable. 0 = neutral/unknown. */
-    OUR_POSITION_ADVANTAGE,
-
-    /** Position advantage at opponent's current cell (from their perspective). Unit: [-1,1].
-     *  High = opponent is well-positioned (harder to hit). Low = opponent is trapped.
-     *  Computed from the same heatmap but at the opponent's position. */
-    OPPONENT_POSITION_ADVANTAGE,
-
     // === 20-tick sliding window statistics (TICKS file) ===
     // Computed over the last 20 ticks of 10 base features. Mean + std per feature.
     // These are the single most important innovation for all ML tasks.

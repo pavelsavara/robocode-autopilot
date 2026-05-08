@@ -125,9 +125,24 @@ public final class Autopilot extends AdvancedRobot {
             persistence.register(moveManager);
 
             // Load saved state from previous battle
+            // Use FileInputStream via getDataFile — Robocode allows reading own data
             try {
                 File dataFile = getDataFile(DATA_FILE_NAME);
-                persistence.loadFromFile(dataFile);
+                if (dataFile.exists() && dataFile.length() > 0) {
+                    java.io.FileInputStream fis = new java.io.FileInputStream(dataFile);
+                    try {
+                        byte[] data = new byte[(int) dataFile.length()];
+                        int offset = 0;
+                        while (offset < data.length) {
+                            int read = fis.read(data, offset, data.length - offset);
+                            if (read < 0) break;
+                            offset += read;
+                        }
+                        persistence.load(data);
+                    } finally {
+                        fis.close();
+                    }
+                }
             } catch (Exception e) {
                 // Best-effort — proceed without saved data
             }
@@ -156,14 +171,19 @@ public final class Autopilot extends AdvancedRobot {
         setAdjustRadarForRobotTurn(true);
 
         while (true) {
-            // Signal model load status via body color (readable by Control API tests)
-            if (firePowerPredictor != null
-                    && firePowerPredictor.isModelLoaded()
-                    && movementPredictor.isModelLoaded()
-                    && fireTimingPredictor.isModelLoaded()) {
-                setBodyColor(java.awt.Color.GREEN);
-            } else if (firePowerPredictor != null) {
-                setBodyColor(java.awt.Color.RED);
+            // Log model load status after scans have triggered lazy loading
+            // (readable by Control API via getOutputStreamSnapshot)
+            if (whiteboard.getTick() == 10 && firePowerPredictor != null) {
+                if (firePowerPredictor.isModelLoaded()
+                        && movementPredictor.isModelLoaded()
+                        && fireTimingPredictor.isModelLoaded()) {
+                    out.println("ML_MODELS_LOADED");
+                } else {
+                    out.println("ML_MODELS_FAILED"
+                            + " fp=" + firePowerPredictor.isModelLoaded()
+                            + " mv=" + movementPredictor.isModelLoaded()
+                            + " ft=" + fireTimingPredictor.isModelLoaded());
+                }
             }
 
             // Movement — every tick
@@ -245,9 +265,6 @@ public final class Autopilot extends AdvancedRobot {
         // Features + scalar predictors
         transformer.process(whiteboard);
 
-        // Update position advantage features each tick (7k)
-        updatePositionAdvantage();
-
         // Virtual gun tracking
         gunManager.onScan(whiteboard, currentParams.firePowerBudget);
 
@@ -290,10 +307,19 @@ public final class Autopilot extends AdvancedRobot {
     @Override
     public void onBattleEnded(BattleEndedEvent e) {
         // Cross-battle persistence: save state for next battle
+        // Must use RobocodeFileOutputStream — raw FileOutputStream is blocked by sandbox
         if (persistence != null) {
             try {
-                File dataFile = getDataFile(DATA_FILE_NAME);
-                persistence.saveToFile(dataFile);
+                byte[] data = persistence.save();
+                if (data.length > 0) {
+                    robocode.RobocodeFileOutputStream rfos =
+                            new robocode.RobocodeFileOutputStream(getDataFile(DATA_FILE_NAME));
+                    try {
+                        rfos.write(data);
+                    } finally {
+                        rfos.close();
+                    }
+                }
             } catch (Exception ex) {
                 // Best-effort
             }
@@ -347,31 +373,6 @@ public final class Autopilot extends AdvancedRobot {
         int botIdHash = IdentityFeatures.fnv1a32(botId);
         double strength = OpponentProfileData.getStrengthRating(botIdHash);
         whiteboard.setFeature(Feature.OPPONENT_STRENGTH_RATING, strength);
-    }
-
-    /**
-     * Update per-tick position advantage features from the heatmap (7k).
-     */
-    private void updatePositionAdvantage() {
-        String botId = whiteboard.getOpponentBotId();
-        if (botId == null || botId.isEmpty()) {
-            return;
-        }
-        int botIdHash = IdentityFeatures.fnv1a32(botId);
-        int bfW = whiteboard.getBattlefieldWidth();
-        int bfH = whiteboard.getBattlefieldHeight();
-
-        // Our position advantage
-        int ourCellX = OpponentProfileData.toCell(whiteboard.getOurX(), bfW);
-        int ourCellY = OpponentProfileData.toCell(whiteboard.getOurY(), bfH);
-        whiteboard.setFeature(Feature.OUR_POSITION_ADVANTAGE,
-                OpponentProfileData.getPositionAdvantage(botIdHash, ourCellX, ourCellY));
-
-        // Opponent position advantage
-        int oppCellX = OpponentProfileData.toCell(whiteboard.getOpponentX(), bfW);
-        int oppCellY = OpponentProfileData.toCell(whiteboard.getOpponentY(), bfH);
-        whiteboard.setFeature(Feature.OPPONENT_POSITION_ADVANTAGE,
-                OpponentProfileData.getPositionAdvantage(botIdHash, oppCellX, oppCellY));
     }
 
     // === Factory methods ===
