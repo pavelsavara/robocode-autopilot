@@ -13,6 +13,7 @@ import cz.zamboch.autopilot.core.features.MultiWaveFeatures;
 import cz.zamboch.autopilot.core.features.PositionFeatures;
 import cz.zamboch.autopilot.core.features.SpatialFeatures;
 import cz.zamboch.autopilot.core.features.TargetingFeatures;
+import cz.zamboch.autopilot.core.features.ScanCoverageFeatures;
 import cz.zamboch.autopilot.core.features.TimingFeatures;
 import cz.zamboch.autopilot.core.features.WindowFeatures;
 import cz.zamboch.autopilot.core.gun.VcsGun;
@@ -183,23 +184,13 @@ public final class Autopilot extends AdvancedRobot {
         setAdjustRadarForRobotTurn(true);
 
         while (true) {
-            // Log model load status after scans have triggered lazy loading
-            // (readable by Control API via getOutputStreamSnapshot)
-            if (whiteboard.getTick() == 10 && firePowerPredictor != null) {
-                if (firePowerPredictor.isModelLoaded()
-                        && movementPredictor.isModelLoaded()
-                        && fireTimingPredictor.isModelLoaded()) {
-                    out.println("ML_MODELS_LOADED");
-                } else {
-                    out.println("ML_MODELS_FAILED"
-                            + " fp=" + firePowerPredictor.isModelLoaded()
-                            + " mv=" + movementPredictor.isModelLoaded()
-                            + " ft=" + fireTimingPredictor.isModelLoaded());
-                }
-            }
-
             // Movement — every tick
             MovementCommand cmd = moveManager.getActiveCommand(whiteboard, currentParams);
+            // Sanity: guard against NaN in movement output
+            if (Double.isNaN(cmd.ahead) || Double.isNaN(cmd.turnRight)) {
+                out.println("WARN NaN_MOVE tick=" + whiteboard.getTick());
+                cmd.set(0, 0);
+            }
             setAhead(cmd.ahead);
             setTurnRightRadians(cmd.turnRight);
 
@@ -207,7 +198,13 @@ public final class Autopilot extends AdvancedRobot {
             setTurnRadarRightRadians(radarStrategy.getRadarTurn(whiteboard));
 
             // Gun — aim toward selected strategy's angle
-            setTurnGunRightRadians(gunManager.getGunTurnAngle(whiteboard));
+            double gunTurn = gunManager.getGunTurnAngle(whiteboard);
+            // Sanity: guard against NaN in gun output
+            if (Double.isNaN(gunTurn)) {
+                out.println("WARN NaN_GUN tick=" + whiteboard.getTick());
+                gunTurn = 0;
+            }
+            setTurnGunRightRadians(gunTurn);
 
             // Fire when ready
             if (gunManager.shouldFire(whiteboard) && getEnergy() > currentParams.firePowerBudget) {
@@ -260,6 +257,12 @@ public final class Autopilot extends AdvancedRobot {
         double absBearing = Math.toRadians(getHeading()) + Math.toRadians(e.getBearing());
         double oppX = getX() + e.getDistance() * Math.sin(absBearing);
         double oppY = getY() + e.getDistance() * Math.cos(absBearing);
+
+        // Sanity: guard against NaN from scan event
+        if (Double.isNaN(oppX) || Double.isNaN(oppY) || Double.isNaN(e.getEnergy())) {
+            out.println("WARN NaN_SCAN tick=" + whiteboard.getTick());
+            return;
+        }
 
         whiteboard.setOpponentScan(
                 e.getName(),
@@ -436,10 +439,19 @@ public final class Autopilot extends AdvancedRobot {
         t.register(new CombatProgressFeatures());
         // 20-tick sliding window statistics (key for ML models)
         t.register(new WindowFeatures());
-        // Distilled ML predictors
+        // Scan coverage features (radar quality metrics for future model retraining)
+        t.register(new ScanCoverageFeatures());
+        // Distilled ML predictors — eagerly loaded at init, not lazily on first scan
         firePowerPredictor = new GbmFirePowerPredictor();
         movementPredictor = new GbmMovementPredictor();
         fireTimingPredictor = new GbmFireTimingPredictor();
+        firePowerPredictor.loadModel();
+        movementPredictor.loadModel();
+        fireTimingPredictor.loadModel();
+        // Log eager load results immediately
+        out.println("ML_EAGER_LOAD fp=" + firePowerPredictor.isModelLoaded()
+                + " mv=" + movementPredictor.isModelLoaded()
+                + " ft=" + fireTimingPredictor.isModelLoaded());
         t.register(firePowerPredictor);
         t.register(movementPredictor);
         t.register(fireTimingPredictor);

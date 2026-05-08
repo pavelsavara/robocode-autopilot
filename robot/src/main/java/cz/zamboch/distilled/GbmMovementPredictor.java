@@ -28,6 +28,20 @@ public final class GbmMovementPredictor implements IInGameFeatures {
     /** Set the maximum trees to evaluate per tick (for CPU throttling). */
     public void setMaxTrees(int n) { maxTrees = n; }
 
+    /** Eagerly load the model. Call once at init instead of lazy-loading on first process(). */
+    public void loadModel() {
+        if (!loaded) {
+            try {
+                model = MovementData.load();
+                featureIndex = FeatureMapping.buildIndex(MovementData.FEATURE_NAMES);
+                inputBuffer = new double[MovementData.FEATURE_NAMES.length];
+                loaded = true;
+            } catch (Exception e) {
+                loaded = true;
+            }
+        }
+    }
+
     @Override
     public Feature[] getOutputFeatures() {
         return new Feature[]{
@@ -44,14 +58,7 @@ public final class GbmMovementPredictor implements IInGameFeatures {
     @Override
     public void process(Whiteboard wb) {
         if (!loaded) {
-            try {
-                model = MovementData.load();
-                featureIndex = FeatureMapping.buildIndex(MovementData.FEATURE_NAMES);
-                inputBuffer = new double[MovementData.FEATURE_NAMES.length];
-                loaded = true;
-            } catch (Exception e) {
-                loaded = true;
-            }
+            loadModel();
         }
 
         if (model != null) {
