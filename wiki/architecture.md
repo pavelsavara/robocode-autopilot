@@ -1,8 +1,9 @@
 # Robot Architecture
 
-*Phase 1 implemented (trivial predictors, full wiring). See
-[archive/2026-05-03-robot-architecture-plan.md](../archive/2026-05-03-robot-architecture-plan.md)
-for the design document.*
+*Phase 8 (ML distillation) complete. All major subsystems wired.*
+
+See [archive/2026-05-03-robot-architecture-plan.md](../archive/2026-05-03-robot-architecture-plan.md)
+for the original design document.
 
 ## System Diagram
 
@@ -11,16 +12,21 @@ for the design document.*
 │                    Autopilot.java                         │
 │                                                          │
 │  onStatus → Whiteboard.advanceTick()                     │
+│             TickBudget.tickStart()                        │
+│             interpolateIfNoScan() [dead-reckoning]        │
 │  onScannedRobot → Whiteboard.setOpponentState()          │
-│                   Transformer.process()                  │
-│                   VirtualGunManager.onScan()             │
-│                   StrategyComputer.compute() [every 50t] │
+│                   Push TickBudget → predictors            │
+│                   Transformer.process()                   │
+│                   VirtualGunManager.onScan()              │
+│                   StrategyComputer.compute() [every 50t]  │
 │                                                          │
 │  run() loop:                                             │
+│    ML model load status logging [tick 10]                │
 │    MovementStrategyManager → setAhead/setTurn            │
 │    IRadarStrategy → setTurnRadar                         │
 │    VirtualGunManager → setTurnGun                        │
 │    shouldFire() → setFire()                              │
+│    TickBudget.tickEnd()                                  │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -37,17 +43,17 @@ back via `wb.setFeature()`. Dependency resolution via topological sort.
 Two interface types:
 
 **Scalar predictors** — implement `IInGameFeatures`, write to `Feature` enum:
-| Predictor | Output feature | Phase 1 impl |
+| Predictor | Output feature | Implementation |
 |---|---|---|
-| Fire Power | `PREDICTED_FIRE_POWER` | Random [1,3] |
-| Movement | `PREDICTED_LAT_VEL_5` | Persist current lat-vel |
-| Fire Timing | `PREDICTED_OPPONENT_FIRES_3` | Always 0.07 |
+| Fire Power | `PREDICTED_FIRE_POWER` | `GbmFirePowerPredictor` (200-tree XGBoost, R²=0.906) |
+| Movement | `PREDICTED_LAT_VEL_5` | `GbmMovementPredictor` (200-tree XGBoost, R²=0.739) |
+| Fire Timing | `PREDICTED_OPPONENT_FIRES_3` | `GbmFireTimingPredictor` (200-tree XGBoost, AUC=0.773) |
 
 **Distribution predictors** — implement `IPredictor<T>`, stored in `PredictorRegistry`:
-| Predictor | Output type | Phase 1 impl |
+| Predictor | Output type | Implementation |
 |---|---|---|
-| GF Targeting | `double[61]` GF distribution | Uniform (1/61) |
-| Fingerprint | `FingerprintResult` (classId + probs) | Class 0, uniform |
+| GF Targeting | `double[61]` GF distribution | `MlpGfTargeting` (uniform — deferred, data-starved) |
+| Fingerprint | `FingerprintResult` (classId + probs) | `GbmFingerprint` (uniform — deferred, 19MB) |
 
 ### 3. Virtual Gun Manager
 
@@ -55,29 +61,19 @@ Classic virtual-gun pattern. Multiple `IGunStrategy` implementations fire
 **virtual bullets** every tick. Tracks hit/miss over a 100-bullet sliding
 window and selects the best-performing strategy.
 
-**Phase 1 strategies:**
+**Gun strategies:**
 | Strategy | Aiming method | Confidence |
 |---|---|---|
 | `HeadOnGun` | Direct bearing to opponent | 1.0 |
 | `LinearGun` | Linear extrapolation | 0.7 |
 | `CircularGun` | Constant turn-rate extrapolation | 0.8 |
-| `RandomGfGun` | Random GF offset | 0.1 |
+| `VcsGun` | Probabilistic sampling from smoothed 61-bin GF histogram | Scales with observations |
 
 **Selection:** Best hit-rate wins. Ties broken by `getConfidence()`.
+VCS histogram segmented by distance (3 bins) × lateral direction (2 bins).
+Probabilistic firing with Gaussian kernel smoothing (σ=1.5 bins).
 
-### 4. Fire Plans
-
-`IFirePlan` interface for multi-shot sequencing:
-| Plan | Shots | Behavior |
-|---|---|---|
-| `SingleShotPlan` | 1 | Wraps any `IGunStrategy` |
-| `DoubleStackPlan` | 2 | Power 3.0 (speed 11) + power 0.1 (speed 19.7) |
-| `TripleStackPlan` | 3 | Power 3.0 + power ~1.85 + power 0.1 |
-
-Wave stacking is a niche tactic (see [ml-results.md](ml-results.md)).
-Not active in Phase 1 (`useWaveStacking=false`).
-
-### 5. Movement Strategy Manager
+### 4. Movement Strategy Manager
 
 Round-level strategy competition with per-tick wave surfing:
 | Strategy | Behavior |
@@ -85,28 +81,45 @@ Round-level strategy competition with per-tick wave surfing:
 | `OrbitalMovement` | Circle opponent at preferred distance, reverse on wall |
 | `RandomDodgeMovement` | Forward/reverse randomly every 20–40 ticks |
 | `StopAndGoMovement` | Stop when opponent fires, move between fires |
-| `WaveSurfMovement` | PathPlanner: envelope candidates → danger scoring → lowest-danger position |
+| `WaveSurfMovement` | PathPlanner: envelope candidates → VCS danger scoring → lowest-danger position |
 
 **Selection:** First N rounds: rotate through all. Then: pick lowest
 damage-taken strategy and stick with it.
+
+### 5. Wave Danger Scoring
+
+`VcsWaveDanger` uses the opponent's actual GF histogram (built from wave-break
+observations) with a Gaussian prior for early-game robustness. Urgency-weighted:
+imminent waves dominate. Optional random wave selection for anti-exploitation.
 
 ### 6. Radar Strategy
 
 `NarrowLockRadar` — oscillates tightly on opponent for near-100% scan rate.
 Overshoots by 2° to maintain lock.
 
-### 7. Strategy Layer (4-Axis Mode System)
+### 7. Strategy Layer
 
-`StrategyComputer` produces `StrategyParams` every 50 ticks:
+`EnergyRatioStrategyComputer` produces `StrategyParams` every 50 ticks:
 
 | Axis | Source | Controls |
 |---|---|---|
-| **Aggression** | energy ratio + opponent strength rating | Fire power budget, risk |
-| **Range** | distance + wall geometry | Preferred engagement distance |
-| **Counter-strategy** | Fingerprint classifier | Per-family GF priors |
-| **Phase** | round / numRounds | Explore (early) → exploit (late) |
+| **Aggression** | energy ratio | Fire power budget, risk |
+| **Range** | stable 350px | Preferred engagement distance |
+| **Kill-shot** | opponent energy | Exact-kill at low energy |
+| **Wave selection** | opponent strength | Random wave dodge vs strong opponents |
 
-Phase 1: `TrivialStrategyComputer` cycles aggression per round.
+### 8. ML Model Infrastructure
+
+| Component | Description |
+|---|---|
+| `GbmTreeEnsemble` | Flat-array tree interpreter with adaptive truncation |
+| `FeatureMapping` | CSV column name → Feature enum bridge |
+| `WindowFeatures` | O(1) incremental 20-tick mean/std for 10 base features |
+| `TickBudget` | Adaptive CPU throttle: halves trees on skipped turn, recovers 5%/tick |
+| `PersistenceManager` | Versioned binary save/load via `RobocodeFileOutputStream` |
+
+Models are embedded as Base64 strings in Java source (~440 KB each).
+No file I/O at runtime — works inside Robocode's security sandbox.
 
 ---
 
@@ -114,12 +127,11 @@ Phase 1: `TrivialStrategyComputer` cycles aggression per round.
 
 ```
 core/src/main/java/cz/zamboch/autopilot/core/
-├── Feature.java, Whiteboard.java, Transformer.java
-├── gun/           VirtualGunManager, IFirePlan, Wave, *StackPlan
+├── Feature.java, Whiteboard.java, Transformer.java, WaveRecord.java
+├── gun/           VirtualGunManager, VcsGun
 ├── movement/      MovementStrategyManager, PathPlanner, WaveSurfMovement
-│                  ICandidatePruner, KeepAllPruner
 │                  IPositionDanger, WallDistancePositionDanger
-│                  IWaveDanger, UniformWaveDanger
+│                  IWaveDanger, VcsWaveDanger
 │                  CandidatePosition
 ├── physics/       RobotPhysics, RobotState, MutableRobotState
 │                  PrecisePredictor, ReachableEnvelope, EnvelopeData
@@ -127,17 +139,24 @@ core/src/main/java/cz/zamboch/autopilot/core/
 ├── strategy/      IGunStrategy, IMovementStrategy, IRadarStrategy
 │                  StrategyComputer, StrategyParams, MovementCommand
 │                  VirtualBullet
-└── features/      EnergyFeatures, SpatialFeatures, MovementFeatures, ...
-                   EnvelopeFeatures, MultiWaveFeatures, CombatProgressFeatures
+├── features/      EnergyFeatures, SpatialFeatures, MovementFeatures, ...
+│                  EnvelopeFeatures, MultiWaveFeatures, CombatProgressFeatures
+│                  WindowFeatures (20-tick sliding mean/std)
+├── ml/            GbmTreeEnsemble, FeatureMapping, TickBudget
+└── persistence/   IPersistable, PersistenceManager
 
 robot/src/main/java/cz/zamboch/
-├── Autopilot.java              Wiring + event handling
-└── trivial/                    Phase 1 trivial implementations
-    ├── HeadOnGun, LinearGun, CircularGun, RandomGfGun
+├── Autopilot.java              Wiring + event handling + model logging
+├── distilled/                  ML model data + predictors
+│   ├── GbmFirePowerPredictor, GbmMovementPredictor, GbmFireTimingPredictor
+│   ├── FirePowerData, MovementData, FireTimingData (Base64-embedded trees)
+│   ├── MlpGfTargeting, GbmFingerprint (skeletons — deferred)
+│   └── OpponentProfileData (strength rating stub)
+└── trivial/                    Simple strategies
+    ├── HeadOnGun, LinearGun, CircularGun
     ├── OrbitalMovement, RandomDodgeMovement, StopAndGoMovement
     ├── NarrowLockRadar
-    ├── TrivialStrategyComputer
-    └── Trivial*Predictor (5 predictors — no round outcome)
+    └── EnergyRatioStrategyComputer
 
 pipeline/                       Offline CSV processing only
 ```
@@ -154,9 +173,9 @@ pipeline/                       Offline CSV processing only
 | Phase | State | Description |
 |---|---|---|
 | 1 | **Done** | Trivial predictors, full wiring, smoke test |
-| 2 | **Done** | Multi-wave + envelope + combat progress features, retrained models |
-| 3 | **Done** | Path planning: ReachableEnvelope, WaveSurfMovement, danger scorers |
-| 4 | Planned | Distill GBM/MLP models to Java, replace trivial predictors |
-| 5 | Planned | Online learning (VCS + Bayesian prior blending) |
-| 6 | Planned | Opponent profiles (strength rating + position heatmaps) |
+| 2 | **Done** | Multi-wave + envelope + combat progress features |
+| 3 | **Done** | Path planning: ReachableEnvelope, WaveSurfMovement |
+| 4 | **Done** | VCS gun + VCS wave danger + energy strategy + persistence |
+| 5 | **Done** | ML distillation: 3 GBM models (fire power, movement, fire timing) |
+| 6 | Planned | Online learning (VCS + Bayesian prior blending) |
 | 7 | Future | Adaptation detection + mid-battle strategy switching |

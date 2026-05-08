@@ -161,13 +161,30 @@
 |---|---|
 | `N_OPPONENT_WAVES_IN_FLIGHT` | Count of active opponent waves |
 | `N_OUR_WAVES_IN_FLIGHT` | Count of active our waves |
+| `NEAREST_OPPONENT_WAVE_GAP` | Min tick-gap between adjacent opponent waves |
+| `TOTAL_OPPONENT_WAVE_DAMAGE` | Sum of damage from all in-flight opponent waves |
+| `NEAREST_OUR_WAVE_GAP` | Min tick-gap between our waves |
+
+### 20-Tick Sliding Window Statistics
+Computed by `WindowFeatures` (O(1) incremental mean/std over ring buffers).
+
+| Feature | Base feature |
+|---|---|
+| `DISTANCE_WMEAN`, `DISTANCE_WSTD` | `DISTANCE` |
+| `BEARING_TO_OPPONENT_ABS_WMEAN`, `_WSTD` | `BEARING_TO_OPPONENT_ABS` |
+| `OPPONENT_DIST_TO_WALL_MIN_WMEAN`, `_WSTD` | `OPPONENT_DIST_TO_WALL_MIN` |
+| `OUR_GUN_HEAT_WMEAN`, `_WSTD` | `OUR_GUN_HEAT` |
+| `TICKS_SINCE_SCAN_WMEAN`, `_WSTD` | `TICKS_SINCE_SCAN` |
+| `OPPONENT_ENERGY_WMEAN`, `_WSTD` | `OPPONENT_ENERGY` |
+| `OUR_X_WMEAN`, `OUR_X_WSTD` | `OUR_X` |
+| `OUR_Y_WMEAN`, `OUR_Y_WSTD` | `OUR_Y` |
+| `OUR_HEADING_WMEAN`, `_WSTD` | `OUR_HEADING` |
+| `OUR_VELOCITY_WMEAN`, `_WSTD` | `OUR_VELOCITY` |
 
 ### Opponent Profile (set once per battle from offline lookup)
 | Feature | Range | Source |
 |---|---|---|
-| `OPPONENT_STRENGTH_RATING` | [0, 1] | Offline win-rate data |
-| `OUR_POSITION_ADVANTAGE` | [-1, 1] | Per-opponent position heatmap at our position |
-| `OPPONENT_POSITION_ADVANTAGE` | [-1, 1] | Same heatmap at opponent's position (is opponent trapped?) |
+| `OPPONENT_STRENGTH_RATING` | [0, 1] | Offline win-rate data (stub: returns 0.5) |
 
 ### Predictor Outputs (written by trivial/ML predictors)
 | Feature | Range | Source |
@@ -182,13 +199,6 @@
 ---
 
 ## Planned Features (Not Yet Implemented)
-
-### Multi-Wave Pressure (planned for Phase 7)
-| Feature | Formula | Importance |
-|---|---|---|
-| `NEAREST_OPPONENT_WAVE_GAP` | Min tick-gap between adjacent opponent waves | 34% GF importance |
-| `TOTAL_OPPONENT_WAVE_DAMAGE` | Sum of `damage(power)` for all in-flight waves | Danger weighting |
-| `NEAREST_OUR_WAVE_GAP` | Min tick-gap between our waves | Offensive spacing |
 
 ### Full Catalog Reference
 

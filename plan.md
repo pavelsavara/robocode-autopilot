@@ -21,8 +21,9 @@ guns, competing movement strategies, and a 4-axis strategic mode layer.
 | 7. Feature additions + retrain | **Done** | Multi-wave, envelope, combat features; R² 0.931→0.960 |
 | 7e-m. Robot improvements | **Done** | VCS gun/danger, energy strategy, persistence, interpolation |
 | 8. Path planning | **Done** | ReachableEnvelope, WaveSurfMovement, danger scorers |
-| **9. ML distillation to Java** | **Next** | GBM trees → Java, MLP weights → Java |
-| **10. Online learning** | **Future** | VCS + Bayesian prior blending |
+| 9. ML distillation to Java | **Done** | 3 GBM models (300KB each), Base64 embedded, adaptive TickBudget |
+| **10. Wire predictions + VCS persistence** | **Next** | PredictiveGun, dodge urgency, per-opponent VCS |
+| **11. Online learning** | **Future** | Bayesian blending, adaptation detection |
 
 ---
 
@@ -34,15 +35,16 @@ All numbers post-leakage-fix. See [wiki/ml-results.md](wiki/ml-results.md) for d
 |---|---|---|---|---|
 | Fire power | XGBoost (window) | R² | **0.960** | New features +0.029 lift |
 | Fire power | XGBoost (window) | MAE | **0.072** | |
+| Fire power | XGBoost (compact 200t) | R² | **0.906** | Distilled to Java |
 | Round outcome | XGBoost (early 100) | Accuracy | **0.528** | Dropped — energy ratio sufficient |
 | Round outcome | XGBoost (early 100) | AUC | **0.545** | |
-| Fingerprint (N=20) | LightGBM | Top-1 | **0.488** | Regressed from 0.516 — investigate |
-| Fingerprint (N=20) | LightGBM | Top-1 | **0.516** | Clean, 26× random baseline |
-| Fingerprint (N=20) | LightGBM | Top-1 | **0.516** | Clean, 26× random baseline |
-| GF targeting | MLP [16→128²→64→61] | ±3 bins | **0.570** | Data-starved (11k samples) |
-| Movement N=5 | GBM-window | R² | **0.735** | 20-tick windows are key |
-| Movement N=5 | LSTM | MAE | **2.08** | Beats GBM on MAE |
-| Fire timing (3-tick) | GBM-window | AUC | **0.863** | LSTM fails (0.519) |
+| Fingerprint (N=20) | LightGBM | Top-1 | **0.516** | Deferred (19MB) |
+| GF targeting | MLP [16→128²→64→61] | ±3 bins | **0.570** | Deferred (data-starved) |
+| Movement N=5 | GBM-window (compact) | R² | **0.739** | Distilled to Java |
+| Movement N=5 | LSTM | MAE | **2.08** | Not distilled |
+| Fire timing (3-tick) | GBM-window (compact) | AUC | **0.773** | Distilled to Java |
+| Fire timing (3-tick) | GBM-window (full) | AUC | **0.863** | |
+| Position advantage | Heatmap → round outcome | R² | **0.001** | Proven useless (nb16) |
 
 **Key insight across all tasks:** 20-tick sliding window features are the single
 most important innovation. Without them, no model exceeds R²=0.07 on movement
@@ -245,52 +247,74 @@ Keeps movement decisions fresh during 1-3 tick scan gaps.
 
 ## Future Milestones
 
-### Phase 8: ML Model Distillation to Java
+### Phase 8a: ML Model Distillation to Java ✅
 
-Export trained models from Python to Java code. Each model becomes a
-generated Java class with no runtime dependencies (no XGBoost library,
-no ONNX runtime — pure Java 8 if/else trees or matrix math).
+3 compact GBM models (200 trees × depth 6) trained, exported, and wired:
 
-**GBM tree export** (fire power, fire timing, movement, fingerprint):
-1. Python: `model.get_booster().get_dump(dump_format='json')` → tree JSON
-2. Script: convert each tree to nested `if (feature[i] < threshold) ... else ...`
-3. Generate `GbmFirePowerModel.java` with `predict(double[] features)` method
-4. Wire into `GbmFirePowerPredictor` skeleton from 7l
+| Model | Metric | Size | Consumer |
+|---|---|---|---|
+| Fire power | R²=0.906 | 438 KB | `GbmFirePowerPredictor` → `PREDICTED_FIRE_POWER` |
+| Movement N=5 | R²=0.739 | 451 KB | `GbmMovementPredictor` → `PREDICTED_LAT_VEL_5` |
+| Fire timing | AUC=0.773 | 415 KB | `GbmFireTimingPredictor` → `PREDICTED_OPPONENT_FIRES_3` |
 
-**MLP forward pass** (GF targeting):
-1. Python: export weight matrices as Java `double[][]` constants
-2. Generate `MlpGfTargetingModel.java` with layer-by-layer forward pass:
-   `h1 = relu(W1 × input + b1); h2 = relu(W2 × h1 + b2); out = softmax(W3 × h2 + b3)`
-3. Pre-allocate intermediate buffers (zero per-tick allocation)
-4. Wire into `MlpGfTargeting` skeleton
+**Infrastructure:**
+- `GbmTreeEnsemble` — flat-array interpreter with adaptive truncation
+- `FeatureMapping` — CSV column name → Feature enum bridge
+- `WindowFeatures` — O(1) incremental 20-tick mean/std (10 base features)
+- `TickBudget` — adaptive CPU throttle (halves on skip, recovers 5%/tick, persisted ceiling)
+- Models embedded as Base64 strings (no file I/O, Robocode sandbox compatible)
+- `RobocodeFileOutputStream` for data file writes
 
-| Model | Export format | Generated class | Size | Runtime cost |
-|---|---|---|---|---|
-| Fire power (XGBoost, 800 trees) | Nested if/else | `GbmFirePowerModel` | ~50 KB | <0.1ms |
-| Fire timing (XGBoost) | Nested if/else | `GbmFireTimingModel` | ~50 KB | <0.1ms |
-| Movement (XGBoost) | Nested if/else | `GbmMovementModel` | ~50 KB | <0.1ms |
-| Fingerprint (LightGBM, 500 trees) | Nested if/else | `GbmFingerprintModel` | ~100 KB | <0.1ms |
-| GF targeting (MLP 16→128²→64→61) | Matrix constants | `MlpGfTargetingModel` | ~124 KB | <0.5ms |
+**Deferred:** Fingerprint (19MB, marginal), MLP targeting (data-starved), LSTM.
 
-**Feature mapping**: each model needs a `featureIndex[]` mapping from
-Feature enum ordinals to the model's input vector positions. Generated
-alongside the model code from the training script's `feature_cols` list.
+### Phase 8b: Wire Predictions into Consumers
 
-**Validation**: unit test each generated model against the Python model's
-predictions on 100 sample inputs (exported as test fixtures).
+All 3 model outputs are currently dead writes. Wire them into gameplay:
 
-**GBM vs LSTM for movement (open question):**
-- GBM-window: R²=0.735, simple tree export, no recurrent state needed
-- LSTM: MAE=2.08 (12% better), requires 20-tick state buffer in Whiteboard,
-  matrix multiply per tick
-- Decision deferred to after retraining with enriched features
+#### 8b-1. PredictiveGun (movement prediction → aiming)
+
+New `IGunStrategy` that uses `PREDICTED_LAT_VEL_5` to aim where the
+opponent WILL be in 5 ticks, not where they are now. Competes in VGM
+alongside head-on, linear, circular, and VCS guns.
+
+```
+predictedOffset = PREDICTED_LAT_VEL_5 / distance × flightTime
+fireAngle = bearing + predictedOffset × lateralDirection
+```
+
+Expected: +2-5% hit rate vs circular movers where VCS hasn't converged yet.
+
+#### 8b-2. Fire power prediction → strategy layer
+
+Wire `PREDICTED_FIRE_POWER` into `EnergyRatioStrategyComputer`:
+- If predicted power > 2.5 → increase dodge urgency (wave surf harder)
+- If predicted power < 0.5 → opponent is conserving → we can be aggressive
+- Use predicted power for better kill-shot threshold estimation
+
+#### 8b-3. Fire timing → earlier dodge
+
+Wire `PREDICTED_OPPONENT_FIRES_3` into wave surf timing:
+- When P(fire) > 0.7 and no active opponent wave → pre-emptively start lateral movement
+- Gains ~2 ticks of dodge time at close range (significant at distance < 250)
+
+#### 8b-4. VCS Histogram Persistence (per-opponent)
+
+Persist gun and movement VCS histograms in the data file, keyed by
+`OPPONENT_BOT_ID_HASH`. On battle start against a known opponent,
+load their historical GF profile → warm-start both gun and dodge.
+
+**Structure:** New IPersistable section (ID=4) in data file:
+- `[nEntries:int][botIdHash:int, gunVcs:int[366], moveVcs:int[366]]...`
+- 366 = 6 segments × 61 bins per histogram
+- LRU eviction if file exceeds 100KB
 
 ### Phase 9: Online Learning & Adaptation
 
-- **VCS (Visit Count Statistics)** histogram per opponent — online GF tracking
 - **Bayesian blending**: MLP prior + VCS online via λ = K/(K+n) mixing
 - **Per-family GF priors** loaded from resource files after fingerprint identification
 - **Adaptation detector** (KS-distance) for mid-battle strategy switching
+- **GF flattening**: intentionally randomize dodge direction to make our
+  GF profile harder to learn (anti-profiling defense)
 
 ### Phase 10: Competition & Iteration
 
@@ -334,7 +358,7 @@ Scan → Whiteboard → Transformer (features + scalar predictors)
 | 04 | Simple ML (leakage audit) | Historical | Educational value only |
 | 05 | Movement prediction | **Stale outputs** | Re-run to match nb11 corrections |
 | 06 | Bot fingerprinting | Current | |
-| 07 | Round outcomes | **Historical** | Replaced by opponent profiles (nb15) |
+| 07 | Round outcomes | **Historical** | Replaced by energy ratio |
 | 08 | Wave analysis | Current | |
 | 09 | Adaptation signal | Current (negative result) | |
 | 10 | Online fingerprint | Current | |
@@ -342,6 +366,8 @@ Scan → Whiteboard → Transformer (features + scalar predictors)
 | 12 | Wave stacking | Current | |
 | 13 | Multi-wave GF | Current | |
 | 14 | GBM model analysis | Current (authoritative) | |
+| 15 | Opponent profiles | Current | Archetype clustering failed |
+| 16 | Position advantage | Current | R²=0.001 — proven useless |
 
 ---
 
@@ -359,6 +385,10 @@ Scan → Whiteboard → Transformer (features + scalar predictors)
 | 8 | Round outcome = context dimension | Feeds StrategyParams, influences all predictors |
 | 9 | Multi-wave defense over wave-stacking offense | Research shows stacking is niche |
 | 10 | Path planning with reachable envelopes | 10-tick horizon, 6-7 no-regret first moves |
+| 11 | Position advantage useless | R²=0.001 in nb16, dropped from robot |
+| 12 | Base64-embed models, no file I/O | Robocode sandbox blocks getResourceAsStream |
+| 13 | Compact 200-tree models | 500KB budget; full 800-tree too slow for tick budget |
+| 14 | Adaptive TickBudget with persisted ceiling | Converges to max sustainable tree count |
 
 ---
 

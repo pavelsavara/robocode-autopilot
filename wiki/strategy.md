@@ -188,7 +188,7 @@ From notebooks 12 and 13:
 
 **Conclusion:** Wave stacking is a niche anti-mid-tier tactic. Prioritize
 multi-wave defense (damage-weighted surfing) over offensive stacking.
-Our `DoubleStackPlan`/`TripleStackPlan` exist but are disabled by default.
+Wave stacking plans were explored and removed as dead code.
 
 ---
 

@@ -1,23 +1,22 @@
 # ML Model Results — Honest Baselines
 
-*All numbers post-leakage-fix. Last updated: 2026-05-05.*
+*All numbers post-leakage-fix. Last updated: 2026-05-08.*
 
 ## Summary Table
 
 | Task | Model | Metric | Value | Baseline | Lift | Status |
 |---|---|---|---|---|---|---|
-| Fire power | XGBoost (window) | R² | **0.960** | mean 0.572 | +68% | Clean ✅ |
-| Fire power | XGBoost (window) | MAE | **0.072** | mean 0.319 | −77% | Clean ✅ |
+| Fire power | XGBoost (800t, full) | R² | **0.960** | mean 0.572 | +68% | Clean ✅ |
+| Fire power | XGBoost (200t, compact) | R² | **0.906** | — | −5.6% vs full | **Distilled** ✅ |
+| Fire power | XGBoost (200t, compact) | MAE | **0.148** | mean 0.319 | −54% | **Distilled** ✅ |
 | Round outcome | XGBoost (early-100) | Acc | **0.528** | majority 0.510 | +2pp | Dropped ❌ |
-| Round outcome | XGBoost (early-100) | AUC | **0.545** | random 0.500 | +4pp | Dropped ❌ |
-| Fingerprint (50 classes) | LightGBM | Top-1 | **0.516** | random 0.020 | 26× | Clean ✅ |
-| GF targeting | MLP [16→128²→64→61] | ±3 bins | **0.570** | uniform 0.10 | 6× | Data-starved |
-| Movement N=5 | GBM-window | R² | **0.735** | per-tick RF 0.07 | 10× | Clean ✅ |
-| Movement N=5 | LSTM | MAE | **2.08** | GBM 2.36 | −12% | Clean ✅ |
-| Movement N=10 | GBM-window | R² | **0.363** | — | — | |
-| Movement N=20 | Both | R² | **~0.05** | — | — | Signal exhausted |
-| Fire timing (3-tick) | GBM-window | AUC | **0.863** | majority 0.49 | — | Clean ✅ |
-| Fire timing (3-tick) | LSTM | AUC | **0.519** | — | — | Near random |
+| Fingerprint (50 classes) | LightGBM | Top-1 | **0.516** | random 0.020 | 26× | Deferred (19MB) |
+| GF targeting | MLP [16→128²→64→61] | ±3 bins | **0.570** | uniform 0.10 | 6× | Deferred (data-starved) |
+| Movement N=5 | GBM-window (200t, compact) | R² | **0.739** | per-tick RF 0.07 | 10× | **Distilled** ✅ |
+| Movement N=5 | LSTM | MAE | **2.08** | GBM 2.36 | −12% | Not distilled |
+| Fire timing (3-tick) | GBM-window (200t, compact) | AUC | **0.773** | majority 0.49 | — | **Distilled** ✅ |
+| Fire timing (3-tick) | GBM-window (full) | AUC | **0.863** | — | — | Clean ✅ |
+| Position advantage | Heatmap → round outcome | R² | **0.001** | — | — | Dropped (nb16) ❌ |
 
 ## Key Insights
 
@@ -75,7 +74,24 @@ Deeper exploration with energy trend features is planned.
 pattern. High-power fires → large energy drops → high variability.
 The model learns "bots who fired high power recently will continue to."
 
-**Distillation target:** XGBoost trees → Java if/else. ~50 KB.
+**Distillation target:** XGBoost trees → Java Base64-embedded arrays. ~440 KB.
+
+### Distilled Models (Phase 8)
+
+Compact models retrained at 200 trees × depth 6 to fit Robocode's CPU budget.
+Embedded as Base64 strings in Java source (~440 KB each). Adaptive tree
+truncation via `TickBudget` handles varying CPU limits.
+
+| Model | Full metric | Compact metric | Binary size | Java source |
+|---|---|---|---|---|
+| Fire power | R²=0.960 | R²=0.906 | 333 KB | 438 KB |
+| Movement N=5 | R²=0.735 | R²=0.739 | 343 KB | 451 KB |
+| Fire timing | AUC=0.863 | AUC=0.773 | 315 KB | 415 KB |
+
+**Deferred models:**
+- Fingerprint: 19 MB (25K trees × 50 classes). VCS learns fast enough online.
+- MLP GF targeting: data-starved (11K samples, 57%).
+- LSTM movement: requires recurrent state; GBM sufficient.
 
 ### Fingerprint Classifier (Top-1=0.516)
 
@@ -134,6 +150,7 @@ See [wiki/leakage.md](leakage.md) for the full leakage taxonomy.
 ## Training Infrastructure
 
 - All models train on CPU within GitHub Actions free-tier limits (~45 min total)
-- Training scripts: `intuition/train_gbm.py`, `train_mlp_targeting.py`, `train_sequence.py`
+- Training scripts: `intuition/train_gbm.py`, `train_distill.py`, `train_mlp_targeting.py`, `train_sequence.py`
+- Export script: `intuition/export_gbm_java.py` (XGBoost → Base64 Java source)
 - Model artifacts saved to `intuition/models/` (gitignored)
 - Data: `output/csv/` — ~1944 battles, ~20 GB, loaded via `_loader.py` stratified sampling

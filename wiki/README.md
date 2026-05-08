@@ -14,6 +14,27 @@ This folder contains the project's reference knowledge base, organized by topic.
 | [pipeline.md](pipeline.md) | Pipeline & CSV schema — recording to CSV workflow |
 | [strategy.md](strategy.md) | Competitive strategy — known ideas, top-bot analysis, ML prior art |
 
+## Notebook Index
+
+| # | Notebook | Status | Key Finding |
+|---|---|---|---|
+| 01 | Data overview | Current | |
+| 02 | Correlations | Current | |
+| 03 | Clustering | Current | |
+| 04 | Simple ML (leakage audit) | Historical | Educational |
+| 05 | Movement prediction | Stale outputs | |
+| 06 | Bot fingerprinting | Current | |
+| 07 | Round outcomes | Historical | Replaced by energy ratio |
+| 08 | Wave analysis | Current | |
+| 09 | Adaptation signal | Current | Negative result |
+| 10 | Online fingerprint | Current | |
+| 11 | Scan gap density | Current | |
+| 12 | Wave stacking | Current | Niche tactic |
+| 13 | Multi-wave GF | Current | |
+| 14 | GBM model analysis | Current | Authoritative baselines |
+| 15 | Opponent profiles | Current | Archetype clustering failed |
+| 16 | Position advantage | Current | R²=0.001 — proven useless |
+
 ## Relationship to Other Docs
 
 - **[plan.md](../plan.md)** — Current project plan (actionable, forward-looking)
