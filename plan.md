@@ -22,8 +22,9 @@ guns, competing movement strategies, and a 4-axis strategic mode layer.
 | 7e-m. Robot improvements | **Done** | VCS gun/danger, energy strategy, persistence, interpolation |
 | 8. Path planning | **Done** | ReachableEnvelope, WaveSurfMovement, danger scorers |
 | 9. ML distillation to Java | **Done** | 3 GBM models (300KB each), Base64 embedded, adaptive TickBudget |
-| **10. Wire predictions + VCS persistence** | **Next** | PredictiveGun, dodge urgency, per-opponent VCS |
-| **11. Online learning** | **Future** | Bayesian blending, adaptation detection |
+| **10. Local pipeline + retrospective** | **Next** | Build→battle→record→CSV→notebook loop |
+| **11. Wire predictions + VCS persistence** | Future | PredictiveGun, dodge urgency, per-opponent VCS |
+| **12. Online learning** | Future | Bayesian blending, adaptation detection |
 
 ---
 
@@ -308,7 +309,72 @@ load their historical GF profile → warm-start both gun and dodge.
 - 366 = 6 segments × 61 bins per histogram
 - LRU eviction if file exceeds 100KB
 
-### Phase 9: Online Learning & Adaptation
+### Phase 10: Local Pipeline + Retrospective Analysis
+
+Self-contained local loop: build → battle → record → CSV → analyze.
+All output goes to `output/local/`.
+
+#### 10a. Build & deploy robot JAR
+
+1. Run `./gradlew :robot:jar` to build `cz.zamboch.Autopilot-<version>.jar`
+2. Copy the JAR from `robot/build/libs/` into `c:\robocode\robots\`
+3. Validate with `unzip -t` before copying (corrupt JARs crash Robocode scanner)
+
+**Script:** `scripts/local-pipeline.ps1` — orchestrates all steps a–d.
+
+#### 10b. Run battles with recording
+
+Use `rumble/scripts/run-battle.mjs` against each opponent in `c:\robocode\robots\`:
+
+1. Enumerate opponent JARs in `c:\robocode\robots\` (exclude our own JAR)
+2. For each opponent, run 5 battles (35 rounds each) with `--record-dir output/local/recordings/`
+3. Save battle results JSON to `output/local/results/`
+4. Use `--robocode-dir c:\robocode` and `--rounds 35`
+
+**Config:**
+- Opponents: all JARs in `c:\robocode\robots\` excluding `cz.zamboch.Autopilot*`
+- Battles per opponent: 5
+- Rounds per battle: 35
+- Field: 800×600
+- Recording: enabled (`.br` files in `output/local/recordings/`)
+
+#### 10c. Process recordings into CSVs
+
+1. Build the pipeline: `./gradlew :pipeline:installDist`
+2. Run: `pipeline/build/install/pipeline/bin/pipeline --input output/local/recordings/ --output output/local/csv/`
+3. Produces per-battle, per-perspective `ticks.csv`, `waves.csv`, `scores.csv`
+
+#### 10d. Retrospective analysis notebooks
+
+New notebooks in `intuition/retrospective/` folder, reading from `output/local/csv/`.
+Use `_loader.py` with custom root path pointing to `output/local/csv/`.
+
+| # | Notebook | Analysis |
+|---|---|---|
+| R01 | Win/loss rates | Per-opponent win rate, score %, survival rate; identify weak matchups |
+| R02 | Gun accuracy | Our hit rate vs each opponent; compare with rumble dataset hit rates |
+| R03 | Damage analysis | Damage dealt vs received per opponent; net damage trends over rounds |
+| R04 | Movement effectiveness | Opponent hit rate against us (dodge effectiveness); wave-surf quality |
+| R05 | Fire power prediction | Compare PREDICTED_FIRE_POWER vs actual opponent fire power observed |
+| R06 | Round trends | Performance metrics by round number (adaptation speed) |
+| R07 | Rumble comparison | Our local metrics vs same opponents' metrics in rumble dataset |
+
+**Notebook guidelines:**
+- Each notebook is self-contained with inline plots
+- Load data via `_loader.py::load_stratified()` with `roots=['../output/local/csv/']`
+- Filter to our robot's perspective only (`observer_bot` contains `Autopilot`)
+- Explain statistics at high-school math level per project conventions
+
+### Phase 11: Wire Predictions + VCS Persistence
+
+All 3 model outputs are currently dead writes. Wire them into gameplay:
+
+- **PredictiveGun** (movement prediction → aiming): uses `PREDICTED_LAT_VEL_5`
+- **Fire power prediction → strategy layer**: wire `PREDICTED_FIRE_POWER` into dodge urgency
+- **Fire timing → earlier dodge**: wire `PREDICTED_OPPONENT_FIRES_3` into wave surf timing
+- **VCS Histogram Persistence**: per-opponent gun+movement histograms in data file
+
+### Phase 12: Online Learning & Adaptation
 
 - **Bayesian blending**: MLP prior + VCS online via λ = K/(K+n) mixing
 - **Per-family GF priors** loaded from resource files after fingerprint identification
@@ -316,7 +382,7 @@ load their historical GF profile → warm-start both gun and dodge.
 - **GF flattening**: intentionally randomize dodge direction to make our
   GF profile harder to learn (anti-profiling defense)
 
-### Phase 10: Competition & Iteration
+### Phase 13: Competition & Iteration
 
 - Enter LiteRumble / submit to RoboRumble
 - More battle seasons for training data

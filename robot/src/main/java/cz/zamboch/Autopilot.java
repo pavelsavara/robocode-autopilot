@@ -38,10 +38,8 @@ import cz.zamboch.distilled.GbmFirePowerPredictor;
 import cz.zamboch.distilled.GbmFireTimingPredictor;
 import cz.zamboch.distilled.GbmMovementPredictor;
 import cz.zamboch.distilled.MlpGfTargeting;
-import cz.zamboch.trivial.CircularGun;
+import cz.zamboch.distilled.PredictiveGun;
 import cz.zamboch.trivial.EnergyRatioStrategyComputer;
-import cz.zamboch.trivial.HeadOnGun;
-import cz.zamboch.trivial.LinearGun;
 import cz.zamboch.trivial.NarrowLockRadar;
 import cz.zamboch.trivial.OpponentProfileData;
 import cz.zamboch.trivial.OrbitalMovement;
@@ -89,6 +87,9 @@ public final class Autopilot extends AdvancedRobot {
     /** Adaptive CPU budget: tracks tick time, throttles tree count on skipped turns. */
     private cz.zamboch.autopilot.core.ml.TickBudget tickBudget;
 
+    /** Per-opponent VCS histogram store for cross-battle warm-start. */
+    private cz.zamboch.autopilot.core.persistence.VcsHistogramStore vcsStore;
+
     /** True after one-time subsystem creation (round 0). */
     private boolean firstInit;
     /** Last round number for which onRoundStart was called. */
@@ -116,6 +117,7 @@ public final class Autopilot extends AdvancedRobot {
             radarStrategy = new NarrowLockRadar();
             strategyComputer = new EnergyRatioStrategyComputer();
             tickBudget = new cz.zamboch.autopilot.core.ml.TickBudget(200);
+            vcsStore = new cz.zamboch.autopilot.core.persistence.VcsHistogramStore();
 
             // Register distribution predictors
             whiteboard.getPredictorRegistry().register(
@@ -128,6 +130,7 @@ public final class Autopilot extends AdvancedRobot {
             persistence.register(gunManager);
             persistence.register(moveManager);
             persistence.register(tickBudget);
+            persistence.register(vcsStore);
 
             // Load saved state from previous battle
             try {
@@ -332,6 +335,12 @@ public final class Autopilot extends AdvancedRobot {
 
     @Override
     public void onBattleEnded(BattleEndedEvent e) {
+        // Save current VCS histograms for this opponent before persisting
+        if (vcsStore != null && whiteboard.getOpponentBotId() != null) {
+            int hash = IdentityFeatures.fnv1a32(whiteboard.getOpponentBotId());
+            vcsStore.saveFrom(hash, whiteboard);
+        }
+
         // Cross-battle persistence: save state for next battle
         if (persistence != null) {
             try {
@@ -402,6 +411,11 @@ public final class Autopilot extends AdvancedRobot {
         int botIdHash = IdentityFeatures.fnv1a32(botId);
         double strength = OpponentProfileData.getStrengthRating(botIdHash);
         whiteboard.setFeature(Feature.OPPONENT_STRENGTH_RATING, strength);
+
+        // Warm-start VCS histograms from cross-battle store
+        if (vcsStore != null && vcsStore.loadInto(botIdHash, whiteboard)) {
+            out.println("VCS_LOAD opponent=" + botId + " entries=" + vcsStore.size());
+        }
     }
 
     // === Factory methods ===
@@ -433,10 +447,8 @@ public final class Autopilot extends AdvancedRobot {
 
     private static VirtualGunManager createGunManager() {
         List<IGunStrategy> strategies = new ArrayList<IGunStrategy>();
-        strategies.add(new HeadOnGun());
-        strategies.add(new LinearGun());
-        strategies.add(new CircularGun());
         strategies.add(new VcsGun());
+        strategies.add(new PredictiveGun());
         return new VirtualGunManager(strategies);
     }
 
