@@ -69,6 +69,11 @@ public final class TickBudget implements IPersistable {
         return currentBudget;
     }
 
+    /** Get the ceiling (max sustainable tree count discovered so far). */
+    public int getCeiling() {
+        return ceiling;
+    }
+
     /** Last measured tick duration in microseconds. */
     public long getLastTickMicros() {
         return lastTickMicros;

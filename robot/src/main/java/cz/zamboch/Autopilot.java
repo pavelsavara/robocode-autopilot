@@ -130,7 +130,6 @@ public final class Autopilot extends AdvancedRobot {
             persistence.register(tickBudget);
 
             // Load saved state from previous battle
-            // Use FileInputStream via getDataFile — Robocode allows reading own data
             try {
                 File dataFile = getDataFile(DATA_FILE_NAME);
                 if (dataFile.exists() && dataFile.length() > 0) {
@@ -143,13 +142,16 @@ public final class Autopilot extends AdvancedRobot {
                             if (read < 0) break;
                             offset += read;
                         }
-                        persistence.load(data);
+                        String status = persistence.loadWithStatus(data);
+                        out.println("DATA_LOAD " + dataFile.length() + "b: " + status);
                     } finally {
                         fis.close();
                     }
+                } else {
+                    out.println("DATA_LOAD no file (first battle on this machine)");
                 }
             } catch (Exception e) {
-                // Best-effort — proceed without saved data
+                out.println("DATA_LOAD error: " + e.getMessage());
             }
         }
 
@@ -304,10 +306,11 @@ public final class Autopilot extends AdvancedRobot {
 
     @Override
     public void onSkippedTurn(robocode.SkippedTurnEvent e) {
-        // Inference too slow — halve the tree budget for next tick
         if (tickBudget != null) {
             tickBudget.onSkippedTurn();
-            out.println("SKIPPED_TURN budget=" + tickBudget.getBudget()
+            out.println("SKIPPED tick=" + e.getSkippedTurn()
+                    + " budget=" + tickBudget.getBudget()
+                    + " ceiling=" + tickBudget.getCeiling()
                     + " lastMicros=" + tickBudget.getLastTickMicros());
         }
     }
@@ -330,21 +333,24 @@ public final class Autopilot extends AdvancedRobot {
     @Override
     public void onBattleEnded(BattleEndedEvent e) {
         // Cross-battle persistence: save state for next battle
-        // Must use RobocodeFileOutputStream — raw FileOutputStream is blocked by sandbox
         if (persistence != null) {
             try {
                 byte[] data = persistence.save();
                 if (data.length > 0) {
+                    File dataFile = getDataFile(DATA_FILE_NAME);
                     robocode.RobocodeFileOutputStream rfos =
-                            new robocode.RobocodeFileOutputStream(getDataFile(DATA_FILE_NAME));
+                            new robocode.RobocodeFileOutputStream(dataFile);
                     try {
                         rfos.write(data);
                     } finally {
                         rfos.close();
                     }
+                    out.println("DATA_SAVE " + data.length + "b to " + dataFile.getName()
+                            + " budget=" + tickBudget.getBudget()
+                            + " ceiling=" + tickBudget.getCeiling());
                 }
             } catch (Exception ex) {
-                // Best-effort
+                out.println("DATA_SAVE error: " + ex.getMessage());
             }
         }
     }

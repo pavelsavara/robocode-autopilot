@@ -74,45 +74,89 @@ public final class PersistenceManager {
 
     /**
      * Load sections from a byte array. Sections with unknown IDs are skipped.
-     * Returns false if the data is corrupt, wrong version, or empty.
+     * Individual section failures are isolated — other sections still load.
+     *
+     * @return human-readable status string for logging
      */
-    public boolean load(byte[] data) {
+    public String loadWithStatus(byte[] data) {
         if (data == null || data.length < 12) {
-            return false;
+            return "no data (null or <12 bytes)";
         }
         try {
             DataInputStream in = new DataInputStream(new ByteArrayInputStream(data));
             int magic = in.readInt();
-            if (magic != MAGIC) return false;
+            if (magic != MAGIC) {
+                return "bad magic: 0x" + Integer.toHexString(magic)
+                        + " (expected 0x" + Integer.toHexString(MAGIC) + ")";
+            }
 
             int version = in.readInt();
-            if (version != VERSION) return false;
+            if (version != VERSION) {
+                return "version mismatch: file=" + version + " code=" + VERSION
+                        + " (schema changed, discarding old data)";
+            }
 
             int count = in.readInt();
+            int loaded = 0;
+            int skipped = 0;
+            int failed = 0;
+            StringBuilder detail = new StringBuilder();
+
             for (int i = 0; i < count; i++) {
                 int sectionId = in.readInt();
                 int length = in.readInt();
 
-                if (length < 0 || length > data.length) return false;
+                if (length < 0 || length > data.length) {
+                    detail.append(" section").append(sectionId).append("=corrupt_length");
+                    failed++;
+                    break; // can't skip — don't know where next section starts
+                }
 
                 byte[] sectionData = new byte[length];
                 int read = in.read(sectionData, 0, length);
-                if (read != length) return false;
+                if (read != length) {
+                    detail.append(" section").append(sectionId).append("=truncated");
+                    failed++;
+                    break;
+                }
 
                 // Find matching section handler
+                boolean found = false;
                 for (IPersistable section : sections) {
                     if (section.getSectionId() == sectionId) {
-                        DataInputStream sectionIn = new DataInputStream(
-                                new ByteArrayInputStream(sectionData));
-                        section.readFrom(sectionIn, length);
+                        found = true;
+                        try {
+                            DataInputStream sectionIn = new DataInputStream(
+                                    new ByteArrayInputStream(sectionData));
+                            section.readFrom(sectionIn, length);
+                            loaded++;
+                        } catch (Exception e) {
+                            detail.append(" section").append(sectionId)
+                                    .append("=error(").append(e.getMessage()).append(")");
+                            failed++;
+                        }
                         break;
                     }
                 }
+                if (!found) {
+                    skipped++;
+                }
             }
-            return true;
+
+            return "v" + version + " " + count + " sections: "
+                    + loaded + " loaded, " + skipped + " skipped, " + failed + " failed"
+                    + detail;
         } catch (IOException e) {
-            return false;
+            return "read error: " + e.getMessage();
         }
+    }
+
+    /**
+     * Load sections from a byte array. Legacy method — returns boolean only.
+     */
+    public boolean load(byte[] data) {
+        String status = loadWithStatus(data);
+        return status.contains("loaded");
     }
 
     /** Convenience: save to a file. */
