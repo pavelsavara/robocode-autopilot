@@ -1,33 +1,3 @@
-<#
-.SYNOPSIS
-    Local pipeline: build robot → battle opponents → record → CSV → analyze.
-
-.DESCRIPTION
-    Implements Phase 10 of the robocode-autopilot project plan.
-    Steps:
-      10a. Build robot JAR and deploy to c:\robocode\robots\
-      10b. Run battles against each opponent with recording
-      10c. Process recordings into CSVs via the pipeline
-      10d. (Manual) Run retrospective notebooks in intuition/retrospective/
-
-.PARAMETER RobocodeDir
-    Path to the Robocode installation. Default: c:\robocode
-
-.PARAMETER BattlesPerOpponent
-    Number of battles to run per opponent. Default: 5
-
-.PARAMETER Rounds
-    Number of rounds per battle. Default: 35
-
-.PARAMETER SkipBuild
-    Skip the Gradle build step (use existing JAR).
-
-.PARAMETER SkipBattles
-    Skip battle execution (use existing recordings).
-
-.PARAMETER SkipPipeline
-    Skip CSV pipeline processing (use existing CSVs).
-#>
 param(
     [string]$RobocodeDir = "c:\robocode",
     [int]$BattlesPerOpponent = 5,
@@ -38,12 +8,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-# If invoked from the project root, adjust
-if (-not (Test-Path (Join-Path $projectRoot "gradlew.bat"))) {
-    $projectRoot = Get-Location
-}
-
+$projectRoot = Get-Location
 $outputDir       = Join-Path $projectRoot "output\local"
 $recordingsDir   = Join-Path $outputDir "recordings"
 $resultsDir      = Join-Path $outputDir "results"
@@ -53,225 +18,150 @@ $ourBotPrefix    = "cz.zamboch.Autopilot"
 $ourBotClass     = "cz.zamboch.Autopilot"
 $runBattleScript = Join-Path $projectRoot "rumble\scripts\run-battle.mjs"
 
-function Log($msg) {
-    Write-Host "[$(Get-Date -Format 'HH:mm:ss')] $msg" -ForegroundColor Cyan
-}
+function Log($msg) { Write-Host ("[{0}] {1}" -f (Get-Date -Format 'HH:mm:ss'), $msg) -ForegroundColor Cyan }
+function LogWarn($msg) { Write-Host ("[{0}] WARN: {1}" -f (Get-Date -Format 'HH:mm:ss'), $msg) -ForegroundColor Yellow }
+function LogError($msg) { Write-Host ("[{0}] ERROR: {1}" -f (Get-Date -Format 'HH:mm:ss'), $msg) -ForegroundColor Red }
 
-function LogWarn($msg) {
-    Write-Host "[$(Get-Date -Format 'HH:mm:ss')] WARNING: $msg" -ForegroundColor Yellow
-}
-
-function LogError($msg) {
-    Write-Host "[$(Get-Date -Format 'HH:mm:ss')] ERROR: $msg" -ForegroundColor Red
-}
-
-# ────────────────────────────────────────────────────────────────────
-# 10a. Build & deploy robot JAR
-# ────────────────────────────────────────────────────────────────────
+# --- 10a. Build and deploy robot JAR ---
 if (-not $SkipBuild) {
     Log "STEP 10a: Building robot JAR..."
+    & .\gradlew.bat :robot:jar 2>&1 | ForEach-Object { Write-Host "  $_" }
+    if ($LASTEXITCODE -ne 0) { LogError "Gradle build failed"; exit 1 }
 
-    Push-Location $projectRoot
+    $jarFile = Get-ChildItem "robot\build\libs" -Filter "$ourBotPrefix-*.jar" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if (-not $jarFile) { LogError "No robot JAR found"; exit 1 }
+    Log ("  Built: " + $jarFile.Name)
+
+    # Validate JAR
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
     try {
-        & .\gradlew.bat :robot:jar 2>&1 | ForEach-Object { Write-Host "  $_" }
-        if ($LASTEXITCODE -ne 0) {
-            LogError "Gradle build failed with exit code $LASTEXITCODE"
-            exit 1
-        }
-    } finally {
-        Pop-Location
-    }
-
-    # Find the built JAR
-    $jarDir = Join-Path $projectRoot "robot\build\libs"
-    $jarFile = Get-ChildItem $jarDir -Filter "$ourBotPrefix-*.jar" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-
-    if (-not $jarFile) {
-        LogError "No robot JAR found in $jarDir"
-        exit 1
-    }
-
-    Log "  Built: $($jarFile.Name)"
-
-    # Validate JAR integrity
-    Log "  Validating JAR integrity..."
-    $validateProc = Start-Process -FilePath "java" -ArgumentList @("-jar", $jarFile.FullName, "--version") `
-        -Wait -PassThru -NoNewWindow -RedirectStandardOutput "NUL" -RedirectStandardError "NUL" 2>$null
-    # Simple check: just verify it's a valid zip
-    try {
-        Add-Type -AssemblyName System.IO.Compression.FileSystem
         $zip = [System.IO.Compression.ZipFile]::OpenRead($jarFile.FullName)
-        $entryCount = $zip.Entries.Count
-        $zip.Dispose()
-        if ($entryCount -lt 5) {
-            LogError "JAR appears corrupt (only $entryCount entries)"
-            exit 1
-        }
-        Log "  JAR valid ($entryCount entries)"
-    } catch {
-        LogError "JAR validation failed: $_"
-        exit 1
-    }
+        $entryCount = $zip.Entries.Count; $zip.Dispose()
+        if ($entryCount -lt 5) { LogError "JAR appears corrupt"; exit 1 }
+        Log ("  JAR valid, " + $entryCount + " entries")
+    } catch { LogError "JAR validation failed: $_"; exit 1 }
 
-    # Copy to Robocode robots directory
-    $destJar = Join-Path $robotsDir $jarFile.Name
-    Copy-Item $jarFile.FullName $destJar -Force
-    Log "  Deployed to: $destJar"
+    Copy-Item $jarFile.FullName (Join-Path $robotsDir $jarFile.Name) -Force
+    Log ("  Deployed to " + $robotsDir)
 } else {
-    Log "STEP 10a: Skipped (--SkipBuild)"
+    Log "STEP 10a: Skipped"
 }
 
-# ────────────────────────────────────────────────────────────────────
-# 10b. Run battles with recording
-# ────────────────────────────────────────────────────────────────────
+# --- 10b. Run battles ---
 if (-not $SkipBattles) {
     Log "STEP 10b: Running battles..."
-
-    # Create output directories
     New-Item -ItemType Directory -Force $recordingsDir | Out-Null
     New-Item -ItemType Directory -Force $resultsDir | Out-Null
 
-    # Enumerate opponent JARs
+    # Delete stale robot database to force Robocode to rescan JARs
+    $robotDb = Join-Path $robotsDir "robot.database"
+    if (Test-Path $robotDb) { Remove-Item $robotDb -Force; Log "  Deleted stale robot.database" }
+
+    # Validate JARs - skip corrupt ones
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $validJarNames = @{}
+    $corruptCount = 0
+    foreach ($j in (Get-ChildItem $robotsDir -Filter "*.jar")) {
+        try {
+            $z = [System.IO.Compression.ZipFile]::OpenRead($j.FullName)
+            $null = $z.Entries.Count; $z.Dispose()
+            $validJarNames[$j.Name] = $true
+        } catch { $corruptCount++ }
+    }
+    Log ("  Valid JARs: " + $validJarNames.Count + ", Corrupt: " + $corruptCount + " (skipped)")
+
+    # Enumerate valid opponent JARs only
     $opponentJars = Get-ChildItem $robotsDir -Filter "*.jar" |
-        Where-Object { $_.Name -notlike "$ourBotPrefix*" } |
+        Where-Object { $_.Name -notlike "$ourBotPrefix*" -and $validJarNames.ContainsKey($_.Name) } |
         Sort-Object Name
 
-    if ($opponentJars.Count -eq 0) {
-        LogError "No opponent JARs found in $robotsDir"
-        exit 1
-    }
+    if ($opponentJars.Count -eq 0) { LogError "No valid opponent JARs found"; exit 1 }
+    Log ("  " + $opponentJars.Count + " valid opponents")
 
-    Log "  Found $($opponentJars.Count) opponent(s)"
-
-    $totalBattles = $opponentJars.Count * $BattlesPerOpponent
-    $battleNum = 0
+    $opponentNum = 0
+    $skippedOpponents = 0
     $allResults = @()
 
     foreach ($jar in $opponentJars) {
-        # Extract bot class name from JAR filename
-        # JAR naming convention: <fully.qualified.ClassName>_<version>.jar
-        $baseName = $jar.BaseName  # e.g. "jk.mega.DrussGT_3.1.6"
-        # Replace the FIRST underscore with a space to get "class version" format
-        # that Robocode's selectedRobots expects (e.g. "jk.mega.DrussGT 3.1.7")
-        $firstUnderscoreIdx = $baseName.IndexOf('_')
-        if ($firstUnderscoreIdx -ge 0) {
-            $opponentClass = $baseName.Substring(0, $firstUnderscoreIdx)
-        } else {
-            $opponentClass = $baseName
-        }
+        $baseName = $jar.BaseName
+        $idx = $baseName.IndexOf('_')
+        if ($idx -ge 0) { $opponentClass = $baseName.Substring(0, $idx) }
+        else { $opponentClass = $baseName }
+
+        $opponentNum++
+        $opponentFailed = $false
 
         for ($b = 1; $b -le $BattlesPerOpponent; $b++) {
-            $battleNum++
-            $pct = [math]::Round(100 * $battleNum / $totalBattles)
-            Log "  Battle $battleNum/$totalBattles ($pct%): $ourBotClass vs $opponentClass (round $b/$BattlesPerOpponent)"
+            if ($opponentFailed) { continue }
 
-            $battleArgs = @(
-                $runBattleScript,
-                "--robocode-dir", $RobocodeDir,
-                "--bot-a", $ourBotClass,
-                "--bot-b", $opponentClass,
-                "--rounds", $Rounds.ToString(),
-                "--record-dir", $recordingsDir
-            )
+            $pct = [math]::Round(100 * (($opponentNum - 1) * $BattlesPerOpponent + $b) / ($opponentJars.Count * $BattlesPerOpponent))
+            Log ("  [{0}/{1}] {2} vs {3} ({4}/{5}) {6}%" -f $opponentNum, $opponentJars.Count, $ourBotClass, $opponentClass, $b, $BattlesPerOpponent, $pct)
 
             try {
-                $result = node @battleArgs 2>&1
+                $result = node $runBattleScript --robocode-dir $RobocodeDir --bot-a $ourBotClass --bot-b $opponentClass --rounds $Rounds --record-dir $recordingsDir 2>&1
                 $resultText = $result -join "`n"
 
-                # Try to parse as JSON
                 try {
                     $json = $resultText | ConvertFrom-Json
                     if ($json.error) {
-                        LogWarn "    Battle error: $($json.message)"
+                        if ($json.stderr -and $json.stderr -match "Can.t find") {
+                            LogWarn ("    Opponent '" + $opponentClass + "' not found - skipping")
+                            $opponentFailed = $true
+                            $skippedOpponents++
+                        } else {
+                            LogWarn ("    Battle error: " + $json.message)
+                        }
                     } else {
                         $scoreA = $json.bot_a.score_pct
                         $scoreB = $json.bot_b.score_pct
-                        Log "    Result: $($json.bot_a.name) $scoreA% vs $($json.bot_b.name) $scoreB% (${($json.elapsed_ms / 1000)}s)"
-                    }
+                        $elapsed = [math]::Round($json.elapsed_ms / 1000, 1)
+                        Log ("    {0} {1}% vs {2} {3}% - {4}s" -f $json.bot_a.name, $scoreA, $json.bot_b.name, $scoreB, $elapsed)
 
-                    # Save result JSON
-                    $resultFile = Join-Path $resultsDir "battle_${battleNum}.json"
-                    $resultText | Set-Content $resultFile -Encoding utf8
-                    $allResults += $json
+                        $resultFile = Join-Path $resultsDir ("battle_{0}_{1}.json" -f $opponentNum, $b)
+                        $resultText | Set-Content $resultFile -Encoding utf8
+                        $allResults += $json
+                    }
                 } catch {
-                    LogWarn "    Could not parse result: $($resultText.Substring(0, [Math]::Min(200, $resultText.Length)))"
+                    LogWarn ("    Could not parse result")
                 }
             } catch {
-                LogWarn "    Battle failed: $_"
+                LogWarn ("    Battle exception: " + $_)
             }
         }
     }
 
-    # Save summary
     $summaryFile = Join-Path $resultsDir "summary.json"
     $allResults | ConvertTo-Json -Depth 10 | Set-Content $summaryFile -Encoding utf8
-    Log "  Saved $($allResults.Count) battle results to $summaryFile"
-
-    # Count recordings
+    $successCount = ($allResults | Where-Object { -not $_.error }).Count
+    Log ("  Done: " + $successCount + " successful battles, " + $skippedOpponents + " opponents skipped")
     $brFiles = Get-ChildItem $recordingsDir -Filter "*.br" -ErrorAction SilentlyContinue
-    Log "  Generated $($brFiles.Count) recording files"
+    Log ("  Recordings: " + $brFiles.Count + " .br files")
 } else {
-    Log "STEP 10b: Skipped (--SkipBattles)"
+    Log "STEP 10b: Skipped"
 }
 
-# ────────────────────────────────────────────────────────────────────
-# 10c. Process recordings into CSVs
-# ────────────────────────────────────────────────────────────────────
+# --- 10c. Process recordings into CSVs ---
 if (-not $SkipPipeline) {
     Log "STEP 10c: Processing recordings into CSVs..."
+    & .\gradlew.bat :pipeline:installDist 2>&1 | ForEach-Object { Write-Host "  $_" }
+    if ($LASTEXITCODE -ne 0) { LogError "Pipeline build failed"; exit 1 }
 
-    # Build pipeline
-    Push-Location $projectRoot
-    try {
-        & .\gradlew.bat :pipeline:installDist 2>&1 | ForEach-Object { Write-Host "  $_" }
-        if ($LASTEXITCODE -ne 0) {
-            LogError "Pipeline build failed with exit code $LASTEXITCODE"
-            exit 1
-        }
-    } finally {
-        Pop-Location
-    }
-
-    # Check for recordings
     $brFiles = Get-ChildItem $recordingsDir -Filter "*.br" -ErrorAction SilentlyContinue
-    if (-not $brFiles -or $brFiles.Count -eq 0) {
-        LogError "No .br recording files found in $recordingsDir"
-        exit 1
-    }
+    if (-not $brFiles -or $brFiles.Count -eq 0) { LogError "No .br files found"; exit 1 }
+    Log ("  Processing " + $brFiles.Count + " recordings...")
 
-    Log "  Processing $($brFiles.Count) recordings..."
-
-    # Determine pipeline executable
     $pipelineBin = Join-Path $projectRoot "pipeline\build\install\pipeline\bin\pipeline.bat"
-    if (-not (Test-Path $pipelineBin)) {
-        $pipelineBin = Join-Path $projectRoot "pipeline\build\install\pipeline\bin\pipeline"
-    }
-
     New-Item -ItemType Directory -Force $csvDir | Out-Null
-
     & $pipelineBin --input $recordingsDir --output $csvDir 2>&1 | ForEach-Object { Write-Host "  $_" }
-    if ($LASTEXITCODE -eq 2) {
-        LogError "Pipeline processing failed - zero recordings processed successfully"
-        exit 1
-    } elseif ($LASTEXITCODE -ne 0) {
-        LogWarn "Pipeline finished with non-zero exit code $LASTEXITCODE (some recordings may have failed)"
-    }
 
-    # Count output
     $csvFiles = Get-ChildItem $csvDir -Filter "*.csv" -Recurse -ErrorAction SilentlyContinue
-    Log "  Generated $($csvFiles.Count) CSV files"
+    Log ("  Generated " + $csvFiles.Count + " CSV files")
 } else {
-    Log "STEP 10c: Skipped (--SkipPipeline)"
+    Log "STEP 10c: Skipped"
 }
 
-# ────────────────────────────────────────────────────────────────────
-# Done
-# ────────────────────────────────────────────────────────────────────
-Log "Local pipeline complete!"
-Log "  Recordings: $recordingsDir"
-Log "  Results:    $resultsDir"
-Log "  CSVs:       $csvDir"
-Log ""
-Log "Next: run retrospective notebooks in intuition/retrospective/"
-Log "  cd intuition"
-Log "  .venv\Scripts\python.exe -m jupyter nbconvert --to notebook --execute retrospective\R01_win_loss_rates.ipynb --inplace --ExecutePreprocessor.timeout=600 --allow-errors"
+# --- Done ---
+Log 'Pipeline complete!'
+Log ('  Recordings: ' + $recordingsDir)
+Log ('  Results:    ' + $resultsDir)
+Log ('  CSVs:       ' + $csvDir)
