@@ -58,12 +58,21 @@ public final class GbmTreeEnsemble {
     }
 
     /**
-     * Predict a single value (regression or binary classification raw score).
-     * For binary classification, apply sigmoid externally.
+     * Predict using ALL trees (full accuracy).
      */
     public double predictRaw(double[] features) {
+        return predictRaw(features, nTrees);
+    }
+
+    /**
+     * Predict using only the first {@code maxTrees} trees.
+     * Truncating to fewer trees is the standard way to trade accuracy for speed
+     * in boosted ensembles — early trees capture most variance.
+     */
+    public double predictRaw(double[] features, int maxTrees) {
+        int limit = Math.min(maxTrees, nTrees);
         double sum = baseScore;
-        for (int t = 0; t < nTrees; t++) {
+        for (int t = 0; t < limit; t++) {
             sum += evaluateTree(t, features);
         }
         return sum;

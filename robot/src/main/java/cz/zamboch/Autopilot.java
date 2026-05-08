@@ -81,10 +81,13 @@ public final class Autopilot extends AdvancedRobot {
     private StrategyParams currentParams;
     private PersistenceManager persistence;
 
-    // Keep references to predictors for model-load diagnostics
+    // Keep references to predictors for model-load diagnostics and throttling
     private GbmFirePowerPredictor firePowerPredictor;
     private GbmMovementPredictor movementPredictor;
     private GbmFireTimingPredictor fireTimingPredictor;
+
+    /** Adaptive CPU budget: tracks tick time, throttles tree count on skipped turns. */
+    private cz.zamboch.autopilot.core.ml.TickBudget tickBudget;
 
     /** True after one-time subsystem creation (round 0). */
     private boolean firstInit;
@@ -112,6 +115,7 @@ public final class Autopilot extends AdvancedRobot {
             moveManager = createMoveManager();
             radarStrategy = new NarrowLockRadar();
             strategyComputer = new EnergyRatioStrategyComputer();
+            tickBudget = new cz.zamboch.autopilot.core.ml.TickBudget(200);
 
             // Register distribution predictors
             whiteboard.getPredictorRegistry().register(
@@ -123,6 +127,7 @@ public final class Autopilot extends AdvancedRobot {
             persistence = new PersistenceManager();
             persistence.register(gunManager);
             persistence.register(moveManager);
+            persistence.register(tickBudget);
 
             // Load saved state from previous battle
             // Use FileInputStream via getDataFile — Robocode allows reading own data
@@ -217,12 +222,14 @@ public final class Autopilot extends AdvancedRobot {
             }
 
             execute();
+            tickBudget.tickEnd();
         }
     }
 
     @Override
     public void onStatus(StatusEvent e) {
         ensureInitialized();
+        tickBudget.tickStart();
         whiteboard.advanceTick();
         whiteboard.setTick(e.getStatus().getTime());
         whiteboard.setOurState(
@@ -262,6 +269,12 @@ public final class Autopilot extends AdvancedRobot {
             loadOpponentProfile();
         }
 
+        // Push adaptive tree budget to predictors before inference
+        int budget = tickBudget.getBudget();
+        firePowerPredictor.setMaxTrees(budget);
+        movementPredictor.setMaxTrees(budget);
+        fireTimingPredictor.setMaxTrees(budget);
+
         // Features + scalar predictors
         transformer.process(whiteboard);
 
@@ -287,6 +300,16 @@ public final class Autopilot extends AdvancedRobot {
         whiteboard.incrementOpponentBulletHitCount();
         double power = e.getBullet().getPower();
         whiteboard.addDamageReceived(Rules.getBulletDamage(power));
+    }
+
+    @Override
+    public void onSkippedTurn(robocode.SkippedTurnEvent e) {
+        // Inference too slow — halve the tree budget for next tick
+        if (tickBudget != null) {
+            tickBudget.onSkippedTurn();
+            out.println("SKIPPED_TURN budget=" + tickBudget.getBudget()
+                    + " lastMicros=" + tickBudget.getLastTickMicros());
+        }
     }
 
     @Override

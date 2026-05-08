@@ -19,8 +19,14 @@ public final class GbmFirePowerPredictor implements IInGameFeatures {
     private double[] inputBuffer;
     private boolean loaded;
 
+    /** Tree budget — set externally by Autopilot's TickBudget. */
+    private int maxTrees = 200;
+
     /** Whether the binary model was successfully loaded (vs heuristic fallback). */
     public boolean isModelLoaded() { return model != null; }
+
+    /** Set the maximum trees to evaluate per tick (for CPU throttling). */
+    public void setMaxTrees(int n) { maxTrees = n; }
 
     @Override
     public Feature[] getOutputFeatures() {
@@ -51,7 +57,7 @@ public final class GbmFirePowerPredictor implements IInGameFeatures {
 
         if (model != null) {
             FeatureMapping.extract(wb, featureIndex, inputBuffer);
-            double pred = model.predictRaw(inputBuffer);
+            double pred = model.predictRaw(inputBuffer, maxTrees);
             pred = Math.max(0.1, Math.min(3.0, pred));
             wb.setFeature(Feature.PREDICTED_FIRE_POWER, pred);
             wb.setFeature(Feature.PREDICTED_FIRE_POWER_CONFIDENCE, 0.9);
