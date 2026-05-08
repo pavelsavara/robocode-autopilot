@@ -19,15 +19,19 @@ public final class MovementStrategyManager implements IPersistable {
 
     public static final int SECTION_ID = 2;
 
+    private static final double EMA_ALPHA = 0.3;
+
     private final List<IMovementStrategy> strategies;
-    private final double[] damagePerRound;
+    private final double[] avgDamage;
+    private final boolean[] initialized;
     private final MovementCommand sharedCommand = new MovementCommand();
     private int activeIndex;
     private int roundsPlayed;
 
     public MovementStrategyManager(List<IMovementStrategy> strategies) {
         this.strategies = strategies;
-        this.damagePerRound = new double[strategies.size()];
+        this.avgDamage = new double[strategies.size()];
+        this.initialized = new boolean[strategies.size()];
         this.activeIndex = 0;
     }
 
@@ -42,20 +46,26 @@ public final class MovementStrategyManager implements IPersistable {
      * and selects the best one for the next round.
      */
     public void onRoundEnd(Whiteboard wb) {
-        // Record damage for the active strategy this round
-        damagePerRound[activeIndex] = wb.getDamageReceivedThisRound();
+        // Update EMA for the active strategy
+        double dmg = wb.getDamageReceivedThisRound();
+        if (!initialized[activeIndex]) {
+            avgDamage[activeIndex] = dmg;
+            initialized[activeIndex] = true;
+        } else {
+            avgDamage[activeIndex] = EMA_ALPHA * dmg + (1.0 - EMA_ALPHA) * avgDamage[activeIndex];
+        }
         roundsPlayed++;
 
         if (roundsPlayed <= strategies.size()) {
             // First pass: rotate through all strategies
             activeIndex = roundsPlayed % strategies.size();
         } else {
-            // After trying all, pick the one with lowest damage
+            // After trying all, pick the one with lowest average damage
             double bestDamage = Double.MAX_VALUE;
             int bestIdx = 0;
             for (int i = 0; i < strategies.size(); i++) {
-                if (damagePerRound[i] < bestDamage) {
-                    bestDamage = damagePerRound[i];
+                if (initialized[i] && avgDamage[i] < bestDamage) {
+                    bestDamage = avgDamage[i];
                     bestIdx = i;
                 }
             }
@@ -80,7 +90,8 @@ public final class MovementStrategyManager implements IPersistable {
         out.writeInt(activeIndex);
         out.writeInt(roundsPlayed);
         for (int i = 0; i < n; i++) {
-            out.writeDouble(damagePerRound[i]);
+            out.writeDouble(avgDamage[i]);
+            out.writeBoolean(initialized[i]);
         }
     }
 
@@ -91,10 +102,12 @@ public final class MovementStrategyManager implements IPersistable {
         roundsPlayed = in.readInt();
         int count = Math.min(n, strategies.size());
         for (int i = 0; i < count; i++) {
-            damagePerRound[i] = in.readDouble();
+            avgDamage[i] = in.readDouble();
+            initialized[i] = in.readBoolean();
         }
         for (int i = count; i < n; i++) {
             in.readDouble(); // skip extra
+            in.readBoolean();
         }
     }
 }

@@ -16,6 +16,9 @@ import cz.zamboch.autopilot.core.features.TargetingFeatures;
 import cz.zamboch.autopilot.core.features.ScanCoverageFeatures;
 import cz.zamboch.autopilot.core.features.TimingFeatures;
 import cz.zamboch.autopilot.core.features.WindowFeatures;
+import cz.zamboch.autopilot.core.gun.CircularGun;
+import cz.zamboch.autopilot.core.gun.HeadOnGun;
+import cz.zamboch.autopilot.core.gun.LinearGun;
 import cz.zamboch.autopilot.core.gun.VcsGun;
 import cz.zamboch.autopilot.core.gun.VirtualGunManager;
 import cz.zamboch.autopilot.core.movement.MovementStrategyManager;
@@ -461,6 +464,9 @@ public final class Autopilot extends AdvancedRobot {
 
     private static VirtualGunManager createGunManager() {
         List<IGunStrategy> strategies = new ArrayList<IGunStrategy>();
+        strategies.add(new HeadOnGun());
+        strategies.add(new LinearGun());
+        strategies.add(new CircularGun());
         strategies.add(new VcsGun());
         strategies.add(new PredictiveGun());
         return new VirtualGunManager(strategies);
@@ -468,13 +474,13 @@ public final class Autopilot extends AdvancedRobot {
 
     private MovementStrategyManager createMoveManager() {
         List<IMovementStrategy> strategies = new ArrayList<IMovementStrategy>();
-        strategies.add(new OrbitalMovement());
-        // Wave-surf: uses PathPlanner with VCS-based wave danger
+        // WaveSurf FIRST — it's the primary strategy; Orbital is a fallback only
         PathPlanner planner = new PathPlanner(
                 new WallDistancePositionDanger(),
                 new VcsWaveDanger(),
                 (int) getBattleFieldWidth(), (int) getBattleFieldHeight());
         strategies.add(new WaveSurfMovement(planner));
+        strategies.add(new OrbitalMovement());
         return new MovementStrategyManager(strategies);
     }
 }

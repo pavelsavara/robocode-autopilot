@@ -22,8 +22,9 @@ public final class VcsWaveDanger implements IWaveDanger {
 
     /** Gaussian prior std — used until VCS has enough observations. */
     private static final double PRIOR_STD = 0.4;
-    /** Prior equivalent to this many observations at GF=0. */
-    private static final double PRIOR_WEIGHT = 10.0;
+    /** Prior equivalent to this many observations at GF=0.
+     *  Lower value = VCS data dominates sooner (faster convergence). */
+    private static final double PRIOR_WEIGHT = 3.0;
 
     private final Random rng = new Random();
 
