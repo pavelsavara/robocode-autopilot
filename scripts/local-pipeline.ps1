@@ -2,6 +2,7 @@ param(
     [string]$RobocodeDir = "c:\robocode",
     [int]$BattlesPerOpponent = 5,
     [int]$Rounds = 35,
+    [int]$OpponentLimit = 0,
     [switch]$SkipBuild,
     [switch]$SkipBattles,
     [switch]$SkipPipeline,
@@ -77,6 +78,10 @@ if (-not $SkipBattles) {
         Sort-Object Name
 
     if ($opponentJars.Count -eq 0) { LogError "No valid opponent JARs found"; exit 1 }
+    if ($OpponentLimit -gt 0 -and $opponentJars.Count -gt $OpponentLimit) {
+        $opponentJars = $opponentJars | Select-Object -First $OpponentLimit
+        Log ("  Limited to " + $opponentJars.Count + " opponents (of available)")
+    }
     Log ("  " + $opponentJars.Count + " valid opponents")
 
     $opponentNum = 0

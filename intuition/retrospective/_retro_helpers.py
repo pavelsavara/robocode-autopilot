@@ -14,6 +14,7 @@ if str(_intuition_dir) not in sys.path:
     sys.path.insert(0, str(_intuition_dir))
 
 from _loader import build_robot_index, load_stratified, numeric_feature_cols, BATTLE_CONSTANT_COLS
+import pandas as pd
 
 # Default root for local pipeline output
 LOCAL_CSV_ROOT = _intuition_dir.parent / 'output' / 'local' / 'csv'
@@ -123,3 +124,32 @@ def add_opponent_names(df, csv_root=None):
     df = df.copy()
     df['opponent_name'] = df['battle_id'].map(opp_map).fillna('Unknown')
     return df
+
+
+def load_local_internal(row_frac: float = 1.0, csv_root=None, **kwargs):
+    """Load internal.csv from local pipeline with battle_id & opponent_name.
+
+    internal.csv only exists for Autopilot perspectives, so autopilot_only
+    is forced True. We manually walk the directory to attach battle_id.
+    """
+    import glob, os
+    root = Path(csv_root) if csv_root else LOCAL_CSV_ROOT
+    frames = []
+    opp_map = get_opponent_map(csv_root)
+    for f in glob.glob(str(root / '*' / 'Autopilot*' / 'internal.csv')):
+        try:
+            df = pd.read_csv(f)
+        except Exception:
+            continue
+        if len(df) == 0:
+            continue
+        if row_frac < 1.0:
+            df = df.sample(frac=row_frac, random_state=42)
+        parts = Path(f).parts
+        battle_id = parts[-3]  # <csv_root>/<battle_id>/<Autopilot ...>/internal.csv
+        df['battle_id'] = battle_id
+        df['opponent_name'] = opp_map.get(battle_id, 'Unknown')
+        frames.append(df)
+    if not frames:
+        return pd.DataFrame()
+    return pd.concat(frames, ignore_index=True)
