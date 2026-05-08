@@ -25,6 +25,7 @@ import cz.zamboch.autopilot.pipeline.features.TimingOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.WaveOfflineFeatures;
 import cz.zamboch.autopilot.pipeline.features.WaveTrackingOfflineFeatures;
 import robocode.BattleRules;
+import robocode.control.snapshot.IRobotSnapshot;
 import robocode.control.snapshot.ITurnSnapshot;
 
 import java.io.File;
@@ -129,6 +130,10 @@ public final class Main {
         csvA.writeHeaders();
         csvB.writeHeaders();
 
+        // Extract robot console output into internal.csv + debug.log
+        final InternalCsvExtractor intA = new InternalCsvExtractor(outputDir, battleId, robotNames[0]);
+        final InternalCsvExtractor intB = new InternalCsvExtractor(outputDir, battleId, robotNames[1]);
+
         // Second pass: process all turns
         final int[] prevRoundHolder = {-1};
         final long[] lastTickHolder = {-1};
@@ -145,6 +150,13 @@ public final class Main {
                     player.processTurn(roundIndex, turn, bfW, bfH, cooling, numRounds);
                     prevRoundHolder[0] = roundIndex;
                     lastTickHolder[0] = turn.getTurn();
+
+                    // Extract robot output stream (internal.csv + debug.log)
+                    IRobotSnapshot[] robots = turn.getRobots();
+                    if (robots.length >= 2) {
+                        intA.processTurn(robots[0]);
+                        intB.processTurn(robots[1]);
+                    }
 
                     tA.process(wbA);
                     tB.process(wbB);
@@ -176,6 +188,8 @@ public final class Main {
         } finally {
             csvA.close();
             csvB.close();
+            intA.close();
+            intB.close();
         }
     }
 

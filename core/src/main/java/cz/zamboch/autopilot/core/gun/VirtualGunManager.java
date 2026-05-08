@@ -180,6 +180,25 @@ public final class VirtualGunManager implements IPersistable {
         }
     }
 
+    // === Debug accessors ===
+
+    /** Index of the currently selected gun strategy. */
+    public int getSelectedIndex() { return selectedStrategyIndex; }
+
+    /** Name of the currently selected gun strategy. */
+    public String getSelectedName() {
+        return strategies.get(selectedStrategyIndex).getName();
+    }
+
+    /** Hit rate of a specific strategy. */
+    public double getHitRateOf(int i) { return getHitRate(i); }
+
+    /** Number of registered strategies. */
+    public int getStrategyCount() { return strategies.size(); }
+
+    /** Name of strategy at index i. */
+    public String getStrategyName(int i) { return strategies.get(i).getName(); }
+
     // === IPersistable (cross-battle persistence) ===
 
     @Override

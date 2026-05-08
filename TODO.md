@@ -3,3 +3,4 @@
 - offline: explore bullet shielding
 - offline: OUR_POSITION_ADVANTAGE, OPPONENT_POSITION_ADVANTAGE should split into starting position, and average
 - cover the components with unit tests
+- disable `emitTickLog` for production

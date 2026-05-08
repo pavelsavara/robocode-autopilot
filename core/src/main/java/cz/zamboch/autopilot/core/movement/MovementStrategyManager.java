@@ -78,6 +78,30 @@ public final class MovementStrategyManager implements IPersistable {
         // Active strategy selection and damage stats persist
     }
 
+    // === Debug accessors ===
+
+    /** Index of the currently active movement strategy. */
+    public int getActiveIndex() { return activeIndex; }
+
+    /** Name of the currently active movement strategy. */
+    public String getActiveName() {
+        return strategies.get(activeIndex).getName();
+    }
+
+    /** Rounds of data collected so far. */
+    public int getRoundsPlayed() { return roundsPlayed; }
+
+    /** EMA average damage for strategy at index i (NaN if not initialized). */
+    public double getAvgDamage(int i) {
+        return initialized[i] ? avgDamage[i] : Double.NaN;
+    }
+
+    /** Number of registered strategies. */
+    public int getStrategyCount() { return strategies.size(); }
+
+    /** Name of strategy at index i. */
+    public String getStrategyName(int i) { return strategies.get(i).getName(); }
+
     // === IPersistable (cross-battle persistence) ===
 
     @Override

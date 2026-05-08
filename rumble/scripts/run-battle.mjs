@@ -131,6 +131,7 @@ function runSingleBattle(botA, botB) {
     try { unlinkSync(resultsFile); } catch { /* ignore */ }
 
     const result = parseResults(raw, botA, botB, elapsed, javaStderr);
+    result.battle_id = battleId;
     if (result.error && javaStdout) {
         result.stdout = javaStdout.slice(0, 1000);
     }

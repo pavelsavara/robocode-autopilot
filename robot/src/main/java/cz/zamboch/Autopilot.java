@@ -99,6 +99,11 @@ public final class Autopilot extends AdvancedRobot {
     /** True after the first scan (opponent profile lookup done). */
     private boolean opponentProfileLoaded;
 
+    /** Write a debug message. Captured in .br via out.println(), extracted by pipeline to debug.log. */
+    private void log(String msg) {
+        out.println(msg);
+    }
+
     /**
      * Initialize subsystems (once) and per-round state (every round).
      * Safe to call multiple times within the same round.
@@ -146,7 +151,7 @@ public final class Autopilot extends AdvancedRobot {
                             offset += read;
                         }
                         String status = persistence.loadWithStatus(data);
-                        out.println("DATA_LOAD " + dataFile.length() + "b: " + status);
+                        log("DATA_LOAD " + dataFile.length() + "b: " + status);
                     } finally {
                         fis.close();
                     }
@@ -155,13 +160,13 @@ public final class Autopilot extends AdvancedRobot {
                     byte[] embedded = DefaultDataFile.decode();
                     if (embedded.length > 0) {
                         String status = persistence.loadWithStatus(embedded);
-                        out.println("DATA_LOAD embedded " + embedded.length + "b: " + status);
+                        log("DATA_LOAD embedded " + embedded.length + "b: " + status);
                     } else {
-                        out.println("DATA_LOAD no file, no embedded fallback");
+                        log("DATA_LOAD no file, no embedded fallback");
                     }
                 }
             } catch (Exception e) {
-                out.println("DATA_LOAD error: " + e.getMessage());
+                log("DATA_LOAD error: " + e.getMessage());
             }
         }
 
@@ -188,13 +193,21 @@ public final class Autopilot extends AdvancedRobot {
         setAdjustRadarForRobotTurn(true);
 
         while (true) {
-            // Movement — every tick
-            MovementCommand cmd = moveManager.getActiveCommand(whiteboard, currentParams);
+            // Movement — every tick (skip before first scan to avoid NaN)
+            MovementCommand cmd;
+            if (whiteboard.getLastScanTick() < 0) {
+                cmd = new MovementCommand();
+                cmd.set(0, 0);
+            } else {
+                cmd = moveManager.getActiveCommand(whiteboard, currentParams);
+            }
             // Sanity: guard against NaN in movement output
             if (Double.isNaN(cmd.ahead) || Double.isNaN(cmd.turnRight)) {
-                out.println("WARN NaN_MOVE tick=" + whiteboard.getTick());
+                log("WARN NaN_MOVE tick=" + whiteboard.getTick());
                 cmd.set(0, 0);
             }
+            lastMoveAhead = cmd.ahead;
+            lastMoveTurn = cmd.turnRight;
             setAhead(cmd.ahead);
             setTurnRightRadians(cmd.turnRight);
 
@@ -205,7 +218,7 @@ public final class Autopilot extends AdvancedRobot {
             double gunTurn = gunManager.getGunTurnAngle(whiteboard);
             // Sanity: guard against NaN in gun output
             if (Double.isNaN(gunTurn)) {
-                out.println("WARN NaN_GUN tick=" + whiteboard.getTick());
+                log("WARN NaN_GUN tick=" + whiteboard.getTick());
                 gunTurn = 0;
             }
             setTurnGunRightRadians(gunTurn);
@@ -228,6 +241,9 @@ public final class Autopilot extends AdvancedRobot {
                         getX(), getY(), speed, firePower,
                         whiteboard.getTick(), dist, fireBearing));
             }
+
+            // Emit structured tick log for internal.csv extraction
+            emitTickLog();
 
             execute();
             tickBudget.tickEnd();
@@ -264,7 +280,7 @@ public final class Autopilot extends AdvancedRobot {
 
         // Sanity: guard against NaN from scan event
         if (Double.isNaN(oppX) || Double.isNaN(oppY) || Double.isNaN(e.getEnergy())) {
-            out.println("WARN NaN_SCAN tick=" + whiteboard.getTick());
+            log("WARN NaN_SCAN tick=" + whiteboard.getTick());
             return;
         }
 
@@ -318,7 +334,7 @@ public final class Autopilot extends AdvancedRobot {
     public void onSkippedTurn(robocode.SkippedTurnEvent e) {
         if (tickBudget != null) {
             tickBudget.onSkippedTurn();
-            out.println("SKIPPED tick=" + e.getSkippedTurn()
+            log("SKIPPED tick=" + e.getSkippedTurn()
                     + " budget=" + tickBudget.getBudget()
                     + " ceiling=" + tickBudget.getCeiling()
                     + " lastMicros=" + tickBudget.getLastTickMicros());
@@ -361,12 +377,12 @@ public final class Autopilot extends AdvancedRobot {
                     } finally {
                         rfos.close();
                     }
-                    out.println("DATA_SAVE " + data.length + "b to " + dataFile.getName()
+                    log("DATA_SAVE " + data.length + "b to " + dataFile.getName()
                             + " budget=" + tickBudget.getBudget()
                             + " ceiling=" + tickBudget.getCeiling());
                 }
             } catch (Exception ex) {
-                out.println("DATA_SAVE error: " + ex.getMessage());
+                log("DATA_SAVE error: " + ex.getMessage());
             }
         }
     }
@@ -416,16 +432,66 @@ public final class Autopilot extends AdvancedRobot {
             return;
         }
         int botIdHash = IdentityFeatures.fnv1a32(botId);
-        double strength = OpponentProfileData.getStrengthRating(botIdHash);
-        whiteboard.setFeature(Feature.OPPONENT_STRENGTH_RATING, strength);
+        try {
+            double strength = OpponentProfileData.getStrengthRating(botIdHash);
+            whiteboard.setFeature(Feature.OPPONENT_STRENGTH_RATING, strength);
+        } catch (Exception e) {
+            log("WARN OPPONENT_PROFILE decode failed: " + e.getMessage());
+        }
 
         // Warm-start VCS histograms from cross-battle store
         if (vcsStore != null && vcsStore.loadInto(botIdHash, whiteboard)) {
-            out.println("VCS_LOAD opponent=" + botId + " entries=" + vcsStore.size());
+            log("VCS_LOAD opponent=" + botId + " entries=" + vcsStore.size());
         }
     }
 
     // === Factory methods ===
+
+    // === Structured tick logging for internal.csv ===
+
+    /**
+     * Emit one CSV row per scan tick via {@code out.println("TICK,...")}.
+     * Captured in .br recording, extracted by pipeline to internal.csv.
+     * Header is generated by the pipeline from {@link Feature} enum.
+     */
+    private void emitTickLog() {
+        if (!whiteboard.isScanAvailableThisTick()) {
+            return;
+        }
+        Feature[] allFeatures = Feature.values();
+
+        StringBuilder row = new StringBuilder(512);
+        row.append("TICK,");
+        row.append(whiteboard.getRound()).append(',');
+        row.append(whiteboard.getTick());
+        for (Feature f : allFeatures) {
+            row.append(',');
+            if (whiteboard.hasFeature(f)) {
+                double v = whiteboard.getFeature(f);
+                if (v == Math.floor(v) && !Double.isInfinite(v) && Math.abs(v) < 1e9) {
+                    row.append((long) v);
+                } else {
+                    row.append(Math.round(v * 10000.0) / 10000.0);
+                }
+            }
+        }
+        row.append(',').append(gunManager.getSelectedIndex());
+        row.append(',').append(moveManager.getActiveIndex());
+        row.append(',').append(Math.round(currentParams.firePowerBudget * 1000.0) / 1000.0);
+        row.append(',').append(Math.round(currentParams.aggression * 1000.0) / 1000.0);
+        for (int i = 0; i < gunManager.getStrategyCount(); i++) {
+            row.append(',').append(Math.round(gunManager.getHitRateOf(i) * 10000.0) / 10000.0);
+        }
+        row.append(',').append(Math.round(lastMoveAhead * 100.0) / 100.0);
+        row.append(',').append(Math.round(lastMoveTurn * 10000.0) / 10000.0);
+        out.println(row.toString());
+    }
+
+    /** Cached movement command values for tick logging (avoids re-computing). */
+    private double lastMoveAhead;
+    private double lastMoveTurn;
+
+    // === Factory methods (continued) ===
 
     private Transformer createTransformer() {
         Transformer t = new Transformer();
@@ -451,7 +517,7 @@ public final class Autopilot extends AdvancedRobot {
         movementPredictor.loadModel();
         fireTimingPredictor.loadModel();
         // Log eager load results immediately
-        out.println("ML_EAGER_LOAD fp=" + firePowerPredictor.isModelLoaded()
+        log("ML_EAGER_LOAD fp=" + firePowerPredictor.isModelLoaded()
                 + " mv=" + movementPredictor.isModelLoaded()
                 + " ft=" + fireTimingPredictor.isModelLoaded());
         t.register(firePowerPredictor);
