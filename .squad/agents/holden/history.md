@@ -35,3 +35,5 @@
 - 0% battle win rate persists. 3.5% hit rate vs ~46% opponent hit rate = 1:13 damage ratio.
 - Local retraining reduced offline R² (~0.1 drop) due to small dataset (48 battles vs ~1944 rumble). Merge datasets for future retraining.
 - Review gate held: initial REJECT of gun branch caught cross-branch wiring bug. Lockout rule works.
+- Sprint 9 delivered: gun fix, movement improvements, feature logging infra, feature divergence diagnosis.
+- Sprint 10 priorities set: (1) execute feature comparison with live data, (2) merge rumble+local datasets, (3) investigate CircularGun 3.5% HR, (4) Decision #13 holds — fix broken ML before new features.

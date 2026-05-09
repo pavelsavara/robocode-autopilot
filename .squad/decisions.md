@@ -28,6 +28,57 @@ Sanity check #3 failed (gun selection). Two of three ML models are broken in-gam
 2. Three blocking priorities: feature parity, gun ordering, movement velocity
 3. Decision #13: fix broken systems before new features
 
+### 2026-05-09: Sprint 8 Close — MISS
+**By:** Holden (Lead)
+**Sprint:** 8
+**What:** Sprint 8 closed as MISS. Fire power in-game R² degraded to −3.46 (target was ≥0.5). HeadOnGun selection worsened to 67% (target <20%). Movement mixed (some opponents +4.7 pp, some −4.0 pp). Overall score 5.4%→5.1% (−0.3 pp).
+**Positive:** 4 fixes merged, 17 new tests, sanity-check script, offline model improved (R² 0.862→0.946).
+**Key finding:** Java/Python feature divergence at inference time is the binding constraint. Better offline model = more sensitivity to in-game feature mismatches.
+**Next:** Sprint 9 = diagnostic sprint (feature comparison, gun tie-break fix, isolated movement eval).
+
+### 2026-05-09: Fire Power Feature Parity Fix (Sprint 8 delivery)
+**By:** Naomi (ML Engineer)
+**What:** Fixed training pipeline to compute window features on consecutive ticks (matching Java) instead of fire-event-only rows. Python `rolling(20)` was operating over non-consecutive fire-event rows, making "20-tick window" actually "20-fire-event window" spanning hundreds of ticks. Also fixed Java `WindowFeatures` to use sample std (ddof=1) matching Python pandas.
+**Impact:** Offline fire power R² improved 0.862→0.946. Java std fix improves parity for all models.
+
+### 2026-05-09: Gun Selection — Index-Based Tie-Break
+**By:** Bobbie (Targeting Engineer)
+**Branch:** `fix-gun-tiebreak-sprint9`
+**What:** Replaced confidence-based tie-break with two-pass index-based priority: (1) find max hit rate, (2) among guns within epsilon (3%) of max, pick lowest index. Gun list order = explicit priority: CircularGun(0) > VcsGun(1) > PredictiveGun(2) > LinearGun(3) > HeadOnGun(4). `getConfidence()` no longer called during selection.
+**Why:** Old confidence system was broken — CircularGun had `getConfidence()=1.0` ceiling, making it mathematically impossible for other guns to win within epsilon. Also fixed epsilon (0.01→0.03, was below hit rate resolution of 1/50=0.02) and ratchet-down bug in rate update.
+**Supersedes:** Earlier epsilon-only fix (bobbie-gun-fix). 17 tests rewritten.
+
+### 2026-05-09: Feature Divergence Root Cause — No Code Mismatch Found
+**By:** Naomi (ML Engineer)
+**What:** Thorough code review of Java `WindowFeatures` vs Python `train_distill.py` window computation found no code-level mismatch: same 10 base features, same order, same 20-tick window, same min_periods=5, Bessel's correction in both.
+**Implication:** R²=−3.46 in-game is NOT a computation error. Divergence is at the input value level (timing differences, scan staleness, feature dependency ordering at round start). Runtime comparison needed via FeatureLogger.
+
+### 2026-05-09: Feature Logging Infrastructure
+**By:** Amos (Systems Engineer)
+**What:** Added `FeatureLogger` class activated by `-Dautopilot.featureLog=true`. Writes `features_fire_power.csv` with per-tick feature vectors, predictions, and actuals. Zero cost when disabled. Uses `getDataDirectory()` (sandbox-safe). Also fixed pre-existing compilation errors in WaveSurfMovement.
+**Why:** Enables direct Java vs Python feature vector comparison to diagnose runtime divergence.
+
+### 2026-05-09: Movement Improvements — Hysteresis + Proportional Dodge
+**By:** Alex (Movement Engineer)
+**Branch:** `movement-improvements-sprint9`
+**What:** Three fixes: (1) Ahead hysteresis 0.15 rad dead-zone prevents per-tick forward/backward oscillation; (2) Proportional dodge commitment MIN=2, MAX=8, scaled by `ticksUntilImpact - 2`; (3) Removed random flip during pre-emptive dodge. Applied to both WaveSurfMovement and OrbitalMovement.
+**Why:** Oscillation was primary cause of 64% max-speed and 11.3% direction-change rate. Each reversal costs ~12 ticks of sub-max speed.
+**Supersedes:** Earlier direction reversal cooldown fix (alex-movement-fix). 9 tests (4 new).
+
+### 2026-05-09: Sprint 9 Code Review Verdicts
+**By:** Holden (Lead)
+**Branch 1 (`fix-gun-tiebreak-sprint9`):** REJECTED initially — Autopilot.java called missing `initFeatureLogger`/`closeFeatureLogger` methods (cross-branch dependency). VGM changes correct. Fix: remove 2 lines, re-review.
+**Branch 2 (`feature-logging-sprint9`):** APPROVED — new files only, compiles clean.
+**Branch 3 (`movement-improvements-sprint9`):** APPROVED — compiles, 62+ tests pass, correct logic.
+**Merge order:** Branch 2 first, Branch 3 second, Branch 1 after fix.
+
+### 2026-05-09: Sprint 9 Close — HIT (marginal)
+**By:** Holden (Lead)
+**Sprint:** 9
+**Result:** HIT. Overall score 6.1% — project record (+1.0 pp). All 6 mandatory sanity checks pass for first time.
+**Key outcomes:** (1) Gun selection FIXED — CircularGun 68% with 3.5% HR, HeadOnGun 4%. (2) Movement net positive — 6/16 opponents improved ≥1 pp, zero regressed. (3) Feature logging infra ready but not yet exercised. (4) Fire power model still broken in-game (R²=−3.67).
+**Sprint 10 direction:** Execute the feature comparison (no more infra), merge rumble+local data for retraining, investigate CircularGun 3.5% HR, Decision #13 holds.
+
 ## Governance
 
 - All meaningful changes require team consensus

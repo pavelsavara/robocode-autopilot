@@ -17,3 +17,10 @@
 - Movement prediction model: healthy, no in-game degradation detected.
 - Root cause for fire power: feature values in Java don't match Python pipeline features.
 - Next sprint priority: diagnose and fix Java/Python feature parity for sliding windows.
+
+### 2026-05-09 — Sprint 9
+- Code review of Java WindowFeatures vs Python train_distill.py: **no code-level mismatch found**. Same 10 features, same order, same 20-tick window, same Bessel's correction.
+- R²=−3.67 in-game is NOT a computation bug — divergence is at the input value level (scan timing, stale features, round-start edge cases).
+- Created `compare_features.py` diagnostic tool for side-by-side Java/Python feature comparison.
+- Sprint 8 fix (filter order + ddof=1) was correct on training side but made model MORE sensitive to runtime input mismatches.
+- Next sprint: actually execute FeatureLogger against live data and run compare_features.py to find divergent features.

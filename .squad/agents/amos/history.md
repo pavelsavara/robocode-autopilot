@@ -24,3 +24,10 @@
 - TickBudget tree count is NOT in internal.csv — it's only in debug.log via DATA_SAVE and SKIPPED log lines. The `fire_power_budget` column in internal.csv is the fire power budget (0.1–3.0), not the tree count.
 - Numpy bools (`np.bool_`) fail Python `is True`/`is False` identity checks. Use truthiness checks (`if x:`) instead of identity (`if x is True:`).
 - internal.csv rows are per-scan-tick (sparse), not per-tick. ticks.csv has every tick. Skipped turns detectable from debug.log SKIPPED entries.
+
+### 2026-05-09 — Sprint 9
+- Created `FeatureLogger.java` — per-tick feature vector CSV logging activated by `-Dautopilot.featureLog=true`.
+- Zero cost when disabled (null pointer check, no allocations). Uses `getDataDirectory()` (sandbox-safe).
+- Fixed pre-existing compilation errors in WaveSurfMovement.java (missing field declarations from Sprint 8).
+- Feature names in CSV header match `FirePowerData.FEATURE_NAMES` exactly for direct Python comparison.
+- Wired into robot lifecycle via system property.
