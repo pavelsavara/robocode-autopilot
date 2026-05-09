@@ -18,17 +18,25 @@ import java.util.Random;
  * <p>When no waves are active but the fire timing model predicts an
  * imminent fire, pre-emptively starts lateral movement proportional
  * to P(fire), ramping from 0 at P=0.3 to full speed at P=0.8.
- * Direction reverses at random intervals (15-45 ticks) for
+ * Direction reverses at random intervals (25-55 ticks) for
  * unpredictability.</p>
+ *
+ * <p>Commitment: once a dodge direction is chosen under imminent wave,
+ * the direction is held for at least {@link #MIN_COMMIT_TICKS} ticks
+ * to prevent oscillation and maintain max speed.</p>
  */
 public final class WaveSurfMovement implements IMovementStrategy {
 
     private static final double DODGE_RAMP_LOW = 0.3;
     private static final double DODGE_RAMP_HIGH = 0.8;
-    private static final int FLIP_MIN_TICKS = 15;
-    private static final int FLIP_RANGE_TICKS = 31; // 15..45 inclusive
-    /** Re-evaluate target at most every N ticks to prevent oscillation. */
-    private static final int COMMIT_TICKS = 3;
+    /** Minimum ticks between random direction reversals. */
+    static final int FLIP_MIN_TICKS = 25;
+    /** Range added to FLIP_MIN_TICKS for random reversal interval (25..55). */
+    static final int FLIP_RANGE_TICKS = 31;
+    /** Minimum ticks to hold a dodge direction under imminent wave. */
+    static final int MIN_COMMIT_TICKS = 4;
+    /** Wall distance threshold that triggers a direction reversal. */
+    private static final double WALL_REVERSE_DIST = 60;
 
     private final PathPlanner planner;
     private final Random rng = new Random();
@@ -48,8 +56,7 @@ public final class WaveSurfMovement implements IMovementStrategy {
     @Override
     public void getCommand(Whiteboard wb, StrategyParams params, MovementCommand out) {
         // Always maintain high-speed lateral movement.
-        // When waves are active AND imminent, use the planner to pick direction.
-        // Otherwise, orbit at max speed with random reversals.
+        // Priority: imminent wave dodge > pre-emptive dodge > default orbit.
 
         boolean hasImminentWave = false;
         if (!wb.getOpponentWaves().isEmpty()) {
@@ -71,8 +78,19 @@ public final class WaveSurfMovement implements IMovementStrategy {
                 double dx = target.x - wb.getOurX();
                 double dy = target.y - wb.getOurY();
                 double targetAngle = Math.atan2(dx, dy);
+
+                // Commitment: hold the chosen dodge direction for MIN_COMMIT_TICKS
+                int waveCount = wb.getOpponentWaves().size();
+                long elapsed = wb.getTick() - commitTick;
+                if (elapsed >= MIN_COMMIT_TICKS || waveCount != commitWaveCount
+                        || Double.isNaN(committedAngle)) {
+                    committedAngle = targetAngle;
+                    commitTick = wb.getTick();
+                    commitWaveCount = waveCount;
+                }
+
                 double ourHeading = wb.getOurHeading();
-                double turn = RoboMath.normalRelativeAngle(targetAngle - ourHeading);
+                double turn = RoboMath.normalRelativeAngle(committedAngle - ourHeading);
                 double ahead;
                 if (Math.abs(turn) > Math.PI / 2) {
                     turn = RoboMath.normalRelativeAngle(turn + Math.PI);
@@ -83,6 +101,13 @@ public final class WaveSurfMovement implements IMovementStrategy {
                 out.set(ahead, turn);
                 return;
             }
+        }
+
+        // Pre-emptive dodge: fire timing model predicts imminent fire
+        double dodgeScale = getDodgeScale(wb);
+        if (dodgeScale > 0) {
+            preemptiveLateralMove(wb, out, dodgeScale);
+            return;
         }
 
         // Default: high-speed lateral orbit with wall awareness
@@ -109,7 +134,7 @@ public final class WaveSurfMovement implements IMovementStrategy {
     /**
      * Pre-emptive lateral movement proportional to predicted fire probability.
      * Moves perpendicular to bearing line at max speed when P(fire) is high.
-     * Direction reverses at random intervals (15-45 ticks) for unpredictability.
+     * Direction reverses at random intervals for unpredictability.
      */
     private void preemptiveLateralMove(Whiteboard wb, MovementCommand out, double scale) {
         if (!wb.hasFeature(Feature.BEARING_TO_OPPONENT_ABS) || scale <= 0) {
@@ -134,19 +159,15 @@ public final class WaveSurfMovement implements IMovementStrategy {
         }
 
         // Reverse direction at random intervals for unpredictability
-        if (wb.getTick() >= nextFlipTick) {
-            preemptiveDir = -preemptiveDir;
-            nextFlipTick = wb.getTick() + FLIP_MIN_TICKS + rng.nextInt(FLIP_RANGE_TICKS);
-        }
+        maybeFlipDirection(wb);
 
         out.set(ahead, turn);
     }
 
     /**
      * Default lateral movement when no waves are active and no fire is predicted.
-     * Uses stop-and-go pattern: sprint laterally, then briefly decelerate.
-     * This confuses timing-based targeting systems.
-     * Wall-aware: reverses direction when approaching a wall.
+     * Wall-aware: reverses direction when approaching a wall, with cooldown
+     * to prevent per-tick oscillation near walls.
      */
     private void defaultLateralMove(Whiteboard wb, MovementCommand out) {
         if (!wb.hasFeature(Feature.BEARING_TO_OPPONENT_ABS)) {
@@ -157,10 +178,11 @@ public final class WaveSurfMovement implements IMovementStrategy {
         double bearing = wb.getFeature(Feature.BEARING_TO_OPPONENT_ABS);
         double ourHeading = wb.getOurHeading();
 
-        // Check wall proximity — reverse direction if heading toward a wall
+        // Check wall proximity — reverse direction if heading toward a wall,
+        // but only if we haven't flipped recently (prevents per-tick oscillation)
         double wallDist = wb.hasFeature(Feature.OUR_DIST_TO_WALL_MIN)
                 ? wb.getFeature(Feature.OUR_DIST_TO_WALL_MIN) : 200;
-        if (wallDist < 60) {
+        if (wallDist < WALL_REVERSE_DIST && wb.getTick() >= nextFlipTick) {
             preemptiveDir = -preemptiveDir;
             nextFlipTick = wb.getTick() + FLIP_MIN_TICKS + rng.nextInt(FLIP_RANGE_TICKS);
         }
@@ -178,13 +200,27 @@ public final class WaveSurfMovement implements IMovementStrategy {
         }
 
         // Random direction reversal for unpredictability
+        maybeFlipDirection(wb);
+
+        out.set(ahead, turn);
+    }
+
+    /**
+     * Flip lateral direction if enough ticks have passed since the last flip.
+     * Shared by defaultLateralMove and preemptiveLateralMove.
+     */
+    private void maybeFlipDirection(Whiteboard wb) {
         if (wb.getTick() >= nextFlipTick) {
             preemptiveDir = -preemptiveDir;
             nextFlipTick = wb.getTick() + FLIP_MIN_TICKS + rng.nextInt(FLIP_RANGE_TICKS);
         }
-
-        out.set(ahead, turn);
     }
+
+    /** Visible for testing: current lateral direction (+1 or -1). */
+    int getPreemptiveDir() { return preemptiveDir; }
+
+    /** Visible for testing: tick at which next direction flip is allowed. */
+    long getNextFlipTick() { return nextFlipTick; }
 
     @Override
     public String getName() {

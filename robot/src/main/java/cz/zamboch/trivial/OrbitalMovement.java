@@ -9,12 +9,17 @@ import cz.zamboch.autopilot.core.util.RoboMath;
 
 /**
  * Orbital movement — circles the opponent at the preferred distance.
- * Reverses direction when approaching a wall.
+ * Reverses direction when approaching a wall, with cooldown to prevent
+ * per-tick oscillation.
  */
 public final class OrbitalMovement implements IMovementStrategy {
 
     private static final double WALL_MARGIN = 80;
+    /** Minimum ticks between wall-triggered direction reversals. */
+    private static final int WALL_FLIP_COOLDOWN = 25;
+
     private int direction = 1; // +1 = clockwise, -1 = counter-clockwise
+    private long lastFlipTick = -100;
 
     @Override
     public void getCommand(Whiteboard wb, StrategyParams params, MovementCommand out) {
@@ -37,11 +42,12 @@ public final class OrbitalMovement implements IMovementStrategy {
 
         double turn = RoboMath.normalRelativeAngle(desiredAngle - ourHeading);
 
-        // Wall avoidance: reverse direction if we're near a wall
+        // Wall avoidance: reverse direction if near a wall, with cooldown
         double wallDist = wb.hasFeature(Feature.OUR_DIST_TO_WALL_MIN)
                 ? wb.getFeature(Feature.OUR_DIST_TO_WALL_MIN) : 200;
-        if (wallDist < WALL_MARGIN) {
+        if (wallDist < WALL_MARGIN && (wb.getTick() - lastFlipTick) >= WALL_FLIP_COOLDOWN) {
             direction = -direction;
+            lastFlipTick = wb.getTick();
             turn = RoboMath.normalRelativeAngle(
                     bearing + direction * Math.PI / 2 - ourHeading);
         }
