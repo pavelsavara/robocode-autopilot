@@ -37,3 +37,19 @@
 - Review gate held: initial REJECT of gun branch caught cross-branch wiring bug. Lockout rule works.
 - Sprint 9 delivered: gun fix, movement improvements, feature logging infra, feature divergence diagnosis.
 - Sprint 10 priorities set: (1) execute feature comparison with live data, (2) merge rumble+local datasets, (3) investigate CircularGun 3.5% HR, (4) Decision #13 holds — fix broken ML before new features.
+
+### 2026-05-09 — Sprint 10, Phase 2 Code Review
+- Reviewed FeatureLogger wiring (Amos) and CircularGun physics fixes (Bobbie). Both APPROVED.
+- FeatureLogger: clean module boundary (zero `FeatureLogger` refs in core/), zero-cost when disabled, correct lifecycle (init in createTransformer, close in onBattleEnded).
+- CircularGun: three physics bugs fixed — turn-then-move ordering, turn rate capping (10−0.75·|v| formula), wall collision zeroes velocity. All match Robocode engine behavior.
+- 17 new tests covering all three physics fixes plus gfAt() and process() integration.
+- Minor note: `GbmFirePowerPredictor.logger` is mutable field on IInGameFeatures impl — acceptable as diagnostic side-channel, not game state.
+
+### 2026-05-09 — Sprint 10 Retrospective
+- Sprint result: **HIT**. Score 6.6% — third consecutive project record (+0.5 pp). R² −3.67 → −1.44 (+2.23).
+- ROOT CAUSE FOUND: 23/80 fire power model features were NaN at runtime. Pipeline-only offline feature classes computed them but no IInGameFeatures implementation existed in the robot module. MlDerivedFeatures.java created in core to fill all 23.
+- CircularGun physics: 3 bugs fixed (turn-move ordering, turn rate cap, wall collision). 17 tests. HR still 3.5% (diluted across all 226 recordings).
+- FeatureLogger fully wired to GbmFirePowerPredictor. Ready for remaining 57-feature comparison.
+- Models retrained (R²=0.825 offline) but NOT battle-tested — evaluation used old models with NaN fix. Retrained JAR exists, needs evaluation.
+- 8/16 opponents improved ≥1 pp. 3 regressed (BlestPain −3.0, FloatingTadpole −2.0, ChocolateBar −1.0).
+- Sprint 11 priorities: (1) evaluate retrained models (no code change needed), (2) diagnose remaining 57-feature divergence via FeatureLogger, (3) if R²>0, focus on improving 3.5% hit rate.

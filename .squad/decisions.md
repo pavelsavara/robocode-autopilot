@@ -79,6 +79,41 @@ Sanity check #3 failed (gun selection). Two of three ML models are broken in-gam
 **Key outcomes:** (1) Gun selection FIXED — CircularGun 68% with 3.5% HR, HeadOnGun 4%. (2) Movement net positive — 6/16 opponents improved ≥1 pp, zero regressed. (3) Feature logging infra ready but not yet exercised. (4) Fire power model still broken in-game (R²=−3.67).
 **Sprint 10 direction:** Execute the feature comparison (no more infra), merge rumble+local data for retraining, investigate CircularGun 3.5% HR, Decision #13 holds.
 
+### 2026-05-09: All agents work on main — no feature branches
+**By:** Pavel Savara (via Copilot)
+**What:** All agents/members work directly on the `main` branch in parallel. No separate feature branches. Domain boundaries prevent file conflicts. Battles run once with all changes combined.
+**Why:** User directive — simplifies workflow, eliminates branch management overhead and cross-branch dependency issues (e.g. Sprint 9's feature logger wiring split across branches).
+
+### 2026-05-09: Feature Divergence Root Cause — 23 Missing Features
+**By:** Naomi (ML Engineer)
+**What:** 23 of 80 fire power model features were ALWAYS NaN in Java inference — computed only by pipeline-only offline feature classes with no in-game counterpart. Created `MlDerivedFeatures.java` in core to compute all 23 at runtime.
+**Why:** Root cause of fire power model R²=−3.67 in-game. GBM received NaN for ~29% of inputs, forcing default tree splits.
+
+### 2026-05-09: FeatureLogger wired into GbmFirePowerPredictor
+**By:** Amos (Systems Engineer)
+**What:** FeatureLogger now wired into GbmFirePowerPredictor's process() loop. Enable with `-Dautopilot.featureLog=true` for per-tick CSV with all 80 features, predictions, and actuals.
+**Why:** Enables direct Java vs Python feature vector comparison for diagnosing remaining divergence.
+
+### 2026-05-09: Circular targeting physics fix — 3 bugs
+**By:** Bobbie (Targeting Engineer)
+**What:** Fixed turn-move ordering (Robocode is turn-then-move), added turn rate capping (`10 - 0.75·|vel|` deg/tick), wall collision now zeroes velocity. 17 unit tests added.
+**Why:** CircularGun hit rate 3.5% — physics inaccuracies compounded over ~30 simulation ticks.
+
+### 2026-05-09: MlDerivedFeatures Code Review — APPROVED
+**By:** Holden (Lead)
+**What:** MlDerivedFeatures.java approved. `final` class, no mutable state, no I/O, formulas match pipeline, correct registration order. 25 features computed (doc says 23, actual is 25). Both `rollingStd` ddof values intentional (ddof=0 matches pipeline).
+**Why:** Root cause fix for R²=−3.67. Approved without blocking issues.
+
+### 2026-05-09: Sprint 10 Phase 2 Code Reviews — All APPROVED
+**By:** Holden (Lead)
+**What:** FeatureLogger wiring (Amos) APPROVED — zero-cost when disabled, correct lifecycle, sandbox-safe. CircularGun physics (Bobbie) APPROVED — all 3 fixes physically correct, 17 tests, no architectural violations.
+**Why:** Both changes ready for evaluation.
+
+### 2026-05-09: Sprint 10 Close — HIT
+**By:** Holden (Lead)
+**Sprint:** 10
+**Result:** HIT. Overall score 6.6% — third consecutive project record (+0.5 pp). Fire power R² improved −3.67→−1.44 (+2.23, largest single-sprint gain). Root cause: 23/80 features were NaN, fixed by MlDerivedFeatures. CircularGun physics fixed (3 bugs, 17 tests). Retrained models in JAR but not yet evaluated. Sprint 11: evaluate retrained models, diagnose remaining 57-feature divergence.
+
 ## Governance
 
 - All meaningful changes require team consensus
