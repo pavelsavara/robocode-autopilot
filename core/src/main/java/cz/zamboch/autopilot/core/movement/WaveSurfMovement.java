@@ -34,14 +34,25 @@ public final class WaveSurfMovement implements IMovementStrategy {
     /** Range added to FLIP_MIN_TICKS for random reversal interval (25..55). */
     static final int FLIP_RANGE_TICKS = 31;
     /** Minimum ticks to hold a dodge direction under imminent wave. */
-    static final int MIN_COMMIT_TICKS = 4;
+    static final int MIN_COMMIT_TICKS = 2;
+    /** Maximum ticks to hold a dodge direction under imminent wave. */
+    static final int MAX_COMMIT_TICKS = 8;
     /** Wall distance threshold that triggers a direction reversal. */
     private static final double WALL_REVERSE_DIST = 60;
+    /**
+     * Hysteresis half-width (radians) for the forward/backward decision.
+     * Prevents per-tick oscillation when turn angle hovers near PI/2.
+     */
+    static final double AHEAD_HYSTERESIS = 0.15;
 
     private final PathPlanner planner;
     private final Random rng = new Random();
     private int preemptiveDir = 1;
     private long nextFlipTick = 0;
+    /** Whether the robot is currently going forward (true) or backward (false). */
+    private boolean goingForward = true;
+    /** How many ticks the current dodge commitment lasts. */
+    private int commitDuration = MIN_COMMIT_TICKS;
     /** Committed target angle — prevents oscillation by holding direction. */
     private double committedAngle = Double.NaN;
     /** Tick when committed target was last updated. */
@@ -79,25 +90,23 @@ public final class WaveSurfMovement implements IMovementStrategy {
                 double dy = target.y - wb.getOurY();
                 double targetAngle = Math.atan2(dx, dy);
 
-                // Commitment: hold the chosen dodge direction for MIN_COMMIT_TICKS
+                // Proportional commitment: scale with wave time-to-impact.
+                // Close waves -> short commit (react quickly).
+                // Far waves -> longer commit (maintain speed toward target).
                 int waveCount = wb.getOpponentWaves().size();
                 long elapsed = wb.getTick() - commitTick;
-                if (elapsed >= MIN_COMMIT_TICKS || waveCount != commitWaveCount
+                if (elapsed >= commitDuration || waveCount != commitWaveCount
                         || Double.isNaN(committedAngle)) {
                     committedAngle = targetAngle;
                     commitTick = wb.getTick();
                     commitWaveCount = waveCount;
+                    commitDuration = computeCommitDuration(wb);
                 }
 
                 double ourHeading = wb.getOurHeading();
                 double turn = RoboMath.normalRelativeAngle(committedAngle - ourHeading);
-                double ahead;
-                if (Math.abs(turn) > Math.PI / 2) {
-                    turn = RoboMath.normalRelativeAngle(turn + Math.PI);
-                    ahead = -150;
-                } else {
-                    ahead = 150;
-                }
+                double ahead = computeAhead(turn);
+                turn = adjustTurnForReverse(turn, ahead);
                 out.set(ahead, turn);
                 return;
             }
@@ -134,7 +143,8 @@ public final class WaveSurfMovement implements IMovementStrategy {
     /**
      * Pre-emptive lateral movement proportional to predicted fire probability.
      * Moves perpendicular to bearing line at max speed when P(fire) is high.
-     * Direction reverses at random intervals for unpredictability.
+     * Direction does NOT randomly flip during a pre-emptive dodge — only at
+     * natural flip intervals when transitioning out of pre-emptive mode.
      */
     private void preemptiveLateralMove(Whiteboard wb, MovementCommand out, double scale) {
         if (!wb.hasFeature(Feature.BEARING_TO_OPPONENT_ABS) || scale <= 0) {
@@ -149,17 +159,11 @@ public final class WaveSurfMovement implements IMovementStrategy {
         double perpAngle = bearing + preemptiveDir * Math.PI / 2;
         double turn = RoboMath.normalRelativeAngle(perpAngle - ourHeading);
 
-        // Always use large ahead value for max speed
-        double ahead;
-        if (Math.abs(turn) > Math.PI / 2) {
-            turn = RoboMath.normalRelativeAngle(turn + Math.PI);
-            ahead = -150;
-        } else {
-            ahead = 150;
-        }
+        double ahead = computeAhead(turn);
+        turn = adjustTurnForReverse(turn, ahead);
 
-        // Reverse direction at random intervals for unpredictability
-        maybeFlipDirection(wb);
+        // No random direction flip during pre-emptive dodge — maintain commitment.
+        // Flips only happen in defaultLateralMove or when wall-proximity triggers.
 
         out.set(ahead, turn);
     }
@@ -191,13 +195,8 @@ public final class WaveSurfMovement implements IMovementStrategy {
         double perpAngle = bearing + preemptiveDir * Math.PI / 2;
         double turn = RoboMath.normalRelativeAngle(perpAngle - ourHeading);
 
-        double ahead;
-        if (Math.abs(turn) > Math.PI / 2) {
-            turn = RoboMath.normalRelativeAngle(turn + Math.PI);
-            ahead = -150;
-        } else {
-            ahead = 150;
-        }
+        double ahead = computeAhead(turn);
+        turn = adjustTurnForReverse(turn, ahead);
 
         // Random direction reversal for unpredictability
         maybeFlipDirection(wb);
@@ -221,6 +220,72 @@ public final class WaveSurfMovement implements IMovementStrategy {
 
     /** Visible for testing: tick at which next direction flip is allowed. */
     long getNextFlipTick() { return nextFlipTick; }
+
+    /** Visible for testing: whether currently going forward. */
+    boolean isGoingForward() { return goingForward; }
+
+    /** Visible for testing: current dodge commitment duration. */
+    int getCommitDuration() { return commitDuration; }
+
+    /**
+     * Compute ahead value with hysteresis to prevent per-tick oscillation.
+     * When the turn angle is near PI/2, the previous forward/backward decision
+     * is maintained unless the angle moves beyond the hysteresis band.
+     * Each unnecessary direction reversal costs ~12 ticks of sub-max-speed travel.
+     */
+    private double computeAhead(double turn) {
+        double absTurn = Math.abs(turn);
+        double threshold = goingForward
+                ? Math.PI / 2 + AHEAD_HYSTERESIS   // going forward: only switch to backward when clearly past PI/2
+                : Math.PI / 2 - AHEAD_HYSTERESIS;  // going backward: only switch to forward when clearly below PI/2
+
+        if (goingForward) {
+            if (absTurn > threshold) {
+                goingForward = false;
+                return -150;
+            }
+            return 150;
+        } else {
+            if (absTurn < threshold) {
+                goingForward = true;
+                return 150;
+            }
+            return -150;
+        }
+    }
+
+    /**
+     * If going backward, adjust the turn angle to point the short way around.
+     */
+    private static double adjustTurnForReverse(double turn, double ahead) {
+        if (ahead < 0) {
+            return RoboMath.normalRelativeAngle(turn + Math.PI);
+        }
+        return turn;
+    }
+
+    /**
+     * Compute dodge commitment duration proportional to the closest wave's
+     * time-to-impact. Close waves get short commitment (react quickly);
+     * far waves get longer commitment (maintain speed toward target).
+     *
+     * @return commitment duration in ticks, clamped to [MIN_COMMIT_TICKS, MAX_COMMIT_TICKS]
+     */
+    private int computeCommitDuration(Whiteboard wb) {
+        double minTicksUntil = 99;
+        for (int i = 0; i < wb.getOpponentWaves().size(); i++) {
+            WaveRecord w = wb.getOpponentWaves().get(i);
+            double dist = Math.hypot(wb.getOurX() - w.originX, wb.getOurY() - w.originY);
+            double remaining = dist - w.radius(wb.getTick());
+            double ticksUntil = w.bulletSpeed > 0 ? remaining / w.bulletSpeed : 99;
+            if (ticksUntil < minTicksUntil) {
+                minTicksUntil = ticksUntil;
+            }
+        }
+        // commit = ticksUntilImpact - 2 (leave 2 ticks for final adjustment)
+        int commit = (int) (minTicksUntil - 2);
+        return Math.max(MIN_COMMIT_TICKS, Math.min(MAX_COMMIT_TICKS, commit));
+    }
 
     @Override
     public String getName() {
