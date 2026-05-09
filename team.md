@@ -1,55 +1,65 @@
 # Team Structure
 
-## Team Members
-
-### Ralph — Project Manager
-
-**Responsibilities:**
-- Owns the iteration cycle: schedules cycles, runs standups, ensures the
-  process in [iterative-improvements.md](iterative-improvements.md) is followed
-- Reviews every retrospective before it's committed — rejects any that lack
-  numbers or blame opponents without evidence
-- Decides when to ship (enter LiteRumble) vs continue iterating
-- Manages the fixed opponent set — adds/removes opponents based on ranking changes
-- Tracks the win-rate target and declares cycle success/failure
-
-**Artifacts owned:**
-- [plan.md](plan.md) — project plan, status summary, milestone decisions
-- [archive/](archive/) — retrospective documents (review gate)
-- Release schedule and competition submissions
-
-**Skills:** Project management, Robocode competition rules, data-driven
-decision making. Must be able to read the retrospective metrics tables
-and challenge unsupported conclusions.
+*See [sprint.md](sprint.md) for the sprint process this team follows.*
 
 ---
 
-### Movement Engineer
+## Ralph — Project Manager
+
+**Sprint role:** Leads Phase 1 (Planning) and Phase 5 (Retrospective & Commit).
+Gates all retrospectives and final commits.
+
+**Responsibilities:**
+- Owns the sprint cadence: opens each phase, enforces the process
+- Selects proposals for each sprint (max 3, or 1 if major)
+- Assigns proposals to the responsible engineer
+- Writes the retrospective using data from engineers' notebooks — rejects
+  any finding that lacks numbers or blames opponents without evidence
+- Declares sprint result (win / miss / blocked)
+- Decides when to ship (enter LiteRumble) vs continue iterating
+- Manages the fixed opponent set
+
+**Artifacts owned:**
+- [plan.md](plan.md) — project plan, status summary, milestone decisions
+- [sprint.md](sprint.md) — sprint process rules
+- [archive/](archive/) — retrospective documents (write + review gate)
+
+**Skills:** Project management, Robocode competition rules, data-driven
+decision making. Must read metrics tables and challenge unsupported claims.
+
+---
+
+## Movement Engineer
+
+**Sprint role:** Implements movement proposals (Phase 2). Runs sanity
+check #5 (wave detection) and notebooks R04, R09 (Phase 4).
 
 **Responsibilities:**
 - Own all movement code: `WaveSurfMovement`, `OrbitalMovement`, `PathPlanner`,
   `VcsWaveDanger`, `WallDistancePositionDanger`, `ReachableEnvelope`
-- Implement true precise-prediction wave surfing (tick-by-tick forward simulation)
+- Implement true precise-prediction wave surfing
 - Reduce opponent hit rate from 47% to < 20%
-- Tune danger scoring weights, wall avoidance, direction commitment logic
-- Own the `MovementStrategyManager` round-level strategy selection
+- Tune danger scoring, wall avoidance, direction commitment
 
 **Artifacts owned:**
 - `core/src/.../movement/` — all movement classes
 - `core/src/.../physics/` — `ReachableEnvelope`, `PrecisePredictor`, `RobotPhysics`
 - `robot/src/.../trivial/OrbitalMovement.java`
-- Retrospective notebook `R04` (movement effectiveness), `R09` (movement analysis)
-
-**Skills:** Java 8, trigonometry, Robocode physics model (acceleration,
-deceleration, wall sliding), real-time optimization. Must understand
-GuessFactor space, Maximum Escape Angle, reachable envelopes, and precise
-prediction. Prior competitive wave surfer implementation strongly preferred.
+- Retrospective notebooks R04 (movement effectiveness), R09 (movement analysis)
+- [wiki/strategy.md](wiki/strategy.md) (movement sections, shared with Targeting)
 
 **Key metric:** Opponent hit rate (currently 47%, target < 20%).
 
+**Skills:** Java 8, trigonometry, Robocode physics model, real-time
+optimization. Must understand GF space, MEA, reachable envelopes, and
+precise prediction. Prior wave surfer implementation strongly preferred.
+
 ---
 
-### Targeting Engineer
+## Targeting Engineer
+
+**Sprint role:** Implements gun proposals (Phase 2). Runs sanity check #3
+(gun selection) and notebooks R02, R08 (Phase 4).
 
 **Responsibilities:**
 - Own all gun code: `VcsGun`, `CircularGun`, `LinearGun`, `HeadOnGun`,
@@ -60,131 +70,141 @@ prediction. Prior competitive wave surfer implementation strongly preferred.
 - Own VCS histogram data structures in `Whiteboard`
 
 **Artifacts owned:**
-- `core/src/.../gun/` — all gun strategy classes and `VirtualGunManager`
+- `core/src/.../gun/` — all gun strategy classes and VirtualGunManager
 - VCS histogram arrays and segmentation in `Whiteboard`
-- Retrospective notebooks `R02` (gun accuracy), `R08` (gun selection)
-
-**Skills:** Java 8, online statistics, histogram methods, kernel density
-estimation, feature selection for segmentation dimensions. Must understand
-Visit Count Statistics, Gaussian smoothing, and the tradeoff between
-segment count and convergence speed.
+- Retrospective notebooks R02 (gun accuracy), R08 (gun selection)
+- [wiki/strategy.md](wiki/strategy.md) (targeting sections, shared with Movement)
 
 **Key metric:** Our hit rate (currently 8%, target > 15%).
 
+**Skills:** Java 8, online statistics, histogram methods, kernel density
+estimation. Must understand VCS, Gaussian smoothing, segment count vs
+convergence tradeoff.
+
 ---
 
-### ML Engineer
+## ML Engineer
+
+**Sprint role:** Retrains models (Phase 2). Runs sanity checks #4 and #6,
+in-game vs offline comparison (4c), and notebooks R05, R10 (Phase 4).
 
 **Responsibilities:**
 - Own the train → export → embed → validate pipeline end-to-end
-- Retrain models each cycle, track offline metrics (R², MAE, AUC)
-- Build the in-game vs offline prediction comparison (sanity check 4c)
-- Design Bayesian VCS+MLP blending system (Phase 12)
-- Own `GbmFirePowerPredictor`, `GbmMovementPredictor`, `GbmFireTimingPredictor`,
-  `PredictiveGun`, `MlpGfTargeting`
-- Prevent data leakage — enforce rules in [wiki/leakage.md](wiki/leakage.md)
+- Retrain models each sprint, track offline metrics (R², MAE, AUC)
+- Build in-game vs offline prediction comparison
+- Design Bayesian VCS+MLP blending (Phase 12)
+- Prevent data leakage — enforce [wiki/leakage.md](wiki/leakage.md)
 
 **Artifacts owned:**
 - `intuition/train_distill.py`, `export_gbm_java.py`, `export_data_java.py`
 - `intuition/_loader.py` — data loading and anti-leakage utilities
 - `robot/src/.../distilled/` — all ML model data and predictor classes
 - `intuition/models/` — trained model artifacts
-- Retrospective notebooks `R05` (fire power prediction), `R10` (ML predictions)
+- Retrospective notebooks R05 (fire power prediction), R10 (ML predictions)
 - [wiki/ml-results.md](wiki/ml-results.md) — authoritative model metrics
 - [wiki/leakage.md](wiki/leakage.md) — leakage taxonomy and prevention rules
 
-**Skills:** XGBoost/scikit-learn, pandas, PyTorch (for MLP), Java interop,
-model compression and distillation, feature engineering for time series.
-Must understand cross-validation with grouped splits, leakage patterns,
-and the difference between offline R² and in-game prediction quality.
-
 **Key metric:** In-game prediction R² matching offline R² within 10%.
+
+**Skills:** XGBoost/scikit-learn, pandas, PyTorch, Java interop, model
+compression, feature engineering for time series. Must understand grouped
+cross-validation, leakage patterns, and offline-vs-in-game quality gap.
 
 ---
 
-### Systems / Pipeline Engineer
+## Systems / Pipeline Engineer
+
+**Sprint role:** Leads Phase 3 (Battle & Record). Runs sanity checks #1
+and #2, and notebooks R01, R03, R06, R07 (Phase 4). Owns automated
+sanity-check script.
 
 **Responsibilities:**
 - Own `local-pipeline.ps1`, battle orchestration, recording processing
-- Build automated regression testing: run fixed-opponent sweep, compare
-  with previous best, flag regressions, produce diff report
-- Automate the diagnostic checklist from step 4a as a CI-like script
-- Own the Gradle build, Dockerfile, and deployment to `c:\robocode\robots\`
-- Manage the `autopilot.dat` persistence file format and migrations
+- Build automated regression testing and sanity-check script
+- Own the Gradle build, Dockerfiles, and deployment
+- Manage `autopilot.dat` persistence format and migrations
 
 **Artifacts owned:**
 - `scripts/local-pipeline.ps1` — full pipeline orchestration
 - `rumble/scripts/run-battle.mjs` — battle runner
 - `pipeline/` — offline CSV processing (Loader, Player, CsvWriter)
-- `build.gradle.kts`, `settings.gradle.kts`, Docker files
-- `core/src/.../persistence/` — `PersistenceManager`, `VcsHistogramStore`
+- `build.gradle.kts`, `settings.gradle.kts`, Dockerfiles
+- `core/src/.../persistence/` — PersistenceManager, VcsHistogramStore
 - `core/src/.../ml/TickBudget.java` — CPU throttle
-- Retrospective notebooks `R01` (win/loss), `R03` (damage), `R06` (round trends),
-  `R07` (rumble comparison)
+- Retrospective notebooks R01 (win/loss), R03 (damage), R06 (trends), R07 (rumble)
 - [wiki/pipeline.md](wiki/pipeline.md) — pipeline documentation
+- Automated sanity-check script (Phase 4a automation)
 
-**Skills:** PowerShell, Node.js, Gradle/Kotlin DSL, Java 8, binary file
-formats, Jupyter notebook automation (`nbconvert`, `papermill`). Must
-understand Robocode's battle runner, `.br` recording format, and the
-security sandbox constraints.
+**Key metric:** Pipeline reliability (zero manual steps) and sprint cycle
+time (< 30 minutes from code change to retrospective data).
 
-**Key metric:** Pipeline reliability (zero manual steps from code change to
-retrospective data) and cycle time (< 30 minutes per iteration).
+**Skills:** PowerShell, Node.js, Gradle/Kotlin DSL, Java 8, binary formats,
+Jupyter automation. Must understand Robocode battle runner, `.br` format,
+and security sandbox.
 
 ---
 
-### Code Quality Reviewer
+## Code Quality Reviewer
+
+**Sprint role:** Reviews all branches in Phase 2 before merge.
+Gates the merge to `main`.
 
 **Responsibilities:**
-- Review every PR / commit before it reaches `main`
-- Enforce coding conventions from [.github/copilot-instructions.md](.github/copilot-instructions.md):
-  `final` classes, `static` inner classes, stateless features, module boundaries
-- Verify that core has no I/O, robot has no pipeline code, features don't
-  store mutable state
-- Check for performance regressions: no per-tick allocation, no O(N²) in hot paths
+- Review every branch before it merges — enforce conventions from
+  [.github/copilot-instructions.md](.github/copilot-instructions.md)
+- Verify: `final` classes, `static` inner classes, stateless features,
+  module boundaries (no I/O in core, no pipeline code in robot)
+- Check for performance issues: per-tick allocation, O(N²) in hot paths
 - Review persistence format changes for backward compatibility
-- Ensure test coverage for new code (delegates to Test Author for implementation)
+- Ensure test coverage exists (delegates writing to Test Author)
 
 **Artifacts owned:**
 - [.github/copilot-instructions.md](.github/copilot-instructions.md) — coding conventions
-- Code review checklist (maintained as part of PR template)
+- PR review checklist
 
-**Skills:** Java 8 best practices, Robocode classloader constraints, performance
-analysis (allocation profiling, tick budget awareness), binary compatibility.
-Must understand why `final` matters for JIT, why inner classes must be `static`,
-and why features must be stateless.
+**Key metric:** Zero regressions from code quality issues (NaN bugs,
+persistence corruption, skipped turns from allocation pressure).
 
-**Key metric:** Zero regressions from code quality issues (NaN bugs, persistence
-corruption, skipped turns from allocation pressure).
+**Skills:** Java 8 best practices, Robocode classloader constraints,
+performance analysis, binary compatibility.
 
 ---
 
-### Test Author
+## Test Author
+
+**Sprint role:** Writes tests for all new/changed code in Phase 2,
+in parallel with the engineers.
 
 **Responsibilities:**
-- Write and maintain unit tests for all core and robot modules
-- Ensure every new feature class has tests for edge cases (NaN inputs,
-  zero velocity, wall boundaries, empty histograms)
-- Write integration tests: full Transformer pipeline with synthetic Whiteboard
-  state, verify all features produce plausible values
-- Write regression tests for known bugs (TickBudget ratchet, wall feature NaN,
-  VCS segment indexing)
-- Maintain model loading tests (`ModelLoadingTest`) — verify Base64 decode,
-  tree traversal, fixture predictions match Python output
+- Unit tests for every new or changed class:
+  - Normal operation, edge cases (NaN, zero, boundary), regression tests
+- Integration tests: full Transformer pipeline with synthetic Whiteboard
+- Model loading tests: Base64 decode, tree traversal, fixture match
+- Maintain test fixtures in `robot/src/test/resources/distilled/`
 
 **Artifacts owned:**
 - `core/src/test/` — all core unit tests
 - `robot/src/test/` — robot smoke tests and model loading tests
 - `pipeline/src/test/` — pipeline processing tests
-- Test fixtures in `robot/src/test/resources/distilled/` — model prediction fixtures
-
-**Skills:** JUnit 5, Java 8, test design (boundary analysis, property-based
-testing for physics code), mocking (Whiteboard state construction). Must
-understand Robocode physics well enough to write meaningful assertions
-(e.g. circular gun angle must be within MEA of bearing).
+- Test fixtures in `robot/src/test/resources/distilled/`
 
 **Key metric:** Test coverage > 80% on core module; zero test-preventable
 bugs reaching battle evaluation.
+
+**Skills:** JUnit 5, Java 8, test design (boundary analysis, property-based
+testing for physics), Whiteboard state construction.
+
+---
+
+## Sprint Phase Responsibility Matrix
+
+| Phase | Ralph | Movement | Targeting | ML | Systems | Reviewer | Test Author |
+|-------|-------|----------|-----------|-----|---------|----------|-------------|
+| 1. Planning | **Lead** | Estimate | Estimate | Estimate | Estimate | — | — |
+| 2. Build & Test | Monitor | Code | Code | Retrain + code | — | **Review all** | **Write tests** |
+| 3. Battle | — | — | — | — | **Lead** | — | — |
+| 4. Diagnose | Monitor | R04, R09, #5 | R02, R08, #3 | R05, R10, #4, #6 | R01, R03, R06, #1, #2 | — | — |
+| 5. Retro & Commit | **Lead** | Data | Data | Data | Data | Final review | — |
 
 ---
 
@@ -193,10 +213,11 @@ bugs reaching battle evaluation.
 | Artifact | Owner | Reviewer |
 |----------|-------|----------|
 | `plan.md` | Ralph | — |
-| `iterative-improvements.md` | Ralph | All |
+| `sprint.md` | Ralph | All |
+| `team.md` | Ralph | All |
 | `wiki/architecture.md` | All (shared) | Code Quality Reviewer |
 | `wiki/ml-results.md` | ML Engineer | Ralph |
-| `wiki/strategy.md` | Movement Eng + Targeting Eng | Ralph |
+| `wiki/strategy.md` | Movement + Targeting | Ralph |
 | `core/.../movement/` | Movement Engineer | Code Quality Reviewer |
 | `core/.../gun/` | Targeting Engineer | Code Quality Reviewer |
 | `core/.../ml/`, `core/.../persistence/` | Systems Engineer | Code Quality Reviewer |
@@ -204,6 +225,6 @@ bugs reaching battle evaluation.
 | `robot/Autopilot.java` | Systems Engineer | All |
 | `scripts/`, `pipeline/` | Systems Engineer | Code Quality Reviewer |
 | `intuition/train_*.py`, `export_*.py` | ML Engineer | — |
-| `intuition/retrospective/` | Shared by metric | Ralph (review gate) |
+| `intuition/retrospective/` | Shared by metric owner | Ralph (review gate) |
 | `core/src/test/`, `robot/src/test/` | Test Author | Code Quality Reviewer |
 | `archive/*-retrospective-*.md` | Ralph (writes) | All (data from notebooks) |

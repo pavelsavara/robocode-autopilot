@@ -53,7 +53,8 @@ This folder contains the project's reference knowledge base, organized by topic.
 ## Relationship to Other Docs
 
 - **[plan.md](../plan.md)** — Current project plan (actionable, forward-looking)
-- **[iterative-improvements.md](../iterative-improvements.md)** — Iteration cycle rules and diagnostic checklist
+- **[sprint.md](../sprint.md)** — Sprint cycle rules and diagnostic checklist
+- **[team.md](../team.md)** — Roles, skills, artifact ownership
 - **[archive/](../archive/)** — Historical planning documents (dated, immutable)
 - **[intuition/](../intuition/)** — Jupyter notebooks (executable analysis)
 - **[intuition/retrospective/](../intuition/retrospective/)** — Per-iteration analysis notebooks

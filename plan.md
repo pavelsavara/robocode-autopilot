@@ -104,8 +104,8 @@ See [wiki/architecture.md](wiki/architecture.md) for the full architecture docum
 
 ## Process Reference
 
-See [iterative-improvements.md](iterative-improvements.md) for the iteration cycle
-(implement → retrain → battle → diagnose → retrospective → revert/commit → repeat).
+See [sprint.md](sprint.md) for the sprint cycle
+(plan → build → battle → diagnose → retrospective → revert/commit → repeat).
 
 ## Documentation Index
 
@@ -113,6 +113,7 @@ See [iterative-improvements.md](iterative-improvements.md) for the iteration cyc
 - **Wiki:** [wiki/](wiki/) — Knowledge base (physics, features, leakage, ML results, pipeline, strategy)
 - **Archive:** [archive/](archive/) — Historical planning documents with date prefixes
 - **Intuition notebooks:** [intuition/](intuition/) — Jupyter notebooks with inline analysis
-- **Retrospective notebooks:** [intuition/retrospective/](intuition/retrospective/) — Per-iteration analysis
-- **Iteration process:** [iterative-improvements.md](iterative-improvements.md) — Improvement cycle rules
+- **Retrospective notebooks:** [intuition/retrospective/](intuition/retrospective/) — Per-sprint analysis
+- **Sprint process:** [sprint.md](sprint.md) — Sprint cycle rules and diagnostic checklist
+- **Team:** [team.md](team.md) — Roles, skills, artifact ownership
 - **Copilot instructions:** [.github/copilot-instructions.md](.github/copilot-instructions.md) — Coding conventions
