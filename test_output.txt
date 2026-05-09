@@ -1,0 +1,157 @@
+Initialized native services in: C:\Users\pavelsavara\.gradle\native
+Initialized jansi services in: C:\Users\pavelsavara\.gradle\native
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Starting process 'Gradle build daemon'. Working directory: C:\Users\pavelsavara\.gradle\daemon\9.4.1 Command: C:\Program Files\Eclipse Adoptium\jdk-21.0.10.7-hotspot\bin\java.exe --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.prefs/java.util.prefs=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.prefs/java.util.prefs=ALL-UNNAMED --add-opens=java.base/java.nio.charset=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.xml/javax.xml.namespace=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED -XX:MaxMetaspaceSize=384m -XX:+HeapDumpOnOutOfMemoryError -Xms256m -Xmx512m -Dfile.encoding=UTF-8 -Duser.country=US -Duser.language=en -Duser.variant -cp C:\Users\pavelsavara\.gradle\wrapper\dists\gradle-9.4.1-bin\arn2x92ynaizyzdaamcbpbhtj\gradle-9.4.1\lib\gradle-daemon-main-9.4.1.jar -javaagent:C:\Users\pavelsavara\.gradle\wrapper\dists\gradle-9.4.1-bin\arn2x92ynaizyzdaamcbpbhtj\gradle-9.4.1\lib\agents\gradle-instrumentation-agent-9.4.1.jar org.gradle.launcher.daemon.bootstrap.GradleDaemon 9.4.1
+Successfully started process 'Gradle build daemon'
+An attempt to start the daemon took 1.45 secs.
+The client will now receive all logging from the daemon (pid: 32580). The daemon log file: C:\Users\pavelsavara\.gradle\daemon\9.4.1\daemon-32580.out.log
+Daemon will be stopped at the end of the build 
+Using 32 worker leases.
+Operational build model parameters: {cachingModelBuilding=false, configurationCache=false, configurationCacheDisabledReason=null, configurationCacheParallelLoad=false, configurationCacheParallelStore=false, configureOnDemand=false, invalidateCoupledProjects=false, isolatedProjects=false, modelAsProjectDependency=false, modelBuilding=false, parallelModelBuilding=false, parallelProjectConfiguration=false, parallelProjectExecution=false, resilientModelBuilding=false}
+Received JVM installation metadata from 'C:\Program Files\Eclipse Adoptium\jdk-21.0.10.7-hotspot': {JAVA_HOME=C:\Program Files\Eclipse Adoptium\jdk-21.0.10.7-hotspot, JAVA_VERSION=21.0.10, JAVA_VENDOR=Eclipse Adoptium, RUNTIME_NAME=OpenJDK Runtime Environment, RUNTIME_VERSION=21.0.10+7-LTS, VM_NAME=OpenJDK 64-Bit Server VM, VM_VERSION=21.0.10+7-LTS, VM_VENDOR=Eclipse Adoptium, OS_ARCH=amd64}
+Watching the file system is configured to be enabled if available
+Not watching D:\robocode-autopilot since the file system is not supported
+File system watching is active
+Starting Build
+Settings evaluated using settings file 'D:\robocode-autopilot\settings.gradle.kts'.
+Projects loaded. Root project using build file 'D:\robocode-autopilot\build.gradle.kts'.
+Included projects: [root project 'robocode-autopilot', project ':core', project ':pipeline', project ':robot']
+
+> Configure project :
+Evaluating root project 'robocode-autopilot' using build file 'D:\robocode-autopilot\build.gradle.kts'.
+Resolved plugin [id: 'org.gradle.java']
+Resolved plugin [id: 'org.gradle.jacoco']
+
+> Configure project :core
+Evaluating project ':core' using build file 'D:\robocode-autopilot\core\build.gradle.kts'.
+Resolved plugin [id: 'org.gradle.java-library']
+
+> Configure project :pipeline
+Evaluating project ':pipeline' using build file 'D:\robocode-autopilot\pipeline\build.gradle.kts'.
+Resolved plugin [id: 'org.gradle.java']
+Resolved plugin [id: 'org.gradle.application']
+
+> Configure project :robot
+Evaluating project ':robot' using build file 'D:\robocode-autopilot\robot\build.gradle.kts'.
+Resolved plugin [id: 'org.gradle.java']
+All projects evaluated.
+Task path ':core:test' matched project ':core'
+Task name matched 'test'
+Selected primary task 'test' from project :core
+Starting process 'command 'C:\Users\pavelsavara\.gradle\jdks\temurin-8-amd64-windows.2\bin\java.exe''. Working directory: C:\Users\pavelsavara\.gradle\.tmp\tmp-jvm12827389011447738289probe Command: C:\Users\pavelsavara\.gradle\jdks\temurin-8-amd64-windows.2\bin\java.exe -Xmx32m -Xms32m -cp . JavaProbe
+Successfully started process 'command 'C:\Users\pavelsavara\.gradle\jdks\temurin-8-amd64-windows.2\bin\java.exe''
+Received JVM installation metadata from 'C:\Users\pavelsavara\.gradle\jdks\temurin-8-amd64-windows.2': {JAVA_HOME=C:\Users\pavelsavara\.gradle\jdks\temurin-8-amd64-windows.2\jre, JAVA_VERSION=1.8.0_482, JAVA_VENDOR=Temurin, RUNTIME_NAME=OpenJDK Runtime Environment, RUNTIME_VERSION=1.8.0_482-b08, VM_NAME=OpenJDK 64-Bit Server VM, VM_VERSION=25.482-b08, VM_VENDOR=Temurin, OS_ARCH=amd64}
+Tasks to be executed: [task ':core:compileJava', task ':core:processResources', task ':core:classes', task ':core:compileTestJava', task ':core:processTestResources', task ':core:testClasses', task ':core:test', task ':core:jacocoTestReport']
+Tasks that were excluded: []
+Resolve mutations for :core:compileJava (Thread[#103,Execution worker Thread 2,5,main]) started.
+:core:compileJava (Thread[#103,Execution worker Thread 2,5,main]) started.
+
+> Task :core:compileJava
+Caching disabled for task ':core:compileJava' because:
+  Build cache is disabled
+Task ':core:compileJava' is not up-to-date because:
+  Input property 'stableSources' file D:\robocode-autopilot\core\src\main\java\cz\zamboch\autopilot\core\gun\VirtualGunManager.java has changed.
+  Input property 'stableSources' file D:\robocode-autopilot\core\src\main\java\cz\zamboch\autopilot\core\movement\WaveSurfMovement.java has changed.
+Compilation mode: default, forking compiler
+Created classpath snapshot for incremental compilation in 0.009 secs.
+Compiling with toolchain 'C:\Users\pavelsavara\.gradle\jdks\temurin-8-amd64-windows.2'.
+Starting process 'Gradle Worker Daemon 1'. Working directory: C:\Users\pavelsavara\.gradle\workers Command: C:\Users\pavelsavara\.gradle\jdks\temurin-8-amd64-windows.2\bin\java.exe -Djava.security.manager=worker.org.gradle.process.internal.worker.child.BootstrapSecurityManager -Xmx512m -Dfile.encoding=UTF-8 -Duser.country=US -Duser.language=en -Duser.variant -cp C:\Users\pavelsavara\.gradle\caches\9.4.1\workerMain\gradle-worker.jar worker.org.gradle.process.internal.worker.GradleWorkerMain 'Gradle Worker Daemon 1'
+Successfully started process 'Gradle Worker Daemon 1'
+Started Gradle worker daemon (9.621 secs) with fork options DaemonForkOptions{executable=C:\Users\pavelsavara\.gradle\jdks\temurin-8-amd64-windows.2\bin\java.exe, minHeapSize=null, maxHeapSize=null, jvmArgs=[], keepAliveMode=DAEMON}.
+
+This JVM does not support getting OS memory, so no OS memory status updates will be broadcast
+
+> Task :core:compileJava
+Compiling with JDK Java compiler API.
+Incremental compilation of 2 classes completed in 10.682 secs.
+Class dependency analysis for incremental compilation took 0.017 secs.
+Resolve mutations for :core:processResources (Thread[#103,Execution worker Thread 2,5,main]) started.
+:core:processResources (Thread[#101,included builds,5,main]) started.
+
+> Task :core:processResources UP-TO-DATE
+Caching disabled for task ':core:processResources' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':core:processResources' as it is up-to-date.
+Resolve mutations for :core:classes (Thread[#101,included builds,5,main]) started.
+:core:classes (Thread[#101,included builds,5,main]) started.
+
+> Task :core:classes
+Skipping task ':core:classes' as it has no actions.
+Resolve mutations for :core:compileTestJava (Thread[#112,Execution worker Thread 11,5,main]) started.
+:core:compileTestJava (Thread[#112,Execution worker Thread 11,5,main]) started.
+
+> Task :core:compileTestJava
+Caching disabled for task ':core:compileTestJava' because:
+  Build cache is disabled
+Task ':core:compileTestJava' is not up-to-date because:
+  Output property 'destinationDirectory' file D:\robocode-autopilot\core\build\classes\java\test has been removed.
+  Output property 'destinationDirectory' file D:\robocode-autopilot\core\build\classes\java\test\cz has been removed.
+  Output property 'destinationDirectory' file D:\robocode-autopilot\core\build\classes\java\test\cz\zamboch has been removed.
+  and more...
+The input changes require a full rebuild for incremental task ':core:compileTestJava'.
+Compilation mode: default, forking compiler
+Full recompilation is required because no incremental change information is available. This is usually caused by clean builds or changing compiler arguments.
+Compiling with toolchain 'C:\Users\pavelsavara\.gradle\jdks\temurin-8-amd64-windows.2'.
+Compiling with JDK Java compiler API.
+Class dependency analysis for incremental compilation took 0.01 secs.
+Created classpath snapshot for incremental compilation in 0.005 secs.
+Resolve mutations for :core:processTestResources (Thread[#130,Execution worker Thread 29,5,main]) started.
+:core:processTestResources (Thread[#130,Execution worker Thread 29,5,main]) started.
+
+> Task :core:processTestResources NO-SOURCE
+Skipping task ':core:processTestResources' as it has no source files and no previous output files.
+Resolve mutations for :core:testClasses (Thread[#112,Execution worker Thread 11,5,main]) started.
+:core:testClasses (Thread[#112,Execution worker Thread 11,5,main]) started.
+
+> Task :core:testClasses
+Skipping task ':core:testClasses' as it has no actions.
+Resolve mutations for :core:test (Thread[#112,Execution worker Thread 11,5,main]) started.
+:core:test (Thread[#112,Execution worker Thread 11,5,main]) started.
+Gradle Test Executor 2 started executing tests.
+Gradle Test Executor 2 finished executing tests.
+
+> Task :core:test FAILED
+Custom actions are attached to task ':core:test'.
+Caching disabled for task ':core:test' because:
+  Build cache is disabled
+Task ':core:test' is not up-to-date because:
+  Task has failed previously.
+Starting process 'Gradle Test Executor 2'. Working directory: D:\robocode-autopilot\core Command: C:\Users\pavelsavara\.gradle\jdks\temurin-8-amd64-windows.2\bin\java.exe -Djava.security.manager=worker.org.gradle.process.internal.worker.child.BootstrapSecurityManager -Dorg.gradle.internal.worker.tmpdir=D:\robocode-autopilot\core\build\tmp\test\work -javaagent:D:\robocode-autopilot\core\build\tmp\.cache\expanded\zip_27729b840c216bdc69a9315e04b27ab1\jacocoagent.jar=destfile=build/jacoco/test.exec,append=true,inclnolocationclasses=false,dumponexit=true,output=file,jmx=false -Xmx512m -Dfile.encoding=UTF-8 -Duser.country=US -Duser.language=en -Duser.variant -ea -cp C:\Users\pavelsavara\.gradle\caches\9.4.1\workerMain\gradle-worker.jar worker.org.gradle.process.internal.worker.GradleWorkerMain 'Gradle Test Executor 2'
+Successfully started process 'Gradle Test Executor 2'
+
+VirtualGunManagerTest > atExactEpsilonBoundary_higherPriorityWins() FAILED
+    org.opentest4j.AssertionFailedError: At exact epsilon boundary ΓåÆ higher priority still wins ==> expected: <0> but was: <4>
+        at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+        at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+        at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
+        at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:150)
+        at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:563)
+        at cz.zamboch.autopilot.core.gun.VirtualGunManagerTest.atExactEpsilonBoundary_higherPriorityWins(VirtualGunManagerTest.java:149)
+
+17 tests completed, 1 failed
+Generating HTML test report...
+Finished generating test html results (0.021 secs) into: D:\robocode-autopilot\core\build\reports\tests\test
+Finished generating test XML results (0.012 secs) into: D:\robocode-autopilot\core\build\test-results\test
+
+[Incubating] Problems report is available at: file:///D:/robocode-autopilot/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':core:test'.
+> There were failing tests. See the report at: file:///D:/robocode-autopilot/core/build/reports/tests/test/index.html
+
+* Try:
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 21s
+4 actionable tasks: 3 executed, 1 up-to-date
+Some of the file system contents retained in the virtual file system are on file systems that Gradle doesn't support watching. The relevant state was discarded to ensure changes to these locations are properly detected. You can override this by explicitly enabling file system watching.
+Watched directory hierarchies: []

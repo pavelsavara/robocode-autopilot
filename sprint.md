@@ -59,8 +59,9 @@ metric they're targeting.
 
 ### Engineers implement their assigned proposals
 
-- Each change goes on a **separate branch** (independently revertable).
-- Code must pass existing tests before requesting review.
+- All agents work directly on **`main`** in parallel.
+- Agents coordinate via domain boundaries — each owns distinct files (see routing.md).
+- Code must pass existing tests before battles.
 
 ### Test Author writes tests for new code
 
@@ -71,7 +72,7 @@ metric they're targeting.
 - Integration test: full Transformer pipeline with synthetic Whiteboard state
   produces plausible feature values.
 
-### Code Quality Reviewer reviews each branch
+### Code Quality Reviewer reviews changes on main
 
 Review checklist:
 - [ ] `final` classes unless designed for inheritance
@@ -82,7 +83,7 @@ Review checklist:
 - [ ] Persistence format backward-compatible (or version bumped)
 - [ ] Tests present and meaningful
 
-**Gate:** No branch merges to `main` without passing review and tests.
+**Gate:** All tests must pass and Holden must review before battles.
 
 ### ML Engineer retrains models (if data or features changed)
 
@@ -90,7 +91,7 @@ Review checklist:
 - Export to Java via `export_gbm_java.py`.
 - Record training metrics (R², MAE, AUC) — these go into the retrospective.
 
-**Exit criteria:** All branches merged to `main`, all tests green,
+**Exit criteria:** All changes committed to `main`, all tests green,
 robot JAR builds cleanly.
 
 ---
@@ -185,10 +186,10 @@ Required sections:
 
 ### 5b. Revert and commit
 
-- **Revert** branches that caused measurable harm.
-- **Commit** net-positive changes to `main` with a message:
+- **Revert** changes that caused measurable harm (git revert on main).
+- **Tag** the sprint result on `main` with:
   `Sprint N: <key delta>, kept <X>, reverted <Y>`
-- **Ralph reviews** the final commit message and retrospective.
+- **Ralph reviews** the final state and retrospective.
 
 ### 5c. Sprint close
 

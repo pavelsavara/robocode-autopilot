@@ -45,12 +45,13 @@ How to decide who handles what.
 ## Rules
 
 1. **Follow sprint.md phases IN ORDER** — never skip Phase 2b (review gate).
-2. **NO merge without Holden review** — this is the #1 rule. Spawn Holden on each branch BEFORE merging.
-3. **Eager by default** — spawn all agents who could usefully start work in Phase 2a (parallel worktrees).
-4. **Scribe always runs** after substantial work, always as `mode: "background"`. Never blocks.
-5. **Quick facts → coordinator answers directly.** Don't spawn an agent for simple lookups.
-6. **When two agents could handle it**, pick the one whose domain is the primary concern.
+2. **All agents work on `main` in parallel** — no feature branches. Domain boundaries prevent conflicts.
+3. **Holden reviews all changes on `main`** before battles. Spawn Holden after all agents commit.
+4. **Eager by default** — spawn all agents in parallel on `main`.
+5. **Scribe always runs** after substantial work, always as `mode: "background"`. Never blocks.
+6. **Quick facts → coordinator answers directly.** Don't spawn an agent for simple lookups.
 7. **"Team, ..." → fan-out.** Spawn all relevant agents in parallel.
 8. **Anticipate downstream work.** If a feature is being built, Amos can start test prep.
 9. **Issue-labeled work** — when a `squad:{member}` label is applied, route to that member.
 10. **After evaluation, always run `scripts/sanity-check.ps1`** before any manual analysis.
+11. **Battles run once** with all changes combined — not per-branch.
