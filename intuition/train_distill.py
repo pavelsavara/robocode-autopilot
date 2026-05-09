@@ -110,18 +110,24 @@ def train_fire_power(ticks: pd.DataFrame):
 
     print("\n=== Fire Power (compact) ===")
 
+    # Compute window features on FULL ticks BEFORE filtering to fire events.
+    # This matches Java's WindowFeatures which computes over consecutive ticks.
+    # Previously, window features were computed on fire-event rows only,
+    # making a "20-tick window" actually a "20-fire-event window" spanning
+    # hundreds of real ticks — a fundamental mismatch with in-game computation.
+    ticks_w = ticks.copy()
+    ticks_w, _new_cols = add_window_features(ticks_w, WINDOW_BASE_FEATURES)
+
     # Filter to fire events
-    fire_mask = ticks['opponent_fired'] == 1
-    fire = ticks[fire_mask].dropna(subset=['opponent_fire_power']).copy()
+    fire_mask = ticks_w['opponent_fired'] == 1
+    fire = ticks_w[fire_mask].dropna(subset=['opponent_fire_power']).copy()
     print(f"  Fire events: {len(fire):,}")
 
     # Feature selection (exclude leakage)
+    # Window features are already in the DataFrame from add_window_features above,
+    # so numeric_feature_cols() will include them automatically.
     exclude = set(FIRE_POWER_LEAKAGE_COLS) | {'opponent_fired'} | set(SCAN_META_COLS)
     feat_cols = numeric_feature_cols(fire, extra_exclude=exclude)
-
-    # Add window features matching WindowFeatures.java
-    fire, new_cols = add_window_features(fire, WINDOW_BASE_FEATURES)
-    feat_cols = feat_cols + new_cols
 
     # Clean
     target = fire['opponent_fire_power'].values
