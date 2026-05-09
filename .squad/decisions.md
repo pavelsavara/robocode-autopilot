@@ -7,6 +7,12 @@
 **What:** Created retrospective-6 documenting full team code audit before first post-TickBudget-fix evaluation. Identified 9 critical findings including dead pre-emptive dodge code, VCS lateral direction bugs, and only 6 VCS segments. Team consensus: run evaluation first, then prioritize fixes.
 **Why:** Team code review revealed multiple systemic issues that need baseline measurement before any changes are made.
 
+### 2026-05-09: Automated Sanity Check Script
+**By:** Amos (Systems Engineer)
+**What:** Created `scripts/sanity-check.ps1` + `scripts/sanity_check.py` automating all 6 Phase 4a mandatory sanity checks plus 3 bonus ML diagnostics. Exit code 0/1 for CI integration.
+**Why:** TickBudget catastrophe persisted for 5 retrospectives partly because checks were manual. Automated script catches regressions immediately.
+**Data sources:** TickBudget from `debug.log` DATA_SAVE lines (not internal.csv), skipped turns from SKIPPED lines, gun/ML from internal.csv, waves/features from ticks.csv.
+
 ### 2026-05-09: Sprint Close — Retrospective 7
 **By:** Holden (Lead)
 **Sprint result: BLOCKED**

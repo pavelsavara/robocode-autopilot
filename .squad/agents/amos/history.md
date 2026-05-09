@@ -17,3 +17,10 @@
 - Score improved 10× (0.56% → 5.4%) confirming TickBudget fix value.
 - Sanity check scripts still ad-hoc — need standardized reusable diagnostic tooling.
 - Next sprint: build persistent sanity check script for automated pre/post evaluation.
+
+### 2026-05-09 — Sanity Check Script
+- Built `scripts/sanity-check.ps1` + `scripts/sanity_check.py` automating all 6 Phase 4a mandatory checks + 3 bonus ML checks.
+- Data sources: `debug.log` for TickBudget (DATA_SAVE budget=N) and skipped turns (SKIPPED lines); `internal.csv` for gun selection, ML predictions; `ticks.csv` for wave detection and feature completeness.
+- TickBudget tree count is NOT in internal.csv — it's only in debug.log via DATA_SAVE and SKIPPED log lines. The `fire_power_budget` column in internal.csv is the fire power budget (0.1–3.0), not the tree count.
+- Numpy bools (`np.bool_`) fail Python `is True`/`is False` identity checks. Use truthiness checks (`if x:`) instead of identity (`if x is True:`).
+- internal.csv rows are per-scan-tick (sparse), not per-tick. ticks.csv has every tick. Skipped turns detectable from debug.log SKIPPED entries.
