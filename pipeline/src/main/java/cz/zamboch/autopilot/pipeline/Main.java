@@ -32,26 +32,40 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * CLI entry point for the Stage 2 pipeline.
  * Processes .br recordings into CSV feature files.
  */
 public final class Main {
+    private static final int DEFAULT_THREADS = 4;
+
     public static void main(String[] args) {
         if (args.length < 2) {
-            System.err.println("Usage: pipeline --input <dir> --output <dir>");
+            System.err.println("Usage: pipeline --input <dir> --output <dir> [--threads N]");
             System.exit(1);
         }
 
         Path inputDir = null;
         Path outputDir = null;
+        int threads = DEFAULT_THREADS;
 
         for (int i = 0; i < args.length - 1; i++) {
             if ("--input".equals(args[i])) {
                 inputDir = Paths.get(args[i + 1]);
             } else if ("--output".equals(args[i])) {
                 outputDir = Paths.get(args[i + 1]);
+            } else if ("--threads".equals(args[i])) {
+                threads = Integer.parseInt(args[i + 1]);
+                if (threads < 1) {
+                    threads = 1;
+                }
             }
         }
 
@@ -63,6 +77,7 @@ public final class Main {
         System.out.println("Robocode Autopilot Pipeline");
         System.out.println("Input:  " + inputDir);
         System.out.println("Output: " + outputDir);
+        System.out.println("Threads: " + threads);
 
         File[] brFiles = inputDir.toFile().listFiles(new java.io.FilenameFilter() {
             public boolean accept(File d, String name) {
@@ -75,25 +90,55 @@ public final class Main {
             System.exit(1);
         }
 
-        int processed = 0;
-        int failed = 0;
-        for (File brFile : brFiles) {
+        final AtomicInteger processed = new AtomicInteger(0);
+        final AtomicInteger failed = new AtomicInteger(0);
+        final Path finalOutputDir = outputDir;
+
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        List<Future<?>> futures = new ArrayList<Future<?>>();
+
+        for (final File brFile : brFiles) {
+            futures.add(executor.submit(new Runnable() {
+                public void run() {
+                    try {
+                        processBattle(brFile.toPath(), finalOutputDir);
+                        processed.incrementAndGet();
+                        synchronized (System.out) {
+                            System.out.println("  Processed: " + brFile.getName());
+                        }
+                    } catch (Exception e) {
+                        failed.incrementAndGet();
+                        synchronized (System.err) {
+                            System.err.println("  FAILED: " + brFile.getName() + " — " + e.getMessage());
+                        }
+                    }
+                }
+            }));
+        }
+
+        // Wait for all tasks to complete
+        for (Future<?> future : futures) {
             try {
-                processBattle(brFile.toPath(), outputDir);
-                processed++;
-                System.out.println("  Processed: " + brFile.getName());
+                future.get();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                System.err.println("Pipeline interrupted");
+                break;
             } catch (Exception e) {
-                failed++;
-                System.err.println("  FAILED: " + brFile.getName() + " — " + e.getMessage());
+                // Already handled inside the Runnable
             }
         }
 
-        System.out.println("Done. Processed " + processed + "/" + brFiles.length + " recordings.");
+        executor.shutdown();
+
+        int processedCount = processed.get();
+        int failedCount = failed.get();
+        System.out.println("Done. Processed " + processedCount + "/" + brFiles.length + " recordings.");
 
         // Fail the process if nothing succeeded — otherwise CI silently uploads an empty
         // artifact and reports green. A single corrupt .br must not mask total failure.
-        if (processed == 0) {
-            System.err.println("ERROR: 0 recordings processed successfully (" + failed + " failed). Exiting non-zero.");
+        if (processedCount == 0) {
+            System.err.println("ERROR: 0 recordings processed successfully (" + failedCount + " failed). Exiting non-zero.");
             System.exit(2);
         }
     }

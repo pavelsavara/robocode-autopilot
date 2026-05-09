@@ -170,7 +170,7 @@ if (-not $SkipPipeline) {
 
     $pipelineBin = Join-Path $projectRoot "pipeline\build\install\pipeline\bin\pipeline.bat"
     New-Item -ItemType Directory -Force $csvDir | Out-Null
-    & $pipelineBin --input $recordingsDir --output $csvDir 2>&1 | ForEach-Object { Write-Host "  $_" }
+    & $pipelineBin --input $recordingsDir --output $csvDir --threads 4 2>&1 | ForEach-Object { Write-Host "  $_" }
 
     $csvFiles = Get-ChildItem $csvDir -Filter "*.csv" -Recurse -ErrorAction SilentlyContinue
     Log ("  Generated " + $csvFiles.Count + " CSV files")
