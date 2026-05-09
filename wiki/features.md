@@ -59,8 +59,8 @@
 | Feature | Formula | Notes |
 |---|---|---|
 | `ENERGY_RATIO` | `ourE / (ourE + oppE)` | 0.5 = even, >0.5 = winning |
-| `OUR_LATERAL_VELOCITY` | `ourVel × sin(ourHeading − bearing)` | Dodge capability |
-| `OUR_DIST_TO_WALL_MIN` | `min(x−18, bfW−x−18, y−18, bfH−y−18)` | Escape constraint |
+| `OUR_LATERAL_VELOCITY` | `ourVel × sin(ourHeading − bearing)` | Dodge capability. Computed in-game by `PositionFeatures`. |
+| `OUR_DIST_TO_WALL_MIN` | `min(x−18, bfW−x−18, y−18, bfH−y−18)` | Escape constraint. Computed in-game by `PositionFeatures`. |
 
 ### Opponent Prediction
 | Feature | Formula | Notes |

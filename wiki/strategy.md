@@ -73,6 +73,7 @@ has its own histogram. More segments = more precise but slower learning.
 | **Random dodge** | Random direction changes | Simple targeting |
 | **Stop-and-go** | Stop when opponent fires | Linear/circular guns |
 | **Wave surfing** | Minimize danger vs incoming waves | GF targeting |
+| **Orbit-primary** | Orbit at max speed; wave-dodge only on imminent waves | Most guns |
 | **Minimum risk** | Move to lowest-danger position | All |
 | **Flattening** | Deliberately uniform GF profile | VCS-based guns |
 
@@ -85,6 +86,22 @@ has its own histogram. More segments = more precise but slower learning.
 
 **Damage-weighted surfing** is mandatory in multi-wave combat (96% of
 engagements have 2+ concurrent waves).
+
+### Orbit-Primary (Our Current Approach)
+
+**Finding (2026-05-09):** Constant wave surfing (evaluating candidates every
+tick) caused oscillation that HURT performance vs most opponents. The
+reachable-envelope candidates are too close together, leading to jittery
+direction changes that reduce velocity and make movement predictable.
+
+**Current implementation:** High-speed lateral orbit (|ahead|=150) with
+random direction reversals (15-45 tick intervals). Only activate the
+PathPlanner when an opponent wave is imminent (< 12 ticks to break).
+This gives 28% opponent HR vs 47% with constant wave surfing against
+top-50 opponents.
+
+**Wall-aware reversal:** Force direction change when wall distance < 60px
+to avoid getting trapped in corners.
 
 ---
 

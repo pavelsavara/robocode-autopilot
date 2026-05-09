@@ -35,9 +35,26 @@ This folder contains the project's reference knowledge base, organized by topic.
 | 15 | Opponent profiles | Current | Archetype clustering failed |
 | 16 | Position advantage | Current | R²=0.001 — proven useless |
 
+### Retrospective Notebooks (`intuition/retrospective/`)
+
+| # | Notebook | Analysis |
+|---|---|---|
+| R01 | Win/loss rates | Per-opponent win rate, survival |
+| R02 | Gun accuracy | Per-gun hit rates |
+| R03 | Damage analysis | Damage dealt vs received |
+| R04 | Movement effectiveness | Opponent hit rate (dodge quality) |
+| R05 | Fire power prediction | In-game vs offline prediction comparison |
+| R06 | Round trends | Adaptation speed across rounds |
+| R07 | Rumble comparison | Local vs rumble metrics |
+| R08 | Gun selection | Per-gun selection % |
+| R09 | Movement analysis | Velocity, wave surf activation |
+| R10 | ML predictions | Prediction ranges and calibration |
+
 ## Relationship to Other Docs
 
 - **[plan.md](../plan.md)** — Current project plan (actionable, forward-looking)
+- **[iterative-improvements.md](../iterative-improvements.md)** — Iteration cycle rules and diagnostic checklist
 - **[archive/](../archive/)** — Historical planning documents (dated, immutable)
 - **[intuition/](../intuition/)** — Jupyter notebooks (executable analysis)
+- **[intuition/retrospective/](../intuition/retrospective/)** — Per-iteration analysis notebooks
 - **[.github/copilot-instructions.md](../.github/copilot-instructions.md)** — Coding conventions for AI assistants
