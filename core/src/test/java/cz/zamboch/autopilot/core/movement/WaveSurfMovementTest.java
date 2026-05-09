@@ -142,7 +142,7 @@ class WaveSurfMovementTest {
         WaveSurfMovement move = new WaveSurfMovement(stubPlanner);
 
         // Place an imminent wave: opponent at (400, 600), fired at tick 0
-        // Wave speed = 20-3*2 = 14, distance = 300, so radius at tick 20 = 280
+        // Wave speed = 14, distance = 300, so radius at tick 20 = 280
         // remaining = 300 - 280 = 20, ticksUntil = 20/14 ≈ 1.4 => imminent
         wb.addOpponentWave(new WaveRecord(400, 600, 14.0, 2.0, 0, 300));
 
@@ -153,28 +153,53 @@ class WaveSurfMovementTest {
             wb.setFeature(Feature.BEARING_TO_OPPONENT_ABS, 0);
             wb.setFeature(Feature.OUR_DIST_TO_WALL_MIN, 200);
         }
-        // Re-add the wave (it was cleared on advanceTick→resetRound? No, advanceTick keeps waves)
-        // Actually advanceTick does NOT clear waves — only resetRound does.
 
         // Get command — should dodge
         move.getCommand(wb, params, cmd);
         double firstAhead = cmd.ahead;
         double firstTurn = cmd.turnRight;
 
-        // Next few ticks: the committed angle should hold
-        for (int i = 0; i < WaveSurfMovement.MIN_COMMIT_TICKS - 1; i++) {
+        // With proportional commitment: close wave (1.4 ticks) → MIN_COMMIT_TICKS = 2
+        // Next tick: committed angle should hold
+        wb.advanceTick();
+        wb.setOurState(400, 300, 0, 0, 0, 8.0, 100, 0);
+        wb.setFeature(Feature.BEARING_TO_OPPONENT_ABS, 0);
+        wb.setFeature(Feature.OUR_DIST_TO_WALL_MIN, 200);
+        move.getCommand(wb, params, cmd);
+
+        // Command should be identical within commitment window
+        assertEquals(firstAhead, cmd.ahead, 0.001,
+                "Dodge direction changed within commit window");
+        assertEquals(firstTurn, cmd.turnRight, 0.001,
+                "Dodge turn changed within commit window");
+    }
+
+    @Test
+    void commitDurationScalesWithWaveDistance() {
+        WaveSurfMovement move = new WaveSurfMovement(stubPlanner);
+
+        // Wave: opponent at (400, 600), speed 11 (power 3), fired at tick 0
+        // distance = 300.
+        // At tick 16: radius = 11*16 = 176, remaining = 124, ticksUntil = 11.3
+        // That's imminent (<12). Expected commit = max(2, min(11-2, 8)) = 8
+        wb.addOpponentWave(new WaveRecord(400, 600, 11.0, 3.0, 0, 300));
+
+        for (int i = 0; i < 16; i++) {
             wb.advanceTick();
             wb.setOurState(400, 300, 0, 0, 0, 8.0, 100, 0);
             wb.setFeature(Feature.BEARING_TO_OPPONENT_ABS, 0);
             wb.setFeature(Feature.OUR_DIST_TO_WALL_MIN, 200);
-            move.getCommand(wb, params, cmd);
-
-            // Command should be identical (committed angle held)
-            assertEquals(firstAhead, cmd.ahead, 0.001,
-                    "Dodge direction changed within commit window at tick " + wb.getTick());
-            assertEquals(firstTurn, cmd.turnRight, 0.001,
-                    "Dodge turn changed within commit window at tick " + wb.getTick());
         }
+
+        move.getCommand(wb, params, cmd);
+        int duration = move.getCommitDuration();
+        assertTrue(duration >= WaveSurfMovement.MIN_COMMIT_TICKS,
+                "Commit duration " + duration + " below minimum");
+        assertTrue(duration <= WaveSurfMovement.MAX_COMMIT_TICKS,
+                "Commit duration " + duration + " above maximum");
+        // Far-ish wave (~11 ticks away) should yield a longer commitment than minimum
+        assertTrue(duration > WaveSurfMovement.MIN_COMMIT_TICKS,
+                "Far wave should have commit > MIN_COMMIT_TICKS, got " + duration);
     }
 
     @Test
@@ -225,5 +250,76 @@ class WaveSurfMovementTest {
             wb.setFeature(Feature.BEARING_TO_OPPONENT_ABS, 0);
             wb.setFeature(Feature.OUR_DIST_TO_WALL_MIN, 200);
         }
+    }
+
+    @Test
+    void hysteresisPreventsOscillationNearBoundary() {
+        WaveSurfMovement move = new WaveSurfMovement(stubPlanner);
+
+        // Place robot heading north (0), opponent bearing at ~PI/2 so the
+        // perpendicular orbit angle is at ~PI (or ~0 depending on direction).
+        // We'll oscillate the bearing around the boundary where turn crosses PI/2.
+        int aheadFlips = 0;
+        double prevAhead = 0;
+
+        for (int t = 0; t < 100; t++) {
+            // Oscillate bearing slightly around a value that puts turn near PI/2
+            double bearing = Math.PI / 2 + 0.05 * Math.sin(t * 0.3);
+            wb.setFeature(Feature.BEARING_TO_OPPONENT_ABS, bearing);
+
+            move.getCommand(wb, params, cmd);
+            if (t > 0 && Math.signum(cmd.ahead) != Math.signum(prevAhead) && prevAhead != 0) {
+                aheadFlips++;
+            }
+            prevAhead = cmd.ahead;
+
+            wb.advanceTick();
+            wb.setOurState(400, 300, 0, 0, 0, 8.0, 100, 0);
+            wb.setFeature(Feature.OUR_DIST_TO_WALL_MIN, 200);
+        }
+
+        // Without hysteresis this would oscillate every tick.
+        // With hysteresis: at most a few flips (when oscillation exceeds band).
+        assertTrue(aheadFlips <= 5,
+                "Too many ahead-direction flips near boundary: " + aheadFlips
+                        + " in 100 ticks (hysteresis should prevent oscillation)");
+    }
+
+    @Test
+    void preemptiveDodgeDoesNotRandomlyFlipDirection() {
+        WaveSurfMovement move = new WaveSurfMovement(stubPlanner);
+
+        // Advance past the initial nextFlipTick=0
+        for (int t = 0; t < 5; t++) {
+            move.getCommand(wb, params, cmd);
+            wb.advanceTick();
+            wb.setOurState(400, 300, 0, 0, 0, 8.0, 100, 0);
+            wb.setFeature(Feature.BEARING_TO_OPPONENT_ABS, 0);
+            wb.setFeature(Feature.OUR_DIST_TO_WALL_MIN, 200);
+        }
+
+        // Set high fire probability to enter pre-emptive mode
+        wb.setFeature(Feature.PREDICTED_OPPONENT_FIRES_3, 0.9);
+
+        int initialDir = move.getPreemptiveDir();
+        int dirChanges = 0;
+
+        // Run for enough ticks that a random flip WOULD have happened without the fix
+        for (int t = 0; t < WaveSurfMovement.FLIP_MIN_TICKS + WaveSurfMovement.FLIP_RANGE_TICKS + 20; t++) {
+            move.getCommand(wb, params, cmd);
+            if (move.getPreemptiveDir() != initialDir) {
+                dirChanges++;
+                initialDir = move.getPreemptiveDir();
+            }
+            wb.advanceTick();
+            wb.setOurState(400, 300, 0, 0, 0, 8.0, 100, 0);
+            wb.setFeature(Feature.BEARING_TO_OPPONENT_ABS, 0);
+            wb.setFeature(Feature.OUR_DIST_TO_WALL_MIN, 200);
+            wb.setFeature(Feature.PREDICTED_OPPONENT_FIRES_3, 0.9);
+        }
+
+        // Direction should never change during sustained pre-emptive dodge
+        assertEquals(0, dirChanges,
+                "Pre-emptive dodge should not randomly flip direction");
     }
 }

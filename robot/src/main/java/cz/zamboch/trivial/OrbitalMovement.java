@@ -10,16 +10,20 @@ import cz.zamboch.autopilot.core.util.RoboMath;
 /**
  * Orbital movement — circles the opponent at the preferred distance.
  * Reverses direction when approaching a wall, with cooldown to prevent
- * per-tick oscillation.
+ * per-tick oscillation. Uses ahead hysteresis to prevent oscillation
+ * between forward and reverse when the turn angle hovers near PI/2.
  */
 public final class OrbitalMovement implements IMovementStrategy {
 
     private static final double WALL_MARGIN = 80;
     /** Minimum ticks between wall-triggered direction reversals. */
     private static final int WALL_FLIP_COOLDOWN = 25;
+    /** Hysteresis half-width (radians) for forward/backward decision. */
+    private static final double AHEAD_HYSTERESIS = 0.15;
 
     private int direction = 1; // +1 = clockwise, -1 = counter-clockwise
     private long lastFlipTick = -100;
+    private boolean goingForward = true;
 
     @Override
     public void getCommand(Whiteboard wb, StrategyParams params, MovementCommand out) {
@@ -52,14 +56,31 @@ public final class OrbitalMovement implements IMovementStrategy {
                     bearing + direction * Math.PI / 2 - ourHeading);
         }
 
-        // Move at max speed — large ahead value maintains velocity
+        // Move at max speed with hysteresis to prevent oscillation
+        double absTurn = Math.abs(turn);
+        double threshold = goingForward
+                ? Math.PI / 2 + AHEAD_HYSTERESIS
+                : Math.PI / 2 - AHEAD_HYSTERESIS;
+
         double ahead;
-        if (Math.abs(turn) > Math.PI / 2) {
-            // Reverse: turn the short way and go backward
-            turn = RoboMath.normalRelativeAngle(turn + Math.PI);
-            ahead = -150;
+        if (goingForward) {
+            if (absTurn > threshold) {
+                goingForward = false;
+                ahead = -150;
+            } else {
+                ahead = 150;
+            }
         } else {
-            ahead = 150;
+            if (absTurn < threshold) {
+                goingForward = true;
+                ahead = 150;
+            } else {
+                ahead = -150;
+            }
+        }
+
+        if (ahead < 0) {
+            turn = RoboMath.normalRelativeAngle(turn + Math.PI);
         }
 
         out.set(ahead, turn);
