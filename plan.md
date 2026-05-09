@@ -1,6 +1,7 @@
 # robocode-autopilot — Project Plan (v3)
 
 *Updated: 2026-05-09 · Previous plans: [archive/2026-05-04-plan.md](archive/2026-05-04-plan.md)*
+*Sprint 7 result: BLOCKED — see [archive/2026-05-09-retrospective-7.md](archive/2026-05-09-retrospective-7.md)*
 
 ## Vision
 
@@ -25,19 +26,20 @@ guns, competing movement strategies, and energy-aware strategy layer.
 | 11. Iterative improvement campaign | **Done** | Orbit-primary movement, gun reordering, TickBudget fix |
 | **12. Online learning** | **Next** | Bayesian blending, adaptation detection |
 
-### Current Performance (50-opponent sweep, 2026-05-09)
+### Current Performance (16-opponent eval, 2026-05-09)
 
-| Metric | Value |
-|---|---|
-| Win rate | 0.56% (50 top opponents) |
-| Winning vs | 8 / 50 opponents |
-| Our hit rate | 8.1% |
-| Opponent hit rate | 47.1% |
-| Best matchup | Star2 13.6%, Shiva 7.9%, Helios 5.7% |
+| Metric | Previous (50 bots) | Current (16 bots) |
+|---|---|---|
+| Overall score % | 0.56% | **5.4%** |
+| Battle win rate | 0.56% | 0.0% |
+| Our hit rate | 8.1% | 8.0% |
+| Opponent hit rate | 47.1% | 46.2% |
+| Damage ratio | — | 0.099 (10:1 deficit) |
 
-**Key finding:** TickBudget was stuck at 10/200 trees (5% model capacity)
-for ALL previous evaluations. Fix deployed 2026-05-09. Next evaluation
-will be the first with ML models at full capacity.
+**Key finding:** TickBudget fix confirmed working (100–200 trees). Score
+improved 10× but two critical issues remain:
+- **Fire power model broken in-game** (R²=−0.61 vs offline 0.862) — feature mismatch
+- **Gun selection bug** — HeadOnGun selected 54% despite being lowest priority
 
 ---
 
@@ -60,7 +62,17 @@ innovation. Without them, R² drops from 0.87 → 0.07.
 
 ## Next Milestones
 
-### Phase 12: Online Learning & Adaptation
+### Phase 12: Fix Broken Systems (PRIORITY — blocks all downstream work)
+
+1. **Fix Java/Python feature parity** — fire power model R²=−0.61 in-game
+   due to feature mismatch. Diagnose sliding-window divergence between
+   Java and Python. Target: in-game R² ≥ 0.5.
+2. **Fix gun ordering in VGM** — HeadOnGun at 54% contradicts Decision #10.
+   CircularGun must be first in list. Tune epsilon threshold.
+3. **Fix movement velocity** — only 64% at max speed, 54.5% high lateral.
+   Reduce unnecessary direction changes (currently 11.3% of ticks).
+
+### Phase 13: Online Learning & Adaptation (deferred until Phase 12 complete)
 
 - **Bayesian blending**: MLP prior + VCS online via λ = K/(K+n) mixing
 - **Per-family GF priors** loaded from resource files after name-hash identification
@@ -68,7 +80,7 @@ innovation. Without them, R² drops from 0.87 → 0.07.
 - **GF flattening**: intentionally randomize dodge direction to make our
   GF profile harder to learn (anti-profiling defense)
 
-### Phase 13: Competition & Iteration
+### Phase 14: Competition & Iteration
 
 - Enter LiteRumble / submit to RoboRumble
 - More battle seasons for training data
@@ -99,6 +111,7 @@ See [wiki/architecture.md](wiki/architecture.md) for the full architecture docum
 | 10 | CircularGun as primary | Best general-purpose gun; HeadOnGun demoted to lowest priority |
 | 11 | TickBudget upward recovery | One-way ratchet previously crippled models to 5% capacity |
 | 12 | Position advantage useless | R²=0.001 in nb16, dropped from robot |
+| 13 | Fix broken systems before new features | Fire power R²=−0.61 in-game, gun selection bugged, movement too slow |
 
 ---
 

@@ -6,6 +6,8 @@ Documents are prefixed with their creation date and are immutable once archived.
 
 | Date | Document | Topic |
 |---|---|---|
+| 2026-05-09 | [2026-05-09-retrospective-7.md](2026-05-09-retrospective-7.md) | Seventh retrospective — first full-capacity eval, 5.4% score, ML in-game gap |
+| 2026-05-09 | [2026-05-09-retrospective-6.md](2026-05-09-retrospective-6.md) | Sixth retrospective — post-fix code audit, 9 critical findings |
 | 2026-05-09 | [2026-05-09-retrospective-5.md](2026-05-09-retrospective-5.md) | Fifth retrospective — top-50 campaign, 0.56% win rate |
 | 2026-05-08 | [2026-05-08-retrospective-4.md](2026-05-08-retrospective-4.md) | Fourth retrospective — 35% win rate achieved |
 | 2026-05-08 | [2026-05-08-retrospective-3.md](2026-05-08-retrospective-3.md) | Third retrospective — 2.76% win rate, movement improvements |
