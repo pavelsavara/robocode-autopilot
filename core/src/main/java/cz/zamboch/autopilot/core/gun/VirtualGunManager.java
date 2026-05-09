@@ -25,7 +25,7 @@ public final class VirtualGunManager implements IPersistable {
     public static final int SECTION_ID = 1;
 
     private static final int WINDOW = 50;
-    private static final double HIT_RATE_EPSILON = 0.01;
+    private static final double HIT_RATE_EPSILON = 0.03;
     private static final double AIM_THRESHOLD = 0.015; // ~0.86 degrees — tighter aim = higher hit rate
     /** Exploration rate: fraction of shots fired with a random gun. */
     private static final double EXPLORE_RATE = 0.03;
@@ -144,23 +144,14 @@ public final class VirtualGunManager implements IPersistable {
     }
 
     private void selectBest(Whiteboard wb) {
-        double bestRate = -1;
-        double bestConfidence = -1;
-        int bestIdx = 0;
-
+        double[] rates = new double[strategies.size()];
+        double[] confs = new double[strategies.size()];
         for (int i = 0; i < strategies.size(); i++) {
-            double rate = getHitRate(i);
-            double conf = strategies.get(i).getConfidence(wb);
-            if (rate > bestRate + HIT_RATE_EPSILON) {
-                bestRate = rate;
-                bestConfidence = conf;
-                bestIdx = i;
-            } else if (rate >= bestRate - HIT_RATE_EPSILON && conf > bestConfidence) {
-                bestRate = rate;
-                bestConfidence = conf;
-                bestIdx = i;
-            }
+            rates[i] = getHitRate(i);
+            confs[i] = strategies.get(i).getConfidence(wb);
         }
+
+        int bestIdx = selectBestIndex(rates, confs);
 
         // ε-greedy exploration: occasionally use a random gun to gather data
         // Only explore after initial convergence (first 30 data points)
@@ -186,6 +177,36 @@ public final class VirtualGunManager implements IPersistable {
         if (wb.getOurGunHeat() > 0) return false;
         double gunTurnRemaining = Math.abs(getGunTurnAngle(wb));
         return gunTurnRemaining < AIM_THRESHOLD;
+    }
+
+    /**
+     * Pure selection logic: pick the best strategy index given hit rates
+     * and confidence values. When rates are within {@link #HIT_RATE_EPSILON},
+     * the strategy with the highest confidence wins (tie-breaker).
+     * Package-visible for testing.
+     */
+    static int selectBestIndex(double[] rates, double[] confs) {
+        double bestRate = -1;
+        double bestConfidence = -1;
+        int bestIdx = 0;
+
+        for (int i = 0; i < rates.length; i++) {
+            double rate = rates[i];
+            double conf = confs[i];
+            if (rate > bestRate + HIT_RATE_EPSILON) {
+                // Clearly better rate — pick this gun regardless of confidence
+                bestRate = rate;
+                bestConfidence = conf;
+                bestIdx = i;
+            } else if (rate >= bestRate - HIT_RATE_EPSILON && conf > bestConfidence) {
+                // Within noise band — pick by confidence, but keep the highest
+                // rate seen so far to avoid ratcheting the threshold down
+                bestRate = Math.max(bestRate, rate);
+                bestConfidence = conf;
+                bestIdx = i;
+            }
+        }
+        return bestIdx;
     }
 
     /** Reset for a new round. Virtual bullets cleared, hit history preserved. */
