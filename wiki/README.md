@@ -10,7 +10,7 @@ This folder contains the project's reference knowledge base, organized by topic.
 | [features.md](features.md) | Feature catalog — all implemented and planned features with formulas |
 | [leakage.md](leakage.md) | Data leakage patterns discovered and prevention rules |
 | [ml-results.md](ml-results.md) | ML model results — honest baselines and training details |
-| [architecture.md](architecture.md) | Robot architecture — decision system, interfaces, data flow |
+| [architecture.md](architecture.md) | Robot architecture — decision system, data flow, subsystems, feature map, known issues |
 | [pipeline.md](pipeline.md) | Pipeline & CSV schema — recording to CSV workflow |
 | [strategy.md](strategy.md) | Competitive strategy — known ideas, top-bot analysis, ML prior art |
 
