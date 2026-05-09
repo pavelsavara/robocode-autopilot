@@ -109,12 +109,15 @@ public class WindowFeatures implements IInGameFeatures {
         head = (head + 1) % WINDOW;
         if (count < WINDOW) count++;
 
-        // Emit stats
+        // Emit stats (using sample std with Bessel's correction to match
+        // Python pandas rolling().std() which uses ddof=1 by default)
         if (count >= MIN_TICKS) {
             double invN = 1.0 / count;
             for (int i = 0; i < N_FEATURES; i++) {
                 double mean = sums[i] * invN;
-                double variance = sumSqs[i] * invN - mean * mean;
+                double variance = (count > 1)
+                        ? (sumSqs[i] - count * mean * mean) / (count - 1)
+                        : 0;
                 double std = variance > 0 ? Math.sqrt(variance) : 0;
                 wb.setFeature(MEAN_FEATURES[i], mean);
                 wb.setFeature(STD_FEATURES[i], std);
