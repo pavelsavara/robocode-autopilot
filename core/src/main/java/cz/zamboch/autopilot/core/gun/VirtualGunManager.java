@@ -145,13 +145,11 @@ public final class VirtualGunManager implements IPersistable {
 
     private void selectBest(Whiteboard wb) {
         double[] rates = new double[strategies.size()];
-        double[] confs = new double[strategies.size()];
         for (int i = 0; i < strategies.size(); i++) {
             rates[i] = getHitRate(i);
-            confs[i] = strategies.get(i).getConfidence(wb);
         }
 
-        int bestIdx = selectBestIndex(rates, confs);
+        int bestIdx = selectBestIndex(rates);
 
         // ε-greedy exploration: occasionally use a random gun to gather data
         // Only explore after initial convergence (first 30 data points)
@@ -180,33 +178,35 @@ public final class VirtualGunManager implements IPersistable {
     }
 
     /**
-     * Pure selection logic: pick the best strategy index given hit rates
-     * and confidence values. When rates are within {@link #HIT_RATE_EPSILON},
-     * the strategy with the highest confidence wins (tie-breaker).
+     * Pure selection logic: pick the best strategy index given hit rates.
+     * Uses a two-pass approach:
+     * <ol>
+     *   <li>Find the maximum hit rate across all strategies.</li>
+     *   <li>Among strategies within {@link #HIT_RATE_EPSILON} of the max,
+     *       pick the lowest index (highest priority in the list).</li>
+     * </ol>
+     * The gun list order IS the priority: lower index = higher priority.
+     * A gun must beat the current best by more than epsilon to override
+     * the priority ordering.
      * Package-visible for testing.
      */
-    static int selectBestIndex(double[] rates, double[] confs) {
-        double bestRate = -1;
-        double bestConfidence = -1;
-        int bestIdx = 0;
-
+    static int selectBestIndex(double[] rates) {
+        // Pass 1: find the maximum hit rate
+        double maxRate = 0;
         for (int i = 0; i < rates.length; i++) {
-            double rate = rates[i];
-            double conf = confs[i];
-            if (rate > bestRate + HIT_RATE_EPSILON) {
-                // Clearly better rate — pick this gun regardless of confidence
-                bestRate = rate;
-                bestConfidence = conf;
-                bestIdx = i;
-            } else if (rate >= bestRate - HIT_RATE_EPSILON && conf > bestConfidence) {
-                // Within noise band — pick by confidence, but keep the highest
-                // rate seen so far to avoid ratcheting the threshold down
-                bestRate = Math.max(bestRate, rate);
-                bestConfidence = conf;
-                bestIdx = i;
+            if (rates[i] > maxRate) {
+                maxRate = rates[i];
             }
         }
-        return bestIdx;
+
+        // Pass 2: first gun within epsilon of max wins (lowest index = highest priority)
+        double threshold = maxRate - HIT_RATE_EPSILON;
+        for (int i = 0; i < rates.length; i++) {
+            if (rates[i] >= threshold) {
+                return i;
+            }
+        }
+        return 0; // unreachable — at least the max-rate gun qualifies
     }
 
     /** Reset for a new round. Virtual bullets cleared, hit history preserved. */
