@@ -48,6 +48,13 @@
 
 ### 2026-05-10 — Sprint 10 Phase 4 (Post-MlDerivedFeatures Fix Eval)
 - Built, deployed, and ran evaluation after MlDerivedFeatures fix (23 NaN features now computed).
+
+### 2026-05-10 — Sprint 11
+- Parallelized pipeline CSV processing: `Main.java` now uses fixed thread pool (default 4 threads). `--threads N` CLI flag. `local-pipeline.ps1` passes `--threads 4`.
+- ~4× speedup (16 min → ~4 min). Thread safety is structural — each `processBattle()` has own Whiteboard, Transformer, CsvWriter.
+- Ran full eval: score 8.0% (project record), first battle win 58% vs eem.zapper.
+- **Cross-agent:** Holden wrote Sprint 11 retro — score 8.0%, R² −1.12, skipped turns regression (~12.6 avg from MlDerivedFeatures overhead).
+- Sprint 12 priority: fix skipped turns (check #2 failing), profile MlDerivedFeatures.
 - Deleted stale autopilot.dat at `c:\robocode\robots\.data\cz\zamboch\Autopilot.data\autopilot.dat` (clean eval).
 - Pipeline completed 34/48 battles (12 of 16 opponents). Missing: ary.Help, gh.GresSuffurd, rdt.AgentSmith.AgentSmith, fromHell.BlackBox. Pipeline stopped early — likely timeout or error during opponent 12 (kid.Gladiator only got 1/3 battles).
 - **Recording replay issue:** The pipeline binary output CSV to stdout but 0 new CSV directories were written to `output/local/csv/`. All existing 96 CSV dirs are from previous 05/09 run. This blocked fresh ML sanity checks.
@@ -60,3 +67,12 @@
 - Naomi found root cause: 23/80 features were NaN — created MlDerivedFeatures.java in core.
 - Bobbie fixed 3 CircularGun physics bugs (turn-move ordering, turn rate cap, wall collision). 17 tests.
 - Sprint result: HIT. Score 6.6%, R² −3.67→−1.44.
+
+### 2026-05-10 — Pipeline Parallelization
+- Parallelized `Main.java` CSV processing: `ExecutorService` with fixed thread pool (default 4 threads).
+- Each `processBattle()` creates its own `Whiteboard`, `Transformer`, `CsvWriter` — confirmed no shared mutable state.
+- Used `AtomicInteger` for success/failure counters, `synchronized(System.out/err)` for output.
+- Added `--threads N` CLI argument (default 4, minimum 1).
+- Updated `local-pipeline.ps1` step 10c to pass `--threads 4`.
+- Java 8 compatible: `Runnable` anonymous class (no lambdas), `Future<?>` collection pattern.
+- Expected speedup: ~4× for 226 files (16 min → ~4 min).

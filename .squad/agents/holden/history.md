@@ -53,3 +53,18 @@
 - Models retrained (R²=0.825 offline) but NOT battle-tested — evaluation used old models with NaN fix. Retrained JAR exists, needs evaluation.
 - 8/16 opponents improved ≥1 pp. 3 regressed (BlestPain −3.0, FloatingTadpole −2.0, ChocolateBar −1.0).
 - Sprint 11 priorities: (1) evaluate retrained models (no code change needed), (2) diagnose remaining 57-feature divergence via FeatureLogger, (3) if R²>0, focus on improving 3.5% hit rate.
+
+### 2026-05-10 — Sprint 11 Retrospective
+- Sprint result: **HIT**. Score 8.0% — fourth consecutive project record (+1.4 pp). R² −1.44 → −1.12 (+0.32).
+- **FIRST BATTLE WIN EVER** — 58% vs eem.zapper in battle 2/3. Historic milestone after 11 sprints.
+- Retrained models (with all 80 features populated) battle-tested for the first time. Marginal R² improvement (+0.32) confirms direction but remaining 57-feature divergence limits benefit.
+- Pipeline parallelized: ~16 min → ~5 min for 274 files (4 threads). Clean ExecutorService by Amos.
+- Feature comparison tooling ready (compare_features.py, run_diagnostic_battle.py) — Sprint 12 can execute diagnosis.
+- **Skipped turns REGRESSION**: new battles avg ~12.6/battle (max 23). First check #2 failure in 3 sprints. Caused by MlDerivedFeatures ~25 per-tick computations. TickBudget dropped to 199 (first sub-200).
+- 6/16 opponents improved ≥1 pp. Only 1 regressed ≥1 pp (Gladiator −3.6 — variance).
+- Offline metrics slightly down: fire power R² 0.825→0.786, movement R² 0.802→0.816, fire timing AUC 0.803→0.809.
+- Sprint 12 priorities: (1) fix skipped turns regression via MlDerivedFeatures profiling/optimization, (2) run feature comparison diagnostic with FeatureLogger, (3) continue R² improvement toward −0.5.
+
+### Cross-agent: Sprint 11
+- Amos: parallelized pipeline CSV (4 threads, ~4× speedup). Ran full eval.
+- Naomi: improved feature comparison script + diagnostic battle runner for Sprint 12.

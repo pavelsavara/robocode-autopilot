@@ -114,6 +114,24 @@ Sanity check #3 failed (gun selection). Two of three ML models are broken in-gam
 **Sprint:** 10
 **Result:** HIT. Overall score 6.6% — third consecutive project record (+0.5 pp). Fire power R² improved −3.67→−1.44 (+2.23, largest single-sprint gain). Root cause: 23/80 features were NaN, fixed by MlDerivedFeatures. CircularGun physics fixed (3 bugs, 17 tests). Retrained models in JAR but not yet evaluated. Sprint 11: evaluate retrained models, diagnose remaining 57-feature divergence.
 
+### 2026-05-10: User directive — parallel CSV processing
+**By:** Pavel Savara (via Copilot)
+**What:** Pipeline CSV processing (recording replay step) should process 4 files in parallel instead of sequentially. Currently processes 226 recordings one at a time (~16 minutes), parallelizing 4x would cut this to ~4 minutes.
+**Why:** User request — captured for team memory. Amos owns pipeline implementation.
+
+### 2026-05-10: Parallelize pipeline CSV processing
+**By:** Amos (Systems Engineer)
+**What:** Pipeline `Main.java` now processes .br files in parallel using a fixed thread pool (default 4 threads). New `--threads N` CLI flag controls parallelism. `local-pipeline.ps1` passes `--threads 4`.
+**Why:** Sequential processing of 226 .br files took ~16 minutes. 4-thread parallelism should reduce to ~4 minutes. Each `processBattle()` is fully self-contained (own Whiteboard, Transformer, CsvWriter) so thread safety is structural.
+
+### 2026-05-10: Sprint 11 Close — HIT
+**By:** Holden (Lead)
+**Sprint:** 11
+**Result:** HIT. Overall score 8.0% — fourth consecutive project record (+1.4 pp). First battle win EVER (58% vs eem.zapper). R² −1.44 → −1.12 (+0.32).
+**Key outcomes:** (1) Retrained models evaluated — marginal R² improvement confirms direction. (2) Pipeline parallelized — 4× speedup. (3) Feature comparison tooling ready for Sprint 12. (4) FIRST BATTLE WIN in 11 sprints of development.
+**Regression:** Skipped turns check #2 FAIL — new battles avg ~12.6 skipped turns. Caused by MlDerivedFeatures computation overhead. TickBudget min=199 (first sub-200).
+**Sprint 12 direction:** (1) Fix skipped turns via MlDerivedFeatures profiling/optimization (Priority — check #2 failing). (2) Run feature comparison diagnostic with FeatureLogger. (3) Continue R² improvement toward −0.5. Decision #13 holds — fix broken systems before new features.
+
 ## Governance
 
 - All meaningful changes require team consensus

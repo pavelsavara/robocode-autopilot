@@ -48,3 +48,19 @@
 - Bobbie fixed 3 CircularGun physics bugs (turn-move ordering, turn rate cap, wall collision). 17 tests.
 - Amos wired FeatureLogger into GbmFirePowerPredictor and ran eval — score 6.6%.
 - Sprint result: HIT. R² −3.67→−1.44 (+2.23). Third consecutive project record.
+
+### 2026-05-10 — Sprint 11
+- Improved feature comparison script and diagnostic battle runner for Sprint 12 use.
+- **Cross-agent:** Amos parallelized pipeline (4× speedup). Holden closed Sprint 11 as HIT — score 8.0%, first battle win (58% vs eem.zapper), R² −1.44→−1.12.
+- Skipped turns regression detected (~12.6 avg) from MlDerivedFeatures overhead.
+- Sprint 12: run feature comparison diagnostic, continue R² improvement toward −0.5.
+
+### 2026-05-10 — Feature Comparison Script v2
+- Rewrote `scripts/compare_features.py` for the new FeatureLogger CSV format (features_fire_power.csv).
+- New script aligns by (round, tick), computes Pearson correlation, MAE, max absolute error,
+  and % of values diverging >10% for each of the 80 model features.
+- Categorizes features into ML-Derived (23 Sprint 10 additions), Window (20), and Core groups.
+- Maps each feature to a root-cause category (window, scan, cumulative, angle, wave, ml_derived)
+  and prints suggested diagnosis for the top 10 most divergent features.
+- Created `scripts/run_diagnostic_battle.py` as a helper for the battle→compare loop.
+- Usage: `python scripts/compare_features.py <feature_logger_csv> <ticks_csv_dir>`
