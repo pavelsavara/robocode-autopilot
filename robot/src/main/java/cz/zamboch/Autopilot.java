@@ -8,6 +8,7 @@ import cz.zamboch.autopilot.core.features.CombatProgressFeatures;
 import cz.zamboch.autopilot.core.features.EnergyFeatures;
 import cz.zamboch.autopilot.core.features.EnvelopeFeatures;
 import cz.zamboch.autopilot.core.features.IdentityFeatures;
+import cz.zamboch.autopilot.core.features.MlDerivedFeatures;
 import cz.zamboch.autopilot.core.features.MovementFeatures;
 import cz.zamboch.autopilot.core.features.MultiWaveFeatures;
 import cz.zamboch.autopilot.core.features.PositionFeatures;
@@ -370,6 +371,11 @@ public final class Autopilot extends AdvancedRobot {
 
     @Override
     public void onBattleEnded(BattleEndedEvent e) {
+        // Close feature logger before persistence save
+        if (firePowerPredictor != null) {
+            firePowerPredictor.closeLogger();
+        }
+
         // Save current VCS histograms for this opponent before persisting
         if (vcsStore != null && whiteboard.getOpponentBotId() != null) {
             int hash = IdentityFeatures.fnv1a32(whiteboard.getOpponentBotId());
@@ -513,6 +519,9 @@ public final class Autopilot extends AdvancedRobot {
         t.register(new EnergyFeatures());
         t.register(new TimingFeatures());
         t.register(new IdentityFeatures());
+        // ML-derived features: state normalisation, geometry, segmentation, wave/fire,
+        // movement history — previously pipeline-only, now computed in-game for ML models
+        t.register(new MlDerivedFeatures());
         t.register(new TargetingFeatures());
         t.register(new MultiWaveFeatures());
         t.register(new EnvelopeFeatures());
@@ -528,6 +537,8 @@ public final class Autopilot extends AdvancedRobot {
         firePowerPredictor.loadModel();
         movementPredictor.loadModel();
         fireTimingPredictor.loadModel();
+        // Initialize feature logger for fire power diagnostics (zero cost when disabled)
+        firePowerPredictor.initLogger(getDataDirectory());
         // Log eager load results immediately
         log("ML_EAGER_LOAD fp=" + firePowerPredictor.isModelLoaded()
                 + " mv=" + movementPredictor.isModelLoaded()

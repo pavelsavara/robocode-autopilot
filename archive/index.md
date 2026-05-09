@@ -6,6 +6,7 @@ Documents are prefixed with their creation date and are immutable once archived.
 
 | Date | Document | Topic |
 |---|---|---|
+| 2026-05-09 | [2026-05-09-retrospective-10.md](2026-05-09-retrospective-10.md) | Tenth retrospective — NaN root cause HIT, 6.6% best ever, R² −3.67→−1.44, 23/80 features were NaN |
 | 2026-05-09 | [2026-05-09-retrospective-9.md](2026-05-09-retrospective-9.md) | Ninth retrospective — gun fix HIT, 6.1% best ever, all sanity checks pass, ML still broken |
 | 2026-05-09 | [2026-05-09-retrospective-8.md](2026-05-09-retrospective-8.md) | Eighth retrospective — fix critical systems sprint, MISS, −0.3 pp, sanity script operational |
 | 2026-05-09 | [2026-05-09-retrospective-7.md](2026-05-09-retrospective-7.md) | Seventh retrospective — first full-capacity eval, 5.4% score, ML in-game gap |

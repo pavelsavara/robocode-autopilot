@@ -90,14 +90,11 @@ public class AutopilotSmokeTest {
                     "Should have 0 engine errors, got: " + errors);
 
             // Verify ML models loaded inside the Robocode sandbox.
-            // Robot prints "ML_MODELS_LOADED" on tick 1 if all 3 models loaded,
-            // or "ML_MODELS_FAILED fp=... mv=... ft=..." if any failed.
+            // Robot prints "ML_EAGER_LOAD fp=true mv=true ft=true" if all 3 models loaded.
             String output = robotOutput.toString();
-            assertTrue(output.contains("ML_MODELS_LOADED"),
-                    "Robot should print ML_MODELS_LOADED (all 3 GBM models loaded in sandbox). "
+            assertTrue(output.contains("ML_EAGER_LOAD fp=true mv=true ft=true"),
+                    "Robot should print ML_EAGER_LOAD with all models=true. "
                             + "Got output: " + output);
-            assertFalse(output.contains("ML_MODELS_FAILED"),
-                    "No model should fail to load. Got: " + output);
         } finally {
             engine.close();
         }

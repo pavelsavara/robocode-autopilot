@@ -127,6 +127,13 @@ public class TargetingFeatures implements IInGameFeatures {
     /**
      * Iterative circular targeting: project the opponent forward along their current
      * heading-delta arc until our bullet would intercept.
+     *
+     * <p>Physics model (matching Robocode engine):</p>
+     * <ul>
+     *   <li>Turn-then-move ordering (heading updates before position)</li>
+     *   <li>Turn rate capped at {@code 10 − 0.75·|velocity|} deg/tick</li>
+     *   <li>Wall collision zeroes velocity (opponent stops at wall)</li>
+     * </ul>
      */
     static double circularTargetAngle(
             double ourX, double ourY,
@@ -135,16 +142,35 @@ public class TargetingFeatures implements IInGameFeatures {
             double ourSpeed,
             int bfW, int bfH) {
         double px = oppX, py = oppY, ph = oppHeading;
+        double vel = oppVel;
         double t = 0;
         int maxIter = 256;
         while (++t * ourSpeed < Math.hypot(ourX - px, ourY - py) && --maxIter > 0) {
-            px += Math.sin(ph) * oppVel;
-            py += Math.cos(ph) * oppVel;
-            ph += headingDelta;
-            if (px < ROBOT_HALF_SIZE) px = ROBOT_HALF_SIZE;
-            else if (px > bfW - ROBOT_HALF_SIZE) px = bfW - ROBOT_HALF_SIZE;
-            if (py < ROBOT_HALF_SIZE) py = ROBOT_HALF_SIZE;
-            else if (py > bfH - ROBOT_HALF_SIZE) py = bfH - ROBOT_HALF_SIZE;
+            // Cap heading delta to physics-limited turn rate at current velocity
+            double maxTurn = Math.toRadians(10.0 - 0.75 * Math.abs(vel));
+            if (maxTurn < 0) maxTurn = 0;
+            double dt = headingDelta;
+            if (dt > maxTurn) dt = maxTurn;
+            else if (dt < -maxTurn) dt = -maxTurn;
+
+            // Robocode physics: turn first, then move
+            ph += dt;
+            double newPx = px + Math.sin(ph) * vel;
+            double newPy = py + Math.cos(ph) * vel;
+
+            // Wall collision: clamp position and zero velocity
+            boolean hitWall = false;
+            if (newPx < ROBOT_HALF_SIZE) { newPx = ROBOT_HALF_SIZE; hitWall = true; }
+            else if (newPx > bfW - ROBOT_HALF_SIZE) { newPx = bfW - ROBOT_HALF_SIZE; hitWall = true; }
+            if (newPy < ROBOT_HALF_SIZE) { newPy = ROBOT_HALF_SIZE; hitWall = true; }
+            else if (newPy > bfH - ROBOT_HALF_SIZE) { newPy = bfH - ROBOT_HALF_SIZE; hitWall = true; }
+
+            if (hitWall) {
+                vel = 0;
+            }
+
+            px = newPx;
+            py = newPy;
         }
         return RoboMath.normalAbsoluteAngle(Math.atan2(px - ourX, py - ourY));
     }
