@@ -47,54 +47,46 @@ public final class WaveSurfMovement implements IMovementStrategy {
 
     @Override
     public void getCommand(Whiteboard wb, StrategyParams params, MovementCommand out) {
-        CandidatePosition target = planner.plan(wb, params);
+        // Always maintain high-speed lateral movement.
+        // When waves are active AND imminent, use the planner to pick direction.
+        // Otherwise, orbit at max speed with random reversals.
 
-        if (target == null) {
-            // No wave candidates — orbital movement
-            committedAngle = Double.NaN;
-            defaultLateralMove(wb, out);
-            return;
-        }
-
-        // Direction commitment: re-evaluate when a new wave appears,
-        // when the commitment period expires, or when a wave is imminent.
-        int currentWaves = wb.getOpponentWaves().size();
-        boolean waveImminent = false;
-        for (int i = 0; i < wb.getOpponentWaves().size(); i++) {
-            WaveRecord w = wb.getOpponentWaves().get(i);
-            double dist = Math.hypot(wb.getOurX() - w.originX, wb.getOurY() - w.originY);
-            double remaining = dist - w.radius(wb.getTick());
-            double ticksUntil = w.bulletSpeed > 0 ? remaining / w.bulletSpeed : 99;
-            if (ticksUntil < 5) {
-                waveImminent = true;
-                break;
+        boolean hasImminentWave = false;
+        if (!wb.getOpponentWaves().isEmpty()) {
+            for (int i = 0; i < wb.getOpponentWaves().size(); i++) {
+                WaveRecord w = wb.getOpponentWaves().get(i);
+                double dist = Math.hypot(wb.getOurX() - w.originX, wb.getOurY() - w.originY);
+                double remaining = dist - w.radius(wb.getTick());
+                double ticksUntil = w.bulletSpeed > 0 ? remaining / w.bulletSpeed : 99;
+                if (ticksUntil < 12) {
+                    hasImminentWave = true;
+                    break;
+                }
             }
         }
-        boolean shouldRecommit = Double.isNaN(committedAngle)
-                || currentWaves != commitWaveCount
-                || waveImminent
-                || (wb.getTick() - commitTick) >= COMMIT_TICKS;
 
-        if (shouldRecommit) {
-            double dx = target.x - wb.getOurX();
-            double dy = target.y - wb.getOurY();
-            committedAngle = Math.atan2(dx, dy);
-            commitTick = wb.getTick();
-            commitWaveCount = currentWaves;
+        if (hasImminentWave) {
+            CandidatePosition target = planner.plan(wb, params);
+            if (target != null) {
+                double dx = target.x - wb.getOurX();
+                double dy = target.y - wb.getOurY();
+                double targetAngle = Math.atan2(dx, dy);
+                double ourHeading = wb.getOurHeading();
+                double turn = RoboMath.normalRelativeAngle(targetAngle - ourHeading);
+                double ahead;
+                if (Math.abs(turn) > Math.PI / 2) {
+                    turn = RoboMath.normalRelativeAngle(turn + Math.PI);
+                    ahead = -150;
+                } else {
+                    ahead = 150;
+                }
+                out.set(ahead, turn);
+                return;
+            }
         }
 
-        double ourHeading = wb.getOurHeading();
-        double turn = RoboMath.normalRelativeAngle(committedAngle - ourHeading);
-
-        double ahead;
-        if (Math.abs(turn) > Math.PI / 2) {
-            turn = RoboMath.normalRelativeAngle(turn + Math.PI);
-            ahead = -150;
-        } else {
-            ahead = 150;
-        }
-
-        out.set(ahead, turn);
+        // Default: high-speed lateral orbit with wall awareness
+        defaultLateralMove(wb, out);
     }
 
     /**

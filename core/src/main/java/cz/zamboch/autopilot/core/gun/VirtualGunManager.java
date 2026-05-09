@@ -181,10 +181,11 @@ public final class VirtualGunManager implements IPersistable {
         return RoboMath.normalRelativeAngle(selectedAngle - wb.getOurGunHeading());
     }
 
-    /** Whether the gun can fire (aimed + cool). */
+    /** Whether the gun can fire (aimed + cool + not turning too fast). */
     public boolean shouldFire(Whiteboard wb) {
-        return wb.getOurGunHeat() <= 0
-                && Math.abs(getGunTurnAngle(wb)) < AIM_THRESHOLD;
+        if (wb.getOurGunHeat() > 0) return false;
+        double gunTurnRemaining = Math.abs(getGunTurnAngle(wb));
+        return gunTurnRemaining < AIM_THRESHOLD;
     }
 
     /** Reset for a new round. Virtual bullets cleared, hit history preserved. */

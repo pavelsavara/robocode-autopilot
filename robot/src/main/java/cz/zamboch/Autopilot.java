@@ -231,9 +231,12 @@ public final class Autopilot extends AdvancedRobot {
             }
             setTurnGunRightRadians(gunTurn);
 
-            // Fire when ready — ensure we keep enough energy to survive a hit
+            // Fire when ready — clamp power to what we can afford
             double firePower = currentParams.firePowerBudget;
-            if (gunManager.shouldFire(whiteboard) && getEnergy() > firePower + 0.1) {
+            if (firePower > getEnergy() - 0.1) {
+                firePower = Math.max(0.1, getEnergy() - 0.1);
+            }
+            if (gunManager.shouldFire(whiteboard) && getEnergy() > 0.2) {
                 setFire(firePower);
                 whiteboard.incrementOurShotsFired();
                 whiteboard.setLastOurFire(whiteboard.getTick(), firePower);

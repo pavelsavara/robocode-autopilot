@@ -18,7 +18,7 @@ import cz.zamboch.autopilot.core.strategy.StrategyParams;
  */
 public final class EnergyRatioStrategyComputer extends StrategyComputer {
 
-    /** Stable preferred distance (not random). */
+    /** Preferred engagement distance. Balanced for both accuracy and dodge time. */
     private static final double PREFERRED_DISTANCE = 350.0;
 
     @Override

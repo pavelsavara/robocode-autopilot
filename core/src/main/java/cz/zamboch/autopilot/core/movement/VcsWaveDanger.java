@@ -71,6 +71,7 @@ public final class VcsWaveDanger implements IWaveDanger {
         double priorValue = PRIOR_WEIGHT * Math.exp(-0.5 * (gf / sigma) * (gf / sigma));
 
         double danger = (histValue + priorValue) / (totalObs + PRIOR_WEIGHT);
+
         return Math.min(1.0, danger);
     }
 
