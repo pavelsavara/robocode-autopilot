@@ -1,0 +1,60 @@
+{
+  "agents": {
+    "holden": {
+      "persistent_name": "Holden",
+      "universe": "The Expanse",
+      "role": "Lead",
+      "created_at": "2026-05-09",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "alex": {
+      "persistent_name": "Alex",
+      "universe": "The Expanse",
+      "role": "Movement Engineer",
+      "created_at": "2026-05-09",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "bobbie": {
+      "persistent_name": "Bobbie",
+      "universe": "The Expanse",
+      "role": "Targeting Engineer",
+      "created_at": "2026-05-09",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "naomi": {
+      "persistent_name": "Naomi",
+      "universe": "The Expanse",
+      "role": "ML Engineer",
+      "created_at": "2026-05-09",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "amos": {
+      "persistent_name": "Amos",
+      "universe": "The Expanse",
+      "role": "Systems Engineer",
+      "created_at": "2026-05-09",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "scribe": {
+      "persistent_name": "Scribe",
+      "universe": null,
+      "role": "Scribe",
+      "created_at": "2026-05-09",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "ralph": {
+      "persistent_name": "Ralph",
+      "universe": null,
+      "role": "Work Monitor",
+      "created_at": "2026-05-09",
+      "legacy_named": false,
+      "status": "active"
+    }
+  }
+}
