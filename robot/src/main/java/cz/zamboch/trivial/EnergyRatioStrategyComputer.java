@@ -107,16 +107,21 @@ public final class EnergyRatioStrategyComputer extends StrategyComputer {
         if (opponentEnergy < 20.0 && ourEnergy > 20.0) {
             return 3.0;
         }
-        // Base power: 2.0 + aggression scale [0, 1.0]
-        // Distance adjustment: close range gets +0.5, long range gets -0.5
-        double distAdj = 0;
-        if (distance < 200) {
-            distAdj = 0.5;
-        } else if (distance > 500) {
-            distAdj = -0.5;
+        // Distance-scaled fire power: close = max damage, far = fast bullet for accuracy
+        // Robocode bullet speed = 20 - 3*power, so power 1.0 = speed 17, power 3.0 = speed 11
+        double distPower;
+        if (distance < 150) {
+            distPower = 3.0;  // close range: max damage, bullet still arrives fast
+        } else if (distance < 300) {
+            distPower = 2.0;  // medium: balanced
+        } else if (distance < 500) {
+            distPower = 1.5;  // medium-far: faster bullet
+        } else {
+            distPower = 1.0;  // far: fast bullet essential
         }
-        double desired = Math.max(1.0, Math.min(3.0, 2.0 + aggression * 0.5 + distAdj));
-        double maxAffordable = Math.max(0.5, ourEnergy / 3.0);
+        // Aggression adjusts ±0.5 around distance base
+        double desired = Math.max(0.5, Math.min(3.0, distPower + (aggression - 0.5) * 0.5));
+        double maxAffordable = Math.max(0.5, ourEnergy / 4.0);
         return Math.min(desired, Math.min(3.0, maxAffordable));
     }
 }

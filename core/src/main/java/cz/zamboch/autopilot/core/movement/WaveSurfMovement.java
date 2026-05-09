@@ -1,6 +1,7 @@
 package cz.zamboch.autopilot.core.movement;
 
 import cz.zamboch.autopilot.core.Feature;
+import cz.zamboch.autopilot.core.WaveRecord;
 import cz.zamboch.autopilot.core.Whiteboard;
 import cz.zamboch.autopilot.core.strategy.IMovementStrategy;
 import cz.zamboch.autopilot.core.strategy.MovementCommand;
@@ -27,7 +28,7 @@ public final class WaveSurfMovement implements IMovementStrategy {
     private static final int FLIP_MIN_TICKS = 15;
     private static final int FLIP_RANGE_TICKS = 31; // 15..45 inclusive
     /** Re-evaluate target at most every N ticks to prevent oscillation. */
-    private static final int COMMIT_TICKS = 5;
+    private static final int COMMIT_TICKS = 3;
 
     private final PathPlanner planner;
     private final Random rng = new Random();
@@ -51,20 +52,27 @@ public final class WaveSurfMovement implements IMovementStrategy {
         if (target == null) {
             // No wave candidates — orbital movement
             committedAngle = Double.NaN;
-            double dodgeScale = getDodgeScale(wb);
-            if (dodgeScale > 0) {
-                preemptiveLateralMove(wb, out, dodgeScale);
-            } else {
-                defaultLateralMove(wb, out);
-            }
+            defaultLateralMove(wb, out);
             return;
         }
 
-        // Direction commitment: only re-evaluate when a new wave appears
-        // or after COMMIT_TICKS have elapsed. This prevents oscillation.
+        // Direction commitment: re-evaluate when a new wave appears,
+        // when the commitment period expires, or when a wave is imminent.
         int currentWaves = wb.getOpponentWaves().size();
+        boolean waveImminent = false;
+        for (int i = 0; i < wb.getOpponentWaves().size(); i++) {
+            WaveRecord w = wb.getOpponentWaves().get(i);
+            double dist = Math.hypot(wb.getOurX() - w.originX, wb.getOurY() - w.originY);
+            double remaining = dist - w.radius(wb.getTick());
+            double ticksUntil = w.bulletSpeed > 0 ? remaining / w.bulletSpeed : 99;
+            if (ticksUntil < 5) {
+                waveImminent = true;
+                break;
+            }
+        }
         boolean shouldRecommit = Double.isNaN(committedAngle)
                 || currentWaves != commitWaveCount
+                || waveImminent
                 || (wb.getTick() - commitTick) >= COMMIT_TICKS;
 
         if (shouldRecommit) {
@@ -144,8 +152,9 @@ public final class WaveSurfMovement implements IMovementStrategy {
 
     /**
      * Default lateral movement when no waves are active and no fire is predicted.
-     * Orbits the opponent perpendicular to the bearing line at max speed,
-     * reversing direction randomly to avoid predictability.
+     * Uses stop-and-go pattern: sprint laterally, then briefly decelerate.
+     * This confuses timing-based targeting systems.
+     * Wall-aware: reverses direction when approaching a wall.
      */
     private void defaultLateralMove(Whiteboard wb, MovementCommand out) {
         if (!wb.hasFeature(Feature.BEARING_TO_OPPONENT_ABS)) {
@@ -156,7 +165,15 @@ public final class WaveSurfMovement implements IMovementStrategy {
         double bearing = wb.getFeature(Feature.BEARING_TO_OPPONENT_ABS);
         double ourHeading = wb.getOurHeading();
 
-        // Move perpendicular to bearing (orbit the opponent) at max speed
+        // Check wall proximity — reverse direction if heading toward a wall
+        double wallDist = wb.hasFeature(Feature.OUR_DIST_TO_WALL_MIN)
+                ? wb.getFeature(Feature.OUR_DIST_TO_WALL_MIN) : 200;
+        if (wallDist < 60) {
+            preemptiveDir = -preemptiveDir;
+            nextFlipTick = wb.getTick() + FLIP_MIN_TICKS + rng.nextInt(FLIP_RANGE_TICKS);
+        }
+
+        // Move perpendicular to bearing (orbit the opponent)
         double perpAngle = bearing + preemptiveDir * Math.PI / 2;
         double turn = RoboMath.normalRelativeAngle(perpAngle - ourHeading);
 

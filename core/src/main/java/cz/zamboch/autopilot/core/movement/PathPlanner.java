@@ -22,13 +22,13 @@ import java.util.List;
 public final class PathPlanner {
 
     /** Maximum candidates to evaluate per tick. */
-    private static final int MAX_CANDIDATES = 30;
+    private static final int MAX_CANDIDATES = 50;
 
     /** Weight for position-based danger (walls, distance). */
-    private static final double POS_WEIGHT = 0.3;
+    private static final double POS_WEIGHT = 0.2;
 
     /** Weight for wave-based danger (incoming bullets). */
-    private static final double WAVE_WEIGHT = 0.7;
+    private static final double WAVE_WEIGHT = 0.8;
 
     private final IPositionDanger posDanger;
     private final IWaveDanger waveDanger;

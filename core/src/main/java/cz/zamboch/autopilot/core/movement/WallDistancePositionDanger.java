@@ -15,10 +15,10 @@ import cz.zamboch.autopilot.core.Whiteboard;
 public final class WallDistancePositionDanger implements IPositionDanger {
 
     private static final int MARGIN = 18; // robot half-size
-    private static final double WALL_DANGER_THRESHOLD = 80.0;
-    private static final double CORNER_DANGER_THRESHOLD = 120.0;
+    private static final double WALL_DANGER_THRESHOLD = 100.0;
+    private static final double CORNER_DANGER_THRESHOLD = 150.0;
     private static final double PREFERRED_DIST_MIN = 150.0;
-    private static final double PREFERRED_DIST_MAX = 500.0;
+    private static final double PREFERRED_DIST_MAX = 600.0;
 
     private static final double W_WALL = 0.45;
     private static final double W_CORNER = 0.30;

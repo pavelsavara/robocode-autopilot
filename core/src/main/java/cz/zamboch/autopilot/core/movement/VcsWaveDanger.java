@@ -22,6 +22,10 @@ public final class VcsWaveDanger implements IWaveDanger {
 
     /** Gaussian prior std — used until VCS has enough observations. */
     private static final double PRIOR_STD = 0.4;
+    /** Wider prior std — used when very few observations (less directional bias). */
+    private static final double WIDE_PRIOR_STD = 0.8;
+    /** Threshold: below this many observations, use the wider prior. */
+    private static final int WIDE_PRIOR_THRESHOLD = 8;
     /** Prior equivalent to this many observations at GF=0.
      *  Lower value = VCS data dominates sooner (faster convergence). */
     private static final double PRIOR_WEIGHT = 3.0;
@@ -60,9 +64,11 @@ public final class VcsWaveDanger implements IWaveDanger {
         int totalObs = 0;
         for (int v : hist) totalObs += v;
 
-        // Combine histogram observation with Gaussian prior
+        // Combine histogram observation with Gaussian prior.
+        // Use wider prior when few observations — less directional bias.
         double histValue = hist[bin];
-        double priorValue = PRIOR_WEIGHT * gaussian(gf);
+        double sigma = totalObs < WIDE_PRIOR_THRESHOLD ? WIDE_PRIOR_STD : PRIOR_STD;
+        double priorValue = PRIOR_WEIGHT * Math.exp(-0.5 * (gf / sigma) * (gf / sigma));
 
         double danger = (histValue + priorValue) / (totalObs + PRIOR_WEIGHT);
         return Math.min(1.0, danger);
