@@ -176,9 +176,6 @@ public final class Autopilot extends AdvancedRobot {
             // Initialize VCS gun histogram with Gaussian prior at GF=0
             // so the VCS gun has reasonable aim before observing actual hits
             whiteboard.initVcsPrior(3);
-
-            // Diagnostic feature logging (only active with -Dautopilot.featureLog=true)
-            firePowerPredictor.initFeatureLogger(getDataDirectory());
         }
 
         // Per-round initialisation
@@ -373,11 +370,6 @@ public final class Autopilot extends AdvancedRobot {
 
     @Override
     public void onBattleEnded(BattleEndedEvent e) {
-        // Close diagnostic feature loggers
-        if (firePowerPredictor != null) {
-            firePowerPredictor.closeFeatureLogger();
-        }
-
         // Save current VCS histograms for this opponent before persisting
         if (vcsStore != null && whiteboard.getOpponentBotId() != null) {
             int hash = IdentityFeatures.fnv1a32(whiteboard.getOpponentBotId());
