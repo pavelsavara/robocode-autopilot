@@ -1,63 +1,151 @@
 # Ceremonies
 
-> Team meetings that happen before or after work. Each squad configures their own.
+> Sprint ceremonies mapped to [sprint.md](../sprint.md) 5-phase process.
+> These are HARD GATES — the coordinator MUST enforce them in order.
 
-## Design Review
+## Phase 1: Sprint Planning
 
 | Field | Value |
 |-------|-------|
-| **Trigger** | auto |
+| **Trigger** | manual |
 | **When** | before |
-| **Condition** | multi-agent task involving 2+ agents modifying shared systems |
-| **Facilitator** | lead |
+| **Condition** | user says "start sprint", "plan next sprint", or similar |
+| **Facilitator** | Holden |
 | **Participants** | all-relevant |
 | **Time budget** | focused |
 | **Enabled** | ✅ yes |
 
 **Agenda:**
-1. Review the task and requirements
-2. Agree on interfaces and contracts between components
-3. Identify risks and edge cases
-4. Assign action items
+1. Holden selects max 3 proposals from previous retrospective (1 if major)
+2. Holden assigns each proposal to responsible engineer
+3. Confirm fixed opponent set (16 bots from sprint.md)
+4. Each engineer confirms what they're building and target metric
+
+**Exit:** Every engineer knows their task and metric target.
 
 ---
 
-## Retrospective
+## Phase 2a: Build (parallel)
 
 | Field | Value |
 |-------|-------|
 | **Trigger** | auto |
-| **When** | after |
-| **Condition** | build failure, test failure, or reviewer rejection |
-| **Facilitator** | lead |
-| **Participants** | all-involved |
+| **When** | after planning |
+| **Condition** | sprint planning complete |
+| **Facilitator** | coordinator |
+| **Participants** | assigned engineers |
+| **Time budget** | full |
+| **Enabled** | ✅ yes |
+
+**Rules:**
+1. Each change on a separate branch (worktree if enabled)
+2. Code must pass existing tests before requesting review
+3. Engineers implement + write tests for their changes
+
+---
+
+## Phase 2b: Code Review Gate (HARD GATE)
+
+| Field | Value |
+|-------|-------|
+| **Trigger** | auto |
+| **When** | after build, BEFORE any merge |
+| **Condition** | engineers report work complete |
+| **Facilitator** | Holden |
+| **Participants** | Holden reviews each branch |
+| **Time budget** | focused |
+| **Enabled** | ✅ yes |
+| **Enforcement** | ⛔ BLOCKING — NO branch merges without Holden's approval |
+
+**⚠️ THIS IS THE GATE THAT WAS SKIPPED IN SPRINT 8, CAUSING 2 OF 3 FIXES TO BACKFIRE.**
+
+**Process:**
+1. Coordinator spawns Holden to review EACH branch via `git diff main..HEAD`
+2. Holden applies the review checklist from sprint.md Phase 2
+3. For each branch: APPROVE, REJECT with fix instructions, or REJECT—revert
+4. Only APPROVED branches are merged to main
+5. Rejected branches go back to the engineer for revision
+
+**Checklist (from sprint.md):**
+- [ ] `final` classes unless designed for inheritance
+- [ ] `static` inner classes unless outer reference needed
+- [ ] No mutable state in feature classes
+- [ ] No I/O in core module
+- [ ] No per-tick heap allocation in hot paths
+- [ ] Persistence format backward-compatible
+- [ ] Tests present and meaningful
+- [ ] Change is logically correct
+
+**Exit:** All approved branches merged. Rejected branches fixed or dropped.
+
+---
+
+## Phase 3: Battle & Record
+
+| Field | Value |
+|-------|-------|
+| **Trigger** | auto |
+| **When** | after all approved merges |
+| **Condition** | main has all approved changes, build passes |
+| **Facilitator** | Amos |
+| **Participants** | Amos |
+| **Time budget** | full |
+| **Enabled** | ✅ yes |
+
+**Process:**
+1. Build robot JAR
+2. Deploy to robocode, delete stale autopilot.dat
+3. Smoke test (3 opponents, 1 battle) — abort if dramatically worse
+4. Full evaluation (16 opponents, 3 battles × 35 rounds)
+5. Process recordings into CSVs
+6. Run `scripts/sanity-check.ps1`
+
+**Exit:** CSVs in `output/local/csv/`, sanity check results available.
+
+---
+
+## Phase 4: Diagnose & Analyse
+
+| Field | Value |
+|-------|-------|
+| **Trigger** | auto |
+| **When** | after battle |
+| **Condition** | evaluation data available |
+| **Facilitator** | coordinator |
+| **Participants** | all engineers (each runs their checks) |
 | **Time budget** | focused |
 | **Enabled** | ✅ yes |
 
-**Agenda:**
-1. What happened? (facts only)
-2. Root cause analysis
-3. What should change?
-4. Action items for next iteration
+**Process:**
+1. Run sanity-check.ps1 if not already run (Amos)
+2. If ANY mandatory check fails → STOP, that's the sprint finding
+3. Each engineer runs their assigned retrospective notebooks
+4. ML Engineer runs in-game vs offline comparison
 
+**Exit:** All 6 sanity checks reported. Performance metrics computed.
 
 ---
 
-## Retrospective with Enforcement
+## Phase 5: Retrospective & Commit
 
 | Field | Value |
 |-------|-------|
 | **Trigger** | auto |
-| **When** | weekly |
-| **Condition** | No *retrospective* log in .squad/log/ within the last 7 days |
-| **Facilitator** | lead |
+| **When** | after diagnosis |
+| **Condition** | all diagnostics complete |
+| **Facilitator** | Holden |
 | **Participants** | all |
 | **Time budget** | focused |
-| **Enabled** | yes |
-| **Enforcement skill** | retro-enforcement |
+| **Enabled** | ✅ yes |
 
-**Agenda:**
-1. What shipped this week? (closed issues, merged PRs)
+**Process:**
+1. Holden writes retrospective in `archive/` using engineers' data
+2. Revert branches that caused measurable harm
+3. Commit net-positive changes with sprint summary message
+4. Holden declares sprint result: win / miss / blocked
+5. Holden proposes max 3 items for next sprint
+
+**Exit:** Retrospective archived, plan.md updated, sprint closed.
 2. What did not ship? (open issues, blockers)
 3. Root cause on any failures
 4. Action items -- each MUST become a GitHub Issue labeled retro-action

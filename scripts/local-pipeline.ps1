@@ -113,7 +113,7 @@ if (-not $SkipBattles) {
             if ($opponentFailed) { continue }
 
             $pct = [math]::Round(100 * (($opponentNum - 1) * $BattlesPerOpponent + $b) / ($opponentJars.Count * $BattlesPerOpponent))
-            Log ("  [{0}/{1}] {2} vs {3} ({4}/{5}) {6}%" -f $opponentNum, $opponentJars.Count, $ourBotClass, $opponentClass, $b, $BattlesPerOpponent, $pct)
+            Log ("  [{0}/{1}]-{6}% {2} vs {3} ({4}/{5})" -f $opponentNum, $opponentJars.Count, $ourBotClass, $opponentClass, $b, $BattlesPerOpponent, $pct)
 
             try {
                 $result = node $runBattleScript --robocode-dir $RobocodeDir --bot-a $ourBotClass --bot-b $opponentClass --rounds $Rounds --record-dir $recordingsDir 2>&1

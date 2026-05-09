@@ -6,6 +6,7 @@ Documents are prefixed with their creation date and are immutable once archived.
 
 | Date | Document | Topic |
 |---|---|---|
+| 2026-05-09 | [2026-05-09-retrospective-8.md](2026-05-09-retrospective-8.md) | Eighth retrospective — fix critical systems sprint, MISS, −0.3 pp, sanity script operational |
 | 2026-05-09 | [2026-05-09-retrospective-7.md](2026-05-09-retrospective-7.md) | Seventh retrospective — first full-capacity eval, 5.4% score, ML in-game gap |
 | 2026-05-09 | [2026-05-09-retrospective-6.md](2026-05-09-retrospective-6.md) | Sixth retrospective — post-fix code audit, 9 critical findings |
 | 2026-05-09 | [2026-05-09-retrospective-5.md](2026-05-09-retrospective-5.md) | Fifth retrospective — top-50 campaign, 0.56% win rate |

@@ -44,10 +44,13 @@ How to decide who handles what.
 
 ## Rules
 
-1. **Eager by default** — spawn all agents who could usefully start work, including anticipatory downstream work.
-2. **Scribe always runs** after substantial work, always as `mode: "background"`. Never blocks.
-3. **Quick facts → coordinator answers directly.** Don't spawn an agent for "what port does the server run on?"
-4. **When two agents could handle it**, pick the one whose domain is the primary concern.
-5. **"Team, ..." → fan-out.** Spawn all relevant agents in parallel as `mode: "background"`.
-6. **Anticipate downstream work.** If a feature is being built, spawn the tester to write test cases from requirements simultaneously.
-7. **Issue-labeled work** — when a `squad:{member}` label is applied to an issue, route to that member. The Lead handles all `squad` (base label) triage.
+1. **Follow sprint.md phases IN ORDER** — never skip Phase 2b (review gate).
+2. **NO merge without Holden review** — this is the #1 rule. Spawn Holden on each branch BEFORE merging.
+3. **Eager by default** — spawn all agents who could usefully start work in Phase 2a (parallel worktrees).
+4. **Scribe always runs** after substantial work, always as `mode: "background"`. Never blocks.
+5. **Quick facts → coordinator answers directly.** Don't spawn an agent for simple lookups.
+6. **When two agents could handle it**, pick the one whose domain is the primary concern.
+7. **"Team, ..." → fan-out.** Spawn all relevant agents in parallel.
+8. **Anticipate downstream work.** If a feature is being built, Amos can start test prep.
+9. **Issue-labeled work** — when a `squad:{member}` label is applied, route to that member.
+10. **After evaluation, always run `scripts/sanity-check.ps1`** before any manual analysis.
