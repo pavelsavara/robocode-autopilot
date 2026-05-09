@@ -344,8 +344,9 @@ public final class Autopilot extends AdvancedRobot {
     @Override
     public void onSkippedTurn(robocode.SkippedTurnEvent e) {
         if (tickBudget != null) {
-            tickBudget.onSkippedTurn();
+            tickBudget.onSkippedTurn(getRoundNum(), e.getSkippedTurn());
             log("SKIPPED tick=" + e.getSkippedTurn()
+                    + " round=" + getRoundNum()
                     + " budget=" + tickBudget.getBudget()
                     + " ceiling=" + tickBudget.getCeiling()
                     + " lastMicros=" + tickBudget.getLastTickMicros());
