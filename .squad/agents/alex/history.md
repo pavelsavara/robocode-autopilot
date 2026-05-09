@@ -11,4 +11,9 @@
 
 ## Learnings
 
-(none yet)
+### 2026-05-09 — Sprint 7
+- Movement at max speed only 64% of ticks (should be ~90%+).
+- Lateral velocity high only 54.5% — too many direction changes (11.3% of ticks).
+- Opponent hit rate 46.2% — opponents adapt to our movement faster than we dodge.
+- Orbit-primary strategy confirmed correct (Decision #9) but velocity implementation needs tuning.
+- Next sprint priority: reduce unnecessary direction changes, increase time at max speed.

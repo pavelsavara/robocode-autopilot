@@ -11,4 +11,9 @@
 
 ## Learnings
 
-(none yet)
+### 2026-05-09 — Sprint 7
+- Fire power model: R²=−0.61 in-game vs 0.862 offline — Java/Python sliding window divergence.
+- Fire timing model: 83% false positive rate (predicts fire 83% of ticks, actual rate 3%).
+- Movement prediction model: healthy, no in-game degradation detected.
+- Root cause for fire power: feature values in Java don't match Python pipeline features.
+- Next sprint priority: diagnose and fix Java/Python feature parity for sliding windows.

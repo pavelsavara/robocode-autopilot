@@ -12,4 +12,9 @@
 
 ## Learnings
 
-(none yet)
+### 2026-05-09 — Sprint 7
+- Sprint result: BLOCKED. Score improved 10× (5.4%) after TickBudget fix but 0% win rate.
+- Fire power model R²=−0.61 in-game vs 0.862 offline — feature mismatch is root cause.
+- Gun selection bug: HeadOnGun at 54% despite Decision #10 demoting it to lowest priority.
+- Phase 12 repurposed from "Online Learning" to "Fix Broken Systems" — online learning deferred.
+- Decision #13: fix broken systems before adding new features.

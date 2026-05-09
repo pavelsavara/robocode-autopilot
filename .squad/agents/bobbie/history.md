@@ -11,4 +11,9 @@
 
 ## Learnings
 
-(none yet)
+### 2026-05-09 — Sprint 7
+- HeadOnGun selected 54% of ticks despite being lowest priority — gun ordering bug in VGM.
+- All 4 guns have nearly identical virtual hit rates (3–4.5%) — no gun differentiation.
+- Gun correctness (best gun selected) only 39% — worse than random among 4 guns.
+- CircularGun should be primary (Decision #10) but selection logic not honoring priority.
+- Next sprint priority: fix gun ordering in VirtualGunManager, tune epsilon threshold.

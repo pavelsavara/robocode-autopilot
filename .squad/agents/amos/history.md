@@ -11,4 +11,9 @@
 
 ## Learnings
 
-(none yet)
+### 2026-05-09 — Sprint 7
+- TickBudget PASS: budget 100–200 trees (full capacity confirmed after fix).
+- Skipped turns PASS: only 0.2 per battle (negligible).
+- Score improved 10× (0.56% → 5.4%) confirming TickBudget fix value.
+- Sanity check scripts still ad-hoc — need standardized reusable diagnostic tooling.
+- Next sprint: build persistent sanity check script for automated pre/post evaluation.
