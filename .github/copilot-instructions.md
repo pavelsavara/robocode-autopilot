@@ -31,6 +31,24 @@ archive/        — historical documents (immutable once archived)
 ## Java Version
 - Target Java 8 (to match the robocode engine)
 
+## Reading auto-generated Base64 data files
+Five files in this repo embed binary payloads as Base64 string constants:
+
+- `robot/src/main/java/cz/zamboch/distilled/DefaultDataFile.java` (persistence fallback)
+- `robot/src/main/java/cz/zamboch/distilled/FirePowerData.java` (XGBoost fire-power model)
+- `robot/src/main/java/cz/zamboch/distilled/FireTimingData.java` (XGBoost fire-timing model)
+- `robot/src/main/java/cz/zamboch/distilled/MovementData.java` (XGBoost movement model)
+- `core/src/main/java/cz/zamboch/autopilot/core/physics/EnvelopeData.java` (reachable-envelope tables)
+
+In each of these files, the Base64 payload lives on lines that start with
+`    private static final String D` (`D0`, `D1`, ...). These lines are
+mechanically generated, often tens of kilobytes long, and contribute zero
+semantic value to a code review. **Skip them when reading the file.** Read
+the surrounding scaffolding (FEATURE_NAMES, the `load()` / `decode()`
+method, base score, tree count, etc.) to understand what the file does;
+leave the `D{n}` strings opaque. Never paste them into a chat or commit
+message.
+
 ## Class Design
 - Prefer `final` classes. Every class that is not designed for inheritance must be `final`.
   This enables JIT devirtualization and inlining, reducing method call overhead.
