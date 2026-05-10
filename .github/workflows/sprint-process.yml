@@ -108,45 +108,39 @@ jobs:
           merge-multiple: true
 
       - name: Combine CSVs
+        shell: bash
         run: |
           mkdir -p combined-csv
-          # Merge ticks.csv files (keep header from first, skip from rest)
-          FIRST=true
-          for f in $(find csv-chunks -name 'ticks.csv' -type f | sort); do
-            if [ "$FIRST" = true ]; then
-              cp "$f" combined-csv/ticks.csv
-              FIRST=false
-            else
-              tail -n +2 "$f" >> combined-csv/ticks.csv
-            fi
-          done
 
-          # Same for waves.csv
-          FIRST=true
-          for f in $(find csv-chunks -name 'waves.csv' -type f | sort); do
-            if [ "$FIRST" = true ]; then
-              cp "$f" combined-csv/waves.csv
-              FIRST=false
-            else
-              tail -n +2 "$f" >> combined-csv/waves.csv
-            fi
-          done
+          # Merge CSV files across chunks. Paths contain spaces
+          # (e.g. "063c9215/Autopilot vs Shadow/ticks.csv").
+          # Use head/tail to keep one header + all data rows.
+          for CSV_NAME in ticks.csv waves.csv scores.csv; do
+            # Collect all matching files
+            mapfile -d '' FILES < <(find csv-chunks -name "$CSV_NAME" -type f -print0 | sort -z)
 
-          # Same for scores.csv
-          FIRST=true
-          for f in $(find csv-chunks -name 'scores.csv' -type f | sort); do
-            if [ "$FIRST" = true ]; then
-              cp "$f" combined-csv/scores.csv
-              FIRST=false
-            else
-              tail -n +2 "$f" >> combined-csv/scores.csv
+            if [ ${#FILES[@]} -eq 0 ]; then
+              echo "  No $CSV_NAME files found"
+              continue
             fi
+
+            # First file: copy with header
+            cp "${FILES[0]}" "combined-csv/$CSV_NAME"
+
+            # Remaining files: append data rows only (skip header)
+            for ((i=1; i<${#FILES[@]}; i++)); do
+              tail -n +2 "${FILES[$i]}" >> "combined-csv/$CSV_NAME"
+            done
+
+            echo "  $CSV_NAME: merged ${#FILES[@]} files"
           done
 
           echo "--- Combined CSV stats ---"
           for f in combined-csv/*.csv; do
-            ROWS=$(wc -l < "$f")
-            echo "  $(basename $f): $ROWS rows"
+            if [ -f "$f" ]; then
+              ROWS=$(wc -l < "$f")
+              echo "  $(basename "$f"): $ROWS rows"
+            fi
           done
 
       - name: Run sanity checks
