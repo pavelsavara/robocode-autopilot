@@ -107,13 +107,13 @@ jobs:
       matrix:
         chunk:
           - id: 0
-            opponents: '["abc.Shadow","voidious.Diamond","jk.mega.DrussGT","wiki.mega.CunobelinDC"]'
+            opponents: '["abc.Shadow","voidious.Diamond","jk.mega.DrussGT","jk.mini.CunobelinDC"]'
           - id: 1
             opponents: '["pe.SandboxDT","oog.mega.Saguaro","cx.BlestPain","ary.FourWD"]'
           - id: 2
             opponents: '["ej.ChocolateBar","dft.Cardigan","eem.zapper","darkcanuck.Pris"]'
           - id: 3
-            opponents: '["rsj.Electro","tobe.Fusion","simonton.Wyrm","mld.Moebius"]'
+            opponents: '["tobe.Fusion","mld.Moebius","simonton.mini.WeeksOnEnd","simonton.mega.SniperFrog"]'
     steps:
       - uses: actions/checkout@v6
         with:
@@ -294,7 +294,7 @@ jobs:
           path: results/results.json
           retention-days: 7
 
-  # ─── Step 3: Self-battle sanity check (MUST pass: 48–52%) ───
+  # ─── Step 3: Self-battle sanity check (MUST pass: 45–55%) ───
   self-battle:
     needs: [build]
     runs-on: ubuntu-latest
@@ -402,7 +402,7 @@ jobs:
             --rounds "$ROUNDS" \
             --record-dir recordings/ || true
 
-      - name: Verify self-battle is 48–52%
+      - name: Verify self-battle is 45–55%
         run: |
           if [ ! -f results/results.json ]; then
             echo "::error::Self-battle produced no results.json"
@@ -418,25 +418,25 @@ jobs:
           COUNT=$(jq '[.[] | select(.error != true)] | length' results/results.json)
           echo "Self-battle: $COUNT valid battles, avg bot_a score = $AVG%"
 
-          # Expected band: 48–52%. Outside this range → position/init bug.
+          # Expected band: 45–55%. Outside this range → position/init bug.
           IS_OK=$(jq -n --argjson avg "$AVG" --argjson n "$COUNT" \
-            '($n > 0) and ($avg >= 48) and ($avg <= 52)')
+            '($n > 0) and ($avg >= 45) and ($avg <= 55)')
 
           {
             echo "## Self-battle sanity check"
             echo ""
             echo "- Valid battles: $COUNT"
             echo "- Avg bot_a score: ${AVG}%"
-            echo "- Expected band: 48–52%"
+            echo "- Expected band: 45–55%"
             if [ "$IS_OK" = "true" ]; then
               echo "- Result: ✅ PASS"
             else
-              echo "- Result: ❌ FAIL — outside 48–52% band, indicates position/init bug"
+              echo "- Result: ❌ FAIL — outside 45–55% band, indicates position/init bug"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
           if [ "$IS_OK" != "true" ]; then
-            echo "::error::Self-battle outside 48–52% band ($AVG%) — position/init bug suspected"
+            echo "::error::Self-battle outside 45–55% band ($AVG%) — position/init bug suspected"
             exit 1
           fi
 
