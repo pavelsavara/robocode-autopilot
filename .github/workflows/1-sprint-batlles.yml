@@ -113,7 +113,7 @@ jobs:
           - id: 0
             opponents: '["abc.Shadow","voidious.Diamond","jk.mega.DrussGT","jk.mini.CunobelinDC"]'
           - id: 1
-            opponents: '["pe.SandboxDT","oog.mega.Saguaro","cx.BlestPain","ary.FourWD"]'
+            opponents: '["pe.SandboxDT","oog.mega.saguaro.Saguaro","cx.BlestPain","ary.FourWD"]'
           - id: 2
             opponents: '["ej.ChocolateBar","dft.Cardigan","eem.zapper","darkcanuck.Pris"]'
           - id: 3
