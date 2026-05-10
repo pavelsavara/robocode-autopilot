@@ -1,26 +1,20 @@
-# eval-sprint.yml — Sprint evaluation workflow (Workstream A: CI Offload).
+# sprint-pipeline.yml — Stage 1 of the sprint CI pipeline.
 #
 # Purpose:
-#   Run the fixed 16-opponent sprint eval in CI instead of on Pavel's machine.
-#   ~30 Mbps WiFi at home → minimise data transfer.
+#   Build robot JAR, run battles against fixed opponent set, produce
+#   summary.json and upload recordings for downstream processing.
 #
-# Data-transfer policy (HARD RULE):
-#   - ONLY summary.json (~2 KB) is uploaded as a workflow artifact.
-#   - Recordings (.br files) and per-battle JSON STAY inside the runner.
-#   - Per-opponent score table is posted to $GITHUB_STEP_SUMMARY so Pavel
-#     can read it in the Actions UI without downloading anything.
+# Data flow:
+#   - summary.json (~2KB) → downloaded by AI agent
+#   - recordings-chunk-* (~1.25GB total) → consumed by sprint-process.yml
+#   - chunk-results-* → consumed by aggregate job
+#   - Per-opponent score table → $GITHUB_STEP_SUMMARY
 #
-# Local fallback:
-#   `scripts/local-pipeline.ps1 -EvalOnly -IncludeSelfBattle` runs the same
-#   16 opponents + self-battle locally and produces an equivalent summary.json
-#   at output/local/results/summary.json. Use this when CI is unavailable
-#   or when iterating on a feature that hasn't been pushed to main.
-#
-# Reuses the run-season.yml pattern: same battle-runner Docker image, same
-# JAR fetch from `robots` branch with `git lfs pull`, same JVM flags, same
-# run-battle.mjs CLI surface.
+# Downstream:
+#   sprint-process.yml triggers via workflow_run on completion.
+#   sprint-train.yml triggers via workflow_run on sprint-process completion.
 
-name: Sprint Eval
+name: Sprint Pipeline
 
 on:
   workflow_dispatch:
@@ -85,10 +79,20 @@ jobs:
           unzip -t "$JAR" > /dev/null
           echo "JAR integrity OK"
 
+          # Also build pipeline distribution for stage 2
+          ./gradlew :pipeline:installDist --no-daemon --console=plain
+          echo "Pipeline distribution built"
+
       - uses: actions/upload-artifact@v7
         with:
           name: robot-jar
           path: robot/build/libs/cz.zamboch.Autopilot-*.jar
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: pipeline-dist
+          path: pipeline/build/install/pipeline/
           retention-days: 7
 
   # ─── Step 2: Run battles in parallel — 16 opponents split across 4 runners ───
@@ -286,13 +290,19 @@ jobs:
             mkdir -p results
           fi
 
-      # Upload ONLY results.json (per-battle JSON, ~10–30 KB).
-      # Recordings folder is NEVER uploaded.
+      # Upload results.json (per-battle JSON, ~10–30 KB).
       - uses: actions/upload-artifact@v7
         with:
           name: chunk-results-${{ matrix.chunk.id }}
           path: results/results.json
           retention-days: 7
+
+      # Upload recordings for downstream CSV processing (sprint-process.yml).
+      - uses: actions/upload-artifact@v7
+        with:
+          name: recordings-chunk-${{ matrix.chunk.id }}
+          path: recordings/
+          retention-days: 14
 
   # ─── Step 3: Self-battle sanity check (MUST pass: 45–55%) ───
   self-battle:

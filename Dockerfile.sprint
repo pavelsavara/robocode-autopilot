@@ -1,0 +1,46 @@
+# Unified sprint pipeline image.
+# Contains Java 21 + Node.js + Python 3.10 with pre-installed ML dependencies.
+# Code is NOT baked in — it's checked out at workflow runtime.
+# Robocode installation IS baked in (static, rarely changes).
+#
+# Used by all 3 stages of the sprint pipeline:
+#   [1] sprint-pipeline.yml  — battles (Java + Node)
+#   [2] sprint-process.yml   — CSV extraction (Java)
+#   [3] sprint-train.yml     — ML training + notebooks (Python + Node)
+
+FROM eclipse-temurin:21-jre-alpine
+
+# Install Node.js and Python 3 with pip
+RUN apk add --no-cache \
+    nodejs \
+    npm \
+    python3 \
+    py3-pip \
+    git \
+    git-lfs \
+    unzip \
+    zip \
+    jq \
+    bash
+
+# Install Python ML packages (no torch — too large, not needed for training)
+RUN pip3 install --no-cache-dir --break-system-packages \
+    pandas>=2.0 \
+    numpy>=1.24 \
+    scikit-learn>=1.3 \
+    xgboost>=2.0 \
+    lightgbm>=4.0 \
+    matplotlib>=3.7 \
+    seaborn>=0.12 \
+    jupyter \
+    nbconvert \
+    ipykernel
+
+# Copy pre-built Robocode installation (created by the build workflow)
+COPY robocode-home/ /opt/robocode/
+
+WORKDIR /opt/robocode
+
+ENV ROBOCODE_DIR=/opt/robocode
+ENV NOSECURITY=true
+ENV PYTHONDONTWRITEBYTECODE=1

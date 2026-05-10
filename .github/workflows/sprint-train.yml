@@ -1,0 +1,190 @@
+# sprint-train.yml — Stage 3 of the sprint CI pipeline.
+#
+# Triggered by sprint-process.yml completion.
+# Parallel jobs: (a) retrain ML models, (b) run retrospective notebooks,
+# (c) merge autopilot.dat from battle chunks.
+# Commits results to sprint/{N}-models branch.
+
+name: Sprint Train
+
+on:
+  workflow_run:
+    workflows: ["Sprint Process"]
+    types: [completed]
+
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: 'Run ID of Sprint Process to use CSVs from'
+        required: true
+        type: string
+      sprint_number:
+        description: 'Sprint number for the branch name'
+        required: true
+        type: string
+        default: '21'
+
+permissions:
+  contents: write
+  packages: read
+  actions: read
+
+env:
+  SPRINT_NUM: ${{ inputs.sprint_number || '21' }}
+
+jobs:
+  # ─── Job 1: Retrain ML models ───
+  train:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Python dependencies
+        run: pip install -r intuition/requirements.txt
+
+      - name: Download combined CSVs
+        uses: actions/download-artifact@v8
+        with:
+          name: csv-combined
+          path: output/csv
+          run-id: ${{ inputs.source_run_id || github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Train models
+        working-directory: intuition
+        run: |
+          echo "Training models on $(find ../output/csv -name 'ticks.csv' | wc -l) ticks.csv files..."
+          python train_distill.py --task all --roots ../output/csv 2>&1 | tail -50
+          echo "--- Training complete ---"
+
+          # Show metrics
+          for task in fire_power fire_timing movement; do
+            if [ -f models/distill/$task/metrics.json ]; then
+              echo "=== $task ==="
+              cat models/distill/$task/metrics.json | python -m json.tool
+            fi
+          done
+
+      - name: Export models to Java
+        working-directory: intuition
+        run: |
+          python export_gbm_java.py --all 2>&1 | tail -20
+          echo "--- Export complete ---"
+
+          # Verify generated files
+          for f in ../robot/src/main/java/cz/zamboch/distilled/*Data.java; do
+            echo "  $(basename $f): $(wc -l < $f) lines"
+          done
+
+      - name: Build retrain summary
+        working-directory: intuition
+        run: |
+          python -c "
+          import json, os
+          summary = {'models': {}}
+          for task in ['fire_power', 'fire_timing', 'movement']:
+              path = f'models/distill/{task}/metrics.json'
+              if os.path.exists(path):
+                  with open(path) as f:
+                      summary['models'][task] = json.load(f)
+          summary['branch'] = 'sprint/${{ env.SPRINT_NUM }}-models'
+          summary['commit_sha'] = '${{ github.sha }}'
+          with open('retrain-summary.json', 'w') as f:
+              json.dump(summary, f, indent=2)
+          print(json.dumps(summary, indent=2))
+          "
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: retrain-summary
+          path: intuition/retrain-summary.json
+          retention-days: 30
+
+      - name: Commit to sprint branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          BRANCH="sprint/${{ env.SPRINT_NUM }}-models"
+          git checkout -b "$BRANCH"
+
+          # Stage only the generated model files
+          git add robot/src/main/java/cz/zamboch/distilled/*Data.java || true
+
+          if git diff --cached --quiet; then
+            echo "No model changes to commit"
+          else
+            git commit -m "sprint ${{ env.SPRINT_NUM }}: retrained ML models from CI pipeline
+
+          Trained on CSVs from sprint-process run.
+          See retrain-summary.json for metrics."
+
+            git push origin "$BRANCH" --force
+            echo "Pushed to $BRANCH"
+          fi
+
+  # ─── Job 2: Run retrospective notebooks ───
+  notebooks:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r intuition/requirements.txt
+          pip install nbconvert
+
+      - name: Download combined CSVs
+        uses: actions/download-artifact@v8
+        with:
+          name: csv-combined
+          path: output/csv
+          run-id: ${{ inputs.source_run_id || github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Run retrospective notebooks
+        working-directory: intuition
+        run: |
+          mkdir -p notebook-html
+
+          # Run each retrospective notebook, convert to HTML
+          for nb in retrospective/R*.ipynb; do
+            if [ -f "$nb" ]; then
+              NAME=$(basename "$nb" .ipynb)
+              echo "Running $nb..."
+              python -m jupyter nbconvert \
+                --to html \
+                --execute "$nb" \
+                --output-dir notebook-html \
+                --ExecutePreprocessor.timeout=300 \
+                --allow-errors 2>&1 | tail -5 || true
+              echo "  Done: $NAME"
+            fi
+          done
+
+          echo "--- Generated notebooks ---"
+          ls -la notebook-html/ 2>/dev/null || echo "No notebooks generated"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: notebook-html
+          path: intuition/notebook-html/
+          retention-days: 30
+          if-no-files-found: warn

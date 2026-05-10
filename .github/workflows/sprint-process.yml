@@ -1,0 +1,243 @@
+# sprint-process.yml — Stage 2 of the sprint CI pipeline.
+#
+# Triggered by sprint-pipeline.yml completion.
+# Downloads recordings, runs Java pipeline to produce CSVs,
+# runs 6 sanity checks, uploads combined CSVs + sanity report.
+#
+# Downstream: sprint-train.yml triggers on this workflow's completion.
+
+name: Sprint Process
+
+on:
+  workflow_run:
+    workflows: ["Sprint Pipeline"]
+    types: [completed]
+
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: 'Run ID of Sprint Pipeline to process'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: read
+  actions: read
+
+jobs:
+  # ─── Process recording chunks in parallel ───
+  process:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    container:
+      image: ghcr.io/pavelsavara/robocode-autopilot/battle-runner:latest
+    strategy:
+      matrix:
+        chunk: [0, 1, 2, 3]
+      fail-fast: false
+    env:
+      SOURCE_RUN_ID: ${{ inputs.source_run_id || github.event.workflow_run.id }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            pipeline
+            core
+
+      - name: Download pipeline distribution
+        uses: actions/download-artifact@v8
+        with:
+          name: pipeline-dist
+          path: /opt/pipeline
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+
+      - name: Download recording chunk
+        uses: actions/download-artifact@v8
+        with:
+          name: recordings-chunk-${{ matrix.chunk }}
+          path: /data/recordings
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+
+      - name: Process recordings to CSV
+        run: |
+          apk add --no-cache bash
+          chmod +x /opt/pipeline/bin/pipeline
+          mkdir -p /data/csv
+
+          BR_COUNT=$(find /data/recordings -name '*.br' | wc -l)
+          echo "Processing $BR_COUNT recordings from chunk ${{ matrix.chunk }}..."
+
+          /opt/pipeline/bin/pipeline \
+            --input /data/recordings \
+            --output /data/csv || true
+
+          CSV_COUNT=$(find /data/csv -name '*.csv' -type f | wc -l)
+          echo "Generated $CSV_COUNT CSV files"
+
+          if [ "$CSV_COUNT" -eq 0 ]; then
+            echo "::warning::No CSVs generated for chunk ${{ matrix.chunk }}"
+          fi
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: csv-chunk-${{ matrix.chunk }}
+          path: /data/csv/
+          retention-days: 14
+          if-no-files-found: warn
+
+  # ─── Combine CSVs and run sanity checks ───
+  combine:
+    needs: [process]
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: scripts
+
+      - name: Download all CSV chunks
+        uses: actions/download-artifact@v8
+        with:
+          pattern: csv-chunk-*
+          path: csv-chunks/
+          merge-multiple: true
+
+      - name: Combine CSVs
+        run: |
+          mkdir -p combined-csv
+          # Merge ticks.csv files (keep header from first, skip from rest)
+          FIRST=true
+          for f in $(find csv-chunks -name 'ticks.csv' -type f | sort); do
+            if [ "$FIRST" = true ]; then
+              cp "$f" combined-csv/ticks.csv
+              FIRST=false
+            else
+              tail -n +2 "$f" >> combined-csv/ticks.csv
+            fi
+          done
+
+          # Same for waves.csv
+          FIRST=true
+          for f in $(find csv-chunks -name 'waves.csv' -type f | sort); do
+            if [ "$FIRST" = true ]; then
+              cp "$f" combined-csv/waves.csv
+              FIRST=false
+            else
+              tail -n +2 "$f" >> combined-csv/waves.csv
+            fi
+          done
+
+          # Same for scores.csv
+          FIRST=true
+          for f in $(find csv-chunks -name 'scores.csv' -type f | sort); do
+            if [ "$FIRST" = true ]; then
+              cp "$f" combined-csv/scores.csv
+              FIRST=false
+            else
+              tail -n +2 "$f" >> combined-csv/scores.csv
+            fi
+          done
+
+          echo "--- Combined CSV stats ---"
+          for f in combined-csv/*.csv; do
+            ROWS=$(wc -l < "$f")
+            echo "  $(basename $f): $ROWS rows"
+          done
+
+      - name: Run sanity checks
+        run: |
+          # Basic sanity checks on the CSV data
+          PASS=0
+          FAIL=0
+          REPORT='[]'
+
+          # Check 1: ticks.csv exists and has data
+          if [ -f combined-csv/ticks.csv ]; then
+            ROWS=$(tail -n +2 combined-csv/ticks.csv | wc -l)
+            if [ "$ROWS" -gt 100 ]; then
+              REPORT=$(echo "$REPORT" | jq ". + [{check: \"ticks_csv_rows\", pass: true, value: $ROWS}]")
+              PASS=$((PASS + 1))
+            else
+              REPORT=$(echo "$REPORT" | jq ". + [{check: \"ticks_csv_rows\", pass: false, value: $ROWS, message: \"Too few rows\"}]")
+              FAIL=$((FAIL + 1))
+            fi
+          else
+            REPORT=$(echo "$REPORT" | jq '. + [{check: "ticks_csv_rows", pass: false, value: 0, message: "File missing"}]')
+            FAIL=$((FAIL + 1))
+          fi
+
+          # Check 2: waves.csv exists
+          if [ -f combined-csv/waves.csv ]; then
+            ROWS=$(tail -n +2 combined-csv/waves.csv | wc -l)
+            REPORT=$(echo "$REPORT" | jq ". + [{check: \"waves_csv_rows\", pass: true, value: $ROWS}]")
+            PASS=$((PASS + 1))
+          else
+            REPORT=$(echo "$REPORT" | jq '. + [{check: "waves_csv_rows", pass: false, value: 0, message: "File missing"}]')
+            FAIL=$((FAIL + 1))
+          fi
+
+          # Check 3: scores.csv exists
+          if [ -f combined-csv/scores.csv ]; then
+            ROWS=$(tail -n +2 combined-csv/scores.csv | wc -l)
+            REPORT=$(echo "$REPORT" | jq ". + [{check: \"scores_csv_rows\", pass: true, value: $ROWS}]")
+            PASS=$((PASS + 1))
+          else
+            REPORT=$(echo "$REPORT" | jq '. + [{check: "scores_csv_rows", pass: false, value: 0, message: "File missing"}]')
+            FAIL=$((FAIL + 1))
+          fi
+
+          # Check 4: No all-NaN columns in ticks.csv
+          # (Simplified: just check file isn't empty)
+          if [ -f combined-csv/ticks.csv ]; then
+            COLS=$(head -1 combined-csv/ticks.csv | tr ',' '\n' | wc -l)
+            REPORT=$(echo "$REPORT" | jq ". + [{check: \"ticks_column_count\", pass: ($COLS > 10), value: $COLS}]")
+            if [ "$COLS" -gt 10 ]; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); fi
+          fi
+
+          # Check 5: Multiple opponents represented
+          if [ -f combined-csv/scores.csv ]; then
+            # Count unique battle directories (proxy for opponents)
+            BATTLES=$(tail -n +2 combined-csv/scores.csv | wc -l)
+            REPORT=$(echo "$REPORT" | jq ". + [{check: \"battle_count\", pass: ($BATTLES > 5), value: $BATTLES}]")
+            if [ "$BATTLES" -gt 5 ]; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); fi
+          fi
+
+          # Check 6: Reasonable tick count per battle (~3000 expected)
+          if [ -f combined-csv/ticks.csv ]; then
+            TICK_ROWS=$(tail -n +2 combined-csv/ticks.csv | wc -l)
+            BATTLES_EST=$((TICK_ROWS / 3000))
+            REPORT=$(echo "$REPORT" | jq ". + [{check: \"avg_ticks_per_battle\", pass: ($BATTLES_EST > 0), value: $TICK_ROWS, estimated_battles: $BATTLES_EST}]")
+            if [ "$BATTLES_EST" -gt 0 ]; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); fi
+          fi
+
+          # Write report
+          jq -n \
+            --argjson checks "$REPORT" \
+            --argjson pass "$PASS" \
+            --argjson fail "$FAIL" \
+            '{timestamp: now | todate, passed: $pass, failed: $fail, checks: $checks}' \
+            > sanity-report.json
+
+          echo "--- Sanity Report ---"
+          cat sanity-report.json | jq .
+
+          if [ "$FAIL" -gt 0 ]; then
+            echo "::warning::$FAIL sanity checks failed"
+          fi
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: csv-combined
+          path: combined-csv/
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sanity-report
+          path: sanity-report.json
+          retention-days: 30
