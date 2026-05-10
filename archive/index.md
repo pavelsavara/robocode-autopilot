@@ -6,6 +6,7 @@ Documents are prefixed with their creation date and are immutable once archived.
 
 | Date | Document | Topic |
 |---|---|---|
+| 2026-05-10 | [2026-05-10-plan.md](2026-05-10-plan.md) | Project plan v4 (superseded by v5 — added Workstream F: code quality & tests, plus design-proposals merge) |
 | 2026-05-10 | [2026-05-10-retrospective-14.md](2026-05-10-retrospective-14.md) | Fourteenth retrospective — 6/6 checks PASS, R² +0.48, zero skipped turns, score 8.1% |
 | 2026-05-10 | [2026-05-10-retrospective-13.md](2026-05-10-retrospective-13.md) | Thirteenth retrospective — score 8.6% (6th record), first positive in-game R² +0.20, BlestPain 28% |
 | 2026-05-10 | [2026-05-10-retrospective-12.md](2026-05-10-retrospective-12.md) | Twelfth retrospective — O(1) rolling stats, skipped turns 12.6→1.8, offline R² 0.917, in-game R² −0.81 |

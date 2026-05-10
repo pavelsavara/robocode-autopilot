@@ -1,24 +1,41 @@
 # ML Model Results — Honest Baselines
 
-*All numbers post-leakage-fix. Last updated: 2026-05-09.*
+*All numbers post-leakage-fix. Last updated: 2026-05-10 (Sprint 18).*
 
 ## Summary Table
 
-| Task | Model | Metric | Value | Baseline | Status |
-|---|---|---|---|---|---|
-| Fire power | XGBoost (compact 200t) | R² | **0.862** | mean 0.572 | **Distilled** ✅ |
-| Movement N=5 | GBM-window (compact 200t) | R² | **0.866** | per-tick RF 0.07 | **Distilled** ✅ |
-| Fire timing (3-tick) | GBM-window (compact 200t) | AUC | **0.855** | majority 0.49 | **Distilled** ✅ |
-| Fire power | XGBoost (full 800t) | R² | **0.960** | — | Reference only |
-| GF targeting | MLP [16→128²→64→61] | ±3 bins | **0.570** | uniform 0.10 | Deferred (data-starved) |
-| Position advantage | Heatmap → round outcome | R² | **0.001** | — | Dropped (nb16) ❌ |
+| Task | Model | Metric | Offline R² / AUC | In-game R² | Baseline | Status |
+|---|---|---|---|---|---|---|
+| Fire power | XGBoost (compact 200t) | R² | **0.913** | **+0.48** | mean 0.572 | **Distilled** ✅ |
+| Movement N=5 | GBM-window (compact 200t) | R² | **0.760** | — | per-tick RF 0.07 | **Distilled** ✅ |
+| Fire timing (3-tick) | GBM-window (compact 200t) | AUC | **0.815** | — | majority 0.49 | **Distilled** ✅ |
+| Fire power | XGBoost (full 800t) | R² | 0.960 | — | — | Reference only |
+| GF targeting | MLP [16→128²→64→61] | ±3 bins | 0.570 | — | uniform 0.10 | Deferred (data-starved, stub returns uniform) |
+| Position advantage | Heatmap → round outcome | R² | 0.001 | — | — | Dropped (nb16) ❌ |
 
 **Training data:** 50-opponent rumble + local battles, ~1.7M tick rows, 51 distinct robots.
 
-**⚠ Historical issue (fixed 2026-05-09):** All previous in-game evaluations ran
-models at 10/200 trees (5% capacity) due to a TickBudget one-way ratchet bug.
-The metrics above are offline CV scores at full 200 trees. The robot's actual
-in-game prediction quality was severely degraded until the fix.
+**In-game R² progression (fire power model):** −3.67 (Sprint 9) → −1.44 (NaN root cause fix, Sprint 10) → −1.12 (Sprint 11) → −0.81 (Sprint 12) → +0.20 (Sprint 13) → +0.48 (Sprint 18). The offline↔in-game gap (0.913 vs 0.48) is the binding constraint on targeting accuracy and the focus of Naomi’s feature-divergence workstream.
+
+## Per-Feature / Per-Prediction Lift
+
+The in-game value of a feature or prediction is best measured by its consumer’s observed effect on the robot’s behaviour. Below is the current best estimate, drawn from sprint retrospectives and ML model importance reports.
+
+| Producer | Output | Consumer | Lift signal | Magnitude |
+|---|---|---|---|---|
+| `WindowFeatures` | 20 × (mean,std) over 10 base features | All 3 GBM models | Without windows: fire power R² 0.572, movement R² 0.07. With windows: 0.913 / 0.760. | **≈10× the next-best feature class** |
+| `EnergyFeatures` | `OPPONENT_FIRED`, `OPPONENT_FIRE_POWER` | `MultiWaveFeatures` (wave creation), `VcsWaveDanger` (move VCS update on hit) | Without it: no wave tracking, no GF dodge, no opponent profiling. | Foundational — cannot remove |
+| `MovementFeatures` | `OPPONENT_LATERAL_VELOCITY`, `OPPONENT_LATERAL_DIRECTION`, `OPPONENT_HEADING_DELTA` | All targeting (`Linear/Circular/Vcs/Predictive`), VCS segmentation, GBM models | Direct input to GF formula; identifies orbit direction. | Foundational |
+| `SpatialFeatures` | `DISTANCE`, `BEARING_TO_OPPONENT_ABS` | Everything | Reference frame for the entire system. | Foundational |
+| `IdentityFeatures` | `OPPONENT_BOT_ID_HASH` | `loadOpponentProfile` (offline strength), `VcsHistogramStore` (cross-battle warm start) | Cross-battle persistence yields ~88 KB of warm GF priors. Effect not yet quantified per opponent. | Cross-battle multiplier |
+| `EnvelopeFeatures` | `ENVELOPE_FILL_RATIO`, `REACHABLE_DISTANCE_*`, `REACHABLE_GF_RANGE` | GBM fire-power input only (mid-importance) | Models split on these but they are not in the top 5 importances. | Mid (movement layer doesn’t consume them yet) |
+| `MultiWaveFeatures` | wave list → `NEAREST_OPPONENT_WAVE_GAP`, `TOTAL_OPPONENT_WAVE_DAMAGE` | `WaveSurfMovement.getCommand` (imminent-wave gating, < 12 t to break), GBM input | Switching wave-surf on-demand reduced opponent HR ~47% → ~40%. | High |
+| `GbmFirePowerPredictor` | `PREDICTED_FIRE_POWER` | `EnergyRatioStrategyComputer` (aggression ±0.15, randomWaveSelection toggle when conf > 0.3) | Above 0.7 in-game R² would unlock per-bullet dodge urgency. Currently +0.48 limits the impact. | Limited by in-game gap |
+| `GbmMovementPredictor` | `PREDICTED_LAT_VEL_5` | `PredictiveGun.getFireAngle` | Confidence-weighted (0.7 nominal); competes against CircularGun in VGM. Has not yet beaten CircularGun in measured battles. | Pending |
+| `GbmFireTimingPredictor` | `PREDICTED_OPPONENT_FIRES_3` | `WaveSurfMovement.getDodgeScale` (pre-emptive lateral move when P > 0.3, full speed at P > 0.8) | Buys ~2 ticks of dodge reaction time at close range. Hard to attribute hit-rate gain in isolation. | Mid |
+| `OpponentProfileData` | `OPPONENT_STRENGTH_RATING` | `EnergyRatioStrategyComputer` (aggression ±0.2, randomWaveSelection if > 0.7) | Tunes strategy from tick 1 against named opponents. 50 entries in the lookup table. | Per-opponent multiplier |
+| `MlpGfTargeting` | `double[61]` GF distribution | (no consumer registered) | Stub returns uniform. Not yet wired into a gun. | **0 — deferred** |
+| `OPPONENT_INFERRED_GUN_HEAT` | (none, in-game) | `GbmFireTimingPredictor` heuristic fallback | Pipeline produces it for `ticks.csv`, but `MlDerivedFeatures.processOpponentPrediction()` only sets `OPPONENT_WALL_AHEAD_DISTANCE`. Trained tree does not split on it (not in `FEATURE_NAMES`). | **Cosmetic only** |
 
 ## Key Insights
 
@@ -58,7 +75,7 @@ Deeper exploration with energy trend features is planned.
 
 ## Per-Model Details
 
-### Fire Power Predictor (R²=0.931)
+### Fire Power Predictor (offline R²=0.913, in-game R²=+0.48)
 
 **Training:** XGBoost regression, 500 battles, GroupKFold on `battle_id`.
 20-tick window features (rolling mean/std). RandomizedSearchCV tuning.
@@ -76,7 +93,9 @@ Deeper exploration with energy trend features is planned.
 pattern. High-power fires → large energy drops → high variability.
 The model learns "bots who fired high power recently will continue to."
 
-**Distillation target:** XGBoost trees → Java Base64-embedded arrays. ~440 KB.
+**Distillation target:** XGBoost trees → Java Base64-embedded arrays.
+Fire power model is ~360 KB of Java source containing eight Base64 string
+constants split to stay under the JVM’s 64 KB-per-string-constant limit.
 
 ### Distilled Models (Phase 8, retrained 2026-05-09)
 

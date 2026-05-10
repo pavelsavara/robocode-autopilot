@@ -1,6 +1,7 @@
 # Robot Architecture — Autopilot 0.1.0
 
-*Last updated: 2026-05-09. Matches code as deployed.*
+*Last updated: 2026-05-10. Matches code as deployed.*
+*Module sizes: core (60 files, ~354 KB src), pipeline (28 files, ~97 KB), robot (15 files, ~1.36 MB — Base64 model data dominates).*
 
 ---
 
@@ -151,23 +152,31 @@ Stateless processors registered in dependency order. Each reads from Whiteboard,
 
 ### 4b. Virtual Gun Manager
 
-5 gun strategies competing via virtual bullets. 50-bullet sliding window.
+5 gun strategies competing via virtual bullets. 50-shot rolling hit-rate window, 64-bullet pool per strategy (longest flight ~40 ticks).
 
 | # | Strategy | Aiming Method | Confidence |
 |---|----------|---------------|------------|
-| 0 | `CircularGun` | Constant turn-rate extrapolation | 1.0 |
-| 1 | `LinearGun` | Linear extrapolation | 0.7 |
-| 2 | `VcsGun` | Peak-firing from smoothed 61-bin GF histogram (σ=1.5 kernel) | scales with observations |
-| 3 | `PredictiveGun` | Iterative forward simulation using ML PREDICTED_LAT_VEL_5 | scales with model confidence |
+| 0 | `CircularGun` | Constant turn-rate extrapolation (reads `CIRCULAR_TARGET_ANGLE`) | 1.0 |
+| 1 | `VcsGun` | Peak-firing from smoothed 61-bin GF histogram (σ=1.5 kernel) | scales with observations |
+| 2 | `PredictiveGun` | Iterative forward simulation using ML `PREDICTED_LAT_VEL_5` | 0.1 + 0.75×conf |
+| 3 | `LinearGun` | Linear extrapolation (reads `LINEAR_TARGET_ANGLE`) | 0.7 |
 | 4 | `HeadOnGun` | Direct bearing to opponent | 0.3 |
 
-**Selection:** Best hit rate wins (ε=0.01 tolerance). Ties broken by `getConfidence()`. ε-greedy exploration at 3% after 30 data points.
+**Selection logic** (`VirtualGunManager.selectBestIndex`): two-pass priority-aware tie-break.
+1. Find max hit rate across strategies.
+2. First strategy whose rate is within `HIT_RATE_EPSILON = 0.03` of the max wins. Lower index = higher priority.
 
-**Virtual bullet hit check:** Euclidean distance from simulated bullet position to opponent position at wave-pass time. Hit if distance ≤ 18px (robot half-size).
+This means a gun must beat the current best by **more than 3%** to override the priority ordering (a single random hit in a 50-shot window adds only 2%, so noise won't flip the selection).
+
+**ε-greedy exploration:** at `EXPLORE_RATE = 0.03` (3%) after 30 data points have been collected, a random gun is selected to gather data on otherwise-suppressed strategies.
+
+**Virtual bullet hit check:** Euclidean distance from simulated bullet position to opponent position at wave-pass time. Hit if distance ≤ 18 px (robot half-size).
 
 **Aim threshold:** 0.015 rad (~0.86°) — gun must be within this angle of target to fire.
 
-**VCS segmentation:** 3 distance bins (< 250, < 500, ≥ 500) × 2 lateral direction = 6 segments. Gun VCS histogram initialized with Gaussian prior (strength=3) at GF=0.
+**VCS segmentation:** 3 distance bins (< 250, < 500, ≥ 500 px) × 2 lateral direction = 6 segments. Gun VCS histogram initialized with Gaussian prior (strength=3, σ=0.3 on GF) at GF=0 via `Whiteboard.initVcsPrior(3)`.
+
+**Dead code:** `VcsSamplingGun` (probabilistic GF sampling, anti-profiling variant) is implemented in core but **not** registered in `Autopilot.createGunManager()`. It is currently unused.
 
 ### 4c. Movement Strategy Manager
 
@@ -182,7 +191,7 @@ Stateless processors registered in dependency order. Each reads from Whiteboard,
 
 ### 4d. WaveSurfMovement (orbit-primary)
 
-Default behavior: high-speed lateral orbit (|ahead|=150) with wall-aware random direction reversals (15-45 tick intervals, forced reversal at wall distance < 60px).
+Default behavior: high-speed lateral orbit (|ahead|=150) with wall-aware random direction reversals (`FLIP_MIN_TICKS = 25` plus `rng.nextInt(FLIP_RANGE_TICKS = 31)` → 25–55 tick intervals, forced reversal cooldown when wall distance < 60 px).
 
 When imminent wave detected (< 12 ticks to break):
 - Activate `PathPlanner.plan()` — evaluates 50 candidates from `ReachableEnvelope` (10-tick horizon, 2px grid, ±1px jitter)
@@ -199,8 +208,8 @@ When imminent wave detected (< 12 ticks to break):
 
 | Output | Source | Logic |
 |--------|--------|-------|
-| `aggression` | energy ratio | 0.8 if ratio > 0.6, 0.5 if > 0.4, 0.2 if > 0.25, 0.05 if critical. ±0.2 from opponent strength rating. ±0.1-0.15 from predicted fire power. |
-| `firePowerBudget` | distance, energy, opponent energy | Kill-shot: < 0.5 → 0.1, < 4.0 → exact kill, < 20 → 3.0. Normal: distance-scaled (3.0/2.0/1.5/1.0 at 150/300/500/500+ px) ± aggression × 0.5. Capped at ourEnergy/4. |
+| `aggression` | energy ratio | 0.8 if ratio > 0.6, 0.5 if > 0.4, 0.2 if > 0.25, 0.05 if critical. ±0.2 from opponent strength rating. −0.15 / +0.10 from predicted fire power (when confidence > 0.3). |
+| `firePowerBudget` | distance, energy, opponent energy | Kill-shot: opp < 0.5 → 0.1, opp < 4.0 → exact-kill (opp/4), our < 5 → 0.5, opp < 20 & our > 20 → 3.0. Normal: distance-scaled (`distance < 150` → 3.0, `< 300` → 2.0, `< 500` → 1.5, else 1.0) ± (aggression−0.5)×0.5. Capped at `max(0.5, ourEnergy/4)`. |
 | `preferredDistance` | constant | 350px |
 | `randomWaveSelection` | opponent strength, predicted fire power | Enabled vs strong opponents (> 0.7) or high predicted bullet power (> 2.5) |
 
@@ -340,10 +349,13 @@ pipeline/                       Offline CSV processing only (not shipped)
 | 2 | VCS cold-start | ~50+ wave observations per segment needed to converge | Mitigated by Gaussian prior + cross-battle persistence |
 | 3 | TickBudget ratcheted to 10 trees permanently | All 3 GBM models ran at 5% capacity | **Fixed 2026-05-09** — upward recovery + startup immunity |
 | 4 | `OUR_DIST_TO_WALL_MIN`, `OUR_LATERAL_VELOCITY` were pipeline-only | Features NaN at runtime; ML models got garbage for these | **Fixed** — now computed in `PositionFeatures` |
-| 5 | `VcsSamplingGun` still in core | Imported but not registered in VGM gun list | Low — dead code |
+| 5 | `VcsSamplingGun` still in core | Defined but not registered in VGM gun list | Low — dead code |
 | 6 | Virtual bullet hit check uses fire-time distance | Opponent moves during bullet flight; approximation | Low |
 | 7 | Orbit-primary movement beats constant wave surfing | Wave surf reachable-envelope oscillation hurt more than it helped | Architecture finding |
-| 8 | 47% opponent HR against top-50 | Movement too predictable for GF-targeting opponents | Core competitive gap |
+| 8 | ~40% opponent HR against top-50 | Movement too predictable for GF-targeting opponents | Core competitive gap |
+| 9 | `OPPONENT_INFERRED_GUN_HEAT` never produced in-game | Pipeline-only feature in `OpponentPredictionOfflineFeatures`. Not in any in-game `Feature[]` output set, not in any model's `FEATURE_NAMES`. `GbmFireTimingPredictor.getDependencies()` lists it for topological sort, but the trained tree never splits on it. The heuristic fallback path reads it (default 1.0). | Cosmetic / heuristic-only |
+| 10 | `WindowFeatures` carries internal ring-buffer state | Violates the "features stateless, all inter-tick state in `Whiteboard`" rule from `.github/copilot-instructions.md`. Works fine in production (single instance per battle, reset on first scan), but blocks future parallel-feature-execution and complicates testing. | Open |
+| 11 | `MlpGfTargeting` is a stub | Returns uniform [1/61] distribution. Nothing in the gun/movement layers consumes its output. | Deferred (Phase 8) |
 
 ---
 
