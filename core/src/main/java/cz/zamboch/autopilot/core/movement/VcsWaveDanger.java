@@ -1,6 +1,5 @@
 package cz.zamboch.autopilot.core.movement;
 
-import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.WaveRecord;
 import cz.zamboch.autopilot.core.Whiteboard;
 import cz.zamboch.autopilot.core.util.RoboMath;
@@ -53,9 +52,8 @@ public final class VcsWaveDanger implements IWaveDanger {
 
         int bin = Whiteboard.gfToBin(gf);
 
-        // Determine segment from wave context
-        int latDir = wb.hasFeature(Feature.OPPONENT_LATERAL_DIRECTION)
-                ? (int) wb.getFeature(Feature.OPPONENT_LATERAL_DIRECTION) : 1;
+        // Determine segment from wave's fire-time context (not current tick)
+        int latDir = wave.fireLateralDir;
         if (latDir == 0) latDir = 1;
         int segment = Whiteboard.vcsSegment(wave.fireDistance, latDir);
         int[] hist = wb.getMoveVcsSegment(segment);

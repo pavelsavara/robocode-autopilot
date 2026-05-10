@@ -48,6 +48,7 @@ public final class MlDerivedFeatures implements IInGameFeatures {
             Feature.OUR_WAVE_REMAINING,
             // Opponent prediction
             Feature.OPPONENT_WALL_AHEAD_DISTANCE,
+            Feature.OPPONENT_INFERRED_GUN_HEAT,
             // Movement history (rolling averages)
             Feature.OPPONENT_AVG_LATERAL_VELOCITY_10,
             Feature.OPPONENT_AVG_LATERAL_VELOCITY_30,
@@ -255,6 +256,20 @@ public final class MlDerivedFeatures implements IInGameFeatures {
         }
         wb.setFeature(Feature.OPPONENT_WALL_AHEAD_DISTANCE,
                 distToWall == Double.MAX_VALUE ? 0 : distToWall);
+
+        // Inferred gun heat — reads fire state from Whiteboard (set by EnergyFeatures)
+        double coolingRate = wb.getGunCoolingRate();
+        long lastFireTick = wb.getLastOpponentFireTick();
+        if (lastFireTick >= 0) {
+            long elapsed = wb.getTick() - lastFireTick;
+            double heatFromFire = 1.0 + wb.getLastOpponentFirePower() / 5.0;
+            wb.setFeature(Feature.OPPONENT_INFERRED_GUN_HEAT,
+                    Math.max(0, heatFromFire - elapsed * coolingRate));
+        } else {
+            // No fire detected yet — initial gun heat cools from 3.0 (robocode default)
+            wb.setFeature(Feature.OPPONENT_INFERRED_GUN_HEAT,
+                    Math.max(0, 3.0 - wb.getTick() * coolingRate));
+        }
     }
 
     private void processMovementHistory(Whiteboard wb) {
