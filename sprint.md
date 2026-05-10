@@ -267,14 +267,33 @@ Required sections:
    - How to measure success/failure
    - Who implements it
 
-### 5b. Revert and commit
+### 5b. Merge CI models
+
+CI stage 2 trains models and commits `*Data.java` files to a
+`sprint/{N}-models` branch. After reviewing metrics in Phase 4c:
+
+1. **If metrics improved or held steady:** merge the model files into `main`:
+   ```bash
+   git checkout origin/sprint/{N}-models -- \
+     robot/src/main/java/cz/zamboch/distilled/FirePowerData.java \
+     robot/src/main/java/cz/zamboch/distilled/FireTimingData.java \
+     robot/src/main/java/cz/zamboch/distilled/MovementData.java
+   git commit -m "merge sprint/{N} CI-trained models"
+   ```
+2. **If metrics regressed:** do NOT merge. Note the regression in the
+   retrospective and investigate root cause next sprint.
+
+The next push to `main` will trigger CI with the new models baked into
+the robot JAR — this is how CI-trained models enter the battle loop.
+
+### 5c. Revert and commit
 
 - **Revert** changes that caused measurable harm (git revert on main).
 - **Tag** the sprint result on `main` with:
   `Sprint N: <key delta>, kept <X>, reverted <Y>`
 - **Coordinator reviews** the final state and retrospective.
 
-### 5c. Sprint close
+### 5d. Sprint close
 
 Coordinator declares the sprint result:
 - **Win:** target metric improved by the sprint goal amount → update plan.md
