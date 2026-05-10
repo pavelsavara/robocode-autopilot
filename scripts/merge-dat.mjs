@@ -17,15 +17,15 @@
 
 import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { parseArgs } from 'node:util';
 
-const { values: args } = parseArgs({
-    options: {
-        'input': { type: 'string', multiple: true },
-        'input-dir': { type: 'string' },
-        'output': { type: 'string', default: 'merged-autopilot.dat' },
-    },
-});
+// Manual arg parsing (parseArgs requires Node 18.3+, container may be older)
+const argv = process.argv.slice(2);
+const args = { input: [], 'input-dir': null, output: 'merged-autopilot.dat' };
+for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === '--input') { while (i + 1 < argv.length && !argv[i + 1].startsWith('--')) args.input.push(argv[++i]); }
+    else if (argv[i] === '--input-dir') args['input-dir'] = argv[++i];
+    else if (argv[i] === '--output') args.output = argv[++i];
+}
 
 // Collect input files
 let inputFiles = args.input || [];
