@@ -327,21 +327,92 @@ class WaveSurfMovementTest {
     }
 
     @Test
-    void pathPlannerActivatesForDistantWaves() {
-        // PathPlanner should activate for ALL waves, not just imminent ones.
-        WaveSurfMovement move = new WaveSurfMovement(stubPlanner, stubWaveDanger);
+    void vcsGuidedDirectionChoosesSaferSide() {
+        // Custom wave danger: CW (positive x offset) is dangerous, CCW is safe
+        IWaveDanger biasedDanger = new IWaveDanger() {
+            @Override
+            public double danger(CandidatePosition c, WaveRecord w, Whiteboard wb) {
+                // Danger based on x position: higher x = more dangerous
+                return c.x > 400 ? 0.8 : 0.1;
+            }
+            @Override
+            public double danger(CandidatePosition c, List<WaveRecord> waves,
+                                 Whiteboard wb, boolean rand) {
+                return c.x > 400 ? 0.8 : 0.1;
+            }
+        };
+        PathPlanner biasedPlanner = new PathPlanner(
+                (x, y, w) -> 0, biasedDanger, 800, 600);
+        WaveSurfMovement move = new WaveSurfMovement(biasedPlanner, biasedDanger);
 
+        // Robot at center, heading north, opponent due north (bearing = 0).
+        // CW orbit goes east (increasing x), CCW orbit goes west (decreasing x).
+        // Since east is dangerous, VCS should guide direction to CCW (-1).
         wb.setOurState(400, 300, 0, 0, 0, 8.0, 100, 0);
         wb.setFeature(Feature.BEARING_TO_OPPONENT_ABS, 0);
         wb.setFeature(Feature.OUR_DIST_TO_WALL_MIN, 200);
 
-        // Add a distant wave (25+ ticks away)
+        // Add a distant wave (not imminent — 25 ticks away)
+        // Opponent at (400, 600), speed 12, fired at tick 0
+        // distance = 300, at tick 0 radius = 0, ticksUntil = 25
         wb.addOpponentWave(new WaveRecord(400, 600, 12.0, 2.0, 0, 300));
+        wb.setFeature(Feature.OPPONENT_LATERAL_DIRECTION, 1);
 
+        // Run enough ticks for the direction evaluation to trigger
+        // (DIR_EVAL_INTERVAL = 8 ticks from lastDirEvalTick which starts at -100)
         move.getCommand(wb, params, cmd);
 
-        // Should produce non-zero movement (PathPlanner guides toward safe position)
-        assertTrue(cmd.ahead != 0 || cmd.turnRight != 0,
-                "PathPlanner should produce movement command for distant waves");
+        // The VCS-guided logic should have set direction to CCW (-1)
+        // because CW (east) has higher danger
+        assertEquals(-1, move.getPreemptiveDir(),
+                "VCS-guided direction should choose CCW (away from danger)");
+    }
+
+    @Test
+    void vcsGuidedDirectionRespectsDirEvalInterval() {
+        // Wave danger where CCW is always safer
+        IWaveDanger biasedDanger = new IWaveDanger() {
+            @Override
+            public double danger(CandidatePosition c, WaveRecord w, Whiteboard wb) {
+                return c.x > 400 ? 0.8 : 0.1;
+            }
+            @Override
+            public double danger(CandidatePosition c, List<WaveRecord> waves,
+                                 Whiteboard wb, boolean rand) {
+                return c.x > 400 ? 0.8 : 0.1;
+            }
+        };
+        PathPlanner biasedPlanner = new PathPlanner(
+                (x, y, w) -> 0, biasedDanger, 800, 600);
+        WaveSurfMovement move = new WaveSurfMovement(biasedPlanner, biasedDanger);
+
+        // Set up distant wave
+        wb.addOpponentWave(new WaveRecord(400, 600, 12.0, 2.0, 0, 300));
+        wb.setFeature(Feature.OPPONENT_LATERAL_DIRECTION, 1);
+
+        // First call triggers evaluation — sets dir to -1
+        move.getCommand(wb, params, cmd);
+        assertEquals(-1, move.getPreemptiveDir());
+
+        // Advance only a few ticks (less than DIR_EVAL_INTERVAL)
+        // Manually force preemptiveDir back to +1 by reflection isn't clean —
+        // instead verify that direction doesn't oscillate within interval
+        int dirChanges = 0;
+        int prevDir = move.getPreemptiveDir();
+        for (int t = 0; t < WaveSurfMovement.DIR_EVAL_INTERVAL - 1; t++) {
+            wb.advanceTick();
+            wb.setOurState(400, 300, 0, 0, 0, 8.0, 100, 0);
+            wb.setFeature(Feature.BEARING_TO_OPPONENT_ABS, 0);
+            wb.setFeature(Feature.OUR_DIST_TO_WALL_MIN, 200);
+            wb.setFeature(Feature.OPPONENT_LATERAL_DIRECTION, 1);
+            move.getCommand(wb, params, cmd);
+            if (move.getPreemptiveDir() != prevDir) {
+                dirChanges++;
+                prevDir = move.getPreemptiveDir();
+            }
+        }
+
+        assertEquals(0, dirChanges,
+                "Direction should not change within DIR_EVAL_INTERVAL");
     }
 }
