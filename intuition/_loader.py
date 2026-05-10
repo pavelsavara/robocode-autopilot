@@ -151,7 +151,7 @@ def load_stratified(
         if csv_path is None:
             continue
         try:
-            df = pd.read_csv(csv_path)
+            df = pd.read_csv(csv_path, low_memory=False)
         except Exception as exc:
             if verbose:
                 print(f"⚠ Skipping {csv_path}: {exc}")
