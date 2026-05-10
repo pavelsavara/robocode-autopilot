@@ -304,6 +304,17 @@ jobs:
           path: recordings/
           retention-days: 14
 
+      # Upload autopilot.dat for downstream merge (3-sprint-train.yml).
+      # Each chunk builds its own VCS histograms + gun stats during battles.
+      # Stage 3 merges all chunks into a single DefaultDataFile.java.
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: dat-chunk-${{ matrix.chunk.id }}
+          path: /opt/robocode/robots/.data/cz/zamboch/Autopilot.data/autopilot.dat
+          retention-days: 7
+          if-no-files-found: warn
+
   # ─── Step 3: Self-battle sanity check (MUST pass: 45–55%) ───
   self-battle:
     needs: [build]
