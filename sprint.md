@@ -134,25 +134,45 @@ robot JAR builds cleanly.
 
 ---
 
-## Phase 3: Battle & Record (Systems Engineer leads)
+## Phase 3: Battle & Record
 
-1. Build the robot JAR: `.\gradlew.bat clean :robot:jar`
-2. Deploy to `c:\robocode\robots\`
-3. Delete stale `autopilot.dat` (clean evaluation, no carryover)
-4. Run battles via `local-pipeline.ps1` against the fixed opponent set:
-   - 3 battles × 35 rounds per opponent
-   - Old recordings auto-archived to `recordings-archive/`
-   - CSVs processed incrementally (only new recordings)
-   - `summary.json` written with per-opponent scores and win counts
-   - `sprint_battles.json` written with current-sprint battle IDs
-5. Verify recording count matches expected (opponents × battles)
+Two modes: **CI** (default) or **local** (fallback). Both use the same
+underlying scripts (`run-battle.mjs`, pipeline binary, `train_distill.py`).
 
-**Pipeline flags:**
-- `-EvalOnly` — build + battle + sanity check only (skip CSV/retrain)
-- `-SkipBuild`, `-SkipBattles`, `-SkipPipeline`, `-SkipRetrain` — skip individual steps
+### CI mode (default)
 
-**Exit criteria:** `output/local/csv/` populated with complete data for all
-opponents.
+1. Push code changes to `main` → triggers `sprint-pipeline.yml`
+2. AI agent starts `gh run watch <run-id> --exit-status` in async terminal
+3. Agent continues other work while CI runs (~70 min total):
+   - Stage 1: build + 250 battles (50×5, 10 parallel chunks) + self-battle
+   - Stage 2: process recordings → CSV, run 6 sanity checks
+   - Stage 3: retrain models + run notebooks + merge .dat (parallel)
+4. Terminal notifies when complete (or failed)
+5. If failed → agent reads `gh run view --log-failed`, diagnoses, pushes fix
+6. On success → agent downloads summary artifacts (~50KB total):
+   - `summary.json` — per-opponent scores
+   - `sanity-report.json` — 6 checks pass/fail
+   - `retrain-summary.json` — model metrics + sprint branch name
+   - Notebook HTML — pre-rendered retrospective plots
+
+**CI outputs stay in CI:**
+- `sprint/{N}-models` branch with `*Data.java` + `DefaultDataFile.java`
+- Recording artifacts (~1.25GB, 90-day retention)
+- CSV artifacts
+
+### Local mode (fallback)
+
+Use when CI is unavailable or for rapid iteration:
+
+```bash
+node scripts/local-pipeline.mjs --opponents 50 --battles-per-opponent 5
+```
+
+Same steps as CI but sequential on local machine. Recordings, CSVs, and
+models written to `output/local/`.
+
+**Exit criteria:** All pipeline stages complete. Summary and sanity report
+available for Phase 4.
 
 ---
 

@@ -33,21 +33,11 @@ Sprints 13–18 (sprint loop: score 6.1%→9.1%, R² −3.67→+0.48, VCS fixes,
 
 ## Active Phase: Competitive Improvement Campaign
 
-### Workstream A: CI Offload (Amos — HIGH PRIORITY)
+### Workstream A: CI Eval Offload (Amos — ✅ DONE Sprint 20)
 
-Offload battles to GitHub Actions to unblock local development.
-Existing infra: `run-season.yml`, `Dockerfile.battle`, `run-battle.mjs`.
-**Constraint:** ~30 Mbps WiFi — minimize data transfer.
-
-1. **Create `eval-sprint.yml` workflow** triggered on push to `main`.
-   - Build robot JAR in CI
-   - Run battles in matrix (4 runners × 8 opponents each = 32 opponents)
-   - Compute `summary.json` in CI, download only that (~2 KB) — NOT recordings
-   - Post per-opponent score table as commit status or PR comment
-2. **Self-battle job** — add `cz.zamboch.Autopilot` as opponent.
-   Sanity check: score must be 48–52%. Skew indicates position/init bug.
-3. **Local fallback** — keep `local-pipeline.ps1` working. Use `-EvalOnly`
-   locally while CI handles full pipeline.
+Completed Sprint 20. `eval-sprint.yml` runs 16-opponent eval in CI,
+produces `summary.json` (~2KB), self-battle sanity check. See
+[retrospective 20](archive/2026-05-10-retrospective-20.md).
 
 ### Workstream B: Feature Divergence Resolution (Naomi)
 
@@ -74,36 +64,75 @@ Java/Python divergence cap targeting accuracy.
    the model's current `FEATURE_NAMES` does not list it, so the trained
    tree never splits on it. ([design-proposals.md §5](design-proposals.md))
 
-### Workstream B2: CI Full Pipeline — Automated Retrain Loop
+### Workstream A2: CI Full Sprint Pipeline (Amos — HIGH PRIORITY)
 
-Automate the complete cycle in CI so that the AI squad's role reduces to
-code/notebook changes and retrospectives — no manual local pipeline runs.
+Automate the complete sprint cycle in CI: battles → CSV → sanity checks →
+notebooks → ML training → model export. AI squad only makes code/notebook
+changes and writes retrospectives; machines do the grinding.
 
-**Goal:** Push code → CI battles → CI generates CSV → CI retrains models →
-CI exports to Java → next push uses new models. Humans review results
-and make decisions; machines do the grinding.
+**Goal:** Push code → CI runs entire pipeline → download summaries +
+merge model branch. Total CI time budget: ~70 min (max 120 min).
 
-**Prerequisites:** Workstream B (feature divergence) should close the R² gap
-first — retraining on misaligned features wastes compute.
+#### Architecture: 3-stage workflow_run chain
 
-1. **Wire `Dockerfile.pipeline`** into a `retrain.yml` workflow.
-   The image already exists; needs a workflow that:
-   - Downloads recordings from battle jobs (intra-CI, not to local)
-   - Runs the Java pipeline to produce CSV
-   - Runs `_run_fire_timing.py`, `_run_multiwave.py` etc. to retrain
-   - Exports models via `export_gbm_java.py`
-   - Opens a PR with updated `*Data.java` files
-2. **Cloud dataset accumulation** — store CSV outputs as workflow artifacts
-   or on a `data` branch (Git LFS). Each CI run appends new battles;
-   retraining uses the accumulated dataset, not just the latest sprint.
-3. **Trigger rules** — retrain on `workflow_dispatch` (manual) initially.
-   Later: auto-retrain when accumulated battles exceed a threshold
-   (e.g. 100 new battles since last train).
-4. **Validation gate** — after retraining, run a quick 5-opponent eval
-   with the new model. If overall score drops >2pp vs baseline, block
-   the PR and flag for human review.
-5. **Data transfer budget** — CSV stays in CI. Only `summary.json` and
-   the model PR diff cross the wire. Recordings are ephemeral.
+```
+push to main (or workflow_dispatch)
+    │
+[1] sprint-pipeline.yml
+    ├── build: compile robot JAR + pipeline
+    ├── battles: 50 opponents × 5 battles (10 chunks of 25, parallel)
+    │   + self-battle
+    │   → uploads: recordings-chunk-* (~1.25GB), chunk-results-*
+    └── aggregate: summary.json + score table
+         │ workflow_run [completed]
+[2] sprint-process.yml
+    ├── process: download recordings, run Java pipeline → CSV (parallel)
+    ├── combine: merge CSV chunks
+    ├── sanity: 6 checks from sprint.md
+    └── uploads: csv-combined, sanity-report.json
+         │ workflow_run [completed]
+[3] sprint-train.yml  (parallel jobs)
+    ├── train: retrain 3 models → *Data.java
+    ├── notebooks: retrospective notebooks via nbconvert → HTML
+    ├── merge-dat: combine autopilot.dat from battle chunks → DefaultDataFile.java
+    └── commit all to sprint/{N}-models branch
+         uploads: retrain-summary.json, notebook HTML
+```
+
+#### Implementation tasks
+
+1. **Single Docker image** — merge `battle-runner` + `pipeline-runner` into
+   one image with Java 21 + Node.js + Python 3.10 + pre-installed pip deps.
+   Code checked out at workflow runtime, NOT baked into image.
+2. **Migrate local-pipeline.ps1 → local-pipeline.mjs** — shared .mjs scripts
+   between CI and local. CI workflows and local CLI call the same scripts:
+   `run-battle.mjs`, pipeline binary, `train_distill.py`, `export_gbm_java.py`.
+3. **`merge-dat.mjs`** — new tool that combines `autopilot.dat` files from
+   parallel battle chunks (merge VCS histograms by key, max tick budget
+   ceiling, average gun stats). Feeds into `export_data_java.py` to produce
+   `DefaultDataFile.java`.
+4. **Sprint-process workflow** — downloads recording artifacts from stage 1,
+   runs Java pipeline in parallel, merges CSVs, runs 6 sanity checks,
+   uploads `sanity-report.json`.
+5. **Sprint-train workflow** — parallel jobs: (a) retrain 3 models +
+   export `*Data.java`, (b) run retrospective notebooks headlessly via
+   `nbconvert`, (c) merge `.dat` files → `DefaultDataFile.java`. All
+   committed to `sprint/{N}-models` branch.
+6. **Drop legacy workflows** — remove `process-recordings.yml`,
+   `scrape-wiki.yml`, `bot-submit.yml`. Merge `build-docker.yml` +
+   `build-docker-pipeline.yml` into single `build-docker.yml`. Keep
+   `run-season.yml` (different purpose: full rumble).
+7. **Expand to 50 opponents** — download + validate JARs on `robots` branch.
+
+#### Data transfer budget (~100KB crosses the wire)
+
+| Artifact | Size |
+|---|---|
+| `summary.json` | ~2KB |
+| `sanity-report.json` | ~1KB |
+| `retrain-summary.json` | ~1KB |
+| Notebook HTML | ~50KB |
+| `sprint/{N}-models` branch diff (via git pull) | ~50KB |
 
 ### Workstream C: Movement (Alex — EVERY 3RD SPRINT MINIMUM)
 
@@ -237,7 +266,12 @@ focused JUnit test class. Full rationale in
 | 20 | Move WindowFeatures state to Whiteboard | Re-establish the "all state in Whiteboard" invariant; re-enables future per-instance refactors |
 | 21 | Unit test backlog T1–T10 | One test class per sprint; pins Sprint 10 / Sprint 12 root-cause bugs and four under-tested classes |
 | 22 | MlpGfTargeting deferred to backlog | Not the binding constraint while in-game R² < 0.7; revisit before next R² grind |
-| 23 | Automate full retrain loop in CI (B2) | AI squad focuses on code/notebook changes and retrospectives; machines do the grinding |
+| 23 | Full sprint pipeline in CI (A2) | Push code → CI battles → CSV → train → model branch. AI squad focuses on code/notebook changes and retrospectives |
+| 24 | Single Docker image (Java+Node+Python) | Merge battle-runner + pipeline-runner; code checked out at runtime |
+| 25 | Migrate local-pipeline.ps1 → .mjs | Shared scripts between CI and local; Node.js everywhere |
+| 26 | 50 opponents × 5 battles per sprint | Broader coverage than 16-opponent eval; ~250 battles per sprint |
+| 27 | merge-dat.mjs for parallel VCS priors | Combine autopilot.dat from parallel battle chunks into DefaultDataFile.java |
+| 28 | Drop legacy CI workflows | Remove process-recordings, scrape-wiki, bot-submit; merge build-docker pair |
 
 ---
 
