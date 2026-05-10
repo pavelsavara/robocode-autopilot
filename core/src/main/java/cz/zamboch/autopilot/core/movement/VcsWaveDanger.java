@@ -55,7 +55,7 @@ public final class VcsWaveDanger implements IWaveDanger {
         // Determine segment from wave's fire-time context (not current tick)
         int latDir = wave.fireLateralDir;
         if (latDir == 0) latDir = 1;
-        int segment = Whiteboard.vcsSegment(wave.fireDistance, latDir);
+        int segment = Whiteboard.vcsSegment(wave.fireDistance, latDir, wave.fireOpponentAbsVelocity);
         int[] hist = wb.getMoveVcsSegment(segment);
 
         // Total observations in this segment

@@ -252,9 +252,12 @@ public final class Autopilot extends AdvancedRobot {
                 // Opponent lateral direction at fire time (for VCS segmentation)
                 int fireLateralDir = whiteboard.hasFeature(Feature.OPPONENT_LATERAL_DIRECTION)
                         ? (int) whiteboard.getFeature(Feature.OPPONENT_LATERAL_DIRECTION) : 1;
+                // Opponent absolute velocity at fire time (for VCS velocity segmentation)
+                double oppAbsVel = whiteboard.hasFeature(Feature.OPPONENT_VELOCITY)
+                        ? Math.abs(whiteboard.getFeature(Feature.OPPONENT_VELOCITY)) : 8.0;
                 whiteboard.addOurWave(new WaveRecord(
                         getX(), getY(), speed, firePower,
-                        whiteboard.getTick(), dist, fireBearing, fireLateralDir));
+                        whiteboard.getTick(), dist, fireBearing, fireLateralDir, oppAbsVel));
             }
 
             // Emit structured tick log for internal.csv extraction
@@ -328,6 +331,9 @@ public final class Autopilot extends AdvancedRobot {
 
         // Refresh strategy every scan (compute() is pure arithmetic, negligible cost)
         currentParams = strategyComputer.compute(whiteboard);
+
+        // Store fire power budget on whiteboard so TargetingFeatures can use it next tick
+        whiteboard.setCurrentFirePowerBudget(currentParams.firePowerBudget);
     }
 
     @Override

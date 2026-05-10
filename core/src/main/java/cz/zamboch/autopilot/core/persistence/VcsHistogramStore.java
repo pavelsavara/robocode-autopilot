@@ -19,8 +19,8 @@ import java.util.Map;
  * <p>Uses LRU eviction: keeps up to {@link #MAX_ENTRIES} opponents.
  * Oldest entry is evicted when the store is full.</p>
  *
- * <p>Section data per entry: botIdHash (4) + gunVcs (6×61×4=1464) +
- * moveVcs (6×61×4=1464) = 2932 bytes. At MAX_ENTRIES=30 ≈ 88 KB.</p>
+ * <p>Section data per entry: botIdHash (4) + gunVcs (12×61×4=2928) +
+ * moveVcs (12×61×4=2928) = 5860 bytes. At MAX_ENTRIES=30 ≈ 176 KB.</p>
  */
 public final class VcsHistogramStore implements IPersistable {
 

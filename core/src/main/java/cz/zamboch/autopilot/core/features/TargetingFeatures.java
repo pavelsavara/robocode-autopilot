@@ -60,9 +60,16 @@ public class TargetingFeatures implements IInGameFeatures {
         double oppVel = wb.getFeature(Feature.OPPONENT_VELOCITY);
         double oppHeading = wb.getOpponentHeading();
 
-        double ourPower = wb.getLastOurFireTick() >= 0
-                ? wb.getLastOurFirePower()
-                : DEFAULT_FIRE_POWER;
+        // Use strategy-computed fire power budget (set after previous scan's strategy computation)
+        // for a better estimate of our bullet speed. Falls back to last actual fire power, then default.
+        double ourPower;
+        if (wb.getCurrentFirePowerBudget() > 0) {
+            ourPower = wb.getCurrentFirePowerBudget();
+        } else if (wb.getLastOurFireTick() >= 0) {
+            ourPower = wb.getLastOurFirePower();
+        } else {
+            ourPower = DEFAULT_FIRE_POWER;
+        }
         double ourSpeed = 20.0 - 3.0 * ourPower;
 
         // Linear target — exact non-iterative formula via law of sines.

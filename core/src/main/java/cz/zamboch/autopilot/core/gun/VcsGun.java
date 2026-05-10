@@ -36,8 +36,10 @@ public final class VcsGun implements IGunStrategy {
         double distance = wb.getFeature(Feature.DISTANCE);
         int latDir = (int) wb.getFeature(Feature.OPPONENT_LATERAL_DIRECTION);
         if (latDir == 0) latDir = 1;
+        double absVel = wb.hasFeature(Feature.OPPONENT_VELOCITY)
+                ? Math.abs(wb.getFeature(Feature.OPPONENT_VELOCITY)) : 8.0;
 
-        int segment = Whiteboard.vcsSegment(distance, latDir);
+        int segment = Whiteboard.vcsSegment(distance, latDir, absVel);
         int[] hist = wb.getGunVcsSegment(segment);
 
         int selectedBin = peakSmoothed(hist);
@@ -88,8 +90,10 @@ public final class VcsGun implements IGunStrategy {
         double distance = wb.getFeature(Feature.DISTANCE);
         int latDir = (int) wb.getFeature(Feature.OPPONENT_LATERAL_DIRECTION);
         if (latDir == 0) latDir = 1;
+        double absVel = wb.hasFeature(Feature.OPPONENT_VELOCITY)
+                ? Math.abs(wb.getFeature(Feature.OPPONENT_VELOCITY)) : 8.0;
 
-        int segment = Whiteboard.vcsSegment(distance, latDir);
+        int segment = Whiteboard.vcsSegment(distance, latDir, absVel);
         int[] hist = wb.getGunVcsSegment(segment);
 
         int total = 0;
