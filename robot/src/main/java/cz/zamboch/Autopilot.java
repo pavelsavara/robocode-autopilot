@@ -249,9 +249,12 @@ public final class Autopilot extends AdvancedRobot {
                 double fireBearing = Math.atan2(
                         whiteboard.getOpponentX() - getX(),
                         whiteboard.getOpponentY() - getY());
+                // Opponent lateral direction at fire time (for VCS segmentation)
+                int fireLateralDir = whiteboard.hasFeature(Feature.OPPONENT_LATERAL_DIRECTION)
+                        ? (int) whiteboard.getFeature(Feature.OPPONENT_LATERAL_DIRECTION) : 1;
                 whiteboard.addOurWave(new WaveRecord(
                         getX(), getY(), speed, firePower,
-                        whiteboard.getTick(), dist, fireBearing));
+                        whiteboard.getTick(), dist, fireBearing, fireLateralDir));
             }
 
             // Emit structured tick log for internal.csv extraction

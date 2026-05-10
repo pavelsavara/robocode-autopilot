@@ -48,7 +48,8 @@ public class MultiWaveFeatures implements IInGameFeatures {
                     wb.getOurY() - wb.getOpponentY());
             WaveRecord wave = new WaveRecord(
                     wb.getOpponentX(), wb.getOpponentY(),
-                    speed, power, wb.getTick(), distance, fireBearing);
+                    speed, power, wb.getTick(), distance, fireBearing,
+                    wb.getPrevLateralDirection() != 0 ? wb.getPrevLateralDirection() : 1);
             wb.addOpponentWave(wave);
         }
 

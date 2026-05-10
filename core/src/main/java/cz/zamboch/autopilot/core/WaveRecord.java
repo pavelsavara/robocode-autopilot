@@ -22,10 +22,12 @@ public final class WaveRecord {
     public final double fireDistance;
     /** Bearing from firer to target at fire time (rad). Used for GF computation at wave break. */
     public final double fireBearing;
+    /** Target's lateral direction at fire time (+1/-1). Used for VCS segmentation at wave break. */
+    public final int fireLateralDir;
 
     public WaveRecord(double originX, double originY, double bulletSpeed,
                       double bulletPower, long fireTick, double fireDistance,
-                      double fireBearing) {
+                      double fireBearing, int fireLateralDir) {
         this.originX = originX;
         this.originY = originY;
         this.bulletSpeed = bulletSpeed;
@@ -33,12 +35,22 @@ public final class WaveRecord {
         this.fireTick = fireTick;
         this.fireDistance = fireDistance;
         this.fireBearing = fireBearing;
+        this.fireLateralDir = fireLateralDir;
     }
 
-    /** Backward-compatible constructor — fireBearing defaults to NaN. */
+    /** Backward-compatible constructor — fireLateralDir defaults to 1. */
+    public WaveRecord(double originX, double originY, double bulletSpeed,
+                      double bulletPower, long fireTick, double fireDistance,
+                      double fireBearing) {
+        this(originX, originY, bulletSpeed, bulletPower, fireTick, fireDistance,
+                fireBearing, 1);
+    }
+
+    /** Backward-compatible constructor — fireBearing defaults to NaN, fireLateralDir to 1. */
     public WaveRecord(double originX, double originY, double bulletSpeed,
                       double bulletPower, long fireTick, double fireDistance) {
-        this(originX, originY, bulletSpeed, bulletPower, fireTick, fireDistance, Double.NaN);
+        this(originX, originY, bulletSpeed, bulletPower, fireTick, fireDistance,
+                Double.NaN, 1);
     }
 
     /** Damage this bullet would deal on hit. */

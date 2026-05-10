@@ -40,3 +40,26 @@
 - Naomi found root cause of R²=−3.67: 23/80 fire power features were NaN. MlDerivedFeatures.java created.
 - Amos wired FeatureLogger into GbmFirePowerPredictor — enables per-tick CSV diagnostics.
 - Sprint result: HIT. Score 6.6%, R² −3.67→−1.44.
+
+### 2026-05-10 — VCS Segment Mismatch Fix
+- **Root cause found**: Gun VCS was storing GF data under WRONG segments in `prunePassedWaves()`.
+  Two bugs:
+  1. **Lateral direction mismatch**: Update used `opponentVelocity >= 0 ? 1 : -1` (forward/backward),
+     but VcsGun queries with `Feature.OPPONENT_LATERAL_DIRECTION` (left/right relative to bearing).
+     Completely different semantics — data stored in segment A, queried from segment B.
+  2. **Distance mismatch**: Update used wave-break-time `distanceToOpponent` for segment,
+     but VcsGun queries with fire-time `Feature.DISTANCE`. When opponents move between fire and
+     wave break (25+ ticks later), these can be in different distance bins (close/mid/far).
+- **Fix**: Added `fireLateralDir` field to `WaveRecord`. Stores lateral direction at fire time.
+  Both gun VCS and move VCS updates now use `w.fireDistance` + `w.fireLateralDir` for segmentation,
+  matching VcsGun's query-time semantics.
+- **Files changed**:
+  - `WaveRecord.java` — added `fireLateralDir` field + backward-compat constructors
+  - `Whiteboard.java` — `prunePassedWaves()` uses fire-time values for both gun and move VCS
+  - `Autopilot.java` — passes `OPPONENT_LATERAL_DIRECTION` when creating our waves
+  - `MultiWaveFeatures.java` — passes `prevLateralDirection` when creating opponent waves
+- **Tests**: 8 new tests in `VcsGunTest.java` — segment consistency, fire-time distance,
+  velocity sign vs lateral direction, backward compat, peak firing.
+- **Expected impact**: HIGH. Every single VCS data point was going into the wrong segment.
+  VcsGun was essentially reading from near-empty histograms. Fix should dramatically
+  improve VCS targeting accuracy.

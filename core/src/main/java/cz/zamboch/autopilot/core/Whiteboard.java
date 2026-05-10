@@ -277,7 +277,10 @@ public final class Whiteboard {
                     double mea = Math.asin(Math.min(1.0, 8.0 / w.bulletSpeed));
                     double gf = mea > 0 ? offset / mea : 0;
                     gf = Math.max(-1.0, Math.min(1.0, gf));
-                    int segment = vcsSegment(w.fireDistance, prevLateralDirection);
+                    // Use fire-time distance and lateral direction for segmentation
+                    int latDir = w.fireLateralDir;
+                    if (latDir == 0) latDir = 1;
+                    int segment = vcsSegment(w.fireDistance, latDir);
                     incrementMoveVcs(segment, gfToBin(gf));
                 }
                 it.remove();
@@ -295,8 +298,11 @@ public final class Whiteboard {
                     double mea = Math.asin(Math.min(1.0, 8.0 / w.bulletSpeed));
                     double gf = mea > 0 ? offset / mea : 0;
                     gf = Math.max(-1.0, Math.min(1.0, gf));
-                    int latDir = opponentVelocity >= 0 ? 1 : -1;
-                    int segment = vcsSegment(distanceToOpponent, latDir);
+                    // Use fire-time distance and lateral direction for segmentation
+                    // (must match VcsGun's query-time segmentation)
+                    int latDir = w.fireLateralDir;
+                    if (latDir == 0) latDir = 1;
+                    int segment = vcsSegment(w.fireDistance, latDir);
                     incrementGunVcs(segment, gfToBin(gf));
                 }
                 it.remove();
