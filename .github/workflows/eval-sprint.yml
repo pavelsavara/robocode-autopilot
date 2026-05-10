@@ -481,6 +481,11 @@ jobs:
           # { timestamp, total_battles, wins, overall_score_pct,
           #   per_opponent: [{name, avg_score, battles, wins, scores}], raw_results,
           #   self_battle: {avg_score_pct, battles} }
+          #
+          # NOTE: Robocode sorts bots alphabetically in results, so bot_a in the
+          # results file is NOT necessarily our robot. We identify our bot by name
+          # prefix "cz.zamboch.Autopilot" and compute scores from the opponent's
+          # perspective. Each result gets .our and .opp fields for clarity.
           jq -n \
             --argjson all "$(cat all-results.json)" \
             --argjson self_avg "$SELF_AVG" \
@@ -489,28 +494,37 @@ jobs:
             --arg run_id "${{ github.run_id }}" \
             --arg sha "${{ github.sha }}" \
             '
-            ($all | map(select(.error != true))) as $valid
-            | ($valid | map(.bot_b.name) | unique) as $opps
+            # Tag each result with .our_score/.opp_score/.opp_name based on which
+            # side is our robot (name starts with "cz.zamboch.Autopilot").
+            def tag_sides:
+              if (.bot_a.name | startswith("cz.zamboch.Autopilot")) then
+                . + {our_score: .bot_a.score_pct, opp_score: .bot_b.score_pct, opp_name: .bot_b.name}
+              else
+                . + {our_score: .bot_b.score_pct, opp_score: .bot_a.score_pct, opp_name: .bot_a.name}
+              end;
+
+            ($all | map(select(.error != true)) | map(tag_sides)) as $valid
+            | ($valid | map(.opp_name) | unique) as $opps
             | {
                 timestamp: $ts,
                 run_id: $run_id,
                 commit_sha: $sha,
                 total_battles: ($valid | length),
-                wins: ([$valid[] | select(.bot_a.score_pct > .bot_b.score_pct)] | length),
+                wins: ([$valid[] | select(.our_score > .opp_score)] | length),
                 overall_score_pct: (
                   if ($valid | length) == 0 then 0
-                  else (([$valid[].bot_a.score_pct] | add) / ($valid | length) | . * 10 | round / 10)
+                  else (([$valid[].our_score] | add) / ($valid | length) | . * 10 | round / 10)
                   end
                 ),
                 per_opponent: [
                   $opps[] as $name
-                  | ($valid | map(select(.bot_b.name == $name))) as $g
+                  | ($valid | map(select(.opp_name == $name))) as $g
                   | {
                       name: $name,
-                      avg_score: (([$g[].bot_a.score_pct] | add) / ($g | length) | . * 10 | round / 10),
+                      avg_score: (([$g[].our_score] | add) / ($g | length) | . * 10 | round / 10),
                       battles: ($g | length),
-                      wins: ([$g[] | select(.bot_a.score_pct > .bot_b.score_pct)] | length),
-                      scores: [$g[].bot_a.score_pct]
+                      wins: ([$g[] | select(.our_score > .opp_score)] | length),
+                      scores: [$g[].our_score]
                     }
                 ] | sort_by(-.avg_score),
                 self_battle: {
