@@ -62,8 +62,12 @@ jobs:
       - name: Train fire_power
         working-directory: intuition
         run: |
-          python3 train_distill.py --task fire_power --roots ../output/csv 2>&1 | tail -30
-          cat models/distill/fire_power/metrics.json | python3 -m json.tool
+          python3 train_distill.py --task fire_power --roots ../output/csv
+          if [ -f models/distill/fire_power/metrics.json ]; then
+            cat models/distill/fire_power/metrics.json | python3 -m json.tool
+          else
+            echo '::warning::No metrics.json produced for fire_power'
+          fi
 
       - name: Export fire_power to Java
         working-directory: intuition
@@ -99,8 +103,12 @@ jobs:
       - name: Train fire_timing
         working-directory: intuition
         run: |
-          python3 train_distill.py --task fire_timing --roots ../output/csv 2>&1 | tail -30
-          cat models/distill/fire_timing/metrics.json | python3 -m json.tool
+          python3 train_distill.py --task fire_timing --roots ../output/csv
+          if [ -f models/distill/fire_timing/metrics.json ]; then
+            cat models/distill/fire_timing/metrics.json | python3 -m json.tool
+          else
+            echo '::warning::No metrics.json produced for fire_timing'
+          fi
 
       - name: Export fire_timing to Java
         working-directory: intuition
@@ -136,8 +144,12 @@ jobs:
       - name: Train movement
         working-directory: intuition
         run: |
-          python3 train_distill.py --task movement --roots ../output/csv 2>&1 | tail -30
-          cat models/distill/movement/metrics.json | python3 -m json.tool
+          python3 train_distill.py --task movement --roots ../output/csv
+          if [ -f models/distill/movement/metrics.json ]; then
+            cat models/distill/movement/metrics.json | python3 -m json.tool
+          else
+            echo '::warning::No metrics.json produced for movement'
+          fi
 
       - name: Export movement to Java
         working-directory: intuition
