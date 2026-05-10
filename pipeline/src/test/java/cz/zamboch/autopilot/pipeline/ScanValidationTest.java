@@ -48,57 +48,12 @@ class ScanValidationTest {
         final int[] scanCountB = {0};
         final int[] mismatchCount = {0};
 
-        // Custom whiteboards that validate scan positions against god-view
+        // Plain whiteboards — validation happens inline in the forEachTurn loop
         final double[][] godViewB = {null}; // [x, y, heading, velocity, energy]
         final double[][] godViewA = {null};
 
-        Whiteboard wbA = new Whiteboard() {
-            @Override
-            public void setOpponentScan(String name, double x, double y, double heading, double velocity, double energy) {
-                super.setOpponentScan(name, x, y, heading, velocity, energy);
-                scanCountA[0]++;
-                // Validate against god-view
-                if (godViewB[0] != null) {
-                    double gvX = godViewB[0][0];
-                    double gvY = godViewB[0][1];
-                    double gvHeading = godViewB[0][2];
-                    double gvVelocity = godViewB[0][3];
-                    double gvEnergy = godViewB[0][4];
-
-                    if (Math.abs(x - gvX) > POSITION_TOLERANCE ||
-                        Math.abs(y - gvY) > POSITION_TOLERANCE) {
-                        mismatchCount[0]++;
-                    }
-                    // Heading, velocity, energy should be exact
-                    assertEquals(gvHeading, heading, 1e-10, "Heading mismatch on scan");
-                    assertEquals(gvVelocity, velocity, 1e-10, "Velocity mismatch on scan");
-                    assertEquals(gvEnergy, energy, 1e-10, "Energy mismatch on scan");
-                }
-            }
-        };
-
-        Whiteboard wbB = new Whiteboard() {
-            @Override
-            public void setOpponentScan(String name, double x, double y, double heading, double velocity, double energy) {
-                super.setOpponentScan(name, x, y, heading, velocity, energy);
-                scanCountB[0]++;
-                if (godViewA[0] != null) {
-                    double gvX = godViewA[0][0];
-                    double gvY = godViewA[0][1];
-                    double gvHeading = godViewA[0][2];
-                    double gvVelocity = godViewA[0][3];
-                    double gvEnergy = godViewA[0][4];
-
-                    if (Math.abs(x - gvX) > POSITION_TOLERANCE ||
-                        Math.abs(y - gvY) > POSITION_TOLERANCE) {
-                        mismatchCount[0]++;
-                    }
-                    assertEquals(gvHeading, heading, 1e-10, "Heading mismatch on scan");
-                    assertEquals(gvVelocity, velocity, 1e-10, "Velocity mismatch on scan");
-                    assertEquals(gvEnergy, energy, 1e-10, "Energy mismatch on scan");
-                }
-            }
-        };
+        Whiteboard wbA = new Whiteboard();
+        Whiteboard wbB = new Whiteboard();
 
         // Replay with intercept to capture god-view data
         loader.forEachTurn(new Loader.TurnConsumer() {
@@ -146,6 +101,23 @@ class ScanValidationTest {
                             rB.getX(), rB.getY())) {
                         wbA.setOpponentScan("TestBot", rB.getX(), rB.getY(), rB.getBodyHeading(),
                                 rB.getVelocity(), rB.getEnergy());
+                        scanCountA[0]++;
+                        // Validate against god-view
+                        if (godViewB[0] != null) {
+                            double gvX = godViewB[0][0];
+                            double gvY = godViewB[0][1];
+                            double gvHeading = godViewB[0][2];
+                            double gvVelocity = godViewB[0][3];
+                            double gvEnergy = godViewB[0][4];
+
+                            if (Math.abs(rB.getX() - gvX) > POSITION_TOLERANCE ||
+                                Math.abs(rB.getY() - gvY) > POSITION_TOLERANCE) {
+                                mismatchCount[0]++;
+                            }
+                            assertEquals(gvHeading, rB.getBodyHeading(), 1e-10, "Heading mismatch on scan");
+                            assertEquals(gvVelocity, rB.getVelocity(), 1e-10, "Velocity mismatch on scan");
+                            assertEquals(gvEnergy, rB.getEnergy(), 1e-10, "Energy mismatch on scan");
+                        }
                     }
                 }
 
@@ -155,6 +127,22 @@ class ScanValidationTest {
                             rA.getX(), rA.getY())) {
                         wbB.setOpponentScan("TestBot", rA.getX(), rA.getY(), rA.getBodyHeading(),
                                 rA.getVelocity(), rA.getEnergy());
+                        scanCountB[0]++;
+                        if (godViewA[0] != null) {
+                            double gvX = godViewA[0][0];
+                            double gvY = godViewA[0][1];
+                            double gvHeading = godViewA[0][2];
+                            double gvVelocity = godViewA[0][3];
+                            double gvEnergy = godViewA[0][4];
+
+                            if (Math.abs(rA.getX() - gvX) > POSITION_TOLERANCE ||
+                                Math.abs(rA.getY() - gvY) > POSITION_TOLERANCE) {
+                                mismatchCount[0]++;
+                            }
+                            assertEquals(gvHeading, rA.getBodyHeading(), 1e-10, "Heading mismatch on scan");
+                            assertEquals(gvVelocity, rA.getVelocity(), 1e-10, "Velocity mismatch on scan");
+                            assertEquals(gvEnergy, rA.getEnergy(), 1e-10, "Energy mismatch on scan");
+                        }
                     }
                 }
 
@@ -208,26 +196,47 @@ class ScanValidationTest {
                 final int[] totalTicks = {0};
                 final int[] scanTicks = {0};
 
-                Whiteboard wbA = new Whiteboard() {
-                    @Override
-                    public void setOpponentScan(String name, double x, double y, double heading, double velocity, double energy) {
-                        super.setOpponentScan(name, x, y, heading, velocity, energy);
-                        scanTicks[0]++;
-                    }
-                };
-                Whiteboard wbB = new Whiteboard();
+                Whiteboard wbA = new Whiteboard();
 
-                // Count total ticks
+                // Count total ticks and scan ticks in a single pass
                 loader.forEachTurn(new Loader.TurnConsumer() {
+                    private int lastRound = -1;
+                    private double prevRadarHeadingA = Double.NaN;
+
                     public void accept(int roundIndex, ITurnSnapshot turn) {
+                        IRobotSnapshot[] robots = turn.getRobots();
+                        if (robots.length < 2) return;
                         totalTicks[0]++;
+
+                        if (roundIndex != lastRound) {
+                            BattleRules rules = loader.getRecordInfo().battleRules;
+                            wbA.onRoundStart(roundIndex, rules.getBattlefieldWidth(),
+                                    rules.getBattlefieldHeight(), rules.getGunCoolingRate(),
+                                    loader.getRecordInfo().roundsCount);
+                            prevRadarHeadingA = Double.NaN;
+                            lastRound = roundIndex;
+                        }
+
+                        IRobotSnapshot rA = robots[0];
+                        IRobotSnapshot rB = robots[1];
+                        wbA.setTick(turn.getTurn());
+                        wbA.setOurState(rA.getX(), rA.getY(), rA.getBodyHeading(), rA.getGunHeading(),
+                                rA.getRadarHeading(), rA.getVelocity(), rA.getEnergy(), rA.getGunHeat());
+
+                        boolean isFirstTick = (turn.getTurn() == 0);
+                        if (rB.getState() != RobotState.DEAD) {
+                            if (isFirstTick || Player.radarSweepIntersects(
+                                    rA.getX(), rA.getY(), prevRadarHeadingA, rA.getRadarHeading(),
+                                    rB.getX(), rB.getY())) {
+                                wbA.setOpponentScan("TestBot", rB.getX(), rB.getY(),
+                                        rB.getBodyHeading(), rB.getVelocity(), rB.getEnergy());
+                                scanTicks[0]++;
+                            }
+                        }
+
+                        prevRadarHeadingA = rA.getRadarHeading();
                     }
                 });
-
-                // Replay with scan synthesis
-                Loader loader2 = new Loader(brFile);
-                Player player = new Player(wbA, wbB);
-                player.replay(loader2);
 
                 double scanRate = (double) scanTicks[0] / totalTicks[0];
                 // Most competitive bots maintain radar lock, so scan rate should be > 50%

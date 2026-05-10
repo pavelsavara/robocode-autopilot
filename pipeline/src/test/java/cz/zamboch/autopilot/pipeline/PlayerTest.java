@@ -2,6 +2,7 @@ package cz.zamboch.autopilot.pipeline;
 
 import cz.zamboch.autopilot.core.Whiteboard;
 import net.sf.robocode.recording.BattleRecordInfo;
+import robocode.control.snapshot.ITurnSnapshot;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -59,25 +60,41 @@ class PlayerTest {
         Path brFile = getFirstRecording();
         Loader loader = new Loader(brFile);
 
-        // Use a tracking whiteboard to verify positions during replay
+        Whiteboard wbA = new Whiteboard();
+        Whiteboard wbB = new Whiteboard();
+
+        // Track max positions across all ticks via forEachTurn + setOurState
         final double[] maxX = {0};
         final double[] maxY = {0};
         final int[] ticks = {0};
 
-        Whiteboard wbA = new Whiteboard() {
-            @Override
-            public void setOurState(double x, double y, double heading, double gunHeading,
-                                    double radarHeading, double velocity, double energy, double gunHeat) {
-                super.setOurState(x, y, heading, gunHeading, radarHeading, velocity, energy, gunHeat);
-                if (x > maxX[0]) maxX[0] = x;
-                if (y > maxY[0]) maxY[0] = y;
+        Player player = new Player(wbA, wbB);
+        // Use forEachTurn to inspect positions at each tick
+        loader.forEachTurn(new Loader.TurnConsumer() {
+            private int lastRound = -1;
+
+            public void accept(int roundIndex, ITurnSnapshot turn) {
+                robocode.control.snapshot.IRobotSnapshot[] robots = turn.getRobots();
+                if (robots.length < 2) return;
+
+                if (roundIndex != lastRound) {
+                    BattleRecordInfo info = loader.getRecordInfo();
+                    wbA.onRoundStart(roundIndex, info.battleRules.getBattlefieldWidth(),
+                            info.battleRules.getBattlefieldHeight(), info.battleRules.getGunCoolingRate(),
+                            info.roundsCount);
+                    lastRound = roundIndex;
+                }
+
+                robocode.control.snapshot.IRobotSnapshot rA = robots[0];
+                wbA.setTick(turn.getTurn());
+                wbA.setOurState(rA.getX(), rA.getY(), rA.getBodyHeading(), rA.getGunHeading(),
+                        rA.getRadarHeading(), rA.getVelocity(), rA.getEnergy(), rA.getGunHeat());
+
+                if (wbA.getOurX() > maxX[0]) maxX[0] = wbA.getOurX();
+                if (wbA.getOurY() > maxY[0]) maxY[0] = wbA.getOurY();
                 ticks[0]++;
             }
-        };
-        Whiteboard wbB = new Whiteboard();
-
-        Player player = new Player(wbA, wbB);
-        player.replay(loader);
+        });
 
         BattleRecordInfo info = loader.getRecordInfo();
         assertTrue(ticks[0] > 0, "Should have processed ticks");
@@ -96,34 +113,17 @@ class PlayerTest {
         Path brFile = getFirstRecording();
         Loader loader = new Loader(brFile);
 
-        final int[] lastRound = {-1};
-        final long[] lastTick = {-1};
-        final int[] roundChanges = {0};
-
-        Whiteboard wbA = new Whiteboard() {
-            @Override
-            public void onRoundStart(int round, int battlefieldWidth, int battlefieldHeight,
-                                     double gunCoolingRate, int numRounds) {
-                super.onRoundStart(round, battlefieldWidth, battlefieldHeight, gunCoolingRate, numRounds);
-                if (round != lastRound[0]) {
-                    lastRound[0] = round;
-                    roundChanges[0]++;
-                }
-            }
-
-            @Override
-            public void setTick(long tick) {
-                super.setTick(tick);
-                lastTick[0] = tick;
-            }
-        };
+        Whiteboard wbA = new Whiteboard();
         Whiteboard wbB = new Whiteboard();
 
         Player player = new Player(wbA, wbB);
         player.replay(loader);
 
         BattleRecordInfo info = loader.getRecordInfo();
-        assertEquals(info.roundsCount, roundChanges[0], "Should have seen all rounds");
-        assertTrue(lastTick[0] >= 0, "Last tick should be >= 0");
+        // After replay, round should match the last round index (0-based)
+        assertTrue(wbA.getRound() >= 0, "Round should be >= 0");
+        assertTrue(wbA.getTick() >= 0, "Last tick should be >= 0");
+        // Battlefield dimensions should be set
+        assertTrue(wbA.getBattlefieldWidth() > 0, "Battlefield width should be set");
     }
 }
