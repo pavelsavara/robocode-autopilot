@@ -8,6 +8,7 @@ import cz.zamboch.autopilot.core.strategy.MovementCommand;
 import cz.zamboch.autopilot.core.strategy.StrategyParams;
 import cz.zamboch.autopilot.core.util.RoboMath;
 
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -44,11 +45,25 @@ public final class WaveSurfMovement implements IMovementStrategy {
      * Prevents per-tick oscillation when turn angle hovers near PI/2.
      */
     static final double AHEAD_HYSTERESIS = 0.15;
+    /** Minimum ticks between VCS-guided orbital direction re-evaluations. */
+    static final int DIR_EVAL_INTERVAL = 8;
+    /** Danger difference threshold to change orbital direction (hysteresis). */
+    private static final double DIR_CHANGE_THRESHOLD = 0.03;
+    /** Max robot speed for position projection (px/tick). */
+    private static final double MAX_SPEED = 8.0;
+    /** Robot half-size for wall clamping in projections. */
+    private static final int WALL_MARGIN = 18;
 
     private final PathPlanner planner;
+    private final IWaveDanger waveDanger;
     private final Random rng = new Random();
     private int preemptiveDir = 1;
     private long nextFlipTick = 0;
+    /** Pre-allocated candidates for VCS-guided direction evaluation. */
+    private final CandidatePosition cwCandidate = new CandidatePosition();
+    private final CandidatePosition ccwCandidate = new CandidatePosition();
+    /** Tick of last VCS direction evaluation. */
+    private long lastDirEvalTick = -100;
     /** Whether the robot is currently going forward (true) or backward (false). */
     private boolean goingForward = true;
     /** How many ticks the current dodge commitment lasts. */
@@ -60,8 +75,9 @@ public final class WaveSurfMovement implements IMovementStrategy {
     /** Number of opponent waves when we last committed. */
     private int commitWaveCount = 0;
 
-    public WaveSurfMovement(PathPlanner planner) {
+    public WaveSurfMovement(PathPlanner planner, IWaveDanger waveDanger) {
         this.planner = planner;
+        this.waveDanger = waveDanger;
     }
 
     @Override
@@ -112,6 +128,12 @@ public final class WaveSurfMovement implements IMovementStrategy {
             }
         }
 
+        // VCS-guided direction: when waves exist but not imminent, choose the
+        // safer orbital direction (CW vs CCW) based on VCS wave danger.
+        if (!wb.getOpponentWaves().isEmpty()) {
+            updateOrbitDirection(wb);
+        }
+
         // Pre-emptive dodge: fire timing model predicts imminent fire
         double dodgeScale = getDodgeScale(wb);
         if (dodgeScale > 0) {
@@ -138,6 +160,83 @@ public final class WaveSurfMovement implements IMovementStrategy {
         double fireProb = wb.getFeature(Feature.PREDICTED_OPPONENT_FIRES_3);
         double scale = 2.0 * (fireProb - DODGE_RAMP_LOW);
         return Math.max(0, Math.min(1, scale));
+    }
+
+    /**
+     * Choose the safer orbital direction (CW vs CCW) based on VCS wave danger.
+     * Projects robot positions for both directions to where the closest wave
+     * will arrive, then scores each projected position against all active waves
+     * using the VCS histograms.
+     *
+     * <p>Rate-limited to once per {@link #DIR_EVAL_INTERVAL} ticks to prevent
+     * flutter. Requires the danger difference to exceed {@link #DIR_CHANGE_THRESHOLD}
+     * before switching direction (hysteresis).</p>
+     */
+    private void updateOrbitDirection(Whiteboard wb) {
+        if (wb.getTick() - lastDirEvalTick < DIR_EVAL_INTERVAL) {
+            return;
+        }
+        if (!wb.hasFeature(Feature.BEARING_TO_OPPONENT_ABS)) {
+            return;
+        }
+
+        List<WaveRecord> waves = wb.getOpponentWaves();
+        if (waves.isEmpty()) {
+            return;
+        }
+
+        lastDirEvalTick = wb.getTick();
+
+        // Find closest wave's time-to-impact for projection distance
+        double minTicksUntil = 99;
+        for (int i = 0; i < waves.size(); i++) {
+            WaveRecord w = waves.get(i);
+            double dist = Math.hypot(wb.getOurX() - w.originX, wb.getOurY() - w.originY);
+            double remaining = dist - w.radius(wb.getTick());
+            double ticksUntil = w.bulletSpeed > 0 ? remaining / w.bulletSpeed : 99;
+            if (ticksUntil > 0 && ticksUntil < minTicksUntil) {
+                minTicksUntil = ticksUntil;
+            }
+        }
+
+        double projTicks = Math.min(minTicksUntil, 30);
+        double lateral = MAX_SPEED * projTicks;
+        double bearing = wb.getFeature(Feature.BEARING_TO_OPPONENT_ABS);
+        int bfW = wb.getBattlefieldWidth();
+        int bfH = wb.getBattlefieldHeight();
+
+        // Project CW position
+        double cwAngle = bearing + Math.PI / 2;
+        double cwX = clamp(wb.getOurX() + lateral * Math.sin(cwAngle), WALL_MARGIN, bfW - WALL_MARGIN);
+        double cwY = clamp(wb.getOurY() + lateral * Math.cos(cwAngle), WALL_MARGIN, bfH - WALL_MARGIN);
+        cwCandidate.set(cwX, cwY, 0, (int) projTicks);
+
+        // Project CCW position
+        double ccwAngle = bearing - Math.PI / 2;
+        double ccwX = clamp(wb.getOurX() + lateral * Math.sin(ccwAngle), WALL_MARGIN, bfW - WALL_MARGIN);
+        double ccwY = clamp(wb.getOurY() + lateral * Math.cos(ccwAngle), WALL_MARGIN, bfH - WALL_MARGIN);
+        ccwCandidate.set(ccwX, ccwY, 0, (int) projTicks);
+
+        // Score both against all active waves
+        double cwDanger = waveDanger.danger(cwCandidate, waves, wb, false);
+        double ccwDanger = waveDanger.danger(ccwCandidate, waves, wb, false);
+
+        // Hysteresis: only switch if the other direction is significantly safer
+        if (preemptiveDir > 0) {
+            if (ccwDanger < cwDanger - DIR_CHANGE_THRESHOLD) {
+                preemptiveDir = -1;
+                nextFlipTick = wb.getTick() + DIR_EVAL_INTERVAL;
+            }
+        } else {
+            if (cwDanger < ccwDanger - DIR_CHANGE_THRESHOLD) {
+                preemptiveDir = 1;
+                nextFlipTick = wb.getTick() + DIR_EVAL_INTERVAL;
+            }
+        }
+    }
+
+    private static double clamp(double v, double min, double max) {
+        return v < min ? min : (v > max ? max : v);
     }
 
     /**

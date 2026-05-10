@@ -26,3 +26,12 @@
 - Proportional commitment: close waves get quick reactions (2 ticks), far waves get sustained dodge (8 ticks).
 - 9 tests (4 new) covering hysteresis oscillation, commitment scaling, pre-emptive dodge stability.
 - Branch approved on first review. Clean compile, no cross-dependencies.
+
+### 2026-05-10 — Sprint 18 (VCS-guided orbital direction)
+- **Gap found:** When waves exist but aren't imminent (> 12 ticks), robot used random orbital direction. VCS data was completely unused during orbit phase (~70% of ticks with active waves).
+- **Fix:** Added `updateOrbitDirection()` to WaveSurfMovement. Projects two positions (CW and CCW orbit at max speed) to wave arrival time, scores both with VcsWaveDanger, picks the safer direction with hysteresis.
+- Rate-limited to every 8 ticks (DIR_EVAL_INTERVAL) to prevent flutter. Direction change requires 0.03 danger differential (DIR_CHANGE_THRESHOLD).
+- Pre-allocated 2 CandidatePositions for zero per-tick allocation. Wall-clamped projections.
+- Added IWaveDanger as second constructor parameter to WaveSurfMovement. Reused same VcsWaveDanger instance from PathPlanner in Autopilot.java.
+- Added 2 new tests: VCS-guided direction choosing safer side, rate-limiting within eval interval. All 11 tests pass.
+- Key insight: choosing orbital DIRECTION (binary CW/CCW) avoids the oscillation problem from Decision #9 while still using VCS data early.

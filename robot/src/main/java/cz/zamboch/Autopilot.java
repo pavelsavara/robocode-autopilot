@@ -568,11 +568,12 @@ public final class Autopilot extends AdvancedRobot {
     private MovementStrategyManager createMoveManager() {
         List<IMovementStrategy> strategies = new ArrayList<IMovementStrategy>();
         // WaveSurf FIRST — better than orbital (33% vs 81% opponent HR)
+        VcsWaveDanger waveDanger = new VcsWaveDanger();
         PathPlanner planner = new PathPlanner(
                 new WallDistancePositionDanger(),
-                new VcsWaveDanger(),
+                waveDanger,
                 (int) getBattleFieldWidth(), (int) getBattleFieldHeight());
-        strategies.add(new WaveSurfMovement(planner));
+        strategies.add(new WaveSurfMovement(planner, waveDanger));
         strategies.add(new OrbitalMovement());
         return new MovementStrategyManager(strategies);
     }
