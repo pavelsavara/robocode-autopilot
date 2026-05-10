@@ -1,4 +1,4 @@
-# 3-sprint-train.yml — Stage 3 of the sprint CI pipeline.
+# 3-sprint-train.yml ΓÇö Stage 3 of the sprint CI pipeline.
 #
 # Triggered by 2-sprint-process completion.
 # Parallel jobs: train each ML model independently + run notebooks.
@@ -40,7 +40,7 @@ env:
   SOURCE_RUN: ${{ inputs.source_run_id || github.event.workflow_run.id }}
 
 jobs:
-  # ─── Train fire_power model ───
+  # ΓöÇΓöÇΓöÇ Train fire_power model ΓöÇΓöÇΓöÇ
   train-fire-power:
     runs-on: ubuntu-latest
     container:
@@ -55,14 +55,14 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: csv-combined
-          path: output/csv
+          path: output/local/csv
           run-id: ${{ env.SOURCE_RUN }}
           github-token: ${{ github.token }}
 
       - name: Train fire_power
         working-directory: intuition
         run: |
-          python3 train_distill.py --task fire_power --roots ../output/csv
+          python3 train_distill.py --task fire_power --roots ../output/local/csv
           if [ -f models/distill/fire_power/metrics.json ]; then
             cat models/distill/fire_power/metrics.json | python3 -m json.tool
           else
@@ -81,7 +81,7 @@ jobs:
             intuition/models/distill/fire_power/metrics.json
           retention-days: 14
 
-  # ─── Train fire_timing model ───
+  # ΓöÇΓöÇΓöÇ Train fire_timing model ΓöÇΓöÇΓöÇ
   train-fire-timing:
     runs-on: ubuntu-latest
     container:
@@ -96,14 +96,14 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: csv-combined
-          path: output/csv
+          path: output/local/csv
           run-id: ${{ env.SOURCE_RUN }}
           github-token: ${{ github.token }}
 
       - name: Train fire_timing
         working-directory: intuition
         run: |
-          python3 train_distill.py --task fire_timing --roots ../output/csv
+          python3 train_distill.py --task fire_timing --roots ../output/local/csv
           if [ -f models/distill/fire_timing/metrics.json ]; then
             cat models/distill/fire_timing/metrics.json | python3 -m json.tool
           else
@@ -122,7 +122,7 @@ jobs:
             intuition/models/distill/fire_timing/metrics.json
           retention-days: 14
 
-  # ─── Train movement model ───
+  # ΓöÇΓöÇΓöÇ Train movement model ΓöÇΓöÇΓöÇ
   train-movement:
     runs-on: ubuntu-latest
     container:
@@ -137,14 +137,14 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: csv-combined
-          path: output/csv
+          path: output/local/csv
           run-id: ${{ env.SOURCE_RUN }}
           github-token: ${{ github.token }}
 
       - name: Train movement
         working-directory: intuition
         run: |
-          python3 train_distill.py --task movement --roots ../output/csv
+          python3 train_distill.py --task movement --roots ../output/local/csv
           if [ -f models/distill/movement/metrics.json ]; then
             cat models/distill/movement/metrics.json | python3 -m json.tool
           else
@@ -163,7 +163,7 @@ jobs:
             intuition/models/distill/movement/metrics.json
           retention-days: 14
 
-  # ─── Run retrospective notebooks ───
+  # ΓöÇΓöÇΓöÇ Run retrospective notebooks ΓöÇΓöÇΓöÇ
   notebooks:
     runs-on: ubuntu-latest
     container:
@@ -178,7 +178,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: csv-combined
-          path: output/csv
+          path: output/local/csv
           run-id: ${{ env.SOURCE_RUN }}
           github-token: ${{ github.token }}
 
@@ -188,7 +188,7 @@ jobs:
           mkdir -p notebook-html
 
           echo "CSV location check:"
-          find ../output/csv -name '*.csv' -type f | head -5 || echo "WARN: No CSVs at ../output/csv"
+          find ../output/local/csv -name '*.csv' -type f | head -5 || echo "WARN: No CSVs at ../output/local/csv"
 
           for nb in retrospective/R*.ipynb; do
             if [ -f "$nb" ]; then
@@ -215,7 +215,7 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-  # ─── Assemble: collect model artifacts, merge .dat, commit to sprint branch ───
+  # ΓöÇΓöÇΓöÇ Assemble: collect model artifacts, merge .dat, commit to sprint branch ΓöÇΓöÇΓöÇ
   assemble:
     needs: [train-fire-power, train-fire-timing, train-movement]
     if: always() && !cancelled()
