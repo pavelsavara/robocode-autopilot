@@ -6,6 +6,7 @@ Documents are prefixed with their creation date and are immutable once archived.
 
 | Date | Document | Topic |
 |---|---|---|
+| 2026-05-10 | [2026-05-10-retrospective-13.md](2026-05-10-retrospective-13.md) | Thirteenth retrospective — score 8.6% (6th record), first positive in-game R² +0.20, BlestPain 28% |
 | 2026-05-10 | [2026-05-10-retrospective-12.md](2026-05-10-retrospective-12.md) | Twelfth retrospective — O(1) rolling stats, skipped turns 12.6→1.8, offline R² 0.917, in-game R² −0.81 |
 | 2026-05-10 | [2026-05-10-retrospective-11.md](2026-05-10-retrospective-11.md) | Eleventh retrospective — FIRST WIN EVER, 8.0% best ever, R² −1.44→−1.12, skipped turns regression |
 | 2026-05-09 | [2026-05-09-retrospective-10.md](2026-05-09-retrospective-10.md) | Tenth retrospective — NaN root cause HIT, 6.6% best ever, R² −3.67→−1.44, 23/80 features were NaN |
