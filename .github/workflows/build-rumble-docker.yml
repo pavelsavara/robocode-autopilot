@@ -1,6 +1,6 @@
-# build-docker.yml — Build and push the battle runner Docker image to GHCR.
+# build-docker.yml — Build and push the rumble runner Docker image to GHCR.
 # Downloads a pre-built Robocode release (no source build needed).
-name: Build Docker Image
+name: Build Rumble Docker Image
 
 on:
   workflow_dispatch:
