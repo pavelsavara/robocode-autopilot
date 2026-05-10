@@ -3,7 +3,7 @@ package cz.zamboch.autopilot.pipeline.features;
 import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.FileType;
 import cz.zamboch.autopilot.core.Whiteboard;
-import cz.zamboch.autopilot.core.util.RingBuffer;
+import cz.zamboch.autopilot.core.util.PrimitiveRollingBuffer;
 import cz.zamboch.autopilot.pipeline.CsvRowWriter;
 import cz.zamboch.autopilot.pipeline.IOfflineFeatures;
 
@@ -56,15 +56,15 @@ public final class MovementHistoryOfflineFeatures implements IOfflineFeatures {
             wb.getHeadingDeltaHistory30().add(wb.getFeature(Feature.OPPONENT_HEADING_DELTA));
         }
 
-        // Rolling means and std-devs.
+        // Rolling means and std-devs (O(1) via PrimitiveRollingBuffer).
         wb.setFeature(Feature.OPPONENT_AVG_LATERAL_VELOCITY_10,
-                rollingMean(wb.getLatVelHistory30(), 10));
+                wb.getLatVelHistory30().mean(10));
         wb.setFeature(Feature.OPPONENT_AVG_LATERAL_VELOCITY_30,
-                rollingMean(wb.getLatVelHistory30(), 30));
+                wb.getLatVelHistory30().mean(30));
         wb.setFeature(Feature.OPPONENT_VELOCITY_VARIABILITY_10,
-                rollingStd(wb.getVelHistory30(), 10));
+                wb.getVelHistory30().std(10));
         wb.setFeature(Feature.OPPONENT_HEADING_DELTA_VARIABILITY_10,
-                rollingStd(wb.getHeadingDeltaHistory30(), 10));
+                wb.getHeadingDeltaHistory30().std(10));
 
         // Time since velocity change (>= threshold).
         double prevSig = wb.getLastSignificantOpponentVelocity();
@@ -102,25 +102,7 @@ public final class MovementHistoryOfflineFeatures implements IOfflineFeatures {
         wb.setFeature(Feature.OPPONENT_DISTANCE_SINCE_DIRECTION_CHANGE, accum);
     }
 
-    private static double rollingMean(RingBuffer<Double> buf, int window) {
-        int n = Math.min(buf.size(), window);
-        if (n == 0) return 0.0;
-        double sum = 0;
-        for (int i = 0; i < n; i++) sum += buf.get(i);
-        return sum / n;
-    }
-
-    private static double rollingStd(RingBuffer<Double> buf, int window) {
-        int n = Math.min(buf.size(), window);
-        if (n < 2) return 0.0;
-        double mean = rollingMean(buf, window);
-        double sumSq = 0;
-        for (int i = 0; i < n; i++) {
-            double d = buf.get(i) - mean;
-            sumSq += d * d;
-        }
-        return Math.sqrt(sumSq / n);
-    }
+    // Rolling stats now delegated to PrimitiveRollingBuffer.mean()/std() — O(1).
 
     public FileType getFileType() { return FileType.TICKS; }
 

@@ -7,7 +7,8 @@ param(
     [switch]$SkipBuild,
     [switch]$SkipBattles,
     [switch]$SkipPipeline,
-    [switch]$SkipRetrain
+    [switch]$SkipRetrain,
+    [switch]$EvalOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -55,6 +56,17 @@ if (-not $SkipBattles) {
     Log "STEP 10b: Running battles..."
     New-Item -ItemType Directory -Force $recordingsDir | Out-Null
     New-Item -ItemType Directory -Force $resultsDir | Out-Null
+
+    # Archive old recordings from previous sprints
+    $oldBrFiles = Get-ChildItem $recordingsDir -Filter "*.br" -ErrorAction SilentlyContinue
+    if ($oldBrFiles -and $oldBrFiles.Count -gt 0) {
+        $archiveDir = Join-Path $outputDir "recordings-archive"
+        New-Item -ItemType Directory -Force $archiveDir | Out-Null
+        foreach ($f in $oldBrFiles) {
+            Move-Item $f.FullName (Join-Path $archiveDir $f.Name) -Force
+        }
+        Log ("  Archived " + $oldBrFiles.Count + " old recordings to recordings-archive/")
+    }
 
     # Delete stale robot database to force Robocode to rescan JARs
     $robotDb = Join-Path $robotsDir "robot.database"
@@ -149,17 +161,61 @@ if (-not $SkipBattles) {
     }
 
     $summaryFile = Join-Path $resultsDir "summary.json"
-    $allResults | ConvertTo-Json -Depth 10 | Set-Content $summaryFile -Encoding utf8
-    $successCount = ($allResults | Where-Object { -not $_.error }).Count
+    # Build enhanced summary with per-opponent averages
+    $validResults = $allResults | Where-Object { -not $_.error }
+    $totalBattles = $validResults.Count
+    $wins = ($validResults | Where-Object { $_.bot_a.score_pct -gt $_.bot_b.score_pct }).Count
+    $overallScorePct = if ($totalBattles -gt 0) {
+        [math]::Round(($validResults | ForEach-Object { $_.bot_a.score_pct } | Measure-Object -Average).Average, 1)
+    } else { 0 }
+
+    # Per-opponent breakdown
+    $perOpponent = @()
+    $grouped = $validResults | Group-Object { $_.bot_b.name }
+    foreach ($g in $grouped) {
+        $oppName = $g.Name
+        $scores = $g.Group | ForEach-Object { $_.bot_a.score_pct }
+        $oppWins = ($g.Group | Where-Object { $_.bot_a.score_pct -gt $_.bot_b.score_pct }).Count
+        $avgScore = [math]::Round(($scores | Measure-Object -Average).Average, 1)
+        $perOpponent += @{
+            name     = $oppName
+            avg_score = $avgScore
+            battles  = $g.Count
+            wins     = $oppWins
+            scores   = @($scores)
+        }
+    }
+    $perOpponent = $perOpponent | Sort-Object { $_.avg_score } -Descending
+
+    $enhancedSummary = @{
+        timestamp       = (Get-Date -Format 'yyyy-MM-ddTHH:mm:ss')
+        total_battles   = $totalBattles
+        wins            = $wins
+        overall_score_pct = $overallScorePct
+        per_opponent    = $perOpponent
+        raw_results     = $allResults
+    }
+    $enhancedSummary | ConvertTo-Json -Depth 10 | Set-Content $summaryFile -Encoding utf8
+
+    $successCount = $totalBattles
     Log ("  Done: " + $successCount + " successful battles, " + $skippedOpponents + " opponents skipped")
+    if ($wins -gt 0) { Log ("  Wins: " + $wins + "/" + $totalBattles) }
+    Log ("  Overall score: " + $overallScorePct + "%")
+
     $brFiles = Get-ChildItem $recordingsDir -Filter "*.br" -ErrorAction SilentlyContinue
     Log ("  Recordings: " + $brFiles.Count + " .br files")
+
+    # Write sprint battle IDs for filtered sanity checks
+    $sprintBattleIds = @($brFiles | ForEach-Object { $_.BaseName })
+    $sprintBattlesFile = Join-Path $resultsDir "sprint_battles.json"
+    $sprintBattleIds | ConvertTo-Json | Set-Content $sprintBattlesFile -Encoding utf8
+    Log ("  Sprint battle IDs written: " + $sprintBattleIds.Count)
 } else {
     Log "STEP 10b: Skipped"
 }
 
 # --- 10c. Process recordings into CSVs ---
-if (-not $SkipPipeline) {
+if (-not $SkipPipeline -and -not $EvalOnly) {
     Log "STEP 10c: Processing recordings into CSVs..."
     & .\gradlew.bat :pipeline:installDist 2>&1 | ForEach-Object { Write-Host "  $_" }
     if ($LASTEXITCODE -ne 0) { LogError "Pipeline build failed"; exit 1 }
@@ -185,7 +241,7 @@ Log ('  Results:    ' + $resultsDir)
 Log ('  CSVs:       ' + $csvDir)
 
 # --- 10d. Retrain models and regenerate Java code ---
-if (-not $SkipRetrain) {
+if (-not $SkipRetrain -and -not $EvalOnly) {
     Log "STEP 10d: Retraining GBM models on local battle data..."
     $pythonExe = Join-Path $projectRoot "intuition\.venv\Scripts\python.exe"
     if (-not (Test-Path $pythonExe)) {
@@ -246,6 +302,19 @@ if (-not $SkipRetrain) {
     Log ("  Rebuilt and deployed: " + $jarFile.Name)
 } else {
     Log "STEP 10d: Skipped"
+}
+
+# --- Run sanity check (always in EvalOnly mode, optional otherwise) ---
+if ($EvalOnly) {
+    Log "STEP: Running sanity check (eval-only mode)..."
+    $sanityScript = Join-Path $projectRoot "scripts\sanity-check.ps1"
+    $sprintBattlesFile = Join-Path $resultsDir "sprint_battles.json"
+    $sanityArgs = @("-DataDir", $outputDir)
+    if (Test-Path $sprintBattlesFile) {
+        $sanityArgs += @("-BattleIds", $sprintBattlesFile)
+    }
+    & $sanityScript @sanityArgs
+    if ($LASTEXITCODE -ne 0) { LogWarn "Sanity check had failures (exit code $LASTEXITCODE)" }
 }
 
 Log 'Full pipeline complete!'

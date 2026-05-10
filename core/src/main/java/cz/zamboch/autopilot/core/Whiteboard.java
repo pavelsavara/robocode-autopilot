@@ -1,6 +1,7 @@
 package cz.zamboch.autopilot.core;
 
 import cz.zamboch.autopilot.core.predictors.PredictorRegistry;
+import cz.zamboch.autopilot.core.util.PrimitiveRollingBuffer;
 import cz.zamboch.autopilot.core.util.RingBuffer;
 
 import java.util.ArrayList;
@@ -78,9 +79,9 @@ public class Whiteboard {
     private final int[][] moveVcs = new int[VCS_SEGMENTS][VCS_BINS];
 
     // Rolling history buffers (largest window = 50 for scan coverage)
-    private final RingBuffer<Double> latVelHistory30 = new RingBuffer<Double>(30);
-    private final RingBuffer<Double> velHistory30 = new RingBuffer<Double>(30);
-    private final RingBuffer<Double> headingDeltaHistory30 = new RingBuffer<Double>(30);
+    private final PrimitiveRollingBuffer latVelHistory30 = new PrimitiveRollingBuffer(30, 10);
+    private final PrimitiveRollingBuffer velHistory30 = new PrimitiveRollingBuffer(30, 10);
+    private final PrimitiveRollingBuffer headingDeltaHistory30 = new PrimitiveRollingBuffer(30, 10);
     private final RingBuffer<Long> scanTickHistory50 = new RingBuffer<Long>(50);
 
     // Battle constants
@@ -250,7 +251,7 @@ public class Whiteboard {
     public long getLastVelocityChangeTick() { return lastVelocityChangeTick; }
     public double getLastSignificantOpponentVelocity() { return lastSignificantOpponentVelocity; }
     public double getDistanceSinceDirChange() { return distanceSinceDirChange; }
-    public RingBuffer<Double> getLatVelHistory30() { return latVelHistory30; }
+    public PrimitiveRollingBuffer getLatVelHistory30() { return latVelHistory30; }
 
     // Multi-wave tracking
     public List<WaveRecord> getOpponentWaves() { return opponentWaves; }
@@ -360,8 +361,8 @@ public class Whiteboard {
         else if (r < -Math.PI) r += 2 * Math.PI;
         return r;
     }
-    public RingBuffer<Double> getVelHistory30() { return velHistory30; }
-    public RingBuffer<Double> getHeadingDeltaHistory30() { return headingDeltaHistory30; }
+    public PrimitiveRollingBuffer getVelHistory30() { return velHistory30; }
+    public PrimitiveRollingBuffer getHeadingDeltaHistory30() { return headingDeltaHistory30; }
     public RingBuffer<Long> getScanTickHistory50() { return scanTickHistory50; }
     public boolean isScanAvailableThisTick() { return scanAvailableThisTick; }
     public boolean isWeHitOpponentThisTick() { return weHitOpponentThisTick; }

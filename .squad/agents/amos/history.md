@@ -76,3 +76,21 @@
 - Updated `local-pipeline.ps1` step 10c to pass `--threads 4`.
 - Java 8 compatible: `Runnable` anonymous class (no lambdas), `Future<?>` collection pattern.
 - Expected speedup: ~4× for 226 files (16 min → ~4 min).
+
+### 2026-05-10 — 6 Process Improvements
+- **Improvement 1 (Recording archive):** `local-pipeline.ps1` now moves old `.br` files to `output/local/recordings-archive/` at the start of step 10b. Ensures only current-sprint recordings are processed.
+- **Improvement 2 (Enhanced summary.json):** `summary.json` now includes `timestamp`, `total_battles`, `wins`, `overall_score_pct`, `per_opponent` (with name, avg_score, battles, wins, scores array), and `raw_results`. Backward compatible — raw results still present.
+- **Improvement 3 (Sprint-only sanity checks):** Added `--battle-ids` arg to `sanity_check.py` (JSON file with list of battle IDs). `find_battle_dirs()` filters to those IDs when provided. `local-pipeline.ps1` writes `sprint_battles.json` after battles. `sanity-check.ps1` passes `-BattleIds` when file exists.
+- **Improvement 4 (Incremental CSV):** `Main.java` skips `.br` files whose CSV output directory already exists. Added `--force` flag to override. Reports "Skipped N already-processed, processing M new." Exit code 0 if all skipped (not a failure).
+- **Improvement 5 (Diagnostic):** Deferred — `run-battle.mjs` doesn't support `--jvm-args`. Manual steps documented in history.md from Sprint 10.
+- **Improvement 6 (EvalOnly mode):** Added `-EvalOnly` switch to `local-pipeline.ps1`. Runs build + battles, skips CSV processing and retrain, runs sanity-check at the end with sprint battle filter.
+
+### 2026-05-10 — Skipped Turns Fix (MlDerivedFeatures Optimization)
+- **Root cause:** MlDerivedFeatures adds ~25 per-tick computations; combined with 3×200-tree GBM models, total scan-tick time exceeds Robocode time limit on ~0.4% of ticks → avg ~12.6 skips/battle.
+- **Fix 1 — `PrimitiveRollingBuffer`:** New `core/util/PrimitiveRollingBuffer.java` replaces `RingBuffer<Double>` for the 3 movement history buffers. Stores primitive `double[]` (no autoboxing), maintains running sum + sumSq for both full buffer (30) and short window (10). Enables O(1) mean and population std instead of O(n) iteration.
+- **Fix 2 — Whiteboard migration:** Changed `latVelHistory30`, `velHistory30`, `headingDeltaHistory30` from `RingBuffer<Double>` to `PrimitiveRollingBuffer(30, 10)`. Updated getters to return new type.
+- **Fix 3 — MlDerivedFeatures update:** Removed `rollingMean`/`rollingStd` iteration-based helpers. Now calls `buffer.mean(10)`, `buffer.mean(30)`, `buffer.std(10)` — all O(1).
+- **Performance savings:** Eliminated ~240 iterations + autoboxing per scan tick (4 stats × 10-30 elements each, 2 passes for std). Each iteration saved 1 autobox (Double→double) + 1 method call overhead.
+- **All 25 MlDerivedFeatures outputs ARE used by models** — verified against FirePowerData (80 features), FireTimingData (81 features), MovementData (76 features). No features could be removed.
+- **Feature values unchanged:** Same formulas, same results (population std via E[X²]-E[X]²). Only computation method differs (running sums vs iteration).
+- **Build + 121 tests PASS.**

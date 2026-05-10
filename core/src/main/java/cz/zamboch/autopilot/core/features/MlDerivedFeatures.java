@@ -3,7 +3,7 @@ package cz.zamboch.autopilot.core.features;
 import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.IInGameFeatures;
 import cz.zamboch.autopilot.core.Whiteboard;
-import cz.zamboch.autopilot.core.util.RingBuffer;
+import cz.zamboch.autopilot.core.util.PrimitiveRollingBuffer;
 
 /**
  * In-game computation of features that were previously pipeline-only.
@@ -265,22 +265,20 @@ public final class MlDerivedFeatures implements IInGameFeatures {
         double latVel = wb.getFeature(Feature.OPPONENT_LATERAL_VELOCITY);
         double vel = wb.getFeature(Feature.OPPONENT_VELOCITY);
 
-        // Push into rolling buffers
+        // Push into rolling buffers (O(1) add with running sum/sumSq updates)
         wb.getLatVelHistory30().add(latVel);
         wb.getVelHistory30().add(vel);
         if (wb.hasFeature(Feature.OPPONENT_HEADING_DELTA)) {
             wb.getHeadingDeltaHistory30().add(wb.getFeature(Feature.OPPONENT_HEADING_DELTA));
         }
 
-        // Rolling means and std-devs
-        wb.setFeature(Feature.OPPONENT_AVG_LATERAL_VELOCITY_10,
-                rollingMean(wb.getLatVelHistory30(), 10));
-        wb.setFeature(Feature.OPPONENT_AVG_LATERAL_VELOCITY_30,
-                rollingMean(wb.getLatVelHistory30(), 30));
-        wb.setFeature(Feature.OPPONENT_VELOCITY_VARIABILITY_10,
-                rollingStd(wb.getVelHistory30(), 10));
+        // O(1) rolling means and std-devs via PrimitiveRollingBuffer
+        PrimitiveRollingBuffer latBuf = wb.getLatVelHistory30();
+        wb.setFeature(Feature.OPPONENT_AVG_LATERAL_VELOCITY_10, latBuf.mean(10));
+        wb.setFeature(Feature.OPPONENT_AVG_LATERAL_VELOCITY_30, latBuf.mean(30));
+        wb.setFeature(Feature.OPPONENT_VELOCITY_VARIABILITY_10, wb.getVelHistory30().std(10));
         wb.setFeature(Feature.OPPONENT_HEADING_DELTA_VARIABILITY_10,
-                rollingStd(wb.getHeadingDeltaHistory30(), 10));
+                wb.getHeadingDeltaHistory30().std(10));
 
         // Time since velocity change
         double prevSig = wb.getLastSignificantOpponentVelocity();
@@ -310,26 +308,6 @@ public final class MlDerivedFeatures implements IInGameFeatures {
         }
         wb.setDistanceSinceDirChange(accum);
         wb.setFeature(Feature.OPPONENT_DISTANCE_SINCE_DIRECTION_CHANGE, accum);
-    }
-
-    private static double rollingMean(RingBuffer<Double> buf, int window) {
-        int n = Math.min(buf.size(), window);
-        if (n == 0) return 0.0;
-        double sum = 0;
-        for (int i = 0; i < n; i++) sum += buf.get(i);
-        return sum / n;
-    }
-
-    private static double rollingStd(RingBuffer<Double> buf, int window) {
-        int n = Math.min(buf.size(), window);
-        if (n < 2) return 0.0;
-        double mean = rollingMean(buf, window);
-        double sumSq = 0;
-        for (int i = 0; i < n; i++) {
-            double d = buf.get(i) - mean;
-            sumSq += d * d;
-        }
-        return Math.sqrt(sumSq / n);
     }
 
     private static double normalRelativeAngle(double angle) {

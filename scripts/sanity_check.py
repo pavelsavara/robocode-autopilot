@@ -34,12 +34,17 @@ import pandas as pd
 OUR_BOT_PREFIX = "Autopilot"
 
 
-def find_battle_dirs(csv_root: Path):
-    """Yield (battle_id, bot_dir) for every Autopilot perspective directory."""
+def find_battle_dirs(csv_root: Path, battle_id_filter=None):
+    """Yield (battle_id, bot_dir) for every Autopilot perspective directory.
+    
+    If battle_id_filter is provided (a set), only yield matching battle IDs.
+    """
     if not csv_root.is_dir():
         return
     for battle_dir in sorted(csv_root.iterdir()):
         if not battle_dir.is_dir():
+            continue
+        if battle_id_filter is not None and battle_dir.name not in battle_id_filter:
             continue
         for bot_dir in battle_dir.iterdir():
             if bot_dir.is_dir() and bot_dir.name.startswith(OUR_BOT_PREFIX):
@@ -59,10 +64,10 @@ def read_csv_safe(path: Path, nrows=None):
         return None
 
 
-def load_all_internal(csv_root: Path, max_battles=None):
+def load_all_internal(csv_root: Path, max_battles=None, battle_id_filter=None):
     """Load and concatenate internal.csv from all battles."""
     frames = []
-    for i, (bid, bdir) in enumerate(find_battle_dirs(csv_root)):
+    for i, (bid, bdir) in enumerate(find_battle_dirs(csv_root, battle_id_filter)):
         if max_battles and i >= max_battles:
             break
         df = read_csv_safe(bdir / "internal.csv")
@@ -74,10 +79,10 @@ def load_all_internal(csv_root: Path, max_battles=None):
     return pd.concat(frames, ignore_index=True)
 
 
-def load_all_ticks(csv_root: Path, max_battles=None, sample_frac=0.2):
+def load_all_ticks(csv_root: Path, max_battles=None, sample_frac=0.2, battle_id_filter=None):
     """Load and concatenate ticks.csv (with optional row-sampling)."""
     frames = []
-    for i, (bid, bdir) in enumerate(find_battle_dirs(csv_root)):
+    for i, (bid, bdir) in enumerate(find_battle_dirs(csv_root, battle_id_filter)):
         if max_battles and i >= max_battles:
             break
         df = read_csv_safe(bdir / "ticks.csv")
@@ -91,10 +96,10 @@ def load_all_ticks(csv_root: Path, max_battles=None, sample_frac=0.2):
     return pd.concat(frames, ignore_index=True)
 
 
-def load_all_scores(csv_root: Path, max_battles=None):
+def load_all_scores(csv_root: Path, max_battles=None, battle_id_filter=None):
     """Load and concatenate scores.csv from all battles."""
     frames = []
-    for i, (bid, bdir) in enumerate(find_battle_dirs(csv_root)):
+    for i, (bid, bdir) in enumerate(find_battle_dirs(csv_root, battle_id_filter)):
         if max_battles and i >= max_battles:
             break
         df = read_csv_safe(bdir / "scores.csv")
@@ -106,7 +111,7 @@ def load_all_scores(csv_root: Path, max_battles=None):
     return pd.concat(frames, ignore_index=True)
 
 
-def parse_debug_logs(csv_root: Path):
+def parse_debug_logs(csv_root: Path, battle_id_filter=None):
     """Parse debug.log files for TickBudget and SkippedTurn data.
 
     Returns:
@@ -120,7 +125,7 @@ def parse_debug_logs(csv_root: Path):
         r"SKIPPED tick=(\d+)\s+(?:round=(\d+)\s+)?budget=(\d+)"
     )
 
-    for bid, bdir in find_battle_dirs(csv_root):
+    for bid, bdir in find_battle_dirs(csv_root, battle_id_filter):
         log_path = bdir / "debug.log"
         if not log_path.is_file():
             continue
@@ -481,7 +486,7 @@ def bonus_prediction_collapse(internal_df):
 # Main
 # ---------------------------------------------------------------------------
 
-def run_checks(data_dir: Path):
+def run_checks(data_dir: Path, battle_id_filter=None):
     """Run all sanity checks and return list of CheckResults."""
     csv_root = data_dir / "csv"
 
@@ -490,19 +495,22 @@ def run_checks(data_dir: Path):
         sys.exit(2)
 
     # Count battles
-    battle_dirs = list(find_battle_dirs(csv_root))
+    battle_dirs = list(find_battle_dirs(csv_root, battle_id_filter))
     n_battles = len(battle_dirs)
     if n_battles == 0:
         print(f"ERROR: No Autopilot battle data in {csv_root}", file=sys.stderr)
+        if battle_id_filter:
+            print(f"  (filtered to {len(battle_id_filter)} battle IDs)", file=sys.stderr)
         sys.exit(2)
 
-    print(f"Loading data from {csv_root} ({n_battles} battles)...",
+    filter_msg = f" (filtered to {len(battle_id_filter)} sprint battles)" if battle_id_filter else ""
+    print(f"Loading data from {csv_root} ({n_battles} battles{filter_msg})...",
           file=sys.stderr)
 
     # Load data
-    budgets, skipped = parse_debug_logs(csv_root)
-    internal_df = load_all_internal(csv_root)
-    ticks_df = load_all_ticks(csv_root, sample_frac=0.3)
+    budgets, skipped = parse_debug_logs(csv_root, battle_id_filter)
+    internal_df = load_all_internal(csv_root, battle_id_filter=battle_id_filter)
+    ticks_df = load_all_ticks(csv_root, sample_frac=0.3, battle_id_filter=battle_id_filter)
     # scores_df not needed for current checks but available for future use
 
     results = []
@@ -567,6 +575,12 @@ def main():
         default=None,
         help="Path to output/local/ (default: auto-detect from script location)",
     )
+    parser.add_argument(
+        "--battle-ids",
+        type=str,
+        default=None,
+        help="Path to JSON file with list of battle IDs to filter to",
+    )
     args = parser.parse_args()
 
     if args.data_dir:
@@ -580,7 +594,18 @@ def main():
         print(f"ERROR: Data directory not found: {data_dir}", file=sys.stderr)
         sys.exit(2)
 
-    results = run_checks(data_dir)
+    # Load battle ID filter if provided
+    battle_id_filter = None
+    if args.battle_ids:
+        bid_path = Path(args.battle_ids)
+        if not bid_path.is_file():
+            print(f"ERROR: Battle IDs file not found: {bid_path}", file=sys.stderr)
+            sys.exit(2)
+        with open(bid_path) as f:
+            battle_id_filter = set(json.load(f))
+        print(f"Filtering to {len(battle_id_filter)} sprint battle IDs", file=sys.stderr)
+
+    results = run_checks(data_dir, battle_id_filter=battle_id_filter)
     output = format_output(results)
     print(output)
 

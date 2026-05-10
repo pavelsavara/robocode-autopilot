@@ -103,8 +103,15 @@ robot JAR builds cleanly.
 3. Delete stale `autopilot.dat` (clean evaluation, no carryover)
 4. Run battles via `local-pipeline.ps1` against the fixed opponent set:
    - 3 battles × 35 rounds per opponent
-   - Process recordings into CSVs
+   - Old recordings auto-archived to `recordings-archive/`
+   - CSVs processed incrementally (only new recordings)
+   - `summary.json` written with per-opponent scores and win counts
+   - `sprint_battles.json` written with current-sprint battle IDs
 5. Verify recording count matches expected (opponents × battles)
+
+**Pipeline flags:**
+- `-EvalOnly` — build + battle + sanity check only (skip CSV/retrain)
+- `-SkipBuild`, `-SkipBattles`, `-SkipPipeline`, `-SkipRetrain` — skip individual steps
 
 **Exit criteria:** `output/local/csv/` populated with complete data for all
 opponents.
@@ -224,3 +231,7 @@ Ralph declares the sprint result:
 - Add new metric cells as needs arise — never delete old metrics.
 - **Automated sanity script** (owned by Systems Engineer) runs all 6 checks
   and produces a pass/fail summary before any human analysis.
+- **Sprint-only filtering:** `sanity_check.py --battle-ids sprint_battles.json`
+  restricts checks to current-sprint data only (avoids dilution from old recordings).
+- **Incremental CSV:** pipeline Java binary skips already-processed `.br` files
+  (use `--force` to reprocess all). Saves ~80% time on re-runs.

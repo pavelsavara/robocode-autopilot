@@ -22,7 +22,8 @@
 
 param(
     [string]$DataDir = "",
-    [string]$PythonExe = ""
+    [string]$PythonExe = "",
+    [string]$BattleIds = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -61,7 +62,7 @@ if (-not (Test-Path $pythonScript)) {
     exit 2
 }
 
-& $venvPython $pythonScript --data-dir $DataDir
+& $venvPython $pythonScript --data-dir $DataDir $(if ($BattleIds -ne "" -and (Test-Path $BattleIds)) { "--battle-ids"; $BattleIds })
 $exitCode = $LASTEXITCODE
 
 exit $exitCode

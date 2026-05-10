@@ -48,24 +48,27 @@ public final class Main {
 
     public static void main(String[] args) {
         if (args.length < 2) {
-            System.err.println("Usage: pipeline --input <dir> --output <dir> [--threads N]");
+            System.err.println("Usage: pipeline --input <dir> --output <dir> [--threads N] [--force]");
             System.exit(1);
         }
 
         Path inputDir = null;
         Path outputDir = null;
         int threads = DEFAULT_THREADS;
+        boolean force = false;
 
-        for (int i = 0; i < args.length - 1; i++) {
-            if ("--input".equals(args[i])) {
+        for (int i = 0; i < args.length; i++) {
+            if ("--input".equals(args[i]) && i + 1 < args.length) {
                 inputDir = Paths.get(args[i + 1]);
-            } else if ("--output".equals(args[i])) {
+            } else if ("--output".equals(args[i]) && i + 1 < args.length) {
                 outputDir = Paths.get(args[i + 1]);
-            } else if ("--threads".equals(args[i])) {
+            } else if ("--threads".equals(args[i]) && i + 1 < args.length) {
                 threads = Integer.parseInt(args[i + 1]);
                 if (threads < 1) {
                     threads = 1;
                 }
+            } else if ("--force".equals(args[i])) {
+                force = true;
             }
         }
 
@@ -78,6 +81,9 @@ public final class Main {
         System.out.println("Input:  " + inputDir);
         System.out.println("Output: " + outputDir);
         System.out.println("Threads: " + threads);
+        if (force) {
+            System.out.println("Mode: FORCE (reprocess all)");
+        }
 
         File[] brFiles = inputDir.toFile().listFiles(new java.io.FilenameFilter() {
             public boolean accept(File d, String name) {
@@ -92,12 +98,24 @@ public final class Main {
 
         final AtomicInteger processed = new AtomicInteger(0);
         final AtomicInteger failed = new AtomicInteger(0);
+        final AtomicInteger skipped = new AtomicInteger(0);
         final Path finalOutputDir = outputDir;
+        final boolean forceProcess = force;
 
         ExecutorService executor = Executors.newFixedThreadPool(threads);
         List<Future<?>> futures = new ArrayList<Future<?>>();
 
         for (final File brFile : brFiles) {
+            // Skip if CSV directory already exists (incremental mode)
+            if (!forceProcess) {
+                String battleId = brFile.getName().replace(".br", "");
+                File csvBattleDir = new File(finalOutputDir.toFile(), battleId);
+                if (csvBattleDir.isDirectory()) {
+                    skipped.incrementAndGet();
+                    continue;
+                }
+            }
+
             futures.add(executor.submit(new Runnable() {
                 public void run() {
                     try {
@@ -133,11 +151,16 @@ public final class Main {
 
         int processedCount = processed.get();
         int failedCount = failed.get();
+        int skippedCount = skipped.get();
+        if (skippedCount > 0) {
+            System.out.println("Skipped " + skippedCount + " already-processed, processing " + (processedCount + failedCount) + " new recordings.");
+        }
         System.out.println("Done. Processed " + processedCount + "/" + brFiles.length + " recordings.");
 
         // Fail the process if nothing succeeded — otherwise CI silently uploads an empty
         // artifact and reports green. A single corrupt .br must not mask total failure.
-        if (processedCount == 0) {
+        // If all were skipped (incremental), that's success — no new work needed.
+        if (processedCount == 0 && skippedCount == 0) {
             System.err.println("ERROR: 0 recordings processed successfully (" + failedCount + " failed). Exiting non-zero.");
             System.exit(2);
         }
