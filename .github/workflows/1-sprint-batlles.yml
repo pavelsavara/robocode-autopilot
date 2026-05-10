@@ -642,21 +642,44 @@ jobs:
         run: |
           mkdir -p combined-csv
 
-          for CSV_NAME in ticks.csv waves.csv scores.csv; do
-            mapfile -d '' FILES < <(find csv-chunks -name "$CSV_NAME" -type f -print0 | sort -z)
+          # Use Python to combine CSVs correctly (handles different column orders)
+          python3 -c "
+          import csv, os, sys
+          from pathlib import Path
 
-            if [ ${#FILES[@]} -eq 0 ]; then
-              echo "  No $CSV_NAME files found"
-              continue
-            fi
+          for csv_name in ['ticks.csv', 'waves.csv', 'scores.csv']:
+              files = sorted(Path('csv-chunks').rglob(csv_name))
+              if not files:
+                  print(f'  No {csv_name} files found')
+                  continue
 
-            cp "${FILES[0]}" "combined-csv/$CSV_NAME"
-            for ((i=1; i<${#FILES[@]}; i++)); do
-              tail -n +2 "${FILES[$i]}" >> "combined-csv/$CSV_NAME"
-            done
+              # Read first file to get canonical header
+              with open(files[0]) as f:
+                  reader = csv.reader(f)
+                  canonical = next(reader)
 
-            echo "  $CSV_NAME: merged ${#FILES[@]} files"
-          done
+              # Write combined file with canonical column order
+              with open(f'combined-csv/{csv_name}', 'w', newline='') as out:
+                  writer = csv.writer(out)
+                  writer.writerow(canonical)
+                  rows = 0
+                  for fp in files:
+                      with open(fp) as f:
+                          reader = csv.reader(f)
+                          header = next(reader)
+                          if header == canonical:
+                              # Same order — fast path
+                              for row in reader:
+                                  writer.writerow(row)
+                                  rows += 1
+                          else:
+                              # Different order — remap columns
+                              idx_map = [header.index(c) if c in header else -1 for c in canonical]
+                              for row in reader:
+                                  writer.writerow([row[i] if i >= 0 else '' for i in idx_map])
+                                  rows += 1
+                  print(f'  {csv_name}: merged {len(files)} files, {rows} data rows')
+          "
 
           echo "--- Combined CSV stats ---"
           for f in combined-csv/*.csv; do

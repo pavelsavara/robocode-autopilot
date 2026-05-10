@@ -301,6 +301,13 @@ jobs:
 
       - name: Commit to sprint branch
         run: |
+          echo "=== Debug: working directory ==="
+          pwd
+          echo "=== Debug: GITHUB_WORKSPACE = $GITHUB_WORKSPACE ==="
+          ls -la .git 2>/dev/null || echo "No .git in $(pwd)"
+          cd "$GITHUB_WORKSPACE" || true
+          ls -la .git 2>/dev/null || echo "No .git in GITHUB_WORKSPACE either"
+          git --version
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 

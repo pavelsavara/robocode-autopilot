@@ -1,6 +1,8 @@
 package cz.zamboch.autopilot.core;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,17 +58,31 @@ public final class Transformer {
                 queue.add(entry.getKey());
             }
         }
+        // Sort initial queue by class name for deterministic column order across JVM runs.
+        Collections.sort(queue, new Comparator<IInGameFeatures>() {
+            public int compare(IInGameFeatures a, IInGameFeatures b) {
+                return a.getClass().getName().compareTo(b.getClass().getName());
+            }
+        });
 
         while (!queue.isEmpty()) {
             IInGameFeatures current = queue.remove(0);
             sorted.add(current);
+            // Collect newly available neighbors and sort them for deterministic ordering
+            List<IInGameFeatures> ready = new ArrayList<IInGameFeatures>();
             for (IInGameFeatures neighbor : adj.get(current)) {
                 int newDegree = inDegree.get(neighbor) - 1;
                 inDegree.put(neighbor, newDegree);
                 if (newDegree == 0) {
-                    queue.add(neighbor);
+                    ready.add(neighbor);
                 }
             }
+            Collections.sort(ready, new Comparator<IInGameFeatures>() {
+                public int compare(IInGameFeatures a, IInGameFeatures b) {
+                    return a.getClass().getName().compareTo(b.getClass().getName());
+                }
+            });
+            queue.addAll(ready);
         }
 
         if (sorted.size() != registered.size()) {
