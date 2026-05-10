@@ -6,17 +6,17 @@
 #
 # Downstream: sprint-train.yml triggers on this workflow's completion.
 
-name: Sprint Process
+name: 2 Sprint CSVs + Sanity Checks
 
 on:
   workflow_run:
-    workflows: ["Sprint Pipeline"]
+    workflows: ["1 Sprint Battles"]
     types: [completed]
 
   workflow_dispatch:
     inputs:
       source_run_id:
-        description: 'Run ID of Sprint Pipeline to process'
+        description: 'Run ID of 1 Sprint Battles to process'
         required: true
         type: string
 

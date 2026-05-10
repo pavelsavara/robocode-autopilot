@@ -5,17 +5,17 @@
 # (c) merge autopilot.dat from battle chunks.
 # Commits results to sprint/{N}-models branch.
 
-name: Sprint Train
+name: 3 Sprint Train + Notebooks
 
 on:
   workflow_run:
-    workflows: ["Sprint Process"]
+    workflows: ["2 Sprint CSVs + Sanity Checks"]
     types: [completed]
 
   workflow_dispatch:
     inputs:
       source_run_id:
-        description: 'Run ID of Sprint Process to use CSVs from'
+        description: 'Run ID of 2 Sprint CSVs + Sanity Checks to use CSVs from'
         required: true
         type: string
       sprint_number:

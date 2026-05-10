@@ -141,7 +141,7 @@ underlying scripts (`run-battle.mjs`, pipeline binary, `train_distill.py`).
 
 ### CI mode (default)
 
-1. Push code changes to `main` → triggers `sprint-pipeline.yml`
+1. Push code changes to `main` → triggers `1-sprint-battles.yml`
 2. AI agent starts `gh run watch <run-id> --exit-status` in async terminal
 3. Agent continues other work while CI runs (~70 min total):
    - Stage 1: build + 250 battles (50×5, 10 parallel chunks) + self-battle
@@ -176,49 +176,57 @@ available for Phase 4.
 
 ---
 
-## Phase 4: Diagnose & Analyse (all engineers)
+## Phase 4: Diagnose & Analyse
 
-### 4a. Mandatory sanity checks — must ALL pass
+In CI mode, sanity checks and notebooks run **inside CI** (stages 2–3).
+The AI team does NOT have direct access to CSVs — it reviews the
+downloaded summary artifacts and CI-rendered notebook HTML.
 
-| # | Check | Owner | How | Pass criteria |
-|---|-------|-------|-----|---------------|
-| 1 | **TickBudget** | Systems Eng | `grep "budget=" debug.log` | budget ≥ 100 (≥50% model capacity) |
-| 2 | **Skipped turns** | Systems Eng | `grep SKIPPED debug.log` | < 5 per battle; none in steady-state |
-| 3 | **Gun selection** | Targeting Eng | Per-gun hit rates from internal.csv | All guns have data; best gun selected |
-| 4 | **ML predictions** | ML Engineer | PREDICTED_* ranges from internal.csv | Fire power ∈ [0.1, 3.0], lat vel ∈ [-8, 8], fire prob ∈ [0, 1] |
-| 5 | **Wave detection** | Movement Eng | Opponent waves in flight count | Avg > 0.5 waves in flight per tick |
-| 6 | **Feature completeness** | ML Engineer | NaN columns in ticks.csv | No critical features permanently NaN |
+### 4a. Mandatory sanity checks
+
+CI stage 2 runs automated sanity checks against the combined CSVs
+and produces `sanity-report.json`. The AI agent downloads this artifact
+and reviews the pass/fail results.
+
+| # | Check | Automated in CI | Pass criteria |
+|---|-------|----------------|---------------|
+| 1 | **CSV row count** | ticks.csv rows > 100 | Enough data for analysis |
+| 2 | **Waves present** | waves.csv exists | Wave detection working |
+| 3 | **Scores present** | scores.csv exists | Round outcomes recorded |
+| 4 | **Column count** | ticks.csv columns > 10 | Features extracted |
+| 5 | **Battle count** | scores.csv rows > 5 | Multiple opponents |
+| 6 | **Tick density** | rows / 3000 > 0 | Reasonable ticks per battle |
 
 **If ANY check fails:** Stop. The failure IS the sprint finding. Fix the
 broken system. Do not proceed to performance analysis.
 
-### 4b. Performance metrics (each engineer runs their notebooks)
+### 4b. Performance review (from downloaded artifacts)
 
-| Dimension | Notebooks | Owner |
-|-----------|-----------|-------|
-| **Survival** (win rate, ticks survived) | R01 | Systems Eng |
-| **Offense** (hit rate, damage dealt) | R02, R08 | Targeting Eng |
-| **Defense** (opponent HR, damage received) | R04, R09 | Movement Eng |
-| **Damage balance** (dealt vs received) | R03 | Systems Eng |
-| **ML quality** (prediction accuracy) | R05, R10 | ML Engineer |
-| **Adaptation** (round trends) | R06 | Systems Eng |
+The AI team reviews these downloaded artifacts — it does NOT process
+raw CSVs locally:
 
-Every metric must have a **previous sprint** column and a **delta**.
+| Artifact | What to review |
+|---|---|
+| `summary.json` | Per-opponent scores, win rate, overall % |
+| `sanity-report.json` | All 6 checks pass/fail with values |
+| `retrain-summary.json` | Model R², AUC metrics + sprint branch name |
+| Notebook HTML | Pre-rendered retrospective plots from CI |
 
-### 4c. In-game vs offline prediction comparison (ML Engineer)
+Compare metrics with previous sprint. Every metric needs a **previous**
+and **delta** column in the retrospective.
 
-For each ML model, compare in-game predictions (internal.csv) with
-offline model output on the same features (ticks.csv):
+### 4c. Model quality review (from retrain-summary.json)
 
-- **Fire power:** in-game PREDICTED_FIRE_POWER vs offline model. Large
-  discrepancy = feature mismatch between Java and Python.
-- **Movement:** PREDICTED_LAT_VEL_5 vs actual lateral velocity 5 ticks later.
-  Compute in-game R² and compare with training R².
-- **Fire timing:** Bin predictions into deciles, check actual fire rates
-  per bin (calibration plot).
+Review the training metrics produced by CI stage 3:
 
-**Exit criteria:** All 6 sanity checks pass. All notebook metrics computed
-and compared with previous sprint.
+- **Fire power R²** — compare with previous sprint's offline R²
+- **Movement R²** — same
+- **Fire timing AUC** — same
+- **Sprint branch** — inspect `sprint/{N}-models` diff if metrics changed
+
+**Exit criteria:** All 6 sanity checks pass. Metrics reviewed and
+compared with previous sprint. Decision made on whether to merge
+the sprint model branch.
 
 ---
 
@@ -227,7 +235,8 @@ and compared with previous sprint.
 ### 5a. Write retrospective
 
 Goes in `archive/YYYY-MM-DD-retrospective-N.md`. **Coordinator writes it** using
-data from the engineers' notebooks and sanity checks.
+downloaded CI artifacts (summary.json, sanity-report.json, retrain-summary.json,
+notebook HTML).
 
 Required sections:
 

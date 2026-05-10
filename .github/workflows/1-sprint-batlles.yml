@@ -14,7 +14,7 @@
 #   sprint-process.yml triggers via workflow_run on completion.
 #   sprint-train.yml triggers via workflow_run on sprint-process completion.
 
-name: Sprint Pipeline
+name: 1 Sprint Battles
 
 on:
   workflow_dispatch:

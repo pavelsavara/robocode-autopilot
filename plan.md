@@ -78,20 +78,20 @@ merge model branch. Total CI time budget: ~70 min (max 120 min).
 ```
 push to main (or workflow_dispatch)
     │
-[1] sprint-pipeline.yml
+[1] 1-sprint-battles.yml
     ├── build: compile robot JAR + pipeline
     ├── battles: 50 opponents × 5 battles (10 chunks of 25, parallel)
     │   + self-battle
     │   → uploads: recordings-chunk-* (~1.25GB), chunk-results-*
     └── aggregate: summary.json + score table
          │ workflow_run [completed]
-[2] sprint-process.yml
+[2] 2-sprint-process.yml
     ├── process: download recordings, run Java pipeline → CSV (parallel)
     ├── combine: merge CSV chunks
     ├── sanity: 6 checks from sprint.md
     └── uploads: csv-combined, sanity-report.json
          │ workflow_run [completed]
-[3] sprint-train.yml  (parallel jobs)
+[3] 3-sprint-train.yml  (parallel jobs)
     ├── train: retrain 3 models → *Data.java
     ├── notebooks: retrospective notebooks via nbconvert → HTML
     ├── merge-dat: combine autopilot.dat from battle chunks → DefaultDataFile.java
