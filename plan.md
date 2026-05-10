@@ -91,7 +91,7 @@ push to main (or workflow_dispatch)
     ├── sanity: 6 checks from sprint.md
     └── uploads: csv-combined, sanity-report.json
          │ workflow_run [completed]
-[3] 3-sprint-train.yml  (parallel jobs)
+[2] 2-sprint-train.yml  (parallel jobs)
     ├── train: retrain 3 models → *Data.java
     ├── notebooks: retrospective notebooks via nbconvert → HTML
     ├── merge-dat: combine autopilot.dat from battle chunks → DefaultDataFile.java

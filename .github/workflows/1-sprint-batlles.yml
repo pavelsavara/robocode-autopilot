@@ -327,7 +327,7 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
 
-      # Upload autopilot.dat for downstream merge (3-sprint-train.yml).
+      # Upload autopilot.dat for downstream merge (2-sprint-train.yml).
       # Each chunk builds its own VCS histograms + gun stats during battles.
       # Stage 3 merges all chunks into a single DefaultDataFile.java.
       - uses: actions/upload-artifact@v7
@@ -647,7 +647,7 @@ jobs:
           import csv, os, sys
           from pathlib import Path
 
-          for csv_name in ['ticks.csv', 'waves.csv', 'scores.csv']:
+          for csv_name in ['ticks.csv', 'waves.csv', 'scores.csv', 'internal.csv']:
               files = sorted(Path('csv-chunks').rglob(csv_name))
               if not files:
                   print(f'  No {csv_name} files found')
@@ -693,7 +693,7 @@ jobs:
         run: |
           PASS=0; FAIL=0; REPORT='[]'
 
-          for CSV_NAME in ticks.csv waves.csv scores.csv; do
+          for CSV_NAME in ticks.csv waves.csv scores.csv internal.csv; do
             if [ -f "combined-csv/$CSV_NAME" ]; then
               ROWS=$(tail -n +2 "combined-csv/$CSV_NAME" | wc -l)
               REPORT=$(echo "$REPORT" | jq ". + [{check: \"${CSV_NAME}_rows\", pass: ($ROWS > 0), value: $ROWS}]")

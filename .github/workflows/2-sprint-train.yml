@@ -1,4 +1,4 @@
-# 3-sprint-train.yml ΓÇö Stage 3 of the sprint CI pipeline.
+# 2-sprint-train.yml — Stage 2 of the sprint CI pipeline.
 #
 # Triggered by 2-sprint-process completion.
 # Parallel jobs: train each ML model independently + run notebooks.
