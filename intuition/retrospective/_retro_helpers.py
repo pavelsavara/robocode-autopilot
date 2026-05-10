@@ -31,6 +31,10 @@ def load_local_data(
 ):
     """Load local pipeline CSV data, optionally filtering to Autopilot's perspective.
 
+    Supports two layouts:
+      1. Directory tree: <csv_root>/<battle_id>/<robot>/ticks.csv (local pipeline)
+      2. Flat files: <csv_root>/ticks.csv (CI combined output)
+
     Args:
         filename: Which CSV to load (ticks.csv, waves.csv, scores.csv).
         row_frac: Fraction of rows to sample (1.0 = all).
@@ -45,20 +49,29 @@ def load_local_data(
     """
     root = Path(csv_root) if csv_root else LOCAL_CSV_ROOT
 
-    selection = build_robot_index(
-        csv_root=root,
-        max_robots=max_robots,
-        battles_per_robot=battles_per_robot,
-        seed=seed,
-    )
+    # Check if this is a flat combined CSV (CI mode) or a directory tree (local mode)
+    flat_file = root / filename
+    if flat_file.is_file():
+        # CI mode: single combined file
+        df = pd.read_csv(flat_file)
+        if row_frac < 1.0:
+            df = df.sample(frac=row_frac, random_state=seed)
+    else:
+        # Local mode: directory tree
+        selection = build_robot_index(
+            csv_root=root,
+            max_robots=max_robots,
+            battles_per_robot=battles_per_robot,
+            seed=seed,
+        )
 
-    df = load_stratified(
-        filename,
-        selection,
-        csv_root=root,
-        row_frac=row_frac,
-        seed=seed,
-    )
+        df = load_stratified(
+            filename,
+            selection,
+            csv_root=root,
+            row_frac=row_frac,
+            seed=seed,
+        )
 
     if autopilot_only and len(df) > 0:
         # Filter to Autopilot's perspective — check multiple possible column names
@@ -117,7 +130,18 @@ def get_opponent_map(csv_root=None):
 
 
 def add_opponent_names(df, csv_root=None):
-    """Add an 'opponent_name' column to a DataFrame that has 'battle_id'."""
+    """Add an 'opponent_name' column to a DataFrame that has 'battle_id'.
+
+    Strategy:
+      1. If 'opponent_bot' column already exists (from scores.csv), use it directly.
+      2. Otherwise, walk the CSV directory tree to find opponent perspective dirs.
+    """
+    # Fast path: scores.csv already has opponent_bot as a string column
+    if 'opponent_bot' in df.columns:
+        df = df.copy()
+        df['opponent_name'] = df['opponent_bot']
+        return df
+
     if 'battle_id' not in df.columns:
         return df
     opp_map = get_opponent_map(csv_root)
