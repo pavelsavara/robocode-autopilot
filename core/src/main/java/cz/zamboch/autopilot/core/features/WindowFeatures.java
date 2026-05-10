@@ -12,9 +12,9 @@ import cz.zamboch.autopilot.core.Whiteboard;
  * <p>Uses pre-allocated ring buffers. Zero per-tick allocation.
  * Computes incrementally: O(1) per tick using running sum and sum-of-squares.</p>
  *
- * <p>Not final — pipeline subclass can add CSV output.</p>
+ * <p>No pipeline subclass exists — safe to be final.</p>
  */
-public class WindowFeatures implements IInGameFeatures {
+public final class WindowFeatures implements IInGameFeatures {
 
     /** Window size in ticks. */
     private static final int WINDOW = 20;

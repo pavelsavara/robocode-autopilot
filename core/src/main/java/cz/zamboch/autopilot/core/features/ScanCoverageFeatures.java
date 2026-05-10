@@ -3,7 +3,7 @@ package cz.zamboch.autopilot.core.features;
 import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.IInGameFeatures;
 import cz.zamboch.autopilot.core.Whiteboard;
-import cz.zamboch.autopilot.core.util.RingBuffer;
+import cz.zamboch.autopilot.core.util.PrimitiveLongRingBuffer;
 import cz.zamboch.autopilot.core.util.RoboMath;
 
 /**
@@ -59,7 +59,7 @@ public final class ScanCoverageFeatures implements IInGameFeatures {
         }
 
         // Ticks between most recent two scans.
-        RingBuffer<Long> hist = wb.getScanTickHistory50();
+        PrimitiveLongRingBuffer hist = wb.getScanTickHistory50();
         if (hist.size() >= 2) {
             long mostRecent = hist.get(0);
             long prev = hist.get(1);
@@ -86,7 +86,7 @@ public final class ScanCoverageFeatures implements IInGameFeatures {
     }
 
     /** Fraction of last {@code window} ticks that contain a scan. */
-    private static double coverage(RingBuffer<Long> hist, long now, int window) {
+    private static double coverage(PrimitiveLongRingBuffer hist, long now, int window) {
         if (hist.isEmpty() || window <= 0) return 0.0;
         long lower = now - window + 1;
         int count = 0;
