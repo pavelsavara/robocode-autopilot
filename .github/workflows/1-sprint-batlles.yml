@@ -620,3 +620,101 @@ jobs:
           name: sprint-summary
           path: out/summary.json
           retention-days: 90
+
+  # ─── Step 5: Combine CSV chunks and run sanity checks ───
+  #
+  # Runs after all battle chunks are done (they each produce csv-chunk-*).
+  # Combines into a single csv-combined artifact for stage 3 training.
+  combine-csv:
+    needs: [battles]
+    if: always() && needs.battles.result != 'cancelled'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all CSV chunks
+        uses: actions/download-artifact@v8
+        with:
+          pattern: csv-chunk-*
+          path: csv-chunks/
+          merge-multiple: true
+
+      - name: Combine CSVs
+        shell: bash
+        run: |
+          mkdir -p combined-csv
+
+          for CSV_NAME in ticks.csv waves.csv scores.csv; do
+            mapfile -d '' FILES < <(find csv-chunks -name "$CSV_NAME" -type f -print0 | sort -z)
+
+            if [ ${#FILES[@]} -eq 0 ]; then
+              echo "  No $CSV_NAME files found"
+              continue
+            fi
+
+            cp "${FILES[0]}" "combined-csv/$CSV_NAME"
+            for ((i=1; i<${#FILES[@]}; i++)); do
+              tail -n +2 "${FILES[$i]}" >> "combined-csv/$CSV_NAME"
+            done
+
+            echo "  $CSV_NAME: merged ${#FILES[@]} files"
+          done
+
+          echo "--- Combined CSV stats ---"
+          for f in combined-csv/*.csv; do
+            if [ -f "$f" ]; then
+              ROWS=$(wc -l < "$f")
+              echo "  $(basename "$f"): $ROWS rows"
+            fi
+          done
+
+      - name: Run sanity checks
+        run: |
+          PASS=0; FAIL=0; REPORT='[]'
+
+          for CSV_NAME in ticks.csv waves.csv scores.csv; do
+            if [ -f "combined-csv/$CSV_NAME" ]; then
+              ROWS=$(tail -n +2 "combined-csv/$CSV_NAME" | wc -l)
+              REPORT=$(echo "$REPORT" | jq ". + [{check: \"${CSV_NAME}_rows\", pass: ($ROWS > 0), value: $ROWS}]")
+              if [ "$ROWS" -gt 0 ]; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); fi
+            else
+              REPORT=$(echo "$REPORT" | jq ". + [{check: \"${CSV_NAME}_rows\", pass: false, value: 0, message: \"Missing\"}]")
+              FAIL=$((FAIL + 1))
+            fi
+          done
+
+          # Column count check
+          if [ -f combined-csv/ticks.csv ]; then
+            COLS=$(head -1 combined-csv/ticks.csv | tr ',' '\n' | wc -l)
+            REPORT=$(echo "$REPORT" | jq ". + [{check: \"ticks_columns\", pass: ($COLS > 10), value: $COLS}]")
+            if [ "$COLS" -gt 10 ]; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); fi
+          fi
+
+          # Battle count
+          if [ -f combined-csv/scores.csv ]; then
+            BATTLES=$(tail -n +2 combined-csv/scores.csv | wc -l)
+            REPORT=$(echo "$REPORT" | jq ". + [{check: \"battle_count\", pass: ($BATTLES > 5), value: $BATTLES}]")
+            if [ "$BATTLES" -gt 5 ]; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); fi
+          fi
+
+          # Tick density
+          if [ -f combined-csv/ticks.csv ]; then
+            TICK_ROWS=$(tail -n +2 combined-csv/ticks.csv | wc -l)
+            EST=$((TICK_ROWS / 3000))
+            REPORT=$(echo "$REPORT" | jq ". + [{check: \"tick_density\", pass: ($EST > 0), value: $TICK_ROWS}]")
+            if [ "$EST" -gt 0 ]; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); fi
+          fi
+
+          jq -n --argjson checks "$REPORT" --argjson pass "$PASS" --argjson fail "$FAIL" \
+            '{timestamp: now | todate, passed: $pass, failed: $fail, checks: $checks}' > sanity-report.json
+          cat sanity-report.json | jq .
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: csv-combined
+          path: combined-csv/
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sanity-report
+          path: sanity-report.json
+          retention-days: 30

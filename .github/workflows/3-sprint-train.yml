@@ -11,7 +11,7 @@ name: 3 Sprint Train + Notebooks
 
 on:
   workflow_run:
-    workflows: ["2 Sprint CSVs + Sanity Checks"]
+    workflows: ["1 Sprint Battles"]
     types: [completed]
 
   workflow_dispatch:
