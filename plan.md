@@ -12,14 +12,15 @@ guns, competing movement strategies, and energy-aware strategy layer.
 
 ## Current Performance (16-opponent eval, 2026-05-10)
 
-| Metric | Sprint 9 (baseline) | Sprint 18 (current) | Target |
+| Metric | Sprint 9 (baseline) | Sprint 20 (current) | Target |
 |---|---|---|---|
-| Overall score % | 6.1% | **9.1%** | >50% vs top-50 |
-| Battle win rate | 0.0% | ~2% (occasional) | >30% |
+| Overall score % | 6.1% | **10.2%** | >50% vs top-50 |
+| Battle win rate | 0.0% | 0% | >30% |
 | Our hit rate | 3.5% | 3.6% | >10% |
 | Opponent hit rate | ~46% | ~40% | <20% |
 | Fire power R² (in-game) | −3.67 | **+0.48** | >0.7 |
 | Skipped turns/battle | 0.6 | 0.0 | 0 |
+| CI eval pipeline | ❌ | ✅ | ✅ |
 
 ## Completed Phases (archived — see retrospectives in `archive/`)
 
