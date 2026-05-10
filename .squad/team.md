@@ -26,7 +26,11 @@
 - **User:** Pavel Savara
 - **Created:** 2026-05-09
 - **Stack:** Java 8 (core/pipeline/robot), Python 3.10 (ML/intuition), Gradle 9.4.1, PowerShell
-- **Priority:** Win rate improvement (currently 0.56% vs top 50 opponents)
-- **Key gaps:** Movement (47% opponent HR → target <20%), Targeting (8% our HR → target >15%)
+- **Priority:** Win rate improvement (currently 9.1% vs 16-opponent eval, target >50% vs top-50)
+- **Key gaps:** Movement (40% opponent HR → target <20%), Targeting (3.6% our HR → target >10%)
 - **Sprint process:** See [sprint.md](../sprint.md) and [team.md](../team.md) for roles
+- **Planning/retro:** Coordinator leads (Ralph PM role folded in)
+- **Naomi duties:** Statistical commentary + feature catalog research in every retro
+- **Amos duties:** Pipeline + CI offload to GitHub Actions
+- **Movement mandate:** Every 3rd sprint must include a movement proposal
 - **Docs:** [plan.md](../plan.md), [wiki/](../wiki/), [archive/](../archive/)

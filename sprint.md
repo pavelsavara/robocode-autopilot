@@ -7,48 +7,86 @@ See [team.md](team.md) for roles and artifact ownership.*
 
 ## Sprint Cadence
 
-A sprint has **5 phases** over a fixed timebox. Ralph opens and closes
-each phase. No phase may be skipped.
+A sprint has **5 phases**. The coordinator leads Phase 1 and Phase 5.
+No phase may be skipped.
 
 ```
-Day 1          Day 2          Day 3          Day 4          Day 5
 ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
-│ Planning │  │  Build   │  │  Battle  │  │ Diagnose │  │  Retro   │
-│ & Design │  │ & Test   │  │ & Record │  │ & Analyse│  │ & Commit │
+│ Phase 0  │  │ Phase 1  │  │ Phase 2  │  │ Phase 3  │  │ Phase 4  │
+│ Diagnose │  │ Plan &   │  │ Build &  │  │ Battle & │  │ Retro &  │
+│ (auto)   │  │ Assign   │  │ Test     │  │ Record   │  │ Commit   │
 └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘
-   Ralph         Dev team     Systems Eng   ML + All       Ralph
+  ML Eng       Coordinator    Dev team     Systems Eng    Coordinator
 ```
+
+### Plateau detection (auto-skip retrain-only sprints)
+
+If the last 3 consecutive sprints are within ±0.3 pp of each other AND
+no code changes were made, the coordinator must escalate:
+*"Retrain plateau detected — code change required. Which structural
+improvement has the highest expected value?"*
+Do NOT run another retrain-only sprint.
+
+### Movement mandate
+
+**Every 3rd sprint must include a movement proposal.** The opponent hit
+rate (~40%) is the binding constraint. Alex should not sit idle while
+the damage ratio stays at 1:10+.
 
 ---
 
-## Phase 1: Planning (Ralph leads)
+## Phase 0: Feature Divergence Diagnostic (ML Engineer)
+
+**Before planning, run the feature comparison diagnostic.**
+
+1. Run a diagnostic battle with FeatureLogger enabled (1 opponent, 10 rounds)
+2. Execute `scripts/compare_features.py` against the diagnostic data
+3. If any feature has correlation < 0.90 with the pipeline value,
+   **that becomes the sprint's top proposal** — fix the worst feature.
+4. If all features are ≥ 0.90, skip to Phase 1 with a clean bill of health.
+
+Phase 0 is optional when the in-game R² is already ≥ 0.7.
+
+---
+
+## Phase 1: Planning (Coordinator leads)
 
 **Inputs:** Previous retrospective's proposals, current win-rate gap.
 
-1. **Ralph** selects max 3 proposals from the previous retrospective.
+1. **Coordinator** selects max 3 proposals from the previous retrospective.
    If a proposal is a major architecture or ML algorithm change, it must
    be the **only** item — no other proposals alongside it.
-2. **Ralph** assigns each proposal to the responsible engineer:
-   - Movement changes → Movement Engineer
-   - Gun changes → Targeting Engineer
-   - ML model changes → ML Engineer
-   - Pipeline/infra changes → Systems Engineer
-3. **Ralph** confirms the **fixed opponent set** (same set every sprint):
+2. **Coordinator** assigns each proposal to the responsible engineer:
+   - Movement changes → Movement Engineer (Alex)
+   - Gun changes → Targeting Engineer (Bobbie)
+   - ML model / feature divergence changes → ML Engineer (Naomi)
+   - Pipeline / CI / infra changes → Systems Engineer (Amos)
+3. **Coordinator** confirms the **fixed opponent set** (same set every sprint):
 
 ```powershell
 $opponents = @(
     # Strong (top 10-20 tier)
     'abc.Shadow', 'voidious.Diamond', 'jk.mega.DrussGT',
+    'wiki.mega.CunobelinDC', 'pe.SandboxDT', 'oog.mega.Saguaro',
     # Upper-mid (top 20-50 tier)
     'cx.BlestPain', 'ary.FourWD', 'ej.ChocolateBar',
     'dft.Cardigan', 'eem.zapper', 'darkcanuck.Pris',
+    'rsj.Electro', 'tobe.Fusion', 'simonton.Wyrm', 'mld.Moebius',
     # Mid (top 50-100 tier)
     'florent.FloatingTadpole', 'kid.Gladiator',
     'da.NewBGank', 'ary.Help', 'gh.GresSuffurd',
-    # Lower-mid
-    'rdt.AgentSmith.AgentSmith', 'fromHell.BlackBox'
+    'kawigi.micro.Shiz', 'nz.jdc.nano.LittleBlackBook',
+    # Lower-mid / archetypes
+    'rdt.AgentSmith.AgentSmith', 'fromHell.BlackBox',
+    'tobe.mini.Charon', 'dw.Rattlesnake',
+    'sample.TrackFire', 'sample.Walls',
+    # Self-battle (diagnostic — expect 48-52%)
+    'cz.zamboch.Autopilot'
 )
 ```
+
+**Self-battle:** `cz.zamboch.Autopilot` is included as a diagnostic.
+Score must be 48–52%. Skew > 55% indicates a position or initialization bug.
 
 **Exit criteria:** Every engineer knows what they're building and which
 metric they're targeting.
@@ -164,12 +202,12 @@ and compared with previous sprint.
 
 ---
 
-## Phase 5: Retrospective & Commit (Ralph leads)
+## Phase 5: Retrospective & Commit (Coordinator leads)
 
 ### 5a. Write retrospective
 
-Goes in `archive/YYYY-MM-DD-retrospective-N.md`. **Ralph writes it** using
-data from the engineers' notebooks.
+Goes in `archive/YYYY-MM-DD-retrospective-N.md`. **Coordinator writes it** using
+data from the engineers' notebooks and sanity checks.
 
 Required sections:
 
@@ -185,7 +223,16 @@ Required sections:
    Bad: "opponents are too strong."
    Good: "opponent HR 35% because wave surf only activates on 12% of ticks
    (measured: avg 0.3 waves in flight)."
-7. **Proposals for next sprint** — max 3 changes (or 1 if major). Each states:
+7. **Naomi's statistical commentary** — ML Engineer writes a section analysing:
+   - Per-opponent score trends across the last 3–5 sprints
+   - Variance analysis: which opponents are high-variance vs stable
+   - Model calibration: predicted vs actual distributions
+   - Any anomalies or surprising patterns in the data
+8. **Naomi's feature research** — ML Engineer researches one unimplemented
+   feature from [archive/2026-05-01-features.md](archive/2026-05-01-features.md).
+   Write a brief analysis: what the feature measures, expected importance,
+   implementation complexity, and recommendation (implement / defer / skip).
+9. **Proposals for next sprint** — max 3 changes (or 1 if major). Each states:
    - What metric it targets
    - Expected effect (directional + rough magnitude)
    - How to measure success/failure
@@ -196,11 +243,11 @@ Required sections:
 - **Revert** changes that caused measurable harm (git revert on main).
 - **Tag** the sprint result on `main` with:
   `Sprint N: <key delta>, kept <X>, reverted <Y>`
-- **Ralph reviews** the final state and retrospective.
+- **Coordinator reviews** the final state and retrospective.
 
 ### 5c. Sprint close
 
-Ralph declares the sprint result:
+Coordinator declares the sprint result:
 - **Win:** target metric improved by the sprint goal amount → update plan.md
 - **Miss:** target not met → proposals carry into next sprint
 - **Blocked:** sanity check failure dominated → next sprint focuses on the fix
@@ -218,8 +265,9 @@ Ralph declares the sprint result:
 | Keep broken changes | Accumulates debt | Revert what hurt |
 | Tune before checking health | Optimizing a broken system | Sanity checks are step 1 |
 | Retrospective without data | Narrative, not insight | Every claim needs a number |
-| Merge without review | Quality regressions | Code Quality Reviewer gates all merges |
-| Merge without tests | Bugs hide until battle | Test Author covers all new code |
+| Retrain-only sprint when plateaued | Wastes a full cycle for 0 gain | Check plateau rule: 3 sprints ±0.3 pp = code change required |
+| Skip Naomi's analysis | Misses statistical patterns | Every retro needs sections 7 + 8 |
+| Ignore movement for 3+ sprints | Opponent HR stays at 40% | Movement mandate: every 3rd sprint |
 
 ---
 

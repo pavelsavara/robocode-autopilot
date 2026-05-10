@@ -1,7 +1,7 @@
-# robocode-autopilot — Project Plan (v3)
+# robocode-autopilot — Project Plan (v4)
 
-*Updated: 2026-05-09 · Previous plans: [archive/2026-05-04-plan.md](archive/2026-05-04-plan.md)*
-*Sprint 7 result: BLOCKED — see [archive/2026-05-09-retrospective-7.md](archive/2026-05-09-retrospective-7.md)*
+*Updated: 2026-05-10 · Previous plans: [archive/2026-05-04-plan.md](archive/2026-05-04-plan.md)*
+*Latest sprint: 18 · Score: 9.1% · In-game R²: +0.48*
 
 ## Vision
 
@@ -9,89 +9,96 @@ Build a competitive Robocode 1v1 robot powered by offline-trained ML models
 distilled to Java. The robot uses a multi-strategy architecture with virtual
 guns, competing movement strategies, and energy-aware strategy layer.
 
-## Project Status Summary
+## Current Performance (16-opponent eval, 2026-05-10)
 
-| Phase | Status | Key Deliverable |
-|---|---|---|
-| 1. Battle recording & rumble | **Done** | 50-bot rumble, CI, ~1944 battles |
-| 2. Feature engineering pipeline | **Done** | 80+ features, ticks/waves/scores CSV |
-| 3. Statistical exploration | **Done** | 16 notebooks, honest baselines |
-| 4. GBM model training | **Done** | Fire power R²=0.960 |
-| 5. Robot architecture | **Done** | Full decision wiring, all subsystems |
-| 6. Wave stacking research | **Done** | Niche tactic; multi-wave defense priority |
-| 7. Feature additions + path planning | **Done** | Multi-wave, envelope, VCS, energy strategy, persistence |
-| 8. ML distillation to Java | **Done** | 3 GBM models, Base64 embedded, TickBudget |
-| 9. Wire predictions + VCS persistence | **Done** | PredictiveGun, dodge urgency, per-opponent VCS |
-| 10. Local pipeline + retrospective | **Done** | Build→battle→record→CSV→notebook loop |
-| 11. Iterative improvement campaign | **Done** | Orbit-primary movement, gun reordering, TickBudget fix |
-| **12. Online learning** | **Next** | Bayesian blending, adaptation detection |
+| Metric | Sprint 9 (baseline) | Sprint 18 (current) | Target |
+|---|---|---|---|
+| Overall score % | 6.1% | **9.1%** | >50% vs top-50 |
+| Battle win rate | 0.0% | ~2% (occasional) | >30% |
+| Our hit rate | 3.5% | 3.6% | >10% |
+| Opponent hit rate | ~46% | ~40% | <20% |
+| Fire power R² (in-game) | −3.67 | **+0.48** | >0.7 |
+| Skipped turns/battle | 0.6 | 0.0 | 0 |
 
-### Current Performance (16-opponent eval, 2026-05-09)
+## Completed Phases (archived — see retrospectives in `archive/`)
 
-| Metric | Previous (50 bots) | Current (16 bots) |
-|---|---|---|
-| Overall score % | 0.56% | **5.4%** |
-| Battle win rate | 0.56% | 0.0% |
-| Our hit rate | 8.1% | 8.0% |
-| Opponent hit rate | 47.1% | 46.2% |
-| Damage ratio | — | 0.099 (10:1 deficit) |
-
-**Key finding:** TickBudget fix confirmed working (100–200 trees). Score
-improved 10× but two critical issues remain:
-- **Fire power model broken in-game** (R²=−0.61 vs offline 0.862) — feature mismatch
-- **Gun selection bug** — HeadOnGun selected 54% despite being lowest priority
+Phases 1–8 (rumble, pipeline, notebooks, GBM models, architecture, distillation),
+Phase 9–11 (wire predictions, local pipeline, iterative improvement),
+Phase 12 (fix broken systems: 23 NaN features, O(1) rolling stats, process improvements),
+Sprints 13–18 (sprint loop: score 6.1%→9.1%, R² −3.67→+0.48, VCS fixes, wave surf).
 
 ---
 
-## Honest ML Baselines
+## Active Phase: Competitive Improvement Campaign
 
-All numbers post-leakage-fix. See [wiki/ml-results.md](wiki/ml-results.md) for details.
+### Workstream A: CI Offload (Amos — HIGH PRIORITY)
 
-| Task | Model | Metric | Value | Notes |
+Offload battles to GitHub Actions to unblock local development.
+Existing infra: `run-season.yml`, `Dockerfile.battle`, `run-battle.mjs`.
+**Constraint:** ~30 Mbps WiFi — minimize data transfer.
+
+1. **Create `eval-sprint.yml` workflow** triggered on push to `main`.
+   - Build robot JAR in CI
+   - Run battles in matrix (4 runners × 8 opponents each = 32 opponents)
+   - Compute `summary.json` in CI, download only that (~2 KB) — NOT recordings
+   - Post per-opponent score table as commit status or PR comment
+2. **Self-battle job** — add `cz.zamboch.Autopilot` as opponent.
+   Sanity check: score must be 48–52%. Skew indicates position/init bug.
+3. **Local fallback** — keep `local-pipeline.ps1` working. Use `-EvalOnly`
+   locally while CI handles full pipeline.
+
+### Workstream B: Feature Divergence Resolution (Naomi)
+
+In-game R² is +0.48 but offline is 0.91. The remaining features with
+Java/Python divergence cap targeting accuracy.
+
+1. **Run FeatureLogger diagnostic** — scripts ready since Sprint 11.
+   Execute `compare_features.py` against a diagnostic battle. Identify
+   top-10 divergent features.
+2. **Fix top divergent features** — target per-feature correlation ≥ 0.95.
+3. **Statistical commentary in retrospectives** — Naomi writes a section
+   in every retro analysing trends, variance, per-opponent anomalies.
+4. **Feature catalog research** — each sprint, Naomi researches one
+   unimplemented feature from [archive/2026-05-01-features.md](archive/2026-05-01-features.md)
+   and writes an analysis of its potential value in the retrospective.
+
+### Workstream C: Movement (Alex — EVERY 3RD SPRINT MINIMUM)
+
+Opponent HR ~40% is the biggest gap. Movement received only 2 tasks
+in 10 sprints despite being the binding constraint.
+
+1. **Improve wave surf danger scoring** — use per-opponent VCS profiles
+   for precise GF danger assessment.
+2. **Implement true precise prediction** — simulate exact future positions
+   including wall bouncing and deceleration.
+3. **Anti-profiling (GF flattening)** — randomize dodge direction when no
+   wave is imminent.
+
+### Workstream D: Targeting (Bobbie)
+
+Hit rate 3.6% is extremely low. VCS gun now has correct segments
+(Sprint 16 fix) but hasn't outperformed CircularGun yet.
+
+1. **Histogram smoothing** — kernel density estimation on VCS histograms.
+2. **Use predicted fire power in bullet speed** — VCS and CircularGun
+   should use ML fire power prediction for wave speed calculation.
+3. **More VCS segments** — add velocity bucket and acceleration.
+
+### Workstream E: Opponent Expansion (Amos)
+
+Expand evaluation from 16 to 32 opponents for broader competitive coverage.
+Download and validate 16 new opponent JARs from Robocode Archive.
+Add archetype coverage: ram bots, surfers, spinners, nano bots.
+
+---
+
+## Honest ML Baselines (Sprint 18)
+
+| Task | Model | Metric | Offline | In-Game |
 |---|---|---|---|---|
-| Fire power | XGBoost (compact 200t) | R² | **0.862** | Retrained on 50-opponent data |
-| Movement N=5 | GBM-window (compact) | R² | **0.866** | Retrained on 50-opponent data |
-| Fire timing (3-tick) | GBM-window (compact) | AUC | **0.855** | Retrained on 50-opponent data |
-| Fire power | XGBoost (full 800t) | R² | **0.960** | Reference; not distilled |
-| GF targeting | MLP [16→128²→64→61] | ±3 bins | **0.570** | Deferred (data-starved) |
-
-**Key insight:** 20-tick sliding window features are the single most important
-innovation. Without them, R² drops from 0.87 → 0.07.
-
----
-
-## Next Milestones
-
-### Phase 12: Fix Broken Systems (PRIORITY — blocks all downstream work)
-
-1. **Fix Java/Python feature parity** — fire power model R²=−0.61 in-game
-   due to feature mismatch. Diagnose sliding-window divergence between
-   Java and Python. Target: in-game R² ≥ 0.5.
-2. **Fix gun ordering in VGM** — HeadOnGun at 54% contradicts Decision #10.
-   CircularGun must be first in list. Tune epsilon threshold.
-3. **Fix movement velocity** — only 64% at max speed, 54.5% high lateral.
-   Reduce unnecessary direction changes (currently 11.3% of ticks).
-
-### Phase 13: Online Learning & Adaptation (deferred until Phase 12 complete)
-
-- **Bayesian blending**: MLP prior + VCS online via λ = K/(K+n) mixing
-- **Per-family GF priors** loaded from resource files after name-hash identification
-- **Adaptation detector** (KS-distance) for mid-battle strategy switching
-- **GF flattening**: intentionally randomize dodge direction to make our
-  GF profile harder to learn (anti-profiling defense)
-
-### Phase 14: Competition & Iteration
-
-- Enter LiteRumble / submit to RoboRumble
-- More battle seasons for training data
-- Per-opponent policy tuning (currently ~2 battles per pair, need 10+)
-
----
-
-## Architecture Reference
-
-See [wiki/architecture.md](wiki/architecture.md) for the full architecture document
-(boot sequence, tick flow, subsystems, feature map, ML models, known issues).
+| Fire power | XGBoost (200t) | R² | **0.913** | **+0.48** |
+| Movement N=5 | GBM-window (200t) | R² | **0.760** | — |
+| Fire timing | GBM-window (200t) | AUC | **0.815** | — |
 
 ---
 
@@ -100,33 +107,30 @@ See [wiki/architecture.md](wiki/architecture.md) for the full architecture docum
 | # | Decision | Rationale |
 |---|----------|-----------|
 | 1 | Java 8 target | Required for Robocode engine classloader |
-| 2 | 50-bot rumble | Broad competitive coverage |
-| 3 | Stateless features | All inter-tick state in Whiteboard |
-| 4 | Observable-only discipline | No god-view data in features |
-| 5 | 20-tick sliding windows | Key innovation for all ML tasks |
-| 6 | GBM-window as default model | Simpler distillation, strong baselines |
-| 7 | Base64-embed models, no file I/O | Robocode sandbox blocks getResourceAsStream |
-| 8 | Compact 200-tree models | 500KB budget; full 800-tree too slow |
-| 9 | Orbit-primary movement | Constant wave surf oscillation hurts; orbit + imminent-wave dodge is better |
-| 10 | CircularGun as primary | Best general-purpose gun; HeadOnGun demoted to lowest priority |
-| 11 | TickBudget upward recovery | One-way ratchet previously crippled models to 5% capacity |
-| 12 | Position advantage useless | R²=0.001 in nb16, dropped from robot |
-| 13 | Fix broken systems before new features | Fire power R²=−0.61 in-game, gun selection bugged, movement too slow |
+| 2 | Stateless features | All inter-tick state in Whiteboard |
+| 3 | 20-tick sliding windows | Key innovation for all ML tasks |
+| 4 | Base64-embed models, no file I/O | Robocode sandbox blocks getResourceAsStream |
+| 5 | Compact 200-tree models | 500KB budget; full 800-tree too slow |
+| 6 | Orbit-primary movement | Constant wave surf oscillation hurts |
+| 7 | CircularGun as primary | Best general-purpose; HeadOnGun demoted |
+| 8 | Fix broken systems before features | Decision #13 — still applies |
+| 9 | O(1) rolling stats | PrimitiveRollingBuffer aligns Java/Python |
+| 10 | VCS segments at fire time | Lateral direction + distance captured correctly |
+| 11 | VCS-guided orbital direction | Use wave danger histograms for non-imminent waves |
+| 12 | Process improvements (Sprint 12) | Archive recordings, incremental CSV, sprint-only sanity |
+| 13 | Coordinator leads planning/retro | Ralph PM role folded into coordinator |
+| 14 | Naomi: statistical analysis + feature research | Per-sprint commentary + catalog research |
+| 15 | Movement work every 3 sprints | Mandate — opponent HR is binding constraint |
+| 16 | Amos owns CI pipeline | GH Actions offload, minimize data transfer |
+| 17 | Expand to 32 opponents | Broader competitive coverage + archetype diversity |
 
 ---
 
-## Process Reference
-
-See [sprint.md](sprint.md) for the sprint cycle
-(plan → build → battle → diagnose → retrospective → revert/commit → repeat).
-
 ## Documentation Index
 
-- **Architecture:** [wiki/architecture.md](wiki/architecture.md) — Full system documentation
-- **Wiki:** [wiki/](wiki/) — Knowledge base (physics, features, leakage, ML results, pipeline, strategy)
-- **Archive:** [archive/](archive/) — Historical planning documents with date prefixes
-- **Intuition notebooks:** [intuition/](intuition/) — Jupyter notebooks with inline analysis
-- **Retrospective notebooks:** [intuition/retrospective/](intuition/retrospective/) — Per-sprint analysis
-- **Sprint process:** [sprint.md](sprint.md) — Sprint cycle rules and diagnostic checklist
-- **Team:** [team.md](team.md) — Roles, skills, artifact ownership
-- **Copilot instructions:** [.github/copilot-instructions.md](.github/copilot-instructions.md) — Coding conventions
+- **Architecture:** [wiki/architecture.md](wiki/architecture.md)
+- **Wiki:** [wiki/](wiki/) — physics, features, leakage, ML results, pipeline, strategy
+- **Archive:** [archive/](archive/) — historical planning documents
+- **Sprint process:** [sprint.md](sprint.md)
+- **Team:** [team.md](team.md)
+- **Copilot instructions:** [.github/copilot-instructions.md](.github/copilot-instructions.md)

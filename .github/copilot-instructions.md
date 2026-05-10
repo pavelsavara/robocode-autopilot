@@ -176,6 +176,12 @@ Three patterns to recognise:
   JAR naming: `<fully.qualified.ClassName>_<version>.jar`
 - After downloading, validate with `unzip -t` before committing — corrupt JARs crash Robocode's scanner.
 
+## Robot JARs
+- Robot JARs are stored on the `robots` branch (Git LFS).
+- Download missing robots from the **Robocode Archive**: https://robocode-archive.strangeautomata.com/robots/
+  JAR naming: `<fully.qualified.ClassName>_<version>.jar`
+- After downloading, validate with `unzip -t` before committing — corrupt JARs crash Robocode's scanner.
+
 ## Build
 - Gradle 9.4.1 Kotlin DSL, version catalog in `gradle/libs.versions.toml`
 - Robocode 1.10.1 from Maven Central
