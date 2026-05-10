@@ -261,7 +261,6 @@ jobs:
 
       - name: Run chunk battles
         run: |
-          # Recordings stay inside this runner — never uploaded.
           mkdir -p recordings
           # NOTE: run-battle.mjs continues on individual failures (saves
           # results.json after each battle), so a single broken opponent
