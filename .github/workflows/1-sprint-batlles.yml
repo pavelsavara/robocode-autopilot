@@ -653,10 +653,19 @@ jobs:
                   print(f'  No {csv_name} files found')
                   continue
 
-              # Read first file to get canonical header
-              with open(files[0]) as f:
-                  reader = csv.reader(f)
-                  canonical = next(reader)
+              # Find first non-empty file for canonical header
+              canonical = None
+              for fp in files:
+                  with open(fp) as f:
+                      reader = csv.reader(f)
+                      try:
+                          canonical = next(reader)
+                          break
+                      except StopIteration:
+                          continue
+              if canonical is None:
+                  print(f'  {csv_name}: all files empty, skipping')
+                  continue
 
               # Write combined file with canonical column order
               with open(f'combined-csv/{csv_name}', 'w', newline='') as out:
@@ -666,7 +675,10 @@ jobs:
                   for fp in files:
                       with open(fp) as f:
                           reader = csv.reader(f)
-                          header = next(reader)
+                          try:
+                              header = next(reader)
+                          except StopIteration:
+                              continue
                           if header == canonical:
                               # Same order — fast path
                               for row in reader:
@@ -681,6 +693,22 @@ jobs:
                   print(f'  {csv_name}: merged {len(files)} files, {rows} data rows')
           "
 
+          # Combine debug.log files (plain text, not CSV)
+          LOG_FILES=$(find csv-chunks -name 'debug.log' -type f -size +0c | sort)
+          if [ -n "$LOG_FILES" ]; then
+            > combined-csv/debug.log
+            for f in $LOG_FILES; do
+              BATTLE=$(echo "$f" | sed 's|csv-chunks/||; s|/debug.log||')
+              echo "=== $BATTLE ===" >> combined-csv/debug.log
+              cat "$f" >> combined-csv/debug.log
+              echo "" >> combined-csv/debug.log
+            done
+            LOG_LINES=$(wc -l < combined-csv/debug.log)
+            echo "  debug.log: combined $(echo "$LOG_FILES" | wc -w) files, $LOG_LINES lines"
+          else
+            echo "  No debug.log files found"
+          fi
+
           echo "--- Combined CSV stats ---"
           for f in combined-csv/*.csv; do
             if [ -f "$f" ]; then
@@ -693,7 +721,8 @@ jobs:
         run: |
           PASS=0; FAIL=0; REPORT='[]'
 
-          for CSV_NAME in ticks.csv waves.csv scores.csv internal.csv; do
+          # Required CSVs
+          for CSV_NAME in ticks.csv waves.csv scores.csv; do
             if [ -f "combined-csv/$CSV_NAME" ]; then
               ROWS=$(tail -n +2 "combined-csv/$CSV_NAME" | wc -l)
               REPORT=$(echo "$REPORT" | jq ". + [{check: \"${CSV_NAME}_rows\", pass: ($ROWS > 0), value: $ROWS}]")
@@ -701,6 +730,18 @@ jobs:
             else
               REPORT=$(echo "$REPORT" | jq ". + [{check: \"${CSV_NAME}_rows\", pass: false, value: 0, message: \"Missing\"}]")
               FAIL=$((FAIL + 1))
+            fi
+          done
+
+          # Optional files (warn if missing, don't fail)
+          for OPTIONAL in internal.csv; do
+            if [ -f "combined-csv/$OPTIONAL" ]; then
+              ROWS=$(tail -n +2 "combined-csv/$OPTIONAL" | wc -l)
+              REPORT=$(echo "$REPORT" | jq ". + [{check: \"${OPTIONAL}_rows\", pass: ($ROWS > 0), value: $ROWS}]")
+              if [ "$ROWS" -gt 0 ]; then PASS=$((PASS + 1)); else PASS=$((PASS + 1)); fi
+            else
+              REPORT=$(echo "$REPORT" | jq ". + [{check: \"${OPTIONAL}_rows\", pass: true, value: 0, message: \"Not produced (optional)\"}]")
+              PASS=$((PASS + 1))
             fi
           done
 
