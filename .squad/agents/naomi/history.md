@@ -64,3 +64,13 @@
   and prints suggested diagnosis for the top 10 most divergent features.
 - Created `scripts/run_diagnostic_battle.py` as a helper for the battle→compare loop.
 - Usage: `python scripts/compare_features.py <feature_logger_csv> <ticks_csv_dir>`
+
+## Learnings
+
+### 2026-05-10: Team update — Sprint 20 = CI offload
+Sprint 20 = CI offload (Amos lead, Holden review). No code changes affect the robot. Movement deferred — Holden picks proposals next sprint.
+
+## Learnings
+
+### 2026-05-10: Team update - Sprint 20 = CI offload
+Sprint 20 = CI offload (Amos lead, Holden review). No code changes affect the robot. Movement deferred - Holden picks proposals next sprint.

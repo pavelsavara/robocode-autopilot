@@ -35,3 +35,13 @@
 - Added IWaveDanger as second constructor parameter to WaveSurfMovement. Reused same VcsWaveDanger instance from PathPlanner in Autopilot.java.
 - Added 2 new tests: VCS-guided direction choosing safer side, rate-limiting within eval interval. All 11 tests pass.
 - Key insight: choosing orbital DIRECTION (binary CW/CCW) avoids the oscillation problem from Decision #9 while still using VCS data early.
+
+## Learnings
+
+### 2026-05-10: Team update — Sprint 20 = CI offload
+Sprint 20 = CI offload (Amos lead, Holden review). No code changes affect the robot. Movement deferred — Holden picks proposals next sprint.
+
+## Learnings
+
+### 2026-05-10: Team update - Sprint 20 = CI offload
+Sprint 20 = CI offload (Amos lead, Holden review). No code changes affect the robot. Movement deferred - Holden picks proposals next sprint.

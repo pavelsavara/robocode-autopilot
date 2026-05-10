@@ -8,7 +8,8 @@ param(
     [switch]$SkipBattles,
     [switch]$SkipPipeline,
     [switch]$SkipRetrain,
-    [switch]$EvalOnly
+    [switch]$EvalOnly,
+    [switch]$IncludeSelfBattle
 )
 
 $ErrorActionPreference = 'Stop'
@@ -187,12 +188,44 @@ if (-not $SkipBattles) {
     }
     $perOpponent = $perOpponent | Sort-Object { $_.avg_score } -Descending
 
+    # --- Self-battle sanity check (parity with CI eval-sprint.yml) ---
+    # Runs cz.zamboch.Autopilot vs itself; expected score band 48–52%.
+    # Skew outside that band signals a position/init bug.
+    $selfBattle = $null
+    if ($IncludeSelfBattle) {
+        Log "  Running self-battle sanity check ($BattlesPerOpponent battles)..."
+        $selfScores = @()
+        for ($b = 1; $b -le $BattlesPerOpponent; $b++) {
+            try {
+                $result = node $runBattleScript --robocode-dir $RobocodeDir --bot-a $ourBotClass --bot-b $ourBotClass --rounds $Rounds --record-dir $recordingsDir 2>&1
+                $resultText = $result -join "`n"
+                $json = $resultText | ConvertFrom-Json
+                if (-not $json.error) {
+                    $selfScores += $json.bot_a.score_pct
+                    Log ("    self [{0}/{1}]: bot_a={2}% bot_b={3}%" -f $b, $BattlesPerOpponent, $json.bot_a.score_pct, $json.bot_b.score_pct)
+                }
+            } catch { LogWarn ("    self-battle exception: " + $_) }
+        }
+        if ($selfScores.Count -gt 0) {
+            $selfAvg = [math]::Round(($selfScores | Measure-Object -Average).Average, 1)
+            $selfBattle = @{ avg_score_pct = $selfAvg; battles = $selfScores.Count; scores = @($selfScores) }
+            if ($selfAvg -ge 48 -and $selfAvg -le 52) {
+                Log ("  Self-battle: " + $selfAvg + "% — PASS (48–52% band)")
+            } else {
+                LogWarn ("  Self-battle: " + $selfAvg + "% — FAIL (outside 48–52% band, position/init bug suspected)")
+            }
+        } else {
+            LogWarn "  Self-battle: no valid results"
+        }
+    }
+
     $enhancedSummary = @{
         timestamp       = (Get-Date -Format 'yyyy-MM-ddTHH:mm:ss')
         total_battles   = $totalBattles
         wins            = $wins
         overall_score_pct = $overallScorePct
         per_opponent    = $perOpponent
+        self_battle     = $selfBattle
         raw_results     = $allResults
     }
     $enhancedSummary | ConvertTo-Json -Depth 10 | Set-Content $summaryFile -Encoding utf8

@@ -63,3 +63,13 @@
 - **Expected impact**: HIGH. Every single VCS data point was going into the wrong segment.
   VcsGun was essentially reading from near-empty histograms. Fix should dramatically
   improve VCS targeting accuracy.
+
+## Learnings
+
+### 2026-05-10: Team update — Sprint 20 = CI offload
+Sprint 20 = CI offload (Amos lead, Holden review). No code changes affect the robot. Movement deferred — Holden picks proposals next sprint.
+
+## Learnings
+
+### 2026-05-10: Team update - Sprint 20 = CI offload
+Sprint 20 = CI offload (Amos lead, Holden review). No code changes affect the robot. Movement deferred - Holden picks proposals next sprint.

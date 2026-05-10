@@ -94,3 +94,18 @@
 - **All 25 MlDerivedFeatures outputs ARE used by models** — verified against FirePowerData (80 features), FireTimingData (81 features), MovementData (76 features). No features could be removed.
 - **Feature values unchanged:** Same formulas, same results (population std via E[X²]-E[X]²). Only computation method differs (running sums vs iteration).
 - **Build + 121 tests PASS.**
+
+## Learnings
+
+### 2026-05-10 - Sprint 20 Workstream A (CI Offload)
+
+- **Pattern source:** `.github/workflows/run-season.yml` is the canonical reference for the battle-runner Docker image, JAR fetch from `robots` branch, `--add-opens` JVM flags, and `.properties` injection. Always copy/adapt that pattern instead of reinventing.
+- **Data-transfer invariant:** Pavel's WiFi is ~30 Mbps. Any sprint-eval workflow MUST upload only `summary.json` (~2 KB) as the user-facing artifact. Recordings and per-battle JSON live and die inside the runner.
+- **Job-summary visibility:** `\` is the right place for the per-opponent table. Markdown is rendered in the Actions UI; no download needed.
+- **Self-battle gate:** `cz.zamboch.Autopilot` vs itself across N battles must score 48-52%. Outside that band = position/init bug. Wired as a hard gate in CI (job fails) and a WARN log locally (does not block pipeline).
+- **Schema continuity:** `summary.json` schema is shared between `scripts/local-pipeline.ps1` and `eval-sprint.yml` so retrospective scripts and notebooks see the same shape regardless of where the eval ran. Added `self_battle{avg_score_pct, battles}`, `errors`, `commit_sha`, `run_id` fields - additive only, no breaking change.
+- **Local pipeline -EvalOnly verified:** flag at line 12, gates CSV processing at line 209 and retrain at line 270, runs sanity check at line 297. Already minimal-build path - no code change needed for CI fallback.
+- **New `-IncludeSelfBattle` switch in local-pipeline.ps1:** parity with CI; writes `self_battle` block into local `summary.json`.
+- **JAR replacement order matters:** when fetching the `robots` branch in CI, delete any existing `cz.zamboch.Autopilot*.jar` BEFORE copying the freshly built one in. Robocode's scanner will otherwise register multiple versions and pick the wrong one.
+- **jq vs path expressions:** `[self_avg]` (no `\$`) is a path lookup, not the array literal you wanted. Always pass scalars through `--argjson` and reference them with `\` in the filter. Caught this in review before commit.
+- **Matrix opponent split is hard-coded, NOT pulled from top50.txt:** sprint eval needs determinism across sprints. `run-season.yml` consumes `rumble/top50.txt` for rumble seasons - that's a different purpose.

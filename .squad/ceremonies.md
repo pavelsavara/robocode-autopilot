@@ -137,15 +137,20 @@
 | **Participants** | all |
 | **Time budget** | focused |
 | **Enabled** | ✅ yes |
+| **Enforcement** | ⛔ BLOCKING — sprint MUST NOT close without an archived retrospective doc |
+
+**⚠️ HARD GATE: The retrospective document MUST be written to `archive/YYYY-MM-DD-retrospective-N.md` before the sprint can close. No exceptions — even on blocked sprints, sanity-check failures, or aborted runs, a retro doc is written explaining what happened. The coordinator MUST verify the file exists on disk before declaring the sprint closed.**
 
 **Process:**
-1. Holden writes retrospective in `archive/` using engineers' data
-2. Revert branches that caused measurable harm
-3. Commit net-positive changes with sprint summary message
-4. Holden declares sprint result: win / miss / blocked
-5. Holden proposes max 3 items for next sprint
+1. Holden writes retrospective in `archive/YYYY-MM-DD-retrospective-N.md` using engineers' data — REQUIRED, never skipped
+2. Coordinator verifies the file exists on disk (e.g. `Test-Path`); if missing, sprint cannot close — re-spawn Holden
+3. Update `archive/index.md` with the new retro entry
+4. Revert branches that caused measurable harm
+5. Commit net-positive changes with sprint summary message
+6. Holden declares sprint result: win / miss / blocked (in the doc and in chat)
+7. Holden proposes max 3 items for next sprint (in the doc)
 
-**Exit:** Retrospective archived, plan.md updated, sprint closed.
+**Exit:** Retrospective archived (file verified on disk), plan.md updated, sprint closed.
 2. What did not ship? (open issues, blockers)
 3. Root cause on any failures
 4. Action items -- each MUST become a GitHub Issue labeled retro-action

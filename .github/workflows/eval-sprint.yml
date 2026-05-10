@@ -1,0 +1,433 @@
+# eval-sprint.yml — Sprint evaluation workflow (Workstream A: CI Offload).
+#
+# Purpose:
+#   Run the fixed 16-opponent sprint eval in CI instead of on Pavel's machine.
+#   ~30 Mbps WiFi at home → minimise data transfer.
+#
+# Data-transfer policy (HARD RULE):
+#   - ONLY summary.json (~2 KB) is uploaded as a workflow artifact.
+#   - Recordings (.br files) and per-battle JSON STAY inside the runner.
+#   - Per-opponent score table is posted to $GITHUB_STEP_SUMMARY so Pavel
+#     can read it in the Actions UI without downloading anything.
+#
+# Local fallback:
+#   `scripts/local-pipeline.ps1 -EvalOnly -IncludeSelfBattle` runs the same
+#   16 opponents + self-battle locally and produces an equivalent summary.json
+#   at output/local/results/summary.json. Use this when CI is unavailable
+#   or when iterating on a feature that hasn't been pushed to main.
+#
+# Reuses the run-season.yml pattern: same battle-runner Docker image, same
+# JAR fetch from `robots` branch with `git lfs pull`, same JVM flags, same
+# run-battle.mjs CLI surface.
+
+name: Sprint Eval
+
+on:
+  workflow_dispatch:
+    inputs:
+      rounds:
+        description: 'Rounds per battle'
+        required: false
+        default: '35'
+        type: string
+      battles_per_opponent:
+        description: 'Battles per opponent'
+        required: false
+        default: '3'
+        type: string
+  push:
+    branches: [main]
+    paths:
+      - 'robot/**'
+      - 'core/**'
+      - 'pipeline/**'
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - '.github/workflows/eval-sprint.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  ROUNDS: ${{ inputs.rounds || '35' }}
+  BATTLES_PER_OPPONENT: ${{ inputs.battles_per_opponent || '3' }}
+
+jobs:
+  # ─── Step 1: Build the robot JAR ───
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      jar_name: ${{ steps.build.outputs.jar_name }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Build robot JAR
+        id: build
+        run: |
+          ./gradlew :robot:jar --no-daemon --console=plain
+          JAR=$(ls robot/build/libs/cz.zamboch.Autopilot-*.jar | head -n 1)
+          if [ -z "$JAR" ]; then
+            echo "::error::No robot JAR produced"
+            exit 1
+          fi
+          echo "jar_name=$(basename "$JAR")" >> "$GITHUB_OUTPUT"
+          echo "Built: $JAR"
+
+          # Validate JAR
+          unzip -t "$JAR" > /dev/null
+          echo "JAR integrity OK"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: robot-jar
+          path: robot/build/libs/cz.zamboch.Autopilot-*.jar
+          retention-days: 7
+
+  # ─── Step 2: Run battles in parallel — 16 opponents split across 4 runners ───
+  #
+  # Fixed eval set: 6 Strong-tier + 10 Upper-mid-tier = 16 opponents.
+  # Source of truth: sprint.md Phase 1. Hard-coded here so eval is deterministic
+  # across sprints (NOT pulled from rumble/top50.txt — that's run-season's job).
+  battles:
+    needs: [build]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/pavelsavara/robocode-autopilot/battle-runner:latest
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        chunk:
+          - id: 0
+            opponents: '["abc.Shadow","voidious.Diamond","jk.mega.DrussGT","wiki.mega.CunobelinDC"]'
+          - id: 1
+            opponents: '["pe.SandboxDT","oog.mega.Saguaro","cx.BlestPain","ary.FourWD"]'
+          - id: 2
+            opponents: '["ej.ChocolateBar","dft.Cardigan","eem.zapper","darkcanuck.Pris"]'
+          - id: 3
+            opponents: '["rsj.Electro","tobe.Fusion","simonton.Wyrm","mld.Moebius"]'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: rumble/scripts
+          path: repo
+
+      - name: Download fresh robot JAR
+        uses: actions/download-artifact@v8
+        with:
+          name: robot-jar
+          path: /tmp/robot-jar
+
+      - name: Fetch opponent JARs from robots branch
+        run: |
+          apk add --no-cache git git-lfs unzip zip jq
+          git lfs install
+          git clone --depth=1 --branch=robots --single-branch \
+            https://github.com/${{ github.repository }}.git /tmp/robots
+          cd /tmp/robots && git lfs pull && cd -
+
+          # Drop any pre-existing cz.zamboch.Autopilot JAR shipped on the robots
+          # branch — we want the FRESHLY BUILT one from this workflow run.
+          rm -f /opt/robocode/robots/cz.zamboch.Autopilot*.jar
+          rm -f /tmp/robots/cz.zamboch.Autopilot*.jar
+
+          cp /tmp/robots/*.jar /opt/robocode/robots/ 2>/dev/null || true
+          cp /tmp/robot-jar/*.jar /opt/robocode/robots/
+
+          echo "Robots loaded: $(ls /opt/robocode/robots/*.jar | wc -l)"
+
+          # Validate + drop corrupt JARs (same logic as run-season.yml)
+          CORRUPT=0
+          for jar in /opt/robocode/robots/*.jar; do
+            if ! unzip -t "$jar" > /dev/null 2>&1; then
+              echo "CORRUPT — removing: $(basename "$jar")"
+              rm "$jar"
+              CORRUPT=$((CORRUPT + 1))
+            fi
+          done
+          echo "Removed $CORRUPT corrupt JARs"
+
+          # Inject .properties for JARs that lack them
+          for jar in /opt/robocode/robots/*.jar; do
+            if unzip -l "$jar" 2>/dev/null | grep -q '\.properties$'; then
+              continue
+            fi
+            jarname=$(basename "$jar" .jar)
+            classname=$(echo "$jarname" | sed 's/_.*//')
+            version=$(echo "$jarname" | sed 's/^[^_]*_//')
+            proppath=$(echo "$classname" | sed 's/\./\//g').properties
+            mkdir -p "/tmp/propgen/$(dirname "$proppath")"
+            printf "robot.classname=%s\nrobot.version=%s\n" "$classname" "$version" > "/tmp/propgen/$proppath"
+            (cd /tmp/propgen && zip -g "$jar" "$proppath")
+            rm -rf /tmp/propgen
+          done
+
+          # Force Robocode to rescan
+          rm -rf /opt/robocode/robots/.data 2>/dev/null || true
+
+      - name: Build chunk battle plan
+        run: |
+          # Expand opponents into BATTLES_PER_OPPONENT pairs against our bot
+          jq -c -n \
+            --argjson opps '${{ matrix.chunk.opponents }}' \
+            --argjson n "$BATTLES_PER_OPPONENT" \
+            '[ $opps[] as $o | range($n) | {bot_a:"cz.zamboch.Autopilot", bot_b:$o} ]' \
+            > chunk-battles.json
+          echo "Chunk ${{ matrix.chunk.id }} battles:"
+          jq '. | length' chunk-battles.json
+          jq '.[0:4]' chunk-battles.json
+
+      - name: Run chunk battles
+        run: |
+          # Recordings stay inside this runner — never uploaded.
+          mkdir -p recordings
+          # NOTE: run-battle.mjs continues on individual failures (saves
+          # results.json after each battle), so a single broken opponent
+          # does not abort the whole chunk.
+          node repo/rumble/scripts/run-battle.mjs \
+            --robocode-dir /opt/robocode \
+            --battles chunk-battles.json \
+            --out results/ \
+            --rounds "$ROUNDS" \
+            --record-dir recordings/ || true
+
+          echo "--- Chunk ${{ matrix.chunk.id }} results ---"
+          if [ -f results/results.json ]; then
+            jq 'length' results/results.json
+          else
+            echo "::warning::No results.json produced for chunk ${{ matrix.chunk.id }}"
+            echo '[]' > results/results.json
+            mkdir -p results
+          fi
+
+      # Upload ONLY results.json (per-battle JSON, ~10–30 KB).
+      # Recordings folder is NEVER uploaded.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: chunk-results-${{ matrix.chunk.id }}
+          path: results/results.json
+          retention-days: 7
+
+  # ─── Step 3: Self-battle sanity check (MUST pass: 48–52%) ───
+  self-battle:
+    needs: [build]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/pavelsavara/robocode-autopilot/battle-runner:latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: rumble/scripts
+          path: repo
+
+      - name: Download fresh robot JAR
+        uses: actions/download-artifact@v8
+        with:
+          name: robot-jar
+          path: /tmp/robot-jar
+
+      - name: Install fresh robot JAR (no opponents needed)
+        run: |
+          apk add --no-cache git unzip zip jq
+          rm -f /opt/robocode/robots/cz.zamboch.Autopilot*.jar
+          cp /tmp/robot-jar/*.jar /opt/robocode/robots/
+
+          # Inject .properties if missing
+          for jar in /opt/robocode/robots/cz.zamboch.Autopilot*.jar; do
+            if unzip -l "$jar" 2>/dev/null | grep -q '\.properties$'; then
+              continue
+            fi
+            jarname=$(basename "$jar" .jar)
+            classname=$(echo "$jarname" | sed 's/_.*//')
+            version=$(echo "$jarname" | sed 's/^[^_]*_//')
+            proppath=$(echo "$classname" | sed 's/\./\//g').properties
+            mkdir -p "/tmp/propgen/$(dirname "$proppath")"
+            printf "robot.classname=%s\nrobot.version=%s\n" "$classname" "$version" > "/tmp/propgen/$proppath"
+            (cd /tmp/propgen && zip -g "$jar" "$proppath")
+            rm -rf /tmp/propgen
+          done
+          rm -rf /opt/robocode/robots/.data 2>/dev/null || true
+          echo "Robot JAR installed: $(ls /opt/robocode/robots/cz.zamboch.Autopilot*.jar)"
+
+      - name: Run 3 self-battles
+        run: |
+          mkdir -p results recordings
+          jq -n -c \
+            --argjson n "$BATTLES_PER_OPPONENT" \
+            '[ range($n) | {bot_a:"cz.zamboch.Autopilot", bot_b:"cz.zamboch.Autopilot"} ]' \
+            > self-battles.json
+          node repo/rumble/scripts/run-battle.mjs \
+            --robocode-dir /opt/robocode \
+            --battles self-battles.json \
+            --out results/ \
+            --rounds "$ROUNDS" \
+            --record-dir recordings/ || true
+
+      - name: Verify self-battle is 48–52%
+        run: |
+          if [ ! -f results/results.json ]; then
+            echo "::error::Self-battle produced no results.json"
+            exit 1
+          fi
+
+          # Average bot_a score across all valid (non-error) battles.
+          AVG=$(jq '
+            [ .[] | select(.error != true) | .bot_a.score_pct ]
+            | if length == 0 then 0 else (add / length) end
+          ' results/results.json)
+
+          COUNT=$(jq '[.[] | select(.error != true)] | length' results/results.json)
+          echo "Self-battle: $COUNT valid battles, avg bot_a score = $AVG%"
+
+          # Expected band: 48–52%. Outside this range → position/init bug.
+          IS_OK=$(jq -n --argjson avg "$AVG" --argjson n "$COUNT" \
+            '($n > 0) and ($avg >= 48) and ($avg <= 52)')
+
+          {
+            echo "## Self-battle sanity check"
+            echo ""
+            echo "- Valid battles: $COUNT"
+            echo "- Avg bot_a score: ${AVG}%"
+            echo "- Expected band: 48–52%"
+            if [ "$IS_OK" = "true" ]; then
+              echo "- Result: ✅ PASS"
+            else
+              echo "- Result: ❌ FAIL — outside 48–52% band, indicates position/init bug"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$IS_OK" != "true" ]; then
+            echo "::error::Self-battle outside 48–52% band ($AVG%) — position/init bug suspected"
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: self-battle-results
+          path: results/results.json
+          retention-days: 7
+
+  # ─── Step 4: Aggregate per-opponent results into summary.json ───
+  #
+  # This is the ONLY job whose artifact crosses the wire to Pavel.
+  # Output: a single summary.json (~2 KB) matching local-pipeline.ps1's schema.
+  aggregate:
+    needs: [battles, self-battle]
+    if: always() && needs.battles.result != 'cancelled'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: chunk-results-*
+          path: chunks/
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: self-battle-results
+          path: self-battle/
+
+      - name: Build summary.json
+        run: |
+          # Concatenate all per-chunk results into one flat list of battles
+          mkdir -p out
+          jq -s 'add' chunks/*/results.json > all-results.json
+          echo "Total battles collected: $(jq 'length' all-results.json)"
+
+          SELF_AVG=$(jq '[.[] | select(.error != true) | .bot_a.score_pct] | if length == 0 then null else (add / length) end' \
+            self-battle/results.json 2>/dev/null || echo null)
+          SELF_COUNT=$(jq '[.[] | select(.error != true)] | length' \
+            self-battle/results.json 2>/dev/null || echo 0)
+
+          # Build summary.json matching local-pipeline.ps1 schema:
+          # { timestamp, total_battles, wins, overall_score_pct,
+          #   per_opponent: [{name, avg_score, battles, wins, scores}], raw_results,
+          #   self_battle: {avg_score_pct, battles} }
+          jq -n \
+            --argjson all "$(cat all-results.json)" \
+            --argjson self_avg "$SELF_AVG" \
+            --argjson self_count "$SELF_COUNT" \
+            --arg ts "$(date -u +%Y-%m-%dT%H:%M:%S)" \
+            --arg run_id "${{ github.run_id }}" \
+            --arg sha "${{ github.sha }}" \
+            '
+            ($all | map(select(.error != true))) as $valid
+            | ($valid | map(.bot_b.name) | unique) as $opps
+            | {
+                timestamp: $ts,
+                run_id: $run_id,
+                commit_sha: $sha,
+                total_battles: ($valid | length),
+                wins: ([$valid[] | select(.bot_a.score_pct > .bot_b.score_pct)] | length),
+                overall_score_pct: (
+                  if ($valid | length) == 0 then 0
+                  else (([$valid[].bot_a.score_pct] | add) / ($valid | length) | . * 10 | round / 10)
+                  end
+                ),
+                per_opponent: [
+                  $opps[] as $name
+                  | ($valid | map(select(.bot_b.name == $name))) as $g
+                  | {
+                      name: $name,
+                      avg_score: (([$g[].bot_a.score_pct] | add) / ($g | length) | . * 10 | round / 10),
+                      battles: ($g | length),
+                      wins: ([$g[] | select(.bot_a.score_pct > .bot_b.score_pct)] | length),
+                      scores: [$g[].bot_a.score_pct]
+                    }
+                ] | sort_by(-.avg_score),
+                self_battle: {
+                  avg_score_pct: $self_avg,
+                  battles: $self_count
+                },
+                errors: ([$all[] | select(.error == true)] | length),
+                raw_results: $all
+              }
+            ' > out/summary.json
+
+          echo "--- summary.json ---"
+          jq '{timestamp, total_battles, wins, overall_score_pct, errors, self_battle, opp_count: (.per_opponent | length)}' \
+            out/summary.json
+
+      - name: Post per-opponent table to job summary
+        run: |
+          {
+            echo "## Sprint Eval — ${{ github.sha }}"
+            echo ""
+            echo "**Build:** \`${{ needs.build.outputs.jar_name }}\`  "
+            echo "**Run:** [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            echo ""
+
+            jq -r '
+              "- **Overall score:** \(.overall_score_pct)%\n" +
+              "- **Wins:** \(.wins) / \(.total_battles)\n" +
+              "- **Errors:** \(.errors)\n" +
+              "- **Self-battle avg:** \(.self_battle.avg_score_pct // "n/a")%"
+            ' out/summary.json
+
+            echo ""
+            echo "### Per-opponent breakdown"
+            echo ""
+            echo "| Opponent | Avg score % | Wins | Battles | Scores |"
+            echo "|---|---:|---:|---:|---|"
+            jq -r '
+              .per_opponent[]
+              | "| \(.name) | \(.avg_score) | \(.wins) | \(.battles) | \(.scores | map(tostring) | join(", ")) |"
+            ' out/summary.json
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Final artifact policy: ONLY summary.json crosses the wire.
+      # Recordings stayed inside the battle runners (never uploaded).
+      # Per-chunk results.json files were upload-only-for-aggregate and are
+      # NOT included here — Pavel only needs the summary.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sprint-summary
+          path: out/summary.json
+          retention-days: 90

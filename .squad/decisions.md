@@ -132,6 +132,78 @@ Sanity check #3 failed (gun selection). Two of three ML models are broken in-gam
 **Regression:** Skipped turns check #2 FAIL — new battles avg ~12.6 skipped turns. Caused by MlDerivedFeatures computation overhead. TickBudget min=199 (first sub-200).
 **Sprint 12 direction:** (1) Fix skipped turns via MlDerivedFeatures profiling/optimization (Priority — check #2 failing). (2) Run feature comparison diagnostic with FeatureLogger. (3) Continue R² improvement toward −0.5. Decision #13 holds — fix broken systems before new features.
 
+### 2026-05-10: Optimize MlDerivedFeatures to fix skipped turns regression
+**By:** Amos (Systems Engineer)
+**What:** Replaced `RingBuffer<Double>` with `PrimitiveRollingBuffer` (primitive `double[]` + O(1) running stats) in MlDerivedFeatures rolling history. Eliminates ~240 autoboxed iterations per scan tick for rolling mean/std. All 25 feature outputs verified as used by models — no features removed.
+**Why:** Skipped turns avg ~12.6/battle from MlDerivedFeatures overhead. Target: <5 avg/battle. The rolling stats iteration + autoboxing was the biggest contributor that could be optimized without changing feature values.
+**Files changed:**
+- `core/src/main/java/cz/zamboch/autopilot/core/util/PrimitiveRollingBuffer.java` (new)
+- `core/src/main/java/cz/zamboch/autopilot/core/Whiteboard.java` (3 fields changed from RingBuffer<Double> to PrimitiveRollingBuffer)
+- `core/src/main/java/cz/zamboch/autopilot/core/features/MlDerivedFeatures.java` (removed rollingMean/rollingStd helpers, use O(1) buffer.mean()/std())
+
+### 2026-05-10: Pipeline process improvements (6 items)
+**By:** Amos (Systems Engineer)
+**What:** Implemented 5 of 6 requested process improvements to the pipeline:
+1. Recording archival at sprint start (`.br` files moved to `recordings-archive/`)
+2. Enhanced `summary.json` with per-opponent averages, timestamps, win counts
+3. Sprint-only sanity checks via `--battle-ids` filter (JSON file)
+4. Incremental CSV processing in `Main.java` (`--force` to override)
+5. Diagnostic battle — deferred (run-battle.mjs lacks JVM arg support)
+6. `-EvalOnly` mode: build → battle → sanity-check (no CSV, no retrain)
+
+**Why:** Reduces sprint cycle time and improves diagnostic reliability. Incremental CSV avoids reprocessing ~200 files on each run. EvalOnly gives ~5-minute eval turnaround vs 20+ minute full pipeline.
+
+### 2026-05-10: VCS segment mismatch fix — fire-time segmentation
+**By:** Bobbie (Targeting Engineer)
+**What:** Fixed critical bug where gun VCS histograms stored GF data under wrong segments.
+Two root causes: (1) lateral direction computed from raw velocity sign instead of
+`OPPONENT_LATERAL_DIRECTION` feature, (2) segment used wave-break-time distance instead
+of fire-time distance. Added `fireLateralDir` to `WaveRecord` so both update and query
+use identical fire-time conditions for segmentation.
+**Why:** VcsGun hit rate stuck at 2.7% despite having correct GF computation — the data
+was being stored in wrong segments so the gun was always reading near-empty histograms.
+This explains why VcsGun couldn't outperform CircularGun despite being a more sophisticated
+targeting system.
+**Impact:** Every VCS data point was misrouted. Fix should unlock VCS accuracy.
+
+### 2026-05-10: VCS-guided orbital direction selection
+**By:** Alex (Movement Engineer)
+**What:** When waves exist but aren't imminent (> 12 ticks), WaveSurfMovement now uses VCS wave danger histograms to choose the safer orbital direction (CW vs CCW) instead of random flips. This fills the gap where ~70% of active-wave ticks used zero VCS information.
+**Why:** Opponent hit rate plateaued at ~45%. The robot only used VCS data in the last 12 ticks before wave impact — too late to reach a significantly different GF. Now it starts positioning toward safer GFs early via direction selection.
+**Design:** Binary CW/CCW choice (not position-seeking) avoids the oscillation problem that led to Decision #9. Rate-limited to 8-tick intervals with 0.03 danger hysteresis.
+**Files changed:** WaveSurfMovement.java (new `updateOrbitDirection` method, IWaveDanger constructor param), Autopilot.java (shared VcsWaveDanger), WaveSurfMovementTest.java (+2 tests).
+
+## Sprint 20
+
+### 2026-05-10: Sprint 20 plan — single major proposal: CI Offload
+**By:** Holden (Lead) — requested by Pavel Savara
+**Sprint:** 20
+**What:** Sprint 20 = single major architectural proposal sourced from `plan.md` v5 Workstream A: CI Offload. Owner = Amos. New `eval-sprint.yml` workflow on push to `main` builds the JAR, runs the fixed 16-opponent set in a 4×8 matrix (4 runners × 8 opponents each), adds a self-battle job (`cz.zamboch.Autopilot` vs itself, 48–52% sanity band), computes `summary.json` in CI, downloads only that ~2 KB artifact. Existing `run-season.yml`, `Dockerfile.battle`, `run-battle.mjs`, `local-pipeline.ps1` stay intact as fallback.
+**Why:** Local battle loop is the binding constraint on iteration speed. Offloading evaluation to GitHub Actions unblocks Workstreams B–F (movement, targeting, feature divergence). Pavel's ~30 Mbps WiFi means transferring recordings is impractical — only `summary.json` crosses the wire.
+**Success criterion:** Green CI run on `main` with 16 opponents × N rounds completed, self-battle in 48–52% band, `summary.json` accessible from the commit, per-opponent score table visible without cloning recordings locally.
+**Failure mode + fallback:** Workflow ships to `main` regardless. If not green by Phase 3, fall back to `local-pipeline.ps1`. If self-battle skews outside 48–52%, treat as a real position/init bug and open an issue.
+**Explicitly deferred:** Movement work (Workstream C — Holden picks for Sprint 21), Workstreams B/D/E/F, MlpGfTargeting (Decision #22 holds).
+
+### 2026-05-10: CI offload — Sprint Eval workflow shipped
+**By:** Amos (Systems Engineer) — requested by Pavel Savara
+**What:** New `.github/workflows/eval-sprint.yml` (~330 lines) runs the fixed 16-opponent sprint eval in GitHub Actions on every push to `main` (and via `workflow_dispatch`). Four jobs: `build` (JDK 21 Temurin, builds robot JAR, uploads as artifact), `battles` (4×4 matrix `max-parallel: 4`, runs inside `ghcr.io/pavelsavara/robocode-autopilot/battle-runner:latest`, pulls opponent JARs from `robots` branch via `git lfs pull`, runs `BATTLES_PER_OPPONENT × opponents` per chunk, uploads `results.json` per chunk), `self-battle` (`cz.zamboch.Autopilot` vs itself, hard gate: avg `bot_a.score_pct` must be in `[48, 52]`), `aggregate` (`if: always()`, joins chunks + self-battle into single `summary.json`, posts table to `$GITHUB_STEP_SUMMARY`).
+**Why:** Pavel's home WiFi (~30 Mbps) was the bottleneck blocking parallel local development. CI offload unblocks Workstreams B–F.
+**Data-transfer policy (HARD INVARIANT):** Only `summary.json` (~2 KB, 90-day retention as `sprint-summary` artifact) crosses to Pavel's machine. Recordings (`.br`) never uploaded. Inter-job artifacts (`chunk-results-*`, `self-battle-results`, `robot-jar`) are 7-day retention. `$GITHUB_STEP_SUMMARY` shows per-opponent table without download.
+**Local fallback:** `scripts/local-pipeline.ps1` gained one new switch — `-IncludeSelfBattle` — running `cz.zamboch.Autopilot` vs itself for `$BattlesPerOpponent` battles, computing avg `bot_a.score_pct`, logging PASS/FAIL against the 48–52% band, writing `self_battle: {avg_score_pct, battles, scores}` into `summary.json`. WARN-not-error on out-of-band. Schema-compatible (additive). Recommended sprint command: `.\scripts\local-pipeline.ps1 -EvalOnly -IncludeSelfBattle`.
+**Files:** NEW `.github/workflows/eval-sprint.yml`; MODIFIED `scripts/local-pipeline.ps1` (+1 switch, +30-line self-battle block, +1 line in summary schema).
+**Known limitations:** Workflow not yet validated against a real run (cannot trigger from local). No SHA pinning on `:latest` runner image. ~15–20 runner-minutes per push (within free tier).
+
+### 2026-05-10: Sprint 20 review — APPROVE-WITH-NITS, Phase 3 may proceed
+**By:** Holden (Lead)
+**Sprint:** 20
+**Verdict:** APPROVE-WITH-NITS. Phase 3 (battle eval) may proceed. None of the findings are blockers.
+**Files reviewed:** `.github/workflows/eval-sprint.yml`, `scripts/local-pipeline.ps1`.
+**Findings (carry-over to Sprint 21, NOT blocking):**
+- **F1 (semantic, self-battle gate):** Robocode results are rank-ordered, so `parseResults` returns `bot_a = winner`. `bot_a.score_pct` is mathematically ≥ 50 in every parsed self-battle. The 48% lower bound of the `[48, 52]` band is **dead code** — it cannot trigger. Gate is effectively `AVG ≤ 52`. Still has diagnostic value (catches positional asymmetry / decisive winners). Cheap fix: rewrite the comment to honestly describe `≤ 52%` and tighten the upper bound. Proper fix: match parsed bots back to `--bot-a`/`--bot-b` in `run-battle.mjs::parseResults`.
+- **N1 (style, matrix idiom):** Matrix `opponents` is a JSON-string literal consumed via `jq --argjson`. Works deterministically but the idiomatic GH Actions pattern is YAML list + `toJson()`. Convert when next touching the matrix.
+- **N2 (push-paths gap):** Missing `rumble/scripts/**` (workflow runs `run-battle.mjs` directly) and `gradle.properties` (affects build behaviour). Two-line edit.
+**Other observations:** YAML correct, permissions minimal (`contents: read`, `actions: read`, no `write`), 16-opponent list matches `sprint.md` Phase 1, PowerShell change is small and additive (schema-compatible).
+
 ## Governance
 
 - All meaningful changes require team consensus

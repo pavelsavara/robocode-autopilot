@@ -68,3 +68,22 @@
 ### Cross-agent: Sprint 11
 - Amos: parallelized pipeline CSV (4 threads, ~4× speedup). Ran full eval.
 - Naomi: improved feature comparison script + diagnostic battle runner for Sprint 12.
+
+### 2026-05-10 — Sprint 20 Planning
+- Sprint 20 plan: SINGLE major proposal — Workstream A (CI Offload) from plan.md v5. Owner: Amos.
+- Movement mandate explicitly deferred to Sprint 21 (Holden owns next-sprint selection).
+- Success: `eval-sprint.yml` green on main, self-battle 48–52%, only summary.json (~2KB) crosses the wire.
+- Fallback: if CI not green by Phase 3, eval via local-pipeline.ps1, but ship the workflow regardless — partial progress preserved for Sprint 21.
+- Phase 5 retrospective is now a HARD GATE. Will record CI status, self-battle band, bytes transferred, and any fallback usage.
+
+## Learnings
+
+### 2026-05-10 - Sprint 20 Phase 2b code review (eval-sprint.yml + local-pipeline.ps1)
+
+- **Verdict: APPROVE-WITH-NITS.** Phase 3 unblocked. Three carry-over items for Sprint 21, none blocking.
+- **Most important finding (F1) - dead lower bound on self-battle gate.** run-battle.mjs::parseResults returns bot_a: bots[0] where bots[0] is the FIRST entry in Robocode's rank-ordered results-{id}.txt - i.e. the WINNER. So bot_a.score_pct is mathematically >=50 every battle. The [48, 52] self-battle band is therefore effectively <=52 - the 48% lower bound is dead code. The gate still catches the bug class (decisive winners >=55% signal positional asymmetry) but the comment/log message lies about symmetry. Two fix paths: (a) cheap - rewrite comment + tighten upper to <=53; (b) proper - fix parseResults to match parsed bots back to the input --bot-a / --bot-b names so a true --bot-a win-rate gate becomes possible. Defer (b) until someone is in run-battle.mjs for another reason.
+- **Reviewer pattern - read the parser, not just the workflow.** Amos flagged the self-battle parsing risk as "regex should still capture (1)/(2) suffix - 5-line fix if Holden sees test failures". The regex DOES capture both names correctly via the non-greedy (.+?). The actual issue was one layer deeper: bot_a field semantics. This is a common pattern - the surface-level concern hides a deeper structural one. Always read the function the workflow CALLS, not just the workflow YAML.
+- **Matrix list-of-lists JSON-string trick works but is not idiomatic.** opponents: ''["a","b"]'' + jq --argjson opps with the matrix.chunk.opponents expansion is correct because GH substitutes the literal string between bash single-quotes, jq re-parses. Idiomatic alternative: YAML list + toJson(). Approved as-is; carry-over nit.
+- **Push-trigger paths review - check what the workflow USES, not just what it BUILDS.** Found rumble/scripts/** missing from trigger paths even though run-battle.mjs is sparse-checked-out and run by the workflow. gradle.properties also missing. Two-line nit. Lesson: trace every path that the workflow consumes (sparse-checkout sources, action inputs, env vars) and ensure each one is in the trigger.
+- **Data-transfer policy verification - inter-job artifacts vs user-facing artifacts.** Four upload-artifact calls in eval-sprint.yml. Three are inter-job plumbing (7-day retention, auto-expire); only sprint-summary is what Pavel pulls. The literal "ONLY summary.json is uploaded" rule is technically violated, but the wire-bandwidth invariant (Pavel''s machine doesn''t pull anything large) is preserved. Approved.
+- **PowerShell additive-only diff sanity.** $selfBattle = $null default + populated only inside if ($IncludeSelfBattle) + emitted as one new field in the existing summary hashtable = schema-compatible. No existing flag or code path changed. This is the right pattern for adding optional features to a script that other tools (notebooks, retrospectives) consume.
