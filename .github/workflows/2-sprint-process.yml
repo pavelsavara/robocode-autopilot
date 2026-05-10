@@ -33,7 +33,7 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       github.event.workflow_run.conclusion == 'success'
     container:
-      image: ghcr.io/pavelsavara/robocode-autopilot/battle-runner:latest
+      image: ghcr.io/pavelsavara/robocode-autopilot/sprint-runner:latest
     strategy:
       matrix:
         chunk: [0, 1, 2, 3]

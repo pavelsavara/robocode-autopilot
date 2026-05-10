@@ -2,7 +2,10 @@
 #
 # Triggered by 2-sprint-process completion.
 # Parallel jobs: train each ML model independently + run notebooks.
-# Assemble job collects all models and commits to sprint/{N}-models branch.
+# Assemble job collects all models + merged .dat and commits to sprint branch.
+#
+# All jobs use the sprint-runner container (Java+Node+Python with pre-installed
+# pip packages). No pip install at runtime.
 
 name: 3 Sprint Train + Notebooks
 
@@ -40,15 +43,13 @@ jobs:
   # ─── Train fire_power model ───
   train-fire-power:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/pavelsavara/robocode-autopilot/sprint-runner:latest
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event.workflow_run.conclusion == 'success'
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-      - run: pip install -r intuition/requirements.txt
 
       - name: Download combined CSVs
         uses: actions/download-artifact@v8
@@ -61,12 +62,12 @@ jobs:
       - name: Train fire_power
         working-directory: intuition
         run: |
-          python train_distill.py --task fire_power --roots ../output/csv 2>&1 | tail -30
-          cat models/distill/fire_power/metrics.json | python -m json.tool
+          python3 train_distill.py --task fire_power --roots ../output/csv 2>&1 | tail -30
+          cat models/distill/fire_power/metrics.json | python3 -m json.tool
 
       - name: Export fire_power to Java
         working-directory: intuition
-        run: python export_gbm_java.py fire_power 2>&1 | tail -10
+        run: python3 export_gbm_java.py fire_power 2>&1 | tail -10
 
       - uses: actions/upload-artifact@v7
         with:
@@ -79,15 +80,13 @@ jobs:
   # ─── Train fire_timing model ───
   train-fire-timing:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/pavelsavara/robocode-autopilot/sprint-runner:latest
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event.workflow_run.conclusion == 'success'
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-      - run: pip install -r intuition/requirements.txt
 
       - name: Download combined CSVs
         uses: actions/download-artifact@v8
@@ -100,12 +99,12 @@ jobs:
       - name: Train fire_timing
         working-directory: intuition
         run: |
-          python train_distill.py --task fire_timing --roots ../output/csv 2>&1 | tail -30
-          cat models/distill/fire_timing/metrics.json | python -m json.tool
+          python3 train_distill.py --task fire_timing --roots ../output/csv 2>&1 | tail -30
+          cat models/distill/fire_timing/metrics.json | python3 -m json.tool
 
       - name: Export fire_timing to Java
         working-directory: intuition
-        run: python export_gbm_java.py fire_timing 2>&1 | tail -10
+        run: python3 export_gbm_java.py fire_timing 2>&1 | tail -10
 
       - uses: actions/upload-artifact@v7
         with:
@@ -118,15 +117,13 @@ jobs:
   # ─── Train movement model ───
   train-movement:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/pavelsavara/robocode-autopilot/sprint-runner:latest
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event.workflow_run.conclusion == 'success'
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-      - run: pip install -r intuition/requirements.txt
 
       - name: Download combined CSVs
         uses: actions/download-artifact@v8
@@ -139,12 +136,12 @@ jobs:
       - name: Train movement
         working-directory: intuition
         run: |
-          python train_distill.py --task movement --roots ../output/csv 2>&1 | tail -30
-          cat models/distill/movement/metrics.json | python -m json.tool
+          python3 train_distill.py --task movement --roots ../output/csv 2>&1 | tail -30
+          cat models/distill/movement/metrics.json | python3 -m json.tool
 
       - name: Export movement to Java
         working-directory: intuition
-        run: python export_gbm_java.py movement 2>&1 | tail -10
+        run: python3 export_gbm_java.py movement 2>&1 | tail -10
 
       - uses: actions/upload-artifact@v7
         with:
@@ -157,17 +154,13 @@ jobs:
   # ─── Run retrospective notebooks ───
   notebooks:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/pavelsavara/robocode-autopilot/sprint-runner:latest
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event.workflow_run.conclusion == 'success'
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-      - run: |
-          pip install -r intuition/requirements.txt
-          pip install nbconvert
 
       - name: Download combined CSVs
         uses: actions/download-artifact@v8
@@ -182,7 +175,6 @@ jobs:
         run: |
           mkdir -p notebook-html
 
-          # Verify CSVs are at the expected path (../output/csv/ from intuition/)
           echo "CSV location check:"
           find ../output/csv -name '*.csv' -type f | head -5 || echo "WARN: No CSVs at ../output/csv"
 
@@ -190,7 +182,7 @@ jobs:
             if [ -f "$nb" ]; then
               NAME=$(basename "$nb" .ipynb)
               echo "Running $nb..."
-              timeout 300 python -m jupyter nbconvert \
+              timeout 300 python3 -m jupyter nbconvert \
                 --to html \
                 --execute "$nb" \
                 --output-dir notebook-html \
@@ -216,14 +208,12 @@ jobs:
     needs: [train-fire-power, train-fire-timing, train-movement]
     if: always() && !cancelled()
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/pavelsavara/robocode-autopilot/sprint-runner:latest
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-      - run: pip install -r intuition/requirements.txt
 
       - name: Download model artifacts
         uses: actions/download-artifact@v8
@@ -232,33 +222,21 @@ jobs:
           path: model-artifacts/
           merge-multiple: true
 
+      - name: Copy model files into repo
+        run: |
+          find model-artifacts -name '*Data.java' -exec cp {} robot/src/main/java/cz/zamboch/distilled/ \;
+          echo "--- Model files ---"
+          ls -la robot/src/main/java/cz/zamboch/distilled/*Data.java 2>/dev/null || echo "No Data.java files"
+
       - name: Find battles run ID
         id: find-battles
         run: |
-          # The .dat artifacts are on the Stage 1 (battles) run, not Stage 2.
-          # If provided via input, use that. Otherwise, look up via the
-          # workflow_run chain: Stage 3 was triggered by Stage 2, which was
-          # triggered by Stage 1.
           if [ -n "${{ inputs.battles_run_id }}" ]; then
             echo "battles_run_id=${{ inputs.battles_run_id }}" >> "$GITHUB_OUTPUT"
-            echo "Using provided battles run ID: ${{ inputs.battles_run_id }}"
           else
-            # Stage 2 run ID
-            STAGE2_ID="${{ env.SOURCE_RUN }}"
-            echo "Stage 2 run: $STAGE2_ID"
-
-            # Stage 2 was triggered by Stage 1 via workflow_run.
-            # The triggering run ID is in the workflow_run event.
-            STAGE1_ID=$(gh api "repos/${{ github.repository }}/actions/runs/$STAGE2_ID" \
-              --jq '.triggering_actor // empty' 2>/dev/null || echo "")
-
-            # Fallback: find the latest successful "1 Sprint Battles" run
-            if [ -z "$STAGE1_ID" ] || [ "$STAGE1_ID" = "null" ]; then
-              STAGE1_ID=$(gh api "repos/${{ github.repository }}/actions/workflows/1-sprint-batlles.yml/runs?status=success&per_page=1" \
-                --jq '.workflow_runs[0].id')
-              echo "Fallback: using latest successful battles run: $STAGE1_ID"
-            fi
-
+            # Fallback: find the latest successful battles run
+            STAGE1_ID=$(gh api "repos/${{ github.repository }}/actions/workflows/1-sprint-batlles.yml/runs?status=success&per_page=1" \
+              --jq '.workflow_runs[0].id' 2>/dev/null || echo "")
             echo "battles_run_id=$STAGE1_ID" >> "$GITHUB_OUTPUT"
             echo "Resolved battles run ID: $STAGE1_ID"
           fi
@@ -274,32 +252,16 @@ jobs:
 
       - name: Merge .dat files
         run: |
-          echo "--- .dat files found ---"
-          find dat-chunks -name 'autopilot.dat' -type f 2>/dev/null || echo "No .dat files"
-
           DAT_COUNT=$(find dat-chunks -name 'autopilot.dat' -type f 2>/dev/null | wc -l)
           if [ "$DAT_COUNT" -gt 0 ]; then
-            node scripts/merge-dat.mjs \
-              --input-dir dat-chunks \
-              --output merged-autopilot.dat
-            echo "Merged $DAT_COUNT .dat files"
-
-            # Export to DefaultDataFile.java
+            node scripts/merge-dat.mjs --input-dir dat-chunks --output merged-autopilot.dat
             if [ -f intuition/export_data_java.py ]; then
-              python intuition/export_data_java.py merged-autopilot.dat
+              python3 intuition/export_data_java.py merged-autopilot.dat
               echo "DefaultDataFile.java regenerated"
-            else
-              echo "WARN: export_data_java.py not found, skipping DefaultDataFile export"
             fi
           else
-            echo "No .dat files to merge (battles may not have produced them)"
+            echo "No .dat files to merge"
           fi
-
-      - name: Copy model files into repo
-        run: |
-          find model-artifacts -name '*Data.java' -exec cp {} robot/src/main/java/cz/zamboch/distilled/ \;
-          echo "--- Model files ---"
-          ls -la robot/src/main/java/cz/zamboch/distilled/*Data.java 2>/dev/null || echo "No Data.java files"
 
       - name: Build retrain summary
         run: |
@@ -338,7 +300,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No model changes to commit"
           else
-            git commit -m "sprint ${{ env.SPRINT_NUM }}: retrained ML models from CI pipeline
+            git commit -m "sprint ${{ env.SPRINT_NUM }}: retrained models from CI pipeline
 
           See retrain-summary.json for metrics."
             git push origin "$BRANCH" --force
