@@ -1,7 +1,7 @@
 # robocode-autopilot — Project Plan (v5)
 
 *Updated: 2026-05-10 · Previous plans: [archive/2026-05-10-plan.md](archive/2026-05-10-plan.md), [archive/2026-05-04-plan.md](archive/2026-05-04-plan.md)*
-*Latest sprint: 18 · Score: 9.1% · In-game R²: +0.48*
+*Latest sprint: 20 · Score: 10.2% · In-game R²: +0.48*
 *Companion design review (full code audit, 2026-05-10): [archive/2026-05-10-design-proposals.md](design-proposals.md)*
 
 ## Vision
@@ -72,6 +72,37 @@ Java/Python divergence cap targeting accuracy.
    method and **retrain `fire_timing` with the new column included** —
    the model's current `FEATURE_NAMES` does not list it, so the trained
    tree never splits on it. ([design-proposals.md §5](design-proposals.md))
+
+### Workstream B2: CI Full Pipeline — Automated Retrain Loop
+
+Automate the complete cycle in CI so that the AI squad's role reduces to
+code/notebook changes and retrospectives — no manual local pipeline runs.
+
+**Goal:** Push code → CI battles → CI generates CSV → CI retrains models →
+CI exports to Java → next push uses new models. Humans review results
+and make decisions; machines do the grinding.
+
+**Prerequisites:** Workstream B (feature divergence) should close the R² gap
+first — retraining on misaligned features wastes compute.
+
+1. **Wire `Dockerfile.pipeline`** into a `retrain.yml` workflow.
+   The image already exists; needs a workflow that:
+   - Downloads recordings from battle jobs (intra-CI, not to local)
+   - Runs the Java pipeline to produce CSV
+   - Runs `_run_fire_timing.py`, `_run_multiwave.py` etc. to retrain
+   - Exports models via `export_gbm_java.py`
+   - Opens a PR with updated `*Data.java` files
+2. **Cloud dataset accumulation** — store CSV outputs as workflow artifacts
+   or on a `data` branch (Git LFS). Each CI run appends new battles;
+   retraining uses the accumulated dataset, not just the latest sprint.
+3. **Trigger rules** — retrain on `workflow_dispatch` (manual) initially.
+   Later: auto-retrain when accumulated battles exceed a threshold
+   (e.g. 100 new battles since last train).
+4. **Validation gate** — after retraining, run a quick 5-opponent eval
+   with the new model. If overall score drops >2pp vs baseline, block
+   the PR and flag for human review.
+5. **Data transfer budget** — CSV stays in CI. Only `summary.json` and
+   the model PR diff cross the wire. Recordings are ephemeral.
 
 ### Workstream C: Movement (Alex — EVERY 3RD SPRINT MINIMUM)
 
@@ -205,6 +236,7 @@ focused JUnit test class. Full rationale in
 | 20 | Move WindowFeatures state to Whiteboard | Re-establish the "all state in Whiteboard" invariant; re-enables future per-instance refactors |
 | 21 | Unit test backlog T1–T10 | One test class per sprint; pins Sprint 10 / Sprint 12 root-cause bugs and four under-tested classes |
 | 22 | MlpGfTargeting deferred to backlog | Not the binding constraint while in-game R² < 0.7; revisit before next R² grind |
+| 23 | Automate full retrain loop in CI (B2) | AI squad focuses on code/notebook changes and retrospectives; machines do the grinding |
 
 ---
 
