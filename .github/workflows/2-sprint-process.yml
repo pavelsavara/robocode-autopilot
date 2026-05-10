@@ -1,10 +1,10 @@
-# sprint-process.yml — Stage 2 of the sprint CI pipeline.
+# 2-sprint-process.yml — Stage 2 of the sprint CI pipeline.
 #
-# Triggered by sprint-pipeline.yml completion.
-# Downloads recordings, runs Java pipeline to produce CSVs,
-# runs 6 sanity checks, uploads combined CSVs + sanity report.
+# Triggered by 1-sprint-battles completion.
+# Downloads CSV chunks (already processed in stage 1), combines them,
+# runs sanity checks. No pipeline binary needed — CSVs are ready.
 #
-# Downstream: sprint-train.yml triggers on this workflow's completion.
+# Downstream: 3-sprint-train.yml triggers on this workflow's completion.
 
 name: 2 Sprint CSVs + Sanity Checks
 
@@ -16,106 +16,38 @@ on:
   workflow_dispatch:
     inputs:
       source_run_id:
-        description: 'Run ID of 1 Sprint Battles to process'
+        description: 'Run ID of Sprint Battles to get CSVs from'
         required: true
         type: string
 
 permissions:
   contents: read
-  packages: read
   actions: read
 
 jobs:
-  # ─── Process recording chunks in parallel ───
-  process:
+  combine:
     runs-on: ubuntu-latest
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event.workflow_run.conclusion == 'success'
-    container:
-      image: ghcr.io/pavelsavara/robocode-autopilot/sprint-runner:latest
-    strategy:
-      matrix:
-        chunk: [0, 1, 2, 3]
-      fail-fast: false
     env:
       SOURCE_RUN_ID: ${{ inputs.source_run_id || github.event.workflow_run.id }}
     steps:
-      - uses: actions/checkout@v6
-        with:
-          sparse-checkout: |
-            pipeline
-            core
-
-      - name: Download pipeline distribution
-        uses: actions/download-artifact@v8
-        with:
-          name: pipeline-dist
-          path: /opt/pipeline
-          run-id: ${{ env.SOURCE_RUN_ID }}
-          github-token: ${{ github.token }}
-
-      - name: Download recording chunk
-        uses: actions/download-artifact@v8
-        with:
-          name: recordings-chunk-${{ matrix.chunk }}
-          path: /data/recordings
-          run-id: ${{ env.SOURCE_RUN_ID }}
-          github-token: ${{ github.token }}
-
-      - name: Process recordings to CSV
-        run: |
-          chmod +x /opt/pipeline/bin/pipeline
-          mkdir -p /data/csv
-
-          BR_COUNT=$(find /data/recordings -name '*.br' | wc -l)
-          echo "Processing $BR_COUNT recordings from chunk ${{ matrix.chunk }}..."
-
-          /opt/pipeline/bin/pipeline \
-            --input /data/recordings \
-            --output /data/csv || true
-
-          CSV_COUNT=$(find /data/csv -name '*.csv' -type f | wc -l)
-          echo "Generated $CSV_COUNT CSV files"
-
-          if [ "$CSV_COUNT" -eq 0 ]; then
-            echo "::warning::No CSVs generated for chunk ${{ matrix.chunk }}"
-          fi
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: csv-chunk-${{ matrix.chunk }}
-          path: /data/csv/
-          retention-days: 14
-          if-no-files-found: warn
-
-  # ─── Combine CSVs and run sanity checks ───
-  combine:
-    needs: [process]
-    if: always() && !cancelled()
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          sparse-checkout: scripts
-
       - name: Download all CSV chunks
         uses: actions/download-artifact@v8
         with:
           pattern: csv-chunk-*
           path: csv-chunks/
           merge-multiple: true
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
 
       - name: Combine CSVs
         shell: bash
         run: |
           mkdir -p combined-csv
 
-          # Merge CSV files across chunks. Paths contain spaces
-          # (e.g. "063c9215/Autopilot vs Shadow/ticks.csv").
-          # Use head/tail to keep one header + all data rows.
           for CSV_NAME in ticks.csv waves.csv scores.csv; do
-            # Collect all matching files
             mapfile -d '' FILES < <(find csv-chunks -name "$CSV_NAME" -type f -print0 | sort -z)
 
             if [ ${#FILES[@]} -eq 0 ]; then
@@ -123,10 +55,7 @@ jobs:
               continue
             fi
 
-            # First file: copy with header
             cp "${FILES[0]}" "combined-csv/$CSV_NAME"
-
-            # Remaining files: append data rows only (skip header)
             for ((i=1; i<${#FILES[@]}; i++)); do
               tail -n +2 "${FILES[$i]}" >> "combined-csv/$CSV_NAME"
             done
@@ -144,7 +73,6 @@ jobs:
 
       - name: Run sanity checks
         run: |
-          # Basic sanity checks on the CSV data
           PASS=0
           FAIL=0
           REPORT='[]'
@@ -184,31 +112,28 @@ jobs:
             FAIL=$((FAIL + 1))
           fi
 
-          # Check 4: No all-NaN columns in ticks.csv
-          # (Simplified: just check file isn't empty)
+          # Check 4: Enough columns in ticks.csv
           if [ -f combined-csv/ticks.csv ]; then
             COLS=$(head -1 combined-csv/ticks.csv | tr ',' '\n' | wc -l)
             REPORT=$(echo "$REPORT" | jq ". + [{check: \"ticks_column_count\", pass: ($COLS > 10), value: $COLS}]")
             if [ "$COLS" -gt 10 ]; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); fi
           fi
 
-          # Check 5: Multiple opponents represented
+          # Check 5: Multiple battles
           if [ -f combined-csv/scores.csv ]; then
-            # Count unique battle directories (proxy for opponents)
             BATTLES=$(tail -n +2 combined-csv/scores.csv | wc -l)
             REPORT=$(echo "$REPORT" | jq ". + [{check: \"battle_count\", pass: ($BATTLES > 5), value: $BATTLES}]")
             if [ "$BATTLES" -gt 5 ]; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); fi
           fi
 
-          # Check 6: Reasonable tick count per battle (~3000 expected)
+          # Check 6: Reasonable tick density
           if [ -f combined-csv/ticks.csv ]; then
             TICK_ROWS=$(tail -n +2 combined-csv/ticks.csv | wc -l)
             BATTLES_EST=$((TICK_ROWS / 3000))
-            REPORT=$(echo "$REPORT" | jq ". + [{check: \"avg_ticks_per_battle\", pass: ($BATTLES_EST > 0), value: $TICK_ROWS, estimated_battles: $BATTLES_EST}]")
+            REPORT=$(echo "$REPORT" | jq ". + [{check: \"avg_ticks_per_battle\", pass: ($BATTLES_EST > 0), value: $TICK_ROWS}]")
             if [ "$BATTLES_EST" -gt 0 ]; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); fi
           fi
 
-          # Write report
           jq -n \
             --argjson checks "$REPORT" \
             --argjson pass "$PASS" \

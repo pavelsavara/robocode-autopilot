@@ -296,12 +296,36 @@ jobs:
           path: results/results.json
           retention-days: 7
 
-      # Upload recordings for downstream CSV processing (sprint-process.yml).
+      # Process recordings → CSV immediately on this runner.
+      # Avoids uploading ~300MB of .br files per chunk as artifacts.
+      - name: Download pipeline distribution
+        uses: actions/download-artifact@v8
+        with:
+          name: pipeline-dist
+          path: /opt/pipeline
+
+      - name: Process recordings to CSV
+        run: |
+          chmod +x /opt/pipeline/bin/pipeline
+          mkdir -p csv-output
+
+          BR_COUNT=$(find recordings -name '*.br' | wc -l)
+          echo "Processing $BR_COUNT recordings from chunk ${{ matrix.chunk.id }}..."
+
+          /opt/pipeline/bin/pipeline \
+            --input recordings \
+            --output csv-output || true
+
+          CSV_COUNT=$(find csv-output -name '*.csv' -type f | wc -l)
+          echo "Generated $CSV_COUNT CSV files"
+
+      # Upload CSVs (much smaller than recordings — ~5-10MB per chunk).
       - uses: actions/upload-artifact@v7
         with:
-          name: recordings-chunk-${{ matrix.chunk.id }}
-          path: recordings/
+          name: csv-chunk-${{ matrix.chunk.id }}
+          path: csv-output/
           retention-days: 14
+          if-no-files-found: warn
 
       # Upload autopilot.dat for downstream merge (3-sprint-train.yml).
       # Each chunk builds its own VCS histograms + gun stats during battles.
