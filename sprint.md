@@ -277,9 +277,13 @@ CI stage 2 trains models and commits `*Data.java` files to a
    git checkout origin/sprint/{N}-models -- \
      robot/src/main/java/cz/zamboch/distilled/FirePowerData.java \
      robot/src/main/java/cz/zamboch/distilled/FireTimingData.java \
-     robot/src/main/java/cz/zamboch/distilled/MovementData.java
+     robot/src/main/java/cz/zamboch/distilled/MovementData.java \
+     robot/src/main/java/cz/zamboch/distilled/DefaultDataFile.java
    git commit -m "merge sprint/{N} CI-trained models"
    ```
+   Note: `DefaultDataFile.java` contains VCS histogram priors from battle
+   data (`.dat` files). It is only updated when the CI `.dat` merge succeeds —
+   check `retrain-summary.json` or the sprint branch diff to confirm.
 2. **If metrics regressed:** do NOT merge. Note the regression in the
    retrospective and investigate root cause next sprint.
 
