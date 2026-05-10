@@ -65,7 +65,6 @@ jobs:
 
       - name: Process recordings to CSV
         run: |
-          apk add --no-cache bash
           chmod +x /opt/pipeline/bin/pipeline
           mkdir -p /data/csv
 
