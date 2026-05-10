@@ -53,7 +53,7 @@ def load_local_data(
     flat_file = root / filename
     if flat_file.is_file():
         # CI mode: single combined file
-        df = pd.read_csv(flat_file)
+        df = pd.read_csv(flat_file, low_memory=False)
         if row_frac < 1.0:
             df = df.sample(frac=row_frac, random_state=seed)
     else:
