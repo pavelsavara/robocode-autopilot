@@ -243,15 +243,19 @@ jobs:
       - name: Find battles run ID
         id: find-battles
         run: |
+          # Priority: explicit input > SOURCE_RUN (= stage 1 run) > API fallback
           if [ -n "${{ inputs.battles_run_id }}" ]; then
-            echo "battles_run_id=${{ inputs.battles_run_id }}" >> "$GITHUB_OUTPUT"
+            BATTLES_ID="${{ inputs.battles_run_id }}"
+            echo "Using explicit battles_run_id input: $BATTLES_ID"
+          elif [ -n "$SOURCE_RUN" ]; then
+            BATTLES_ID="$SOURCE_RUN"
+            echo "Using SOURCE_RUN (stage 1 run ID): $BATTLES_ID"
           else
-            # Fallback: find the latest successful battles run
-            STAGE1_ID=$(gh api "repos/${{ github.repository }}/actions/workflows/1-sprint-batlles.yml/runs?status=success&per_page=1" \
+            BATTLES_ID=$(gh api "repos/${{ github.repository }}/actions/workflows/1-sprint-batlles.yml/runs?status=success&per_page=1" \
               --jq '.workflow_runs[0].id' 2>/dev/null || echo "")
-            echo "battles_run_id=$STAGE1_ID" >> "$GITHUB_OUTPUT"
-            echo "Resolved battles run ID: $STAGE1_ID"
+            echo "API fallback resolved: $BATTLES_ID"
           fi
+          echo "battles_run_id=$BATTLES_ID" >> "$GITHUB_OUTPUT"
 
       - name: Download .dat artifacts from battles
         continue-on-error: true
@@ -261,6 +265,13 @@ jobs:
           path: dat-chunks/
           run-id: ${{ steps.find-battles.outputs.battles_run_id }}
           github-token: ${{ github.token }}
+
+      - name: Debug .dat download
+        if: always()
+        run: |
+          echo "Battles run ID: ${{ steps.find-battles.outputs.battles_run_id }}"
+          echo "DAT files found:"
+          find dat-chunks -name 'autopilot.dat' -type f 2>/dev/null || echo "  (none)"
 
       - name: Merge .dat files
         run: |
