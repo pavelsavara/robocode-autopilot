@@ -694,17 +694,18 @@ jobs:
           "
 
           # Combine debug.log files (plain text, not CSV)
-          LOG_FILES=$(find csv-chunks -name 'debug.log' -type f -size +0c | sort)
-          if [ -n "$LOG_FILES" ]; then
+          LOG_COUNT=$(find csv-chunks -name 'debug.log' -type f -size +0c | wc -l)
+          if [ "$LOG_COUNT" -gt 0 ]; then
             > combined-csv/debug.log
-            for f in $LOG_FILES; do
-              BATTLE=$(echo "$f" | sed 's|csv-chunks/||; s|/debug.log||')
+            find csv-chunks -name 'debug.log' -type f -size +0c -print0 | sort -z | while IFS= read -r -d '' f; do
+              BATTLE="${f#csv-chunks/}"
+              BATTLE="${BATTLE%/debug.log}"
               echo "=== $BATTLE ===" >> combined-csv/debug.log
               cat "$f" >> combined-csv/debug.log
               echo "" >> combined-csv/debug.log
             done
             LOG_LINES=$(wc -l < combined-csv/debug.log)
-            echo "  debug.log: combined $(echo "$LOG_FILES" | wc -w) files, $LOG_LINES lines"
+            echo "  debug.log: combined $LOG_COUNT files, $LOG_LINES lines"
           else
             echo "  No debug.log files found"
           fi
