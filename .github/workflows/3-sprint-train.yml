@@ -1,4 +1,4 @@
-# 2-sprint-train.yml — Stage 2 of the sprint CI pipeline.
+# 3-sprint-train.yml ΓÇö Stage 3 of the sprint CI pipeline.
 #
 # Triggered by 2-sprint-process completion.
 # Parallel jobs: train each ML model independently + run notebooks.
@@ -40,7 +40,7 @@ env:
   SOURCE_RUN: ${{ inputs.source_run_id || github.event.workflow_run.id }}
 
 jobs:
-  # ======= Train fire_power model =======
+  # ΓöÇΓöÇΓöÇ Train fire_power model ΓöÇΓöÇΓöÇ
   train-fire-power:
     runs-on: ubuntu-latest
     container:
@@ -81,7 +81,7 @@ jobs:
             intuition/models/distill/fire_power/metrics.json
           retention-days: 14
 
-  # ======= Train fire_timing model =======
+  # ΓöÇΓöÇΓöÇ Train fire_timing model ΓöÇΓöÇΓöÇ
   train-fire-timing:
     runs-on: ubuntu-latest
     container:
@@ -122,7 +122,7 @@ jobs:
             intuition/models/distill/fire_timing/metrics.json
           retention-days: 14
 
-  # ======= Train movement model =======
+  # ΓöÇΓöÇΓöÇ Train movement model ΓöÇΓöÇΓöÇ
   train-movement:
     runs-on: ubuntu-latest
     container:
@@ -163,7 +163,7 @@ jobs:
             intuition/models/distill/movement/metrics.json
           retention-days: 14
 
-  # ======= Run retrospective notebooks =======
+  # ΓöÇΓöÇΓöÇ Run retrospective notebooks ΓöÇΓöÇΓöÇ
   notebooks:
     runs-on: ubuntu-latest
     container:
@@ -190,9 +190,16 @@ jobs:
           echo "CSV location check:"
           find ../output/local/csv -name '*.csv' -type f | head -5 || echo "WARN: No CSVs at ../output/local/csv"
 
+          # R08/R09/R10 need internal.csv which only exists in local pipeline output
+          SKIP_NOTEBOOKS="R08_gun_selection R09_movement_analysis R10_ml_predictions"
+
           for nb in retrospective/R*.ipynb; do
             if [ -f "$nb" ]; then
               NAME=$(basename "$nb" .ipynb)
+              if echo "$SKIP_NOTEBOOKS" | grep -qw "$NAME"; then
+                echo "Skipping $nb (needs internal.csv, not available in CI)"
+                continue
+              fi
               echo "Running $nb..."
               timeout 300 python3 -m jupyter nbconvert \
                 --to html \
@@ -215,7 +222,7 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-  # ======= Assemble: collect model artifacts, merge .dat, commit to sprint branch =======
+  # ΓöÇΓöÇΓöÇ Assemble: collect model artifacts, merge .dat, commit to sprint branch ΓöÇΓöÇΓöÇ
   assemble:
     needs: [train-fire-power, train-fire-timing, train-movement]
     if: always() && !cancelled()
