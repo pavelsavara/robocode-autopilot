@@ -7,7 +7,7 @@
 # All jobs use the sprint-runner container (Java+Node+Python with pre-installed
 # pip packages). No pip install at runtime.
 
-name: 3 Sprint Train + Notebooks
+name: 2 Sprint Train + Notebooks
 
 on:
   workflow_run:

@@ -1,0 +1,772 @@
+# 3-sprint-eval.yml — Stage 3 of the sprint CI pipeline.
+#
+# Purpose:
+#   After models are retrained (stage 2), rebuild the robot JAR with the
+#   fresh *Data.java model files and re-run the SAME battle set as Stage 1.
+#   This gives two evaluation points per sprint:
+#     - Stage 1 summary: code changes only (old models)
+#     - Stage 3 summary: code changes + freshly trained models
+#
+# Data flow:
+#   - sprint-eval-summary (~2KB) → downloaded by AI agent for retro
+#   - eval-csv-combined → sanity-checked inline
+#
+# Upstream:
+#   Triggered by 2-sprint-train.yml completion.
+
+name: 3 Sprint Eval (with retrained models)
+
+on:
+  workflow_run:
+    workflows: ["2 Sprint Train + Notebooks"]
+    types: [completed]
+
+  workflow_dispatch:
+    inputs:
+      sprint_branch:
+        description: 'Sprint models branch (e.g. sprint/21-models)'
+        required: true
+        type: string
+      rounds:
+        description: 'Rounds per battle'
+        required: false
+        default: '35'
+        type: string
+      battles_per_opponent:
+        description: 'Battles per opponent'
+        required: false
+        default: '3'
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  ROUNDS: ${{ inputs.rounds || '35' }}
+  BATTLES_PER_OPPONENT: ${{ inputs.battles_per_opponent || '3' }}
+
+jobs:
+  # ─── Step 0: Determine sprint models branch ───
+  resolve-branch:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    outputs:
+      sprint_branch: ${{ steps.resolve.outputs.branch }}
+    steps:
+      - name: Resolve sprint models branch
+        id: resolve
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            BRANCH="${{ inputs.sprint_branch }}"
+            echo "Using manually specified branch: $BRANCH"
+          else
+            # Find most recent sprint/*-models branch
+            BRANCH=$(git ls-remote --heads https://github.com/${{ github.repository }}.git 'refs/heads/sprint/*-models' \
+              | awk '{print $2}' \
+              | sed 's|refs/heads/||' \
+              | sort -t/ -k2 -V \
+              | tail -n1)
+            if [ -z "$BRANCH" ]; then
+              echo "::error::No sprint/*-models branch found"
+              exit 1
+            fi
+            echo "Auto-detected sprint models branch: $BRANCH"
+          fi
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+  # ─── Step 1: Build robot JAR with retrained models ───
+  build:
+    needs: [resolve-branch]
+    runs-on: ubuntu-latest
+    outputs:
+      jar_name: ${{ steps.build.outputs.jar_name }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Overlay retrained model files from sprint branch
+        run: |
+          BRANCH="${{ needs.resolve-branch.outputs.sprint_branch }}"
+          echo "Fetching model files from $BRANCH..."
+          git fetch origin "$BRANCH" --depth=1
+
+          # Copy *Data.java files from sprint branch into working tree
+          for f in $(git ls-tree --name-only -r "origin/$BRANCH" -- \
+              robot/src/main/java/cz/zamboch/distilled/ \
+            | grep 'Data\.java$'); do
+            echo "  Overlaying: $f"
+            git show "origin/$BRANCH:$f" > "$f"
+          done
+
+          # Also overlay DefaultDataFile.java if present
+          DEF="robot/src/main/java/cz/zamboch/distilled/DefaultDataFile.java"
+          if git cat-file -e "origin/$BRANCH:$DEF" 2>/dev/null; then
+            echo "  Overlaying: $DEF"
+            git show "origin/$BRANCH:$DEF" > "$DEF"
+          fi
+
+          echo "Model overlay complete"
+          git diff --stat || true
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Build robot JAR
+        id: build
+        run: |
+          ./gradlew :robot:jar --no-daemon --console=plain
+          JAR=$(ls robot/build/libs/cz.zamboch.Autopilot-*.jar | head -n 1)
+          if [ -z "$JAR" ]; then
+            echo "::error::No robot JAR produced"
+            exit 1
+          fi
+          echo "jar_name=$(basename "$JAR")" >> "$GITHUB_OUTPUT"
+          echo "Built: $JAR"
+
+          # Validate JAR
+          unzip -t "$JAR" > /dev/null
+          echo "JAR integrity OK"
+
+          # Also build pipeline distribution for CSV processing
+          ./gradlew :pipeline:installDist --no-daemon --console=plain
+          echo "Pipeline distribution built"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: eval-robot-jar
+          path: robot/build/libs/cz.zamboch.Autopilot-*.jar
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: eval-pipeline-dist
+          path: pipeline/build/install/pipeline/
+          retention-days: 7
+
+  # ─── Step 2: Run battles (same 16-opponent set as Stage 1) ───
+  battles:
+    needs: [build]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/pavelsavara/robocode-autopilot/battle-runner:latest
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        chunk:
+          - id: 0
+            opponents: '["abc.Shadow","voidious.Diamond","jk.mega.DrussGT","jk.mini.CunobelinDC"]'
+          - id: 1
+            opponents: '["pe.SandboxDT","oog.mega.saguaro.Saguaro","cx.BlestPain","ary.FourWD"]'
+          - id: 2
+            opponents: '["ej.ChocolateBar","dft.Cardigan","eem.zapper","darkcanuck.Pris"]'
+          - id: 3
+            opponents: '["tobe.Fusion","mld.Moebius","simonton.mini.WeeksOnEnd","simonton.mega.SniperFrog"]'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: rumble/scripts
+          path: repo
+
+      - name: Download fresh robot JAR
+        uses: actions/download-artifact@v8
+        with:
+          name: eval-robot-jar
+          path: /tmp/robot-jar
+
+      - name: Fetch opponent JARs from robots branch
+        run: |
+          apk add --no-cache git git-lfs unzip zip jq
+          git lfs install
+          git clone --depth=1 --branch=robots --single-branch \
+            https://github.com/${{ github.repository }}.git /tmp/robots
+          cd /tmp/robots && git lfs pull && cd -
+
+          # Drop any pre-existing cz.zamboch.Autopilot JAR shipped on the robots
+          # branch — we want the FRESHLY BUILT one from this workflow run.
+          rm -f /opt/robocode/robots/cz.zamboch.Autopilot*.jar
+          rm -f /tmp/robots/cz.zamboch.Autopilot*.jar
+
+          cp /tmp/robots/*.jar /opt/robocode/robots/ 2>/dev/null || true
+          cp /tmp/robot-jar/*.jar /opt/robocode/robots/
+
+          echo "Robots loaded: $(ls /opt/robocode/robots/*.jar | wc -l)"
+
+          # Validate + drop corrupt JARs
+          CORRUPT=0
+          for jar in /opt/robocode/robots/*.jar; do
+            if ! unzip -t "$jar" > /dev/null 2>&1; then
+              echo "CORRUPT — removing: $(basename "$jar")"
+              rm "$jar"
+              CORRUPT=$((CORRUPT + 1))
+            fi
+          done
+          echo "Removed $CORRUPT corrupt JARs"
+
+          # Inject .properties for JARs that lack them
+          for jar in /opt/robocode/robots/*.jar; do
+            if unzip -l "$jar" 2>/dev/null | grep -q '\.properties$'; then
+              continue
+            fi
+            jarname=$(basename "$jar" .jar)
+            classname=$(echo "$jarname" | sed 's/_.*//')
+            version=$(echo "$jarname" | sed 's/^[^_]*_//')
+            proppath=$(echo "$classname" | sed 's/\./\//g').properties
+            mkdir -p "/tmp/propgen/$(dirname "$proppath")"
+            printf "robot.classname=%s\nrobot.version=%s\n" "$classname" "$version" > "/tmp/propgen/$proppath"
+            (cd /tmp/propgen && zip -g "$jar" "$proppath")
+            rm -rf /tmp/propgen
+          done
+
+          # Force Robocode to rescan
+          rm -rf /opt/robocode/robots/.data 2>/dev/null || true
+
+      - name: Environment check
+        run: |
+          echo "--- Java ---"
+          java -version 2>&1 || echo "::error::Java not found!"
+          echo "--- Node ---"
+          node --version || echo "::error::Node not found!"
+          echo "--- Robot JARs ---"
+          ls -la /opt/robocode/robots/*.jar 2>/dev/null | head -30
+          echo "--- Robocode libs ---"
+          ls /opt/robocode/libs/ 2>/dev/null || echo "::error::No Robocode libs found at /opt/robocode/libs/"
+          echo "--- Our robot JAR contents (top 20) ---"
+          for jar in /opt/robocode/robots/cz.zamboch.Autopilot*.jar; do
+            echo "=== $jar ==="
+            unzip -l "$jar" 2>/dev/null | head -20
+          done
+
+      - name: Pre-flight battle test
+        run: |
+          FIRST_OPP=$(echo '${{ matrix.chunk.opponents }}' | jq -r '.[0]')
+          echo "Pre-flight: cz.zamboch.Autopilot vs $FIRST_OPP (1 round)"
+
+          cat > /tmp/preflight.battle <<EOF
+          #Battle Properties
+          robocode.battleField.width=800
+          robocode.battleField.height=600
+          robocode.battle.numRounds=1
+          robocode.battle.gunCoolingRate=0.1
+          robocode.battle.rules.inactivityTime=450
+          robocode.battle.hideEnemyNames=false
+          robocode.battle.selectedRobots=cz.zamboch.Autopilot,$FIRST_OPP
+          EOF
+
+          java -cp '/opt/robocode/libs/*' \
+            -Xmx512M \
+            -XX:+IgnoreUnrecognizedVMOptions \
+            '--add-opens=java.base/sun.net.www.protocol.jar=ALL-UNNAMED' \
+            '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED' \
+            '--add-opens=java.base/java.lang=ALL-UNNAMED' \
+            '--add-opens=java.base/java.io=ALL-UNNAMED' \
+            '--add-opens=java.base/java.net=ALL-UNNAMED' \
+            '--add-opens=java.base/java.util=ALL-UNNAMED' \
+            -DNOSECURITY=true \
+            -Djava.awt.headless=true \
+            robocode.Robocode \
+            -cwd /opt/robocode \
+            -battle /tmp/preflight.battle \
+            -results /tmp/preflight-results.txt \
+            -nodisplay 2>&1 || true
+
+          echo "--- Pre-flight results ---"
+          cat /tmp/preflight-results.txt 2>/dev/null || echo "::error::No results file produced!"
+
+          BOT_LINES=$(grep -cE '^\s*[12]' /tmp/preflight-results.txt 2>/dev/null || echo 0)
+          if [ "$BOT_LINES" -lt 2 ]; then
+            echo "::error::Pre-flight FAILED — one or both robots not found by Robocode"
+            exit 1
+          fi
+          echo "✅ Pre-flight OK — both robots loaded"
+
+      - name: Build chunk battle plan
+        run: |
+          jq -c -n \
+            --argjson opps '${{ matrix.chunk.opponents }}' \
+            --argjson n "$BATTLES_PER_OPPONENT" \
+            '[ $opps[] as $o | range($n) | {bot_a:"cz.zamboch.Autopilot", bot_b:$o} ]' \
+            > chunk-battles.json
+          echo "Chunk ${{ matrix.chunk.id }} battles:"
+          jq '. | length' chunk-battles.json
+          jq '.[0:4]' chunk-battles.json
+
+      - name: Run chunk battles
+        run: |
+          mkdir -p recordings
+          node repo/rumble/scripts/run-battle.mjs \
+            --robocode-dir /opt/robocode \
+            --battles chunk-battles.json \
+            --out results/ \
+            --rounds "$ROUNDS" \
+            --record-dir recordings/ || true
+
+          echo "--- Chunk ${{ matrix.chunk.id }} results ---"
+          if [ -f results/results.json ]; then
+            jq 'length' results/results.json
+            FAIL_COUNT=$(jq '[.[] | select(.error == true)] | length' results/results.json)
+            if [ "$FAIL_COUNT" -gt 0 ]; then
+              echo "::warning::$FAIL_COUNT battles failed in chunk ${{ matrix.chunk.id }}"
+              jq '.[] | select(.error == true) | {bot_a, bot_b, message, stderr: (.stderr // "n/a") | .[0:500], stdout: (.stdout // "n/a") | .[0:300]}' results/results.json
+            fi
+          else
+            echo "::warning::No results.json produced for chunk ${{ matrix.chunk.id }}"
+            echo '[]' > results/results.json
+            mkdir -p results
+          fi
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: eval-chunk-results-${{ matrix.chunk.id }}
+          path: results/results.json
+          retention-days: 7
+
+      # Process recordings → CSV on this runner (no recording upload needed).
+      - name: Download pipeline distribution
+        uses: actions/download-artifact@v8
+        with:
+          name: eval-pipeline-dist
+          path: /opt/pipeline
+
+      - name: Process recordings to CSV
+        run: |
+          chmod +x /opt/pipeline/bin/pipeline
+          mkdir -p csv-output
+
+          BR_COUNT=$(find recordings -name '*.br' | wc -l)
+          echo "Processing $BR_COUNT recordings from chunk ${{ matrix.chunk.id }}..."
+
+          /opt/pipeline/bin/pipeline \
+            --input recordings \
+            --output csv-output || true
+
+          CSV_COUNT=$(find csv-output -name '*.csv' -type f | wc -l)
+          echo "Generated $CSV_COUNT CSV files"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: eval-csv-chunk-${{ matrix.chunk.id }}
+          path: csv-output/
+          retention-days: 14
+          if-no-files-found: warn
+
+  # ─── Step 3: Self-battle sanity check ───
+  self-battle:
+    needs: [build]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/pavelsavara/robocode-autopilot/battle-runner:latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: rumble/scripts
+          path: repo
+
+      - name: Download fresh robot JAR
+        uses: actions/download-artifact@v8
+        with:
+          name: eval-robot-jar
+          path: /tmp/robot-jar
+
+      - name: Install fresh robot JAR
+        run: |
+          apk add --no-cache git unzip zip jq
+          rm -f /opt/robocode/robots/cz.zamboch.Autopilot*.jar
+          cp /tmp/robot-jar/*.jar /opt/robocode/robots/
+
+          for jar in /opt/robocode/robots/cz.zamboch.Autopilot*.jar; do
+            if unzip -l "$jar" 2>/dev/null | grep -q '\.properties$'; then
+              continue
+            fi
+            jarname=$(basename "$jar" .jar)
+            classname=$(echo "$jarname" | sed 's/_.*//')
+            version=$(echo "$jarname" | sed 's/^[^_]*_//')
+            proppath=$(echo "$classname" | sed 's/\./\//g').properties
+            mkdir -p "/tmp/propgen/$(dirname "$proppath")"
+            printf "robot.classname=%s\nrobot.version=%s\n" "$classname" "$version" > "/tmp/propgen/$proppath"
+            (cd /tmp/propgen && zip -g "$jar" "$proppath")
+            rm -rf /tmp/propgen
+          done
+          rm -rf /opt/robocode/robots/.data 2>/dev/null || true
+          echo "Robot JAR installed: $(ls /opt/robocode/robots/cz.zamboch.Autopilot*.jar)"
+
+      - name: Environment check
+        run: |
+          echo "--- Java ---"
+          java -version 2>&1 || echo "::error::Java not found!"
+          echo "--- Node ---"
+          node --version || echo "::error::Node not found!"
+          echo "--- Robot JARs ---"
+          ls -la /opt/robocode/robots/*.jar 2>/dev/null | head -10
+
+      - name: Pre-flight self-battle test
+        run: |
+          echo "Pre-flight: cz.zamboch.Autopilot vs cz.zamboch.Autopilot (1 round)"
+          cat > /tmp/preflight.battle <<EOF
+          #Battle Properties
+          robocode.battleField.width=800
+          robocode.battleField.height=600
+          robocode.battle.numRounds=1
+          robocode.battle.gunCoolingRate=0.1
+          robocode.battle.rules.inactivityTime=450
+          robocode.battle.hideEnemyNames=false
+          robocode.battle.selectedRobots=cz.zamboch.Autopilot,cz.zamboch.Autopilot
+          EOF
+
+          java -cp '/opt/robocode/libs/*' \
+            -Xmx512M \
+            -XX:+IgnoreUnrecognizedVMOptions \
+            '--add-opens=java.base/sun.net.www.protocol.jar=ALL-UNNAMED' \
+            '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED' \
+            '--add-opens=java.base/java.lang=ALL-UNNAMED' \
+            '--add-opens=java.base/java.io=ALL-UNNAMED' \
+            '--add-opens=java.base/java.net=ALL-UNNAMED' \
+            '--add-opens=java.base/java.util=ALL-UNNAMED' \
+            -DNOSECURITY=true \
+            -Djava.awt.headless=true \
+            robocode.Robocode \
+            -cwd /opt/robocode \
+            -battle /tmp/preflight.battle \
+            -results /tmp/preflight-results.txt \
+            -nodisplay 2>&1 || true
+
+          echo "--- Pre-flight results ---"
+          cat /tmp/preflight-results.txt 2>/dev/null || echo "::error::No results file produced!"
+
+          BOT_LINES=$(grep -cE '^\s*[12]' /tmp/preflight-results.txt 2>/dev/null || echo 0)
+          if [ "$BOT_LINES" -lt 2 ]; then
+            echo "::error::Pre-flight FAILED — robot not found by Robocode"
+            exit 1
+          fi
+          echo "✅ Pre-flight OK"
+
+      - name: Run 3 self-battles
+        run: |
+          mkdir -p results recordings
+          jq -n -c \
+            --argjson n "$BATTLES_PER_OPPONENT" \
+            '[ range($n) | {bot_a:"cz.zamboch.Autopilot", bot_b:"cz.zamboch.Autopilot"} ]' \
+            > self-battles.json
+          node repo/rumble/scripts/run-battle.mjs \
+            --robocode-dir /opt/robocode \
+            --battles self-battles.json \
+            --out results/ \
+            --rounds "$ROUNDS" \
+            --record-dir recordings/ || true
+
+      - name: Verify self-battle is 45–55%
+        run: |
+          if [ ! -f results/results.json ]; then
+            echo "::error::Self-battle produced no results.json"
+            exit 1
+          fi
+
+          AVG=$(jq '
+            [ .[] | select(.error != true) | .bot_a.score_pct ]
+            | if length == 0 then 0 else (add / length) end
+          ' results/results.json)
+
+          COUNT=$(jq '[.[] | select(.error != true)] | length' results/results.json)
+          echo "Self-battle: $COUNT valid battles, avg bot_a score = $AVG%"
+
+          IS_OK=$(jq -n --argjson avg "$AVG" --argjson n "$COUNT" \
+            '($n > 0) and ($avg >= 45) and ($avg <= 55)')
+
+          {
+            echo "## Self-battle sanity check (retrained models)"
+            echo ""
+            echo "- Valid battles: $COUNT"
+            echo "- Avg bot_a score: ${AVG}%"
+            echo "- Expected band: 45–55%"
+            if [ "$IS_OK" = "true" ]; then
+              echo "- Result: ✅ PASS"
+            else
+              echo "- Result: ❌ FAIL — outside 45–55% band, indicates model/init bug"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$IS_OK" != "true" ]; then
+            echo "::warning::Self-battle outside 45–55% band ($AVG%) — model/init bug suspected"
+          fi
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: eval-self-battle-results
+          path: results/results.json
+          retention-days: 7
+
+  # ─── Step 4: Aggregate results into sprint-eval-summary.json ───
+  aggregate:
+    needs: [build, battles, resolve-branch]
+    if: always() && needs.battles.result != 'cancelled'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: eval-chunk-results-*
+          path: chunks/
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: eval-self-battle-results
+          path: self-battle/
+
+      - name: Build summary.json
+        run: |
+          mkdir -p out
+          jq -s 'add' chunks/*/results.json > all-results.json
+          echo "Total battles collected: $(jq 'length' all-results.json)"
+
+          SELF_AVG=$(jq '[.[] | select(.error != true) | .bot_a.score_pct] | if length == 0 then null else (add / length) end' \
+            self-battle/results.json 2>/dev/null || echo null)
+          SELF_COUNT=$(jq '[.[] | select(.error != true)] | length' \
+            self-battle/results.json 2>/dev/null || echo 0)
+
+          jq -n \
+            --argjson all "$(cat all-results.json)" \
+            --argjson self_avg "$SELF_AVG" \
+            --argjson self_count "$SELF_COUNT" \
+            --arg ts "$(date -u +%Y-%m-%dT%H:%M:%S)" \
+            --arg run_id "${{ github.run_id }}" \
+            --arg sha "${{ github.sha }}" \
+            --arg sprint_branch "${{ needs.resolve-branch.outputs.sprint_branch }}" \
+            '
+            def tag_sides:
+              if (.bot_a.name | startswith("cz.zamboch.Autopilot")) then
+                . + {our_score: .bot_a.score_pct, opp_score: .bot_b.score_pct, opp_name: .bot_b.name}
+              else
+                . + {our_score: .bot_b.score_pct, opp_score: .bot_a.score_pct, opp_name: .bot_a.name}
+              end;
+
+            ($all | map(select(.error != true)) | map(tag_sides)) as $valid
+            | ($valid | map(.opp_name) | unique) as $opps
+            | {
+                timestamp: $ts,
+                run_id: $run_id,
+                commit_sha: $sha,
+                sprint_branch: $sprint_branch,
+                stage: "eval-with-retrained-models",
+                total_battles: ($valid | length),
+                wins: ([$valid[] | select(.our_score > .opp_score)] | length),
+                overall_score_pct: (
+                  if ($valid | length) == 0 then 0
+                  else (([$valid[].our_score] | add) / ($valid | length) | . * 10 | round / 10)
+                  end
+                ),
+                per_opponent: [
+                  $opps[] as $name
+                  | ($valid | map(select(.opp_name == $name))) as $g
+                  | {
+                      name: $name,
+                      avg_score: (([$g[].our_score] | add) / ($g | length) | . * 10 | round / 10),
+                      battles: ($g | length),
+                      wins: ([$g[] | select(.our_score > .opp_score)] | length),
+                      scores: [$g[].our_score]
+                    }
+                ] | sort_by(-.avg_score),
+                self_battle: {
+                  avg_score_pct: $self_avg,
+                  battles: $self_count
+                },
+                errors: ([$all[] | select(.error == true)] | length),
+                raw_results: $all
+              }
+            ' > out/summary.json
+
+          echo "--- sprint-eval-summary.json ---"
+          jq '{timestamp, stage, sprint_branch, total_battles, wins, overall_score_pct, errors, self_battle, opp_count: (.per_opponent | length)}' \
+            out/summary.json
+
+      - name: Post per-opponent table to job summary
+        run: |
+          {
+            echo "## Sprint Eval (retrained models) — ${{ github.sha }}"
+            echo ""
+            echo "**Build:** \`${{ needs.build.outputs.jar_name }}\`  "
+            echo "**Sprint branch:** \`${{ needs.resolve-branch.outputs.sprint_branch }}\`  "
+            echo "**Run:** [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            echo ""
+
+            jq -r '
+              "- **Overall score:** \(.overall_score_pct)%\n" +
+              "- **Wins:** \(.wins) / \(.total_battles)\n" +
+              "- **Errors:** \(.errors)\n" +
+              "- **Self-battle avg:** \(.self_battle.avg_score_pct // "n/a")%"
+            ' out/summary.json
+
+            echo ""
+            echo "### Per-opponent breakdown"
+            echo ""
+            echo "| Opponent | Avg score % | Wins | Battles | Scores |"
+            echo "|---|---:|---:|---:|---|"
+            jq -r '
+              .per_opponent[]
+              | "| \(.name) | \(.avg_score) | \(.wins) | \(.battles) | \(.scores | map(tostring) | join(", ")) |"
+            ' out/summary.json
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sprint-eval-summary
+          path: out/summary.json
+          retention-days: 90
+
+  # ─── Step 5: Combine eval CSV chunks and run sanity checks ───
+  combine-csv:
+    needs: [battles]
+    if: always() && needs.battles.result != 'cancelled'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all eval CSV chunks
+        uses: actions/download-artifact@v8
+        with:
+          pattern: eval-csv-chunk-*
+          path: csv-chunks/
+          merge-multiple: true
+
+      - name: Combine CSVs
+        shell: bash
+        run: |
+          mkdir -p combined-csv
+
+          python3 -c "
+          import csv, os, sys
+          from pathlib import Path
+
+          for csv_name in ['ticks.csv', 'waves.csv', 'scores.csv', 'internal.csv']:
+              files = sorted(Path('csv-chunks').rglob(csv_name))
+              if not files:
+                  print(f'  No {csv_name} files found')
+                  continue
+
+              canonical = None
+              for fp in files:
+                  with open(fp) as f:
+                      reader = csv.reader(f)
+                      try:
+                          canonical = next(reader)
+                          break
+                      except StopIteration:
+                          continue
+              if canonical is None:
+                  print(f'  {csv_name}: all files empty, skipping')
+                  continue
+
+              with open(f'combined-csv/{csv_name}', 'w', newline='') as out:
+                  writer = csv.writer(out)
+                  writer.writerow(canonical)
+                  rows = 0
+                  for fp in files:
+                      with open(fp) as f:
+                          reader = csv.reader(f)
+                          try:
+                              header = next(reader)
+                          except StopIteration:
+                              continue
+                          if header == canonical:
+                              for row in reader:
+                                  writer.writerow(row)
+                                  rows += 1
+                          else:
+                              idx_map = [header.index(c) if c in header else -1 for c in canonical]
+                              for row in reader:
+                                  writer.writerow([row[i] if i >= 0 else '' for i in idx_map])
+                                  rows += 1
+                  print(f'  {csv_name}: merged {len(files)} files, {rows} data rows')
+          "
+
+          # Combine debug.log files
+          LOG_COUNT=$(find csv-chunks -name 'debug.log' -type f -size +0c | wc -l)
+          if [ "$LOG_COUNT" -gt 0 ]; then
+            > combined-csv/debug.log
+            find csv-chunks -name 'debug.log' -type f -size +0c -print0 | sort -z | while IFS= read -r -d '' f; do
+              BATTLE="${f#csv-chunks/}"
+              BATTLE="${BATTLE%/debug.log}"
+              echo "=== $BATTLE ===" >> combined-csv/debug.log
+              cat "$f" >> combined-csv/debug.log
+              echo "" >> combined-csv/debug.log
+            done
+            LOG_LINES=$(wc -l < combined-csv/debug.log)
+            echo "  debug.log: combined $LOG_COUNT files, $LOG_LINES lines"
+          else
+            echo "  No debug.log files found"
+          fi
+
+          echo "--- Combined CSV stats ---"
+          for f in combined-csv/*.csv; do
+            if [ -f "$f" ]; then
+              ROWS=$(wc -l < "$f")
+              echo "  $(basename "$f"): $ROWS rows"
+            fi
+          done
+
+      - name: Run sanity checks
+        run: |
+          PASS=0; FAIL=0; REPORT='[]'
+
+          # Required CSVs
+          for CSV_NAME in ticks.csv waves.csv scores.csv; do
+            if [ -f "combined-csv/$CSV_NAME" ]; then
+              ROWS=$(tail -n +2 "combined-csv/$CSV_NAME" | wc -l)
+              REPORT=$(echo "$REPORT" | jq ". + [{check: \"${CSV_NAME}_rows\", pass: ($ROWS > 0), value: $ROWS}]")
+              if [ "$ROWS" -gt 0 ]; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); fi
+            else
+              REPORT=$(echo "$REPORT" | jq ". + [{check: \"${CSV_NAME}_rows\", pass: false, value: 0, message: \"Missing\"}]")
+              FAIL=$((FAIL + 1))
+            fi
+          done
+
+          # Optional files
+          for OPTIONAL in internal.csv; do
+            if [ -f "combined-csv/$OPTIONAL" ]; then
+              ROWS=$(tail -n +2 "combined-csv/$OPTIONAL" | wc -l)
+              REPORT=$(echo "$REPORT" | jq ". + [{check: \"${OPTIONAL}_rows\", pass: ($ROWS > 0), value: $ROWS}]")
+              PASS=$((PASS + 1))
+            else
+              REPORT=$(echo "$REPORT" | jq ". + [{check: \"${OPTIONAL}_rows\", pass: true, value: 0, message: \"Not produced (optional)\"}]")
+              PASS=$((PASS + 1))
+            fi
+          done
+
+          # Column count check
+          if [ -f combined-csv/ticks.csv ]; then
+            COLS=$(head -1 combined-csv/ticks.csv | tr ',' '\n' | wc -l)
+            REPORT=$(echo "$REPORT" | jq ". + [{check: \"ticks_columns\", pass: ($COLS > 10), value: $COLS}]")
+            if [ "$COLS" -gt 10 ]; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); fi
+          fi
+
+          # Battle count
+          if [ -f combined-csv/scores.csv ]; then
+            BATTLES=$(tail -n +2 combined-csv/scores.csv | wc -l)
+            REPORT=$(echo "$REPORT" | jq ". + [{check: \"battle_count\", pass: ($BATTLES > 5), value: $BATTLES}]")
+            if [ "$BATTLES" -gt 5 ]; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); fi
+          fi
+
+          # Tick density
+          if [ -f combined-csv/ticks.csv ]; then
+            TICK_ROWS=$(tail -n +2 combined-csv/ticks.csv | wc -l)
+            EST=$((TICK_ROWS / 3000))
+            REPORT=$(echo "$REPORT" | jq ". + [{check: \"tick_density\", pass: ($EST > 0), value: $TICK_ROWS}]")
+            if [ "$EST" -gt 0 ]; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); fi
+          fi
+
+          jq -n --argjson checks "$REPORT" --argjson pass "$PASS" --argjson fail "$FAIL" \
+            '{timestamp: now | todate, stage: "eval-with-retrained-models", passed: $pass, failed: $fail, checks: $checks}' > sanity-report.json
+          cat sanity-report.json | jq .
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: eval-csv-combined
+          path: combined-csv/
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: eval-sanity-report
+          path: sanity-report.json
+          retention-days: 30
