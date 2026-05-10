@@ -38,7 +38,7 @@ on:
       - 'gradle/**'
       - 'build.gradle.kts'
       - 'settings.gradle.kts'
-      - '.github/workflows/eval-sprint.yml'
+      - '.github/workflows/1-sprint-batlles.yml'
 
 permissions:
   contents: read
