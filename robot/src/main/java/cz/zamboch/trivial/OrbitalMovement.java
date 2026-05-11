@@ -51,6 +51,16 @@ public final class OrbitalMovement implements IMovementStrategy {
     private double speedAhead = MAX_SPEED_AHEAD;
     /** Tick when jitter was last re-rolled. */
     private long lastJitterTick = -100;
+    /** Per-round distance offset for anti-adaptation (px, [-50, +50]). */
+    private double distanceOffset = 0;
+
+    @Override
+    public void onRoundStart(int round) {
+        // Re-seed RNG per round for different flip/jitter patterns
+        rng.setSeed(round * 37L + System.nanoTime());
+        // Vary preferred orbit distance ±50px each round
+        distanceOffset = (rng.nextDouble() * 2 - 1) * 50;
+    }
 
     @Override
     public void getCommand(Whiteboard wb, StrategyParams params, MovementCommand out) {
@@ -73,11 +83,14 @@ public final class OrbitalMovement implements IMovementStrategy {
         }
 
         // Desired angle: perpendicular to opponent, adjusted for distance
+        // Per-round distance offset varies thresholds for anti-adaptation
+        double farThreshold = 600 + distanceOffset;
+        double closeThreshold = 300 + distanceOffset;
         double desiredAngle;
-        if (distance > 600) {
+        if (distance > farThreshold) {
             // Too far — angle toward opponent aggressively
             desiredAngle = bearing + direction * Math.PI / 4;
-        } else if (distance < 300) {
+        } else if (distance < closeThreshold) {
             // Too close — angle away from opponent aggressively
             desiredAngle = bearing + direction * 3 * Math.PI / 4;
         } else {

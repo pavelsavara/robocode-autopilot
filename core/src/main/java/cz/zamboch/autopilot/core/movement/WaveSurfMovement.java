@@ -75,6 +75,8 @@ public final class WaveSurfMovement implements IMovementStrategy {
     private final Random rng = new Random();
     private int preemptiveDir = 1;
     private long nextFlipTick = 0;
+    /** Per-round angular offset for anti-adaptation (radians, [-PI/6, +PI/6]). */
+    private double roundOffset = 0;
     /** Pre-allocated candidates for VCS-guided direction evaluation. */
     private final CandidatePosition cwCandidate = new CandidatePosition();
     private final CandidatePosition ccwCandidate = new CandidatePosition();
@@ -98,6 +100,14 @@ public final class WaveSurfMovement implements IMovementStrategy {
     public WaveSurfMovement(PathPlanner planner, IWaveDanger waveDanger) {
         this.planner = planner;
         this.waveDanger = waveDanger;
+    }
+
+    @Override
+    public void onRoundStart(int round) {
+        // Re-seed RNG per round so flip/speed patterns differ each round
+        rng.setSeed(round * 31L + System.nanoTime());
+        // Random orbit angle offset: [-PI/6, +PI/6] (~±30 degrees)
+        roundOffset = (rng.nextDouble() * 2 - 1) * Math.PI / 6;
     }
 
     @Override
@@ -160,7 +170,7 @@ public final class WaveSurfMovement implements IMovementStrategy {
                 double dy = target.y - wb.getOurY();
                 double plannerAngle = Math.atan2(dx, dy);
                 double bearing = wb.getFeature(Feature.BEARING_TO_OPPONENT_ABS);
-                double orbitAngle = bearing + preemptiveDir * Math.PI / 2;
+                double orbitAngle = bearing + preemptiveDir * Math.PI / 2 + roundOffset;
                 // Blend 40% planner + 60% orbit — start positioning without full commitment
                 double blendedAngle = blendAngles(orbitAngle, plannerAngle, 0.4);
                 blendedAngle = applyWallSmoothing(blendedAngle, wb);
@@ -361,8 +371,8 @@ public final class WaveSurfMovement implements IMovementStrategy {
         double bearing = wb.getFeature(Feature.BEARING_TO_OPPONENT_ABS);
         double ourHeading = wb.getOurHeading();
 
-        // Move perpendicular to bearing, alternating direction
-        double perpAngle = bearing + preemptiveDir * Math.PI / 2;
+        // Move perpendicular to bearing, alternating direction, with per-round offset
+        double perpAngle = bearing + preemptiveDir * Math.PI / 2 + roundOffset;
         double turn = RoboMath.normalRelativeAngle(perpAngle - ourHeading);
 
         maybeChangeSpeed(wb);
@@ -399,8 +409,8 @@ public final class WaveSurfMovement implements IMovementStrategy {
             nextFlipTick = wb.getTick() + FLIP_MIN_TICKS + rng.nextInt(FLIP_RANGE_TICKS);
         }
 
-        // Move perpendicular to bearing (orbit the opponent)
-        double perpAngle = bearing + preemptiveDir * Math.PI / 2;
+        // Move perpendicular to bearing (orbit the opponent) with per-round offset
+        double perpAngle = bearing + preemptiveDir * Math.PI / 2 + roundOffset;
         // Apply wall smoothing — gradually deflect away from walls
         perpAngle = applyWallSmoothing(perpAngle, wb);
         double turn = RoboMath.normalRelativeAngle(perpAngle - ourHeading);
