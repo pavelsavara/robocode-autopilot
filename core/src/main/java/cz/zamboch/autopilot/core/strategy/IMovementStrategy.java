@@ -16,10 +16,4 @@ public interface IMovementStrategy {
 
     /** Human-readable name. */
     String getName();
-
-    /**
-     * Called at the start of each round. Allows strategies to vary
-     * their behaviour per-round for anti-adaptation.
-     */
-    default void onRoundStart(int round) { }
 }

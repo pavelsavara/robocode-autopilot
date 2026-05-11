@@ -188,7 +188,7 @@ public final class Autopilot extends AdvancedRobot {
                     (int) getBattleFieldHeight(), getGunCoolingRate(),
                     getNumRounds());
             gunManager.onRoundStart();
-            moveManager.onRoundStart(currentRound);
+            moveManager.onRoundStart();
             currentParams = strategyComputer.compute(whiteboard);
         }
     }

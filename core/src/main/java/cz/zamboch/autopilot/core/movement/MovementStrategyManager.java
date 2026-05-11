@@ -73,16 +73,9 @@ public final class MovementStrategyManager implements IPersistable {
         }
     }
 
-    /** Reset for a new round. Notifies all strategies for per-round variation. */
+    /** Reset for a new round. Active strategy selection persists across rounds. */
     public void onRoundStart() {
-        onRoundStart(-1);
-    }
-
-    /** Reset for a new round with round number. Notifies all strategies. */
-    public void onRoundStart(int round) {
-        for (int i = 0; i < strategies.size(); i++) {
-            strategies.get(i).onRoundStart(round);
-        }
+        // Active strategy selection and damage stats persist
     }
 
     // === Debug accessors ===
