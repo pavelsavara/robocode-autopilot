@@ -67,18 +67,18 @@ Phase 0 is optional when the in-game R² is already ≥ 0.7.
 $opponents = @(
     # Strong (top 10-20 tier)
     'abc.Shadow', 'voidious.Diamond', 'jk.mega.DrussGT',
-    'wiki.mega.CunobelinDC', 'pe.SandboxDT', 'oog.mega.Saguaro',
+    'jk.mini.CunobelinDC', 'pe.SandboxDT', 'oog.mega.Saguaro',
     # Upper-mid (top 20-50 tier)
     'cx.BlestPain', 'ary.FourWD', 'ej.ChocolateBar',
     'dft.Cardigan', 'eem.zapper', 'darkcanuck.Pris',
-    'rsj.Electro', 'tobe.Fusion', 'simonton.Wyrm', 'mld.Moebius',
+    'kc.serpent.WaveSerpent', 'tobe.Fusion', 'simonton.mega.SniperFrog', 'mld.Moebius',
     # Mid (top 50-100 tier)
     'florent.FloatingTadpole', 'kid.Gladiator',
     'da.NewBGank', 'ary.Help', 'gh.GresSuffurd',
-    'kawigi.micro.Shiz', 'nz.jdc.nano.LittleBlackBook',
+    'kawigi.sbf.FloodHT', 'nz.jdc.micro.HedgehogGF',
     # Lower-mid / archetypes
     'rdt.AgentSmith.AgentSmith', 'fromHell.BlackBox',
-    'tobe.mini.Charon', 'dw.Rattlesnake',
+    'voidious.Dookious', 'lxx.Tomcat',
     'sample.TrackFire', 'sample.Walls',
     # Self-battle (diagnostic — expect 48-52%)
     'cz.zamboch.Autopilot'

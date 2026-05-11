@@ -113,21 +113,21 @@ jobs:
           - id: 0
             opponents: '["abc.Shadow", "voidious.Diamond", "jk.mega.DrussGT"]'
           - id: 1
-            opponents: '["wiki.mega.CunobelinDC", "pe.SandboxDT", "oog.mega.saguaro.Saguaro"]'
+            opponents: '["jk.mini.CunobelinDC", "pe.SandboxDT", "oog.mega.saguaro.Saguaro"]'
           - id: 2
             opponents: '["cx.BlestPain", "ary.FourWD", "ej.ChocolateBar"]'
           - id: 3
             opponents: '["dft.Cardigan", "eem.zapper", "darkcanuck.Pris"]'
           - id: 4
-            opponents: '["rsj.Electro", "tobe.Fusion", "simonton.Wyrm"]'
+            opponents: '["kc.serpent.WaveSerpent", "tobe.Fusion", "simonton.mega.SniperFrog"]'
           - id: 5
             opponents: '["mld.Moebius", "florent.FloatingTadpole", "kid.Gladiator"]'
           - id: 6
             opponents: '["da.NewBGank", "ary.Help", "gh.GresSuffurd"]'
           - id: 7
-            opponents: '["kawigi.micro.Shiz", "nz.jdc.nano.LittleBlackBook", "rdt.AgentSmith.AgentSmith"]'
+            opponents: '["kawigi.sbf.FloodHT", "nz.jdc.micro.HedgehogGF", "rdt.AgentSmith.AgentSmith"]'
           - id: 8
-            opponents: '["fromHell.BlackBox", "tobe.mini.Charon", "dw.Rattlesnake"]'
+            opponents: '["fromHell.BlackBox", "voidious.Dookious", "lxx.Tomcat"]'
           - id: 9
             opponents: '["sample.TrackFire", "sample.Walls"]'
     steps:
