@@ -111,25 +111,39 @@ jobs:
       matrix:
         chunk:
           - id: 0
-            opponents: '["abc.Shadow", "voidious.Diamond", "jk.mega.DrussGT"]'
+            opponents: '["abc.Shadow", "xander.cat.XanderCat", "aw.Gilgalad"]'
           - id: 1
-            opponents: '["jk.mini.CunobelinDC", "pe.SandboxDT", "oog.mega.saguaro.Saguaro"]'
+            opponents: '["rsalesc.roborio.Roborio", "kc.mega.BeepBoop", "oog.mega.saguaro.Saguaro"]'
           - id: 2
-            opponents: '["cx.BlestPain", "ary.FourWD", "ej.ChocolateBar"]'
+            opponents: '["aaa.r.ScalarR", "jk.mega.DrussGT", "voidious.Diamond"]'
           - id: 3
-            opponents: '["dft.Cardigan", "eem.zapper", "darkcanuck.Pris"]'
+            opponents: '["cb.fire.Firestarter", "dsekercioglu.mega.Raven", "lxx.Tomcat"]'
           - id: 4
-            opponents: '["kc.serpent.WaveSerpent", "tobe.Fusion", "simonton.mega.SniperFrog"]'
+            opponents: '["rsalesc.mega.Knight", "dsekercioglu.mega.WhiteFang", "gh.GresSuffurd"]'
           - id: 5
-            opponents: '["mld.Moebius", "florent.FloatingTadpole", "kid.Gladiator"]'
+            opponents: '["kc.serpent.WaveSerpent", "cs.Nene", "jk.melee.Neuromancer"]'
           - id: 6
-            opponents: '["da.NewBGank", "ary.Help", "gh.GresSuffurd"]'
+            opponents: '["voidious.Dookious", "davidalves.Phoenix", "cb.Domogled"]'
           - id: 7
-            opponents: '["kawigi.sbf.FloodHT", "nz.jdc.micro.HedgehogGF", "rdt.AgentSmith.AgentSmith"]'
+            opponents: '["mue.Ascendant", "darkcanuck.Pris", "fromHell.BlackBox"]'
           - id: 8
-            opponents: '["fromHell.BlackBox", "voidious.Dookious", "lxx.Tomcat"]'
+            opponents: '["kc.serpent.Hydra", "jk.precise.Wintermute", "davidalves.Firebird"]'
           - id: 9
-            opponents: '["sample.TrackFire", "sample.Walls"]'
+            opponents: '["pulsar.PulsarMax", "zyx.mega.YersiniaPestis", "ags.Midboss"]'
+          - id: 10
+            opponents: '["Krabb.sliNk.Garm", "pez.rumble.CassiusClay", "axeBots.SilverSurfer"]'
+          - id: 11
+            opponents: '["mn.Combat", "cs.s2.Seraphim", "fromHell.CHCl3"]'
+          - id: 12
+            opponents: '["jk.mini.CunobelinDC", "sheldor.mini.Foilist", "ar.horizon.Horizon"]'
+          - id: 13
+            opponents: '["florent.test.Toad", "cjm.chalk.Chalk", "wcsv.PowerHouse.PowerHouse"]'
+          - id: 14
+            opponents: '["pez.rumble.Ali", "florent.XSeries.X2", "dft.Cardigan"]'
+          - id: 15
+            opponents: '["tjk.deBroglie", "ags.rougedc.RougeDC", "dft.Cyanide"]'
+          - id: 16
+            opponents: '["darkcanuck.Holden", "wcsv.Engineer.Engineer"]'
     steps:
       - uses: actions/checkout@v6
         with:
