@@ -23,6 +23,9 @@ public final class GbmMovementPredictor implements IInGameFeatures {
         try {
             m = MovementData.load();
             fi = FeatureMapping.buildIndex(MovementData.FEATURE_NAMES);
+            if (m != null) {
+                m.validateFeatureDimension(MovementData.FEATURE_NAMES.length, "Movement");
+            }
         } catch (Exception e) {
             // model stays null — heuristic fallback will be used
         }

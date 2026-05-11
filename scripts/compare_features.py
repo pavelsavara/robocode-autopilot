@@ -371,9 +371,186 @@ def compare(java_csv: str, ticks_dir: str):
             print(f"  R-squared (predicted vs actual): {r2:.4f}")
             print(f"  MAE: {np.mean(np.abs(p - a)):.4f}")
             print(f"  Predictions: {valid.sum()} valid / {len(pred)} total")
+            pred_std = np.std(p)
+            print(f"  Prediction std: {pred_std:.4f}")
+            if pred_std < 0.1:
+                print(f"  WARNING: Prediction variance collapsed (std={pred_std:.4f})!")
+                print(f"  Model is hedging to base score — feature ordering mismatch?")
             if r2 < 0:
                 print(f"  WARNING: Negative R-squared — model predictions worse than mean baseline!")
                 print(f"  Feature divergence is the likely cause.")
+
+    # ── CHECK: Feature order vs trained model ────────────────────────
+    # This catches the Sprint 24 root cause: FEATURE_NAMES in Java was in
+    # a different order than the model's training columns. The tree splits
+    # reference features by INDEX, so wrong order = wrong feature at each
+    # split = model produces garbage.
+    _check_feature_order(java_feature_cols)
+
+    # ── CHECK: Cross-predict with Python model ───────────────────────
+    # Load the XGBoost model and predict on the Java feature vectors
+    # (in FEATURE_NAMES order). If Java's FEATURE_NAMES is scrambled,
+    # the Python model will produce different predictions than Java's
+    # embedded model — even though the individual feature VALUES are correct.
+    _cross_predict(merged, java_feature_cols)
+
+
+def _check_feature_order(java_feature_cols: list[str]):
+    """Verify FEATURE_NAMES order matches feature_cols.json from training."""
+    print(f"\n{'='*110}")
+    print("FEATURE ORDER CHECK (Sprint 24 safeguard)")
+
+    # Try to find feature_cols.json
+    candidates = [
+        Path(__file__).parent.parent / 'intuition' / 'models' / 'distill' / 'fire_power' / 'feature_cols.json',
+        Path('intuition/models/distill/fire_power/feature_cols.json'),
+        Path('../intuition/models/distill/fire_power/feature_cols.json'),
+    ]
+
+    import json
+    fc_path = None
+    for c in candidates:
+        if c.exists():
+            fc_path = c
+            break
+
+    if fc_path is None:
+        print("  SKIP: feature_cols.json not found (train models first)")
+        return
+
+    with open(fc_path) as f:
+        trained_cols = json.load(f)
+
+    java_set = set(java_feature_cols)
+    trained_set = set(trained_cols)
+
+    if java_set != trained_set:
+        missing_in_java = trained_set - java_set
+        extra_in_java = java_set - trained_set
+        print(f"  FAIL: Feature sets differ!")
+        if missing_in_java:
+            print(f"    In model but not Java: {missing_in_java}")
+        if extra_in_java:
+            print(f"    In Java but not model: {extra_in_java}")
+        return
+
+    # Check order
+    mismatches = 0
+    for i, (j, t) in enumerate(zip(java_feature_cols, trained_cols)):
+        if j != t:
+            mismatches += 1
+            if mismatches <= 5:
+                print(f"  Index {i}: Java='{j}' vs Model='{t}'")
+
+    if mismatches > 0:
+        print(f"  FAIL: {mismatches}/{len(java_feature_cols)} features in WRONG ORDER!")
+        print(f"  This means every tree split reads the wrong feature value.")
+        print(f"  Fix: re-export with python export_gbm_java.py --all")
+    else:
+        print(f"  OK: all {len(java_feature_cols)} features in correct order")
+
+
+def _cross_predict(merged: pd.DataFrame, java_feature_cols: list[str]):
+    """Load XGBoost model, predict on Java features, compare vs Java predictions."""
+    print(f"\n{'='*110}")
+    print("CROSS-PREDICTION CHECK (Python model on Java feature vectors)")
+
+    # Find model
+    candidates = [
+        Path(__file__).parent.parent / 'intuition' / 'models' / 'distill' / 'fire_power' / 'model.json',
+        Path('intuition/models/distill/fire_power/model.json'),
+        Path('../intuition/models/distill/fire_power/model.json'),
+    ]
+
+    model_path = None
+    for c in candidates:
+        if c.exists():
+            model_path = c
+            break
+
+    if model_path is None:
+        print("  SKIP: model.json not found (train models first)")
+        return
+
+    try:
+        import xgboost as xgb
+    except ImportError:
+        print("  SKIP: xgboost not installed")
+        return
+
+    import json
+    # Load feature_cols.json to know correct feature order for Python model
+    fc_path = model_path.parent / 'feature_cols.json'
+    if not fc_path.exists():
+        print("  SKIP: feature_cols.json not found")
+        return
+
+    with open(fc_path) as f:
+        model_cols = json.load(f)
+
+    model = xgb.XGBRegressor()
+    model.load_model(str(model_path))
+
+    # Build feature matrix from Java CSV values in the MODEL's column order
+    # Use the Java-side values (suffix _java in merged) or plain column name
+    X_cols = []
+    missing = []
+    for col in model_cols:
+        java_col = col + '_java'
+        if java_col in merged.columns:
+            X_cols.append(java_col)
+        elif col in merged.columns:
+            X_cols.append(col)
+        else:
+            missing.append(col)
+            X_cols.append(None)
+
+    if missing:
+        print(f"  WARN: {len(missing)} model features not in Java CSV: {missing[:5]}")
+        print("  Cannot run cross-prediction with missing features")
+        return
+
+    X = merged[X_cols].values.astype(np.float32)
+    valid = np.all(np.isfinite(X), axis=1)
+
+    if valid.sum() < 10:
+        print(f"  SKIP: only {valid.sum()} valid rows")
+        return
+
+    py_pred = model.predict(X[valid])
+    py_pred = np.clip(py_pred, 0.1, 3.0)
+
+    java_pred_col = 'predicted_java' if 'predicted_java' in merged.columns else 'predicted'
+    if java_pred_col not in merged.columns:
+        print("  SKIP: no Java prediction column found")
+        return
+
+    java_pred = merged.loc[valid, java_pred_col].values.astype(np.float64)
+    valid2 = np.isfinite(java_pred)
+    py_pred, java_pred = py_pred[valid2], java_pred[valid2]
+
+    if len(py_pred) < 10:
+        print(f"  SKIP: only {len(py_pred)} comparable predictions")
+        return
+
+    mae = np.mean(np.abs(py_pred - java_pred))
+    corr = np.corrcoef(py_pred, java_pred)[0, 1] if np.std(py_pred) > 1e-10 else 0.0
+    max_err = np.max(np.abs(py_pred - java_pred))
+
+    print(f"  Samples: {len(py_pred)}")
+    print(f"  Python vs Java prediction correlation: {corr:.4f}")
+    print(f"  Python vs Java prediction MAE: {mae:.4f}")
+    print(f"  Max error: {max_err:.4f}")
+
+    if corr < 0.95:
+        print(f"  FAIL: Predictions diverge (corr={corr:.4f} < 0.95)!")
+        print(f"  This means Java's FEATURE_NAMES order doesn't match the model.")
+        print(f"  Fix: re-export with python export_gbm_java.py --all")
+    elif mae > 0.1:
+        print(f"  WARN: Predictions weakly correlated but MAE={mae:.4f} > 0.1")
+        print(f"  Possible numerical precision issue or partial feature mismatch.")
+    else:
+        print(f"  OK: Java and Python predictions match (corr={corr:.4f}, MAE={mae:.4f})")
 
 
 if __name__ == '__main__':

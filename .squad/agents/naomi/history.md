@@ -65,6 +65,33 @@
 - Created `scripts/run_diagnostic_battle.py` as a helper for the battle→compare loop.
 - Usage: `python scripts/compare_features.py <feature_logger_csv> <ticks_csv_dir>`
 
+### 2026-05-10: Team update — Sprint 20 = CI offload
+Sprint 20 = CI offload (Amos lead, Holden review). No code changes affect the robot. Movement deferred — Holden picks proposals next sprint.
+
+### 2026-05-11 — Sprint 24: Feature Divergence Diagnostic EXECUTED
+- **FIRST-EVER execution of diagnostic pipeline** (built Sprint 11, deferred 13 sprints).
+- **Result: Feature parity is EXCELLENT.** 71/80 OK, 8 MINOR, 1 DIVERGENT, 0 BROKEN.
+- All 20 window features: perfect (corr=1.0000, MAE=0.0000).
+- All 25 ML-derived features: OK or MINOR (Sprint 10 fix validated).
+- Only divergent feature: `nearest_our_wave_gap` (corr=0.92, wave tracking timing).
+- **Root cause for targeting angle offset:** `currentFirePowerBudget` set only in-game,
+  not in pipeline → different bullet speed → different targeting angles.
+  Low feature importance for fire power prediction (corr ~0.16 with actual).
+- **FeatureLogger bug found:** only captures last round (round 9). Changed FileOutputStream
+  to append mode but still only last round appears. Likely Robocode recreates robot instances
+  per round — need to investigate Robocode's AdvancedRobot lifecycle.
+- **Key insight: Feature divergence is NOT the binding constraint.** The R² gap
+  (offline 0.84 → in-game +0.48) is not caused by features being computed wrong.
+  Possible remaining causes: opponent distribution mismatch, prediction calibration,
+  model generalization gap.
+- **Robocode battle execution:** Need `--add-opens` JVM flags for Java 21 compatibility.
+  Robot data dir is `c:\robocode\robots\.data\cz\zamboch\Autopilot.data\` (package hierarchy).
+  Robot class is `cz.zamboch.Autopilot`, JAR should be `cz.zamboch.Autopilot_0.1.0.jar`
+  (underscore not dash). Battle file uses class-only names (no version suffix).
+  and prints suggested diagnosis for the top 10 most divergent features.
+- Created `scripts/run_diagnostic_battle.py` as a helper for the battle→compare loop.
+- Usage: `python scripts/compare_features.py <feature_logger_csv> <ticks_csv_dir>`
+
 ## Learnings
 
 ### 2026-05-10: Team update — Sprint 20 = CI offload

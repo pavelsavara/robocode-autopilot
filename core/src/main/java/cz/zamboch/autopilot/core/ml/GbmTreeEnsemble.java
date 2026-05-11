@@ -46,6 +46,9 @@ public final class GbmTreeEnsemble {
                            int[] leftChild, int[] rightChild,
                            double[] leafValue, double baseScore,
                            int nClasses) {
+        if (featureIndex.length == 0) {
+            throw new IllegalArgumentException("Empty tree data");
+        }
         this.nTrees = nTrees;
         this.offsets = offsets;
         this.featureIndex = featureIndex;
@@ -55,6 +58,30 @@ public final class GbmTreeEnsemble {
         this.leafValue = leafValue;
         this.baseScore = baseScore;
         this.nClasses = nClasses;
+    }
+
+    /** Number of trees in this ensemble. */
+    public int getNumTrees() { return nTrees; }
+    /** Number of output classes (1 = regression/binary). */
+    public int getNumClasses() { return nClasses; }
+
+    /**
+     * Validate that the feature array length matches what the model expects.
+     * Call once at startup with the FEATURE_NAMES array.
+     *
+     * @param expectedFeatures number of features the model was trained with
+     * @param modelName        human-readable name for error messages
+     * @throws IllegalStateException if any tree references a feature index >= expectedFeatures
+     */
+    public void validateFeatureDimension(int expectedFeatures, String modelName) {
+        for (int i = 0; i < featureIndex.length; i++) {
+            if (featureIndex[i] >= expectedFeatures) {
+                throw new IllegalStateException(
+                    modelName + ": tree node " + i + " references feature index "
+                    + featureIndex[i] + " but model only has " + expectedFeatures
+                    + " features. Model and FEATURE_NAMES are out of sync.");
+            }
+        }
     }
 
     /**
@@ -133,7 +160,4 @@ public final class GbmTreeEnsemble {
             }
         }
     }
-
-    public int getNumTrees() { return nTrees; }
-    public int getNumClasses() { return nClasses; }
 }

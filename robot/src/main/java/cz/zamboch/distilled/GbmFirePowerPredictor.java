@@ -25,6 +25,9 @@ public final class GbmFirePowerPredictor implements IInGameFeatures {
         try {
             m = FirePowerData.load();
             fi = FeatureMapping.buildIndex(FirePowerData.FEATURE_NAMES);
+            if (m != null) {
+                m.validateFeatureDimension(FirePowerData.FEATURE_NAMES.length, "FirePower");
+            }
         } catch (Exception e) {
             // model stays null — heuristic fallback will be used
         }

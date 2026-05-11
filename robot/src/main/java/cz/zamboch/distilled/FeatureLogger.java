@@ -62,7 +62,13 @@ public final class FeatureLogger {
         if (!ENABLED) return;
         try {
             File f = new File(dataDir, "features_" + modelName + ".csv");
-            out = new PrintStream(new FileOutputStream(f, false), true);
+            boolean exists = f.exists() && f.length() > 0;
+            out = new PrintStream(new FileOutputStream(f, true), true);
+            // If file already has content (e.g. from a previous round when
+            // Robocode recreates the robot instance), skip the header.
+            if (exists) {
+                headerWritten = true;
+            }
         } catch (Exception e) {
             // If file creation fails, silently disable
             out = null;

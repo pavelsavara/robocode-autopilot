@@ -212,6 +212,23 @@ def export_model(task: str):
 
     feature_cols = task_meta['feature_cols']
 
+    # --- GUARD: Verify feature_cols.json matches ---
+    fc_path = task_dir / 'feature_cols.json'
+    if fc_path.exists():
+        import hashlib
+        with open(fc_path) as f:
+            saved_cols = json.load(f)
+        if saved_cols != feature_cols:
+            print("ERROR: feature_cols.json does not match metrics.json!")
+            print(f"  metrics.json has {len(feature_cols)} features, feature_cols.json has {len(saved_cols)}")
+            for i, (a, b) in enumerate(zip(feature_cols, saved_cols)):
+                if a != b:
+                    print(f"  First diff at index {i}: metrics={a}, file={b}")
+                    break
+            sys.exit(1)
+        print(f"  Feature order verified: {len(feature_cols)} columns, "
+              f"hash={hashlib.sha256(','.join(feature_cols).encode()).hexdigest()[:16]}")
+
     # Determine model format
     json_path = task_dir / 'model.json'
     txt_path = task_dir / 'model.txt'
@@ -263,6 +280,12 @@ def export_model(task: str):
 
     # Generate test fixtures
     _generate_fixtures(task, model_data, feature_cols, task_meta)
+
+
+def _feature_hash(cols: list[str]) -> str:
+    """SHA-256 prefix of comma-joined feature names for consistency checks."""
+    import hashlib
+    return hashlib.sha256(','.join(cols).encode()).hexdigest()[:16]
 
 
 def _task_to_class_name(task: str) -> str:
@@ -369,6 +392,9 @@ public final class {class_name}Data {{
     public static final int N_TREES = {n_trees};
     public static final double BASE_SCORE = {base_score};
     public static final int N_CLASSES = {num_class};
+
+    /** SHA-256 prefix of the comma-joined feature names. Export-time consistency check. */
+    public static final String FEATURE_ORDER_HASH = "{_feature_hash(feature_cols)}";
 
     // Base64-encoded tree data (split to stay under 64KB per string constant)
 {chunk_decls_str}

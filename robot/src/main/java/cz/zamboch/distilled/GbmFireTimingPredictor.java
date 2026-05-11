@@ -24,6 +24,9 @@ public final class GbmFireTimingPredictor implements IInGameFeatures {
         try {
             m = FireTimingData.load();
             fi = FeatureMapping.buildIndex(FireTimingData.FEATURE_NAMES);
+            if (m != null) {
+                m.validateFeatureDimension(FireTimingData.FEATURE_NAMES.length, "FireTiming");
+            }
         } catch (Exception e) {
             // model stays null — heuristic fallback will be used
         }

@@ -241,6 +241,18 @@ and reviews the pass/fail results.
 | 4 | **Column count** | ticks.csv columns > 10 | Features extracted |
 | 5 | **Battle count** | scores.csv rows > 5 | Multiple opponents |
 | 6 | **Tick density** | rows / 3000 > 0 | Reasonable ticks per battle |
+| 7 | **Feature order** | FEATURE_NAMES matches feature_cols.json for all 3 models | No training/deployment mismatch (Sprint 24 root cause) |
+| 8 | **Cross-predict** | Python model on internal.csv vs Java predictions corr ≥ 0.95 | Models produce consistent predictions across languages |
+
+**Bonus ML checks (CI Stage 3):**
+
+| # | Check | Pass criteria |
+|---|-------|---------------|
+| B1 | **Fire power R²** | In-game R² ≥ 0.5 at fire events |
+| B2 | **Fire timing calibration** | Predicted rate within 5× of actual |
+| B3 | **Prediction distribution** | All model predictions have std > threshold |
+| B4 | **Movement R²** | In-game R² ≥ 0.3 |
+| B5 | **Fire timing AUC** | In-game AUC ≥ 0.6 |
 
 **If ANY check fails:** Stop. The failure IS the sprint finding. Fix the
 broken system. Do not proceed to performance analysis.
@@ -256,7 +268,7 @@ raw CSVs locally:
 | 1 | `sanity-report/sanity-report.json` | 7 sanity checks pass/fail |
 | 2 | `retrain-summary/retrain-summary.json` | Model R², AUC + sprint branch |
 | 3 | `sprint-eval-summary/summary.json` | **Authoritative:** code + retrained models |
-| 3 | `eval-sanity-report/sanity-report.json` | Stage 3 sanity checks |
+| 3 | `eval-sanity-report/sanity-report.json` | Stage 3 sanity checks + ML consistency (checks 7–8, B1–B5) |
 
 **Three-way comparison in the retrospective:**
 

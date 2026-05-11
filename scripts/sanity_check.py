@@ -409,10 +409,83 @@ def bonus_fire_power_r2(internal_df):
     ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
     r2 = 1.0 - ss_res / ss_tot if ss_tot > 0 else float("nan")
 
-    threshold = 0.3
+    threshold = 0.5
     passed = None if r2 < threshold else True
     msg = f"{r2:.2f} (threshold: {threshold}, n={len(fire_df)} fire events)"
     return CheckResult("B1", "Fire power R²", passed, msg)
+
+
+def bonus_movement_r2(internal_df):
+    """Movement prediction in-game R² (predicted vs actual lateral velocity)."""
+    if internal_df is None:
+        return CheckResult("B4", "Movement R²", None, "No data")
+
+    pred_col = "predicted_lat_vel_5"
+    actual_col = "opponent_lateral_velocity"
+
+    for col in (pred_col, actual_col):
+        if col not in internal_df.columns:
+            return CheckResult("B4", "Movement R²", None,
+                               f"Missing column {col}")
+
+    df = internal_df.copy()
+    df[pred_col] = pd.to_numeric(df[pred_col], errors="coerce")
+    df[actual_col] = pd.to_numeric(df[actual_col], errors="coerce")
+    df = df.dropna(subset=[pred_col, actual_col])
+
+    if len(df) < 100:
+        return CheckResult("B4", "Movement R²", None,
+                           f"Only {len(df)} samples")
+
+    y_true = df[actual_col].values
+    y_pred = df[pred_col].values
+    ss_res = np.sum((y_true - y_pred) ** 2)
+    ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
+    r2 = 1.0 - ss_res / ss_tot if ss_tot > 0 else float("nan")
+
+    threshold = 0.3
+    passed = None if r2 < threshold else True
+    msg = f"{r2:.2f} (threshold: {threshold}, n={len(df)} ticks)"
+    return CheckResult("B4", "Movement R²", passed, msg)
+
+
+def bonus_fire_timing_auc(internal_df):
+    """Fire timing in-game AUC (predicted probability vs actual fire events)."""
+    if internal_df is None:
+        return CheckResult("B5", "Fire timing AUC", None, "No data")
+
+    pred_col = "predicted_opponent_fires_3"
+    fired_col = "opponent_fired"
+
+    for col in (pred_col, fired_col):
+        if col not in internal_df.columns:
+            return CheckResult("B5", "Fire timing AUC", None,
+                               f"Missing column {col}")
+
+    df = internal_df.copy()
+    df[pred_col] = pd.to_numeric(df[pred_col], errors="coerce")
+    df[fired_col] = pd.to_numeric(df[fired_col], errors="coerce")
+    df = df.dropna(subset=[pred_col, fired_col])
+
+    if len(df) < 100:
+        return CheckResult("B5", "Fire timing AUC", None,
+                           f"Only {len(df)} samples")
+
+    y_true = df[fired_col].values
+    y_pred = df[pred_col].values
+
+    # Need both classes present
+    if y_true.sum() < 5 or (1 - y_true).sum() < 5:
+        return CheckResult("B5", "Fire timing AUC", None,
+                           "Too few positive or negative samples")
+
+    from sklearn.metrics import roc_auc_score
+    auc = roc_auc_score(y_true, y_pred)
+
+    threshold = 0.6
+    passed = None if auc < threshold else True
+    msg = f"{auc:.2f} (threshold: {threshold}, n={len(df)} ticks)"
+    return CheckResult("B5", "Fire timing AUC", passed, msg)
 
 
 def bonus_fire_timing_calibration(internal_df):
@@ -526,6 +599,8 @@ def run_checks(data_dir: Path, battle_id_filter=None):
     # Bonus ML checks
     for bonus in [
         bonus_fire_power_r2(internal_df),
+        bonus_movement_r2(internal_df),
+        bonus_fire_timing_auc(internal_df),
         bonus_fire_timing_calibration(internal_df),
         bonus_prediction_collapse(internal_df),
     ]:

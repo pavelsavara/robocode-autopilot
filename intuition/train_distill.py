@@ -99,6 +99,19 @@ def load_data(csv_root=None, verbose=True):
                             **root_kwargs)
     scores = load_stratified('scores.csv', selection, verbose=verbose,
                              **root_kwargs)
+
+    # Attach opponent identity hash for cross-opponent CV splits.
+    # GroupKFold on opponent_bot_id_hash (not battle_id) prevents the model
+    # from being validated on the same opponent it trained on — giving honest
+    # cross-opponent R² that matches in-game performance against unseen bots.
+    if not scores.empty and 'opponent_bot_id_hash' in scores.columns:
+        opp_hash = (scores.drop_duplicates('battle_id')
+                    [['battle_id', 'opponent_bot_id_hash']])
+        ticks = ticks.merge(opp_hash, on='battle_id', how='left')
+        if verbose:
+            n_opp = ticks['opponent_bot_id_hash'].nunique()
+            print(f"Attached opponent_bot_id_hash: {n_opp} unique opponents")
+
     return ticks, scores, selection
 
 
@@ -132,7 +145,8 @@ def train_fire_power(ticks: pd.DataFrame):
     # Clean
     target = fire['opponent_fire_power'].values
     X = fire[feat_cols].values
-    groups = fire['battle_id'].astype(str).values
+    # Group by opponent hash for honest cross-opponent CV (not battle_id)
+    groups = fire['opponent_bot_id_hash'].fillna(0).astype(int).astype(str).values
 
     valid = np.isfinite(target) & np.all(np.isfinite(X), axis=1)
     X, target, groups = X[valid], target[valid], groups[valid]
@@ -206,7 +220,8 @@ def train_movement(ticks: pd.DataFrame):
 
     target = df['target_lat_vel'].values
     X = df[feat_cols].values
-    groups = df['battle_id'].astype(str).values
+    # Group by opponent hash for honest cross-opponent CV (not battle_id)
+    groups = df['opponent_bot_id_hash'].fillna(0).astype(int).astype(str).values
 
     valid = np.isfinite(target) & np.all(np.isfinite(X), axis=1)
     X, target, groups = X[valid], target[valid], groups[valid]
@@ -281,7 +296,8 @@ def train_fire_timing(ticks: pd.DataFrame):
 
     target = df['fires_ahead'].values
     X = df[feat_cols].values
-    groups = df['battle_id'].astype(str).values
+    # Group by opponent hash for honest cross-opponent CV (not battle_id)
+    groups = df['opponent_bot_id_hash'].fillna(0).astype(int).astype(str).values
 
     valid = np.isfinite(target) & np.all(np.isfinite(X), axis=1)
     X, target, groups = X[valid], target[valid], groups[valid]
