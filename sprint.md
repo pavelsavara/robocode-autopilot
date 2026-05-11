@@ -139,26 +139,71 @@ robot JAR builds cleanly.
 Two modes: **CI** (default) or **local** (fallback). Both use the same
 underlying scripts (`run-battle.mjs`, pipeline binary, `train_distill.py`).
 
-### CI mode (default)
+### CI mode (default) — 3-stage pipeline
 
-1. Push code changes to `main` → triggers `1-sprint-battles.yml`
-2. AI agent starts `gh run watch <run-id> --exit-status` in async terminal
-3. Agent continues other work while CI runs (~70 min total):
-   - Stage 1: build + 250 battles (50×5, 10 parallel chunks) + self-battle
-   - Stage 2: process recordings → CSV, run 6 sanity checks
-   - Stage 3: retrain models + run notebooks + merge .dat (parallel)
-4. Terminal notifies when complete (or failed)
-5. If failed → agent reads `gh run view --log-failed`, diagnoses, pushes fix
-6. On success → agent downloads summary artifacts (~50KB total):
-   - `summary.json` — per-opponent scores
-   - `sanity-report.json` — 6 checks pass/fail
-   - `retrain-summary.json` — model metrics + sprint branch name
-   - Notebook HTML — pre-rendered retrospective plots
+Push to `main` triggers a 3-stage `workflow_run` chain. Each stage
+triggers the next automatically on success.
+
+```
+push to main
+    │
+[1] 1-sprint-battles.yml (~7 min)
+    ├── build: compile robot JAR + pipeline
+    ├── battles: 16 opponents × 3 battles (4 parallel chunks)
+    │   + self-battle (45–55% sanity band)
+    ├── combine-csv: column-aware merge (ticks, waves, scores, internal)
+    ├── sanity: 7 automated checks → sanity-report.json
+    └── aggregate: summary.json + score table
+         │ workflow_run [completed]
+[2] 2-sprint-train.yml (~3 min)
+    ├── train: 3 models in parallel (fire_power, fire_timing, movement)
+    ├── notebooks: R01–R10 retrospective notebooks → HTML
+    └── assemble: collect models + .dat → commit to sprint/{N}-models branch
+         │ workflow_run [completed]
+[3] 3-sprint-eval.yml (~7 min)
+    ├── build: compile robot JAR with retrained *Data.java overlaid
+    ├── battles: same 16 opponents × 3 battles + self-battle
+    ├── combine-csv + sanity checks
+    └── aggregate: sprint-eval-summary.json
+```
+
+**Total CI time: ~17 min** (stages overlap slightly due to queueing).
+
+**Two evaluation points per sprint:**
+- **Stage 1 summary** (`sprint-summary`): code changes only, old models
+- **Stage 3 summary** (`sprint-eval-summary`): code changes + freshly
+  retrained models — this is the authoritative sprint score
+
+**Monitoring:**
+1. `gh run watch <stage-1-id> --exit-status` in async terminal
+2. Agent continues work; terminal notifies on completion
+3. Stage 2 + Stage 3 auto-trigger; watch with
+   `gh run list --limit 3` to track progress
+4. If any stage fails → `gh run view <id> --log-failed`, diagnose, push fix
+
+**Downloading results:**
+```bash
+# Stage 1: code-only results
+gh run download <stage-1-id> -n sprint-summary -D output/sprint-s1
+gh run download <stage-1-id> -n sanity-report -D output/sprint-s1
+
+# Stage 2: model metrics
+gh run download <stage-2-id> -n retrain-summary -D output/sprint-s2
+
+# Stage 3: code + retrained models (authoritative)
+gh run download <stage-3-id> -n sprint-eval-summary -D output/sprint-s3
+gh run download <stage-3-id> -n eval-sanity-report -D output/sprint-s3
+```
+
+**Manual Stage 3 trigger** (if auto-trigger fails due to workflow rename):
+```bash
+gh workflow run 3-sprint-eval.yml -f sprint_branch=sprint/N-models
+```
 
 **CI outputs stay in CI:**
 - `sprint/{N}-models` branch with `*Data.java` + `DefaultDataFile.java`
-- Recording artifacts (~1.25GB, 90-day retention)
-- CSV artifacts
+- Recording artifacts (7-day retention)
+- CSV artifacts (14-day retention)
 
 ### Local mode (fallback)
 
@@ -205,28 +250,38 @@ broken system. Do not proceed to performance analysis.
 The AI team reviews these downloaded artifacts — it does NOT process
 raw CSVs locally:
 
-| Artifact | What to review |
-|---|---|
-| `summary.json` | Per-opponent scores, win rate, overall % |
-| `sanity-report.json` | All 6 checks pass/fail with values |
-| `retrain-summary.json` | Model R², AUC metrics + sprint branch name |
-| Notebook HTML | Pre-rendered retrospective plots from CI |
+| Stage | Artifact | What to review |
+|---|---|---|
+| 1 | `sprint-summary/summary.json` | Code-only scores (old models) |
+| 1 | `sanity-report/sanity-report.json` | 7 sanity checks pass/fail |
+| 2 | `retrain-summary/retrain-summary.json` | Model R², AUC + sprint branch |
+| 3 | `sprint-eval-summary/summary.json` | **Authoritative:** code + retrained models |
+| 3 | `eval-sanity-report/sanity-report.json` | Stage 3 sanity checks |
 
-Compare metrics with previous sprint. Every metric needs a **previous**
-and **delta** column in the retrospective.
+**Three-way comparison in the retrospective:**
+
+| Metric | Previous sprint | Stage 1 (code only) | Stage 3 (code + models) |
+|---|---|---|---|
+| Overall score % | ... | ... | ... |
+| Win rate | ... | ... | ... |
+| Self-battle | ... | ... | ... |
+
+The **Stage 3 score** is the sprint's official result. Stage 1 isolates
+the effect of code changes; the delta between Stage 1 and Stage 3
+shows the marginal value of retraining on the new battle data.
 
 ### 4c. Model quality review (from retrain-summary.json)
 
-Review the training metrics produced by CI stage 3:
+Review the training metrics produced by CI Stage 2:
 
 - **Fire power R²** — compare with previous sprint's offline R²
 - **Movement R²** — same
 - **Fire timing AUC** — same
 - **Sprint branch** — inspect `sprint/{N}-models` diff if metrics changed
 
-**Exit criteria:** All 6 sanity checks pass. Metrics reviewed and
-compared with previous sprint. Decision made on whether to merge
-the sprint model branch.
+**Exit criteria:** All sanity checks pass in both Stage 1 and Stage 3.
+Metrics reviewed and compared with previous sprint. Decision made on
+whether to merge the sprint model branch.
 
 ---
 
@@ -235,14 +290,14 @@ the sprint model branch.
 ### 5a. Write retrospective
 
 Goes in `archive/YYYY-MM-DD-retrospective-N.md`. **Coordinator writes it** using
-downloaded CI artifacts (summary.json, sanity-report.json, retrain-summary.json,
-notebook HTML).
+downloaded CI artifacts from all three stages (sprint-summary, retrain-summary,
+sprint-eval-summary).
 
 Required sections:
 
-1. **Diagnostic health** — results of all 6 sanity checks with pass/fail.
-2. **Metrics table** — all dimensions from 4b with previous / current / delta
-   columns.
+1. **Diagnostic health** — results of sanity checks from Stage 1 AND Stage 3.
+2. **Metrics table** — 3-way comparison: previous sprint / Stage 1 (code only) /
+   Stage 3 (code + retrained models). Stage 3 is the authoritative score.
 3. **Per-opponent breakdown** — win rate, hit rates, damage per opponent,
    sorted by win rate descending.
 4. **What worked** — which proposals improved which metrics, with numbers.
@@ -269,11 +324,14 @@ Required sections:
 
 ### 5b. Merge CI models
 
-CI stage 2 trains models and commits `*Data.java` files to a
-`sprint/{N}-models` branch. After reviewing metrics in Phase 4c:
+CI Stage 2 trains models and commits `*Data.java` files to a
+`sprint/{N}-models` branch. Stage 3 has already evaluated the robot
+with these models — use the **Stage 3 score** to decide.
 
-1. **If metrics improved or held steady:** merge the model files into `main`:
+1. **If Stage 3 score improved or held steady:** merge the model files
+   into `main`:
    ```bash
+   git fetch origin
    git checkout origin/sprint/{N}-models -- \
      robot/src/main/java/cz/zamboch/distilled/FirePowerData.java \
      robot/src/main/java/cz/zamboch/distilled/FireTimingData.java \
@@ -284,11 +342,12 @@ CI stage 2 trains models and commits `*Data.java` files to a
    Note: `DefaultDataFile.java` contains VCS histogram priors from battle
    data (`.dat` files). It is only updated when the CI `.dat` merge succeeds —
    check `retrain-summary.json` or the sprint branch diff to confirm.
-2. **If metrics regressed:** do NOT merge. Note the regression in the
-   retrospective and investigate root cause next sprint.
+2. **If Stage 3 score regressed:** do NOT merge. Note the regression in
+   the retrospective and investigate root cause next sprint.
 
-The next push to `main` will trigger CI with the new models baked into
-the robot JAR — this is how CI-trained models enter the battle loop.
+Since Stage 3 already evaluated the retrained models, there is **no need
+for an extra CI run** after merging — the Stage 3 score IS the sprint result.
+The next push to `main` will trigger a fresh pipeline for the next sprint.
 
 ### 5c. Revert and commit
 
