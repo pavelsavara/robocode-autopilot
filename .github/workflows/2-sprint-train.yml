@@ -33,7 +33,7 @@ on:
 permissions:
   contents: write
   packages: read
-  actions: read
+  actions: write
 
 env:
   SPRINT_NUM: ${{ inputs.sprint_number || '21' }}
@@ -332,3 +332,12 @@ jobs:
             git push origin "$BRANCH" --force
             echo "Pushed to $BRANCH"
           fi
+      - name: Trigger Stage 3 eval
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="sprint/${{ env.SPRINT_NUM }}-models"
+          echo "Triggering 3-sprint-eval.yml with sprint_branch=$BRANCH"
+          gh workflow run 3-sprint-eval.yml \
+            -f sprint_branch="$BRANCH" \
+            || echo "::warning::Failed to trigger Stage 3 — run manually"
