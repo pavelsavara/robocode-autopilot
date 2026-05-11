@@ -306,28 +306,31 @@ jobs:
           path: retrain-summary.json
           retention-days: 30
 
-      - name: Commit to sprint branch
+      - name: Commit to models branch
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           BRANCH="models/${MODEL_SHA:0:8}"
-          git checkout -b "$BRANCH"
+
+          # Use orphan branch to avoid pushing workflow files
+          # (GITHUB_TOKEN can't push .github/workflows/ changes)
+          git checkout --orphan "$BRANCH"
+          git rm -rf . > /dev/null 2>&1 || true
+
+          # Copy model files back and stage them
+          git checkout main -- robot/src/main/java/cz/zamboch/distilled/ 2>/dev/null || true
+          # Overlay freshly trained models from artifacts
+          find model-artifacts -name '*Data.java' -exec cp {} robot/src/main/java/cz/zamboch/distilled/ \;
           git add robot/src/main/java/cz/zamboch/distilled/*Data.java || true
           git add robot/src/main/java/cz/zamboch/distilled/DefaultDataFile.java || true
 
-          if git diff --cached --quiet; then
-            echo "No model changes to commit — pushing empty marker commit"
-            git commit --allow-empty -m "models: no changes (retrain matched $MODEL_SHA)"
-            git push origin "$BRANCH" --force
-          else
-            git commit -m "models: retrained from $MODEL_SHA
+          git commit --allow-empty -m "models: retrained from ${MODEL_SHA:0:8}
 
-          See retrain-summary.json for metrics."
-            git push origin "$BRANCH" --force
-            echo "Pushed to $BRANCH"
-          fi
+          See retrain-summary.json artifact for metrics."
+          git push origin "$BRANCH" --force
+          echo "Pushed to $BRANCH"
       - name: Trigger Stage 3 eval
         env:
           GH_TOKEN: ${{ github.token }}
