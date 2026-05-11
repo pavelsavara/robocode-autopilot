@@ -26,7 +26,7 @@ public final class VirtualGunManager implements IPersistable {
 
     private static final int WINDOW = 50;
     private static final double HIT_RATE_EPSILON = 0.03;
-    private static final double AIM_THRESHOLD = 0.015; // ~0.86 degrees — tighter aim = higher hit rate
+    private static final double AIM_THRESHOLD = 0.02; // ~1.15 degrees — slightly relaxed for more firing opportunities
     /** Exploration rate: fraction of shots fired with a random gun. */
     private static final double EXPLORE_RATE = 0.03;
 
@@ -170,9 +170,11 @@ public final class VirtualGunManager implements IPersistable {
         return RoboMath.normalRelativeAngle(selectedAngle - wb.getOurGunHeading());
     }
 
-    /** Whether the gun can fire (aimed + cool + not turning too fast). */
+    /** Whether the gun can fire (aimed + cool + recent scan + not turning too fast). */
     public boolean shouldFire(Whiteboard wb) {
         if (wb.getOurGunHeat() > 0) return false;
+        // Don't fire on stale scan data (>3 ticks old)
+        if (wb.getTick() - wb.getLastScanTick() > 3) return false;
         double gunTurnRemaining = Math.abs(getGunTurnAngle(wb));
         return gunTurnRemaining < AIM_THRESHOLD;
     }

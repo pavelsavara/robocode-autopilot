@@ -68,13 +68,15 @@ public final class Whiteboard {
     private final List<WaveRecord> ourWaves = new ArrayList<WaveRecord>(20);
 
     // VCS (Visit Count Statistics) histograms — pre-allocated, persist across rounds
-    // Segments: 3 distance bins × 2 lateral direction = 6
+    // Segments: 3 distance bins × 2 lateral direction × 2 velocity buckets = 12
     public static final int VCS_BINS = 61;
     public static final int VCS_DISTANCE_BINS = 3;
     public static final int VCS_DIR_BINS = 2;
-    public static final int VCS_SEGMENTS = VCS_DISTANCE_BINS * VCS_DIR_BINS;
+    public static final int VCS_VEL_BINS = 2;
+    public static final int VCS_SEGMENTS = VCS_DISTANCE_BINS * VCS_DIR_BINS * VCS_VEL_BINS;
     private static final double VCS_DIST_CLOSE = 250.0;
     private static final double VCS_DIST_MID = 500.0;
+    private static final double VCS_VEL_THRESHOLD = 4.0;
 
     /** Gun VCS: where the opponent has been at our wave breaks. Used by VcsGun. */
     private final int[][] gunVcs = new int[VCS_SEGMENTS][VCS_BINS];
@@ -280,12 +282,13 @@ public final class Whiteboard {
                     double candBearing = Math.atan2(ourX - w.originX, ourY - w.originY);
                     double offset = normalRelAngle(candBearing - w.fireBearing);
                     double mea = Math.asin(Math.min(1.0, 8.0 / w.bulletSpeed));
-                    double gf = mea > 0 ? offset / mea : 0;
-                    gf = Math.max(-1.0, Math.min(1.0, gf));
-                    // Use fire-time distance and lateral direction for segmentation
+                    // Normalize GF by lateral direction for consistent
+                    // coordinate system with VcsWaveDanger danger lookup.
                     int latDir = w.fireLateralDir;
                     if (latDir == 0) latDir = 1;
-                    int segment = vcsSegment(w.fireDistance, latDir);
+                    double gf = mea > 0 ? (offset / mea) * latDir : 0;
+                    gf = Math.max(-1.0, Math.min(1.0, gf));
+                    int segment = vcsSegment(w.fireDistance, latDir, w.fireLateralVelMag);
                     incrementMoveVcs(segment, gfToBin(gf));
                 }
                 it.remove();
@@ -301,13 +304,14 @@ public final class Whiteboard {
                             opponentX - w.originX, opponentY - w.originY);
                     double offset = normalRelAngle(candBearing - w.fireBearing);
                     double mea = Math.asin(Math.min(1.0, 8.0 / w.bulletSpeed));
-                    double gf = mea > 0 ? offset / mea : 0;
-                    gf = Math.max(-1.0, Math.min(1.0, gf));
-                    // Use fire-time distance and lateral direction for segmentation
-                    // (must match VcsGun's query-time segmentation)
+                    // Normalize GF by lateral direction so +1 always means
+                    // "opponent moved in their lateral direction". This must
+                    // match VcsGun's aiming: offset = gf * mea * latDir.
                     int latDir = w.fireLateralDir;
                     if (latDir == 0) latDir = 1;
-                    int segment = vcsSegment(w.fireDistance, latDir);
+                    double gf = mea > 0 ? (offset / mea) * latDir : 0;
+                    gf = Math.max(-1.0, Math.min(1.0, gf));
+                    int segment = vcsSegment(w.fireDistance, latDir, w.fireLateralVelMag);
                     incrementGunVcs(segment, gfToBin(gf));
                 }
                 it.remove();
@@ -317,12 +321,18 @@ public final class Whiteboard {
 
     // === VCS helpers ===
 
-    /** Compute VCS segment index from distance and lateral direction. */
-    public static int vcsSegment(double distance, int lateralDir) {
+    /** Compute VCS segment index from distance, lateral direction, and lateral velocity magnitude. */
+    public static int vcsSegment(double distance, int lateralDir, double lateralVelMag) {
         int distBin = distance < VCS_DIST_CLOSE ? 0
                 : distance < VCS_DIST_MID ? 1 : 2;
         int dirBin = lateralDir >= 0 ? 0 : 1;
-        return distBin * VCS_DIR_BINS + dirBin;
+        int velBin = lateralVelMag < VCS_VEL_THRESHOLD ? 0 : 1;
+        return (distBin * VCS_DIR_BINS + dirBin) * VCS_VEL_BINS + velBin;
+    }
+
+    /** Backward-compatible overload — defaults lateral velocity magnitude to 0 (slow bucket). */
+    public static int vcsSegment(double distance, int lateralDir) {
+        return vcsSegment(distance, lateralDir, 0.0);
     }
 
     /** Convert a GF value in [-1,1] to a histogram bin index in [0, VCS_BINS-1]. */
@@ -342,16 +352,20 @@ public final class Whiteboard {
     public int[] getMoveVcsSegment(int segment) { return moveVcs[segment]; }
 
     /**
-     * Initialize VCS histograms with a Gaussian prior centered at GF=0.
-     * Gives the VCS gun reasonable starting data before it has observed hits.
+     * Initialize VCS histograms with a flat prior plus a slight center bump.
+     * Spreads initial shots across all angles instead of head-on (GF=0),
+     * which is critical because wave surfers dodge away from GF=0.
      * Called at battle start if no persisted histograms are loaded.
      */
     public void initVcsPrior(int strength) {
         for (int s = 0; s < VCS_SEGMENTS; s++) {
             for (int b = 0; b < VCS_BINS; b++) {
-                double gf = binToGf(b);
-                // Gaussian kernel σ=0.3 centered at GF=0
-                int prior = (int) Math.round(strength * Math.exp(-0.5 * (gf / 0.3) * (gf / 0.3)));
+                // Flat baseline across all bins
+                int prior = strength;
+                // Slight center bump: center 10 bins (GF roughly -0.17 to +0.17)
+                if (b >= 25 && b <= 35) {
+                    prior += strength;
+                }
                 gunVcs[s][b] += prior;
             }
         }

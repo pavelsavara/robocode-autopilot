@@ -47,15 +47,18 @@ public final class VcsWaveDanger implements IWaveDanger {
                 candidate.y - wave.originY);
         double offset = RoboMath.normalRelativeAngle(candBearing - fireBearing);
         double mea = Math.asin(Math.min(1.0, 8.0 / wave.bulletSpeed));
-        double gf = mea > 0 ? offset / mea : 0;
-        gf = Math.max(-1.0, Math.min(1.0, gf));
-
-        int bin = Whiteboard.gfToBin(gf);
 
         // Determine segment from wave's fire-time context (not current tick)
         int latDir = wave.fireLateralDir;
         if (latDir == 0) latDir = 1;
-        int segment = Whiteboard.vcsSegment(wave.fireDistance, latDir);
+
+        // Normalize GF by lateral direction to match move VCS recording convention
+        double gf = mea > 0 ? (offset / mea) * latDir : 0;
+        gf = Math.max(-1.0, Math.min(1.0, gf));
+
+        int bin = Whiteboard.gfToBin(gf);
+
+        int segment = Whiteboard.vcsSegment(wave.fireDistance, latDir, wave.fireLateralVelMag);
         int[] hist = wb.getMoveVcsSegment(segment);
 
         // Total observations in this segment

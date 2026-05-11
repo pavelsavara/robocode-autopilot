@@ -85,10 +85,13 @@ public class TargetingFeatures implements IInGameFeatures {
         double headingDelta = wb.hasFeature(Feature.OPPONENT_HEADING_DELTA)
                 ? wb.getFeature(Feature.OPPONENT_HEADING_DELTA)
                 : 0.0;
+        double velDelta = wb.hasFeature(Feature.OPPONENT_VELOCITY_DELTA)
+                ? wb.getFeature(Feature.OPPONENT_VELOCITY_DELTA)
+                : 0.0;
         double circAngle = circularTargetAngle(
                 wb.getOurX(), wb.getOurY(),
                 wb.getOpponentX(), wb.getOpponentY(),
-                oppHeading, oppVel, headingDelta,
+                oppHeading, oppVel, headingDelta, velDelta,
                 ourSpeed,
                 wb.getBattlefieldWidth(), wb.getBattlefieldHeight());
         wb.setFeature(Feature.CIRCULAR_TARGET_ANGLE, circAngle);
@@ -139,20 +142,28 @@ public class TargetingFeatures implements IInGameFeatures {
      * <ul>
      *   <li>Turn-then-move ordering (heading updates before position)</li>
      *   <li>Turn rate capped at {@code 10 − 0.75·|velocity|} deg/tick</li>
-     *   <li>Wall collision zeroes velocity (opponent stops at wall)</li>
+     *   <li>Velocity acceleration/deceleration applied each tick, clamped to [-8, 8]</li>
+     *   <li>Wall collision zeroes velocity and acceleration</li>
      * </ul>
      */
     static double circularTargetAngle(
             double ourX, double ourY,
             double oppX, double oppY,
             double oppHeading, double oppVel, double headingDelta,
+            double velDelta,
             double ourSpeed,
             int bfW, int bfH) {
         double px = oppX, py = oppY, ph = oppHeading;
         double vel = oppVel;
+        double vd = velDelta;
         double t = 0;
         int maxIter = 256;
         while (++t * ourSpeed < Math.hypot(ourX - px, ourY - py) && --maxIter > 0) {
+            // Apply velocity acceleration, clamped to physics limits
+            vel += vd;
+            if (vel > MAX_VELOCITY) vel = MAX_VELOCITY;
+            else if (vel < -MAX_VELOCITY) vel = -MAX_VELOCITY;
+
             // Cap heading delta to physics-limited turn rate at current velocity
             double maxTurn = Math.toRadians(10.0 - 0.75 * Math.abs(vel));
             if (maxTurn < 0) maxTurn = 0;
@@ -165,7 +176,7 @@ public class TargetingFeatures implements IInGameFeatures {
             double newPx = px + Math.sin(ph) * vel;
             double newPy = py + Math.cos(ph) * vel;
 
-            // Wall collision: clamp position and zero velocity
+            // Wall collision: clamp position, zero velocity and acceleration
             boolean hitWall = false;
             if (newPx < ROBOT_HALF_SIZE) { newPx = ROBOT_HALF_SIZE; hitWall = true; }
             else if (newPx > bfW - ROBOT_HALF_SIZE) { newPx = bfW - ROBOT_HALF_SIZE; hitWall = true; }
@@ -174,11 +185,23 @@ public class TargetingFeatures implements IInGameFeatures {
 
             if (hitWall) {
                 vel = 0;
+                vd = 0;
             }
 
             px = newPx;
             py = newPy;
         }
         return RoboMath.normalAbsoluteAngle(Math.atan2(px - ourX, py - ourY));
+    }
+
+    /** Backward-compatible overload — velDelta defaults to 0. */
+    static double circularTargetAngle(
+            double ourX, double ourY,
+            double oppX, double oppY,
+            double oppHeading, double oppVel, double headingDelta,
+            double ourSpeed,
+            int bfW, int bfH) {
+        return circularTargetAngle(ourX, ourY, oppX, oppY, oppHeading, oppVel,
+                headingDelta, 0.0, ourSpeed, bfW, bfH);
     }
 }

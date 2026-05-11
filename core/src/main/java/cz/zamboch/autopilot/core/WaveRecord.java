@@ -24,10 +24,12 @@ public final class WaveRecord {
     public final double fireBearing;
     /** Target's lateral direction at fire time (+1/-1). Used for VCS segmentation at wave break. */
     public final int fireLateralDir;
+    /** Magnitude of target's lateral velocity at fire time (px/tick, ≥0). Used for VCS velocity bucket. */
+    public final double fireLateralVelMag;
 
     public WaveRecord(double originX, double originY, double bulletSpeed,
                       double bulletPower, long fireTick, double fireDistance,
-                      double fireBearing, int fireLateralDir) {
+                      double fireBearing, int fireLateralDir, double fireLateralVelMag) {
         this.originX = originX;
         this.originY = originY;
         this.bulletSpeed = bulletSpeed;
@@ -36,6 +38,15 @@ public final class WaveRecord {
         this.fireDistance = fireDistance;
         this.fireBearing = fireBearing;
         this.fireLateralDir = fireLateralDir;
+        this.fireLateralVelMag = fireLateralVelMag;
+    }
+
+    /** Backward-compatible constructor — fireLateralVelMag defaults to 0. */
+    public WaveRecord(double originX, double originY, double bulletSpeed,
+                      double bulletPower, long fireTick, double fireDistance,
+                      double fireBearing, int fireLateralDir) {
+        this(originX, originY, bulletSpeed, bulletPower, fireTick, fireDistance,
+                fireBearing, fireLateralDir, 0.0);
     }
 
     /** Backward-compatible constructor — fireLateralDir defaults to 1. */
@@ -43,14 +54,14 @@ public final class WaveRecord {
                       double bulletPower, long fireTick, double fireDistance,
                       double fireBearing) {
         this(originX, originY, bulletSpeed, bulletPower, fireTick, fireDistance,
-                fireBearing, 1);
+                fireBearing, 1, 0.0);
     }
 
     /** Backward-compatible constructor — fireBearing defaults to NaN, fireLateralDir to 1. */
     public WaveRecord(double originX, double originY, double bulletSpeed,
                       double bulletPower, long fireTick, double fireDistance) {
         this(originX, originY, bulletSpeed, bulletPower, fireTick, fireDistance,
-                Double.NaN, 1);
+                Double.NaN, 1, 0.0);
     }
 
     /** Damage this bullet would deal on hit. */

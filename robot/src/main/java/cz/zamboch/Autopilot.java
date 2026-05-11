@@ -237,7 +237,12 @@ public final class Autopilot extends AdvancedRobot {
             if (firePower > getEnergy() - 0.1) {
                 firePower = Math.max(0.1, getEnergy() - 0.1);
             }
-            if (gunManager.shouldFire(whiteboard) && getEnergy() > 0.2) {
+            // Don't fire when badly losing (energy ratio < 0.2) unless kill-shot
+            double totalEnergy = getEnergy() + whiteboard.getOpponentEnergy();
+            double energyRatio = totalEnergy > 0 ? getEnergy() / totalEnergy : 0.5;
+            boolean isKillShot = whiteboard.getOpponentEnergy() < 4.0;
+            boolean energyOkToFire = energyRatio >= 0.2 || isKillShot;
+            if (gunManager.shouldFire(whiteboard) && getEnergy() > 0.2 && energyOkToFire) {
                 setFire(firePower);
                 whiteboard.incrementOurShotsFired();
                 whiteboard.setLastOurFire(whiteboard.getTick(), firePower);
@@ -252,9 +257,11 @@ public final class Autopilot extends AdvancedRobot {
                 // Opponent lateral direction at fire time (for VCS segmentation)
                 int fireLateralDir = whiteboard.hasFeature(Feature.OPPONENT_LATERAL_DIRECTION)
                         ? (int) whiteboard.getFeature(Feature.OPPONENT_LATERAL_DIRECTION) : 1;
+                double fireLateralVelMag = whiteboard.hasFeature(Feature.OPPONENT_LATERAL_VELOCITY)
+                        ? Math.abs(whiteboard.getFeature(Feature.OPPONENT_LATERAL_VELOCITY)) : 0.0;
                 whiteboard.addOurWave(new WaveRecord(
                         getX(), getY(), speed, firePower,
-                        whiteboard.getTick(), dist, fireBearing, fireLateralDir));
+                        whiteboard.getTick(), dist, fireBearing, fireLateralDir, fireLateralVelMag));
             }
 
             // Emit structured tick log for internal.csv extraction
@@ -559,13 +566,14 @@ public final class Autopilot extends AdvancedRobot {
     private static VirtualGunManager createGunManager() {
         List<IGunStrategy> strategies = new ArrayList<IGunStrategy>();
         // Order = priority for tie-breaking: lower index wins within epsilon.
-        // Decision #10: CircularGun primary, HeadOnGun last.
-        strategies.add(new CircularGun());       // 0 — best general-purpose
-        strategies.add(new VcsGun());            // 1 — learns opponent patterns (peak-firing)
+        // VcsGun first (learns patterns), then CircularGun, RandomGfGun as baseline.
+        strategies.add(new VcsGun());            // 0 — learns opponent patterns (peak-firing)
+        strategies.add(new CircularGun());       // 1 — good against simple movers
         strategies.add(new VcsSamplingGun());    // 2 — anti-profiling (probabilistic GF sampling)
-        strategies.add(new PredictiveGun());     // 3 — ML-based prediction
-        strategies.add(new LinearGun());         // 4 — good against smooth movers
-        strategies.add(new HeadOnGun());         // 5 — stationary/slow opponents
+        strategies.add(new cz.zamboch.autopilot.core.gun.RandomGfGun());  // 3 — baseline ~9% vs surfers
+        strategies.add(new PredictiveGun());     // 4 — ML-based prediction
+        strategies.add(new LinearGun());         // 5 — good against smooth movers
+        strategies.add(new HeadOnGun());         // 6 — stationary/slow opponents
         return new VirtualGunManager(strategies);
     }
 

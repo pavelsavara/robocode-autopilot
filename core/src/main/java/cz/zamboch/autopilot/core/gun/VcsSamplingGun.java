@@ -18,8 +18,8 @@ import java.util.Random;
  */
 public final class VcsSamplingGun implements IGunStrategy {
 
-    private static final double SMOOTH_SIGMA = 1.5;
-    private static final int KERNEL_HALF = 4;
+    private static final double SMOOTH_SIGMA = 2.0;
+    private static final int KERNEL_HALF = 6;
 
     private final Random rng = new Random();
     private final double[] smoothed = new double[Whiteboard.VCS_BINS];
@@ -37,8 +37,10 @@ public final class VcsSamplingGun implements IGunStrategy {
         double distance = wb.getFeature(Feature.DISTANCE);
         int latDir = (int) wb.getFeature(Feature.OPPONENT_LATERAL_DIRECTION);
         if (latDir == 0) latDir = 1;
+        double latVelMag = wb.hasFeature(Feature.OPPONENT_LATERAL_VELOCITY)
+                ? Math.abs(wb.getFeature(Feature.OPPONENT_LATERAL_VELOCITY)) : 0.0;
 
-        int segment = Whiteboard.vcsSegment(distance, latDir);
+        int segment = Whiteboard.vcsSegment(distance, latDir, latVelMag);
         int[] hist = wb.getGunVcsSegment(segment);
 
         int selectedBin = sampleSmoothed(hist);
@@ -88,8 +90,10 @@ public final class VcsSamplingGun implements IGunStrategy {
         double distance = wb.getFeature(Feature.DISTANCE);
         int latDir = (int) wb.getFeature(Feature.OPPONENT_LATERAL_DIRECTION);
         if (latDir == 0) latDir = 1;
+        double latVelMag = wb.hasFeature(Feature.OPPONENT_LATERAL_VELOCITY)
+                ? Math.abs(wb.getFeature(Feature.OPPONENT_LATERAL_VELOCITY)) : 0.0;
 
-        int segment = Whiteboard.vcsSegment(distance, latDir);
+        int segment = Whiteboard.vcsSegment(distance, latDir, latVelMag);
         int[] hist = wb.getGunVcsSegment(segment);
 
         int total = 0;

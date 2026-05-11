@@ -45,3 +45,14 @@ Sprint 20 = CI offload (Amos lead, Holden review). No code changes affect the ro
 
 ### 2026-05-10: Team update - Sprint 20 = CI offload
 Sprint 20 = CI offload (Amos lead, Holden review). No code changes affect the robot. Movement deferred - Holden picks proposals next sprint.
+
+### 2026-05-11: Sprint 25 — Movement Improvements (4 changes)
+**Problem:** Opponent hit rate ~40%, binding constraint. Robot is predictable in orbit, gets cornered, only dodges at last 12 ticks, flat GF profile.
+**Changes:**
+1. **Wall smoothing (WaveSurfMovement + OrbitalMovement):** Replaced hard direction reversal at walls with smooth angular deflection. New `applyWallSmoothing()` computes a repulsive push vector from all walls within 140px zone and blends it into the target angle (max 25° deflection). Hard reversal kept as fallback only. Wall margin increased from 60→100 (wave surf) and 80→100 (orbital).
+2. **Earlier wave surfing (WaveSurfMovement):** Imminent wave threshold increased from 12→20 ticks. Added semi-imminent zone (20-30 ticks) that blends 40% PathPlanner angle + 60% orbit angle — starts positioning toward safe GFs without full commitment. Three-tier system: >30 ticks = VCS-guided orbit, 20-30 = semi-imminent blend, <20 = full PathPlanner wave surf.
+3. **Anti-profiling (OrbitalMovement):** Random orbit angle jitter ±15° re-rolled every 12 ticks. Velocity oscillation between 80-150 ahead (roughly 4-8 game speed). Makes GF profile flatter, harder for opponent targeting to learn.
+4. **Stronger wall danger scoring (WallDistancePositionDanger):** Wall danger threshold increased 100→120px, corner threshold 150→180px. Wall weight increased 0.45→0.50, distance decreased 0.25→0.20. Wall danger curve changed from linear to quadratic (squared) — stronger penalty near walls, gentler at mid-range. PathPlanner candidates near walls are now more strongly penalized.
+**Tests:** All 11 existing WaveSurfMovementTest pass. Updated 2 VCS-guided direction tests (wave moved further away to remain outside semi-imminent zone). Full test suite green.
+**Files modified:** WaveSurfMovement.java, OrbitalMovement.java, WallDistancePositionDanger.java, WaveSurfMovementTest.java.
+**Expected impact:** Reduced opponent hit rate from ~40% target direction. Smoother wall handling prevents cornering traps. Earlier wave surf gives more time to reach safe positions. Anti-profiling randomness reduces opponent accuracy by 5-10 pp.

@@ -19,7 +19,7 @@ import java.util.Random;
  * <p>When no waves are active but the fire timing model predicts an
  * imminent fire, pre-emptively starts lateral movement proportional
  * to P(fire), ramping from 0 at P=0.3 to full speed at P=0.8.
- * Direction reverses at random intervals (25-55 ticks) for
+ * Direction reverses at random intervals (15-35 ticks) for
  * unpredictability.</p>
  *
  * <p>Commitment: once a dodge direction is chosen under imminent wave,
@@ -31,24 +31,40 @@ public final class WaveSurfMovement implements IMovementStrategy {
     private static final double DODGE_RAMP_LOW = 0.3;
     private static final double DODGE_RAMP_HIGH = 0.8;
     /** Minimum ticks between random direction reversals. */
-    static final int FLIP_MIN_TICKS = 25;
-    /** Range added to FLIP_MIN_TICKS for random reversal interval (25..55). */
-    static final int FLIP_RANGE_TICKS = 31;
+    static final int FLIP_MIN_TICKS = 15;
+    /** Range added to FLIP_MIN_TICKS for random reversal interval (15..35). */
+    static final int FLIP_RANGE_TICKS = 20;
     /** Minimum ticks to hold a dodge direction under imminent wave. */
     static final int MIN_COMMIT_TICKS = 2;
     /** Maximum ticks to hold a dodge direction under imminent wave. */
     static final int MAX_COMMIT_TICKS = 8;
     /** Wall distance threshold that triggers a direction reversal. */
-    private static final double WALL_REVERSE_DIST = 60;
+    private static final double WALL_REVERSE_DIST = 100;
+    /** Wall smoothing zone: within this distance, orbit angle is blended away from wall. */
+    private static final double WALL_SMOOTH_ZONE = 180;
+    /** Maximum angular deflection (radians) for wall smoothing (~25 degrees). */
+    private static final double WALL_SMOOTH_MAX_DEFLECTION = Math.toRadians(25);
     /**
      * Hysteresis half-width (radians) for the forward/backward decision.
      * Prevents per-tick oscillation when turn angle hovers near PI/2.
      */
     static final double AHEAD_HYSTERESIS = 0.15;
+    /** Minimum lateral speed for velocity oscillation. */
+    private static final double MIN_SPEED_AHEAD = 80;
+    /** Maximum lateral speed (full speed). */
+    private static final double MAX_SPEED_AHEAD = 150;
+    /** Minimum ticks between speed changes for velocity oscillation. */
+    private static final int SPEED_CHANGE_MIN_TICKS = 8;
+    /** Range added to SPEED_CHANGE_MIN_TICKS for random interval (8..15). */
+    private static final int SPEED_CHANGE_RANGE_TICKS = 8;
     /** Minimum ticks between VCS-guided orbital direction re-evaluations. */
     static final int DIR_EVAL_INTERVAL = 8;
     /** Danger difference threshold to change orbital direction (hysteresis). */
     private static final double DIR_CHANGE_THRESHOLD = 0.03;
+    /** Ticks-to-impact threshold for full wave surf activation. */
+    private static final double IMMINENT_TICKS = 20;
+    /** Ticks-to-impact threshold for semi-imminent positioning (partial commitment). */
+    private static final double SEMI_IMMINENT_TICKS = 30;
     /** Max robot speed for position projection (px/tick). */
     private static final double MAX_SPEED = 8.0;
     /** Robot half-size for wall clamping in projections. */
@@ -74,6 +90,10 @@ public final class WaveSurfMovement implements IMovementStrategy {
     private long commitTick = -100;
     /** Number of opponent waves when we last committed. */
     private int commitWaveCount = 0;
+    /** Current speed for velocity oscillation (varies between MIN and MAX). */
+    private double currentSpeed = MAX_SPEED_AHEAD;
+    /** Tick at which the next speed change is allowed. */
+    private long nextSpeedChangeTick = 0;
 
     public WaveSurfMovement(PathPlanner planner, IWaveDanger waveDanger) {
         this.planner = planner;
@@ -86,15 +106,18 @@ public final class WaveSurfMovement implements IMovementStrategy {
         // Priority: imminent wave dodge > pre-emptive dodge > default orbit.
 
         boolean hasImminentWave = false;
+        boolean hasSemiImminentWave = false;
         if (!wb.getOpponentWaves().isEmpty()) {
             for (int i = 0; i < wb.getOpponentWaves().size(); i++) {
                 WaveRecord w = wb.getOpponentWaves().get(i);
                 double dist = Math.hypot(wb.getOurX() - w.originX, wb.getOurY() - w.originY);
                 double remaining = dist - w.radius(wb.getTick());
                 double ticksUntil = w.bulletSpeed > 0 ? remaining / w.bulletSpeed : 99;
-                if (ticksUntil < 12) {
+                if (ticksUntil < IMMINENT_TICKS) {
                     hasImminentWave = true;
                     break;
+                } else if (ticksUntil < SEMI_IMMINENT_TICKS) {
+                    hasSemiImminentWave = true;
                 }
             }
         }
@@ -121,6 +144,28 @@ public final class WaveSurfMovement implements IMovementStrategy {
 
                 double ourHeading = wb.getOurHeading();
                 double turn = RoboMath.normalRelativeAngle(committedAngle - ourHeading);
+                double ahead = computeAhead(turn);
+                turn = adjustTurnForReverse(turn, ahead);
+                out.set(ahead, turn);
+                return;
+            }
+        }
+
+        // Semi-imminent wave: start moving toward the safer side using PathPlanner
+        // but with reduced commitment (blend with orbital movement).
+        if (hasSemiImminentWave) {
+            CandidatePosition target = planner.plan(wb, params);
+            if (target != null) {
+                double dx = target.x - wb.getOurX();
+                double dy = target.y - wb.getOurY();
+                double plannerAngle = Math.atan2(dx, dy);
+                double bearing = wb.getFeature(Feature.BEARING_TO_OPPONENT_ABS);
+                double orbitAngle = bearing + preemptiveDir * Math.PI / 2;
+                // Blend 40% planner + 60% orbit — start positioning without full commitment
+                double blendedAngle = blendAngles(orbitAngle, plannerAngle, 0.4);
+                blendedAngle = applyWallSmoothing(blendedAngle, wb);
+                double ourHeading = wb.getOurHeading();
+                double turn = RoboMath.normalRelativeAngle(blendedAngle - ourHeading);
                 double ahead = computeAhead(turn);
                 turn = adjustTurnForReverse(turn, ahead);
                 out.set(ahead, turn);
@@ -240,6 +285,68 @@ public final class WaveSurfMovement implements IMovementStrategy {
     }
 
     /**
+     * Smoothly deflect the target angle away from nearby walls.
+     * Within {@link #WALL_SMOOTH_ZONE}, computes a push-away angle
+     * proportional to proximity and blends it into the target angle.
+     * This replaces the hard direction reversal with a gradual curve.
+     */
+    private double applyWallSmoothing(double targetAngle, Whiteboard wb) {
+        double x = wb.getOurX();
+        double y = wb.getOurY();
+        int bfW = wb.getBattlefieldWidth();
+        int bfH = wb.getBattlefieldHeight();
+
+        // Compute push vector from walls (sum of repulsive contributions)
+        double pushX = 0;
+        double pushY = 0;
+        double distLeft = x - 18;
+        double distRight = bfW - 18 - x;
+        double distBottom = y - 18;
+        double distTop = bfH - 18 - y;
+
+        if (distLeft < WALL_SMOOTH_ZONE) {
+            pushX += (WALL_SMOOTH_ZONE - distLeft) / WALL_SMOOTH_ZONE; // push right
+        }
+        if (distRight < WALL_SMOOTH_ZONE) {
+            pushX -= (WALL_SMOOTH_ZONE - distRight) / WALL_SMOOTH_ZONE; // push left
+        }
+        if (distBottom < WALL_SMOOTH_ZONE) {
+            pushY += (WALL_SMOOTH_ZONE - distBottom) / WALL_SMOOTH_ZONE; // push up
+        }
+        if (distTop < WALL_SMOOTH_ZONE) {
+            pushY -= (WALL_SMOOTH_ZONE - distTop) / WALL_SMOOTH_ZONE; // push down
+        }
+
+        double pushMag = Math.hypot(pushX, pushY);
+        if (pushMag < 0.01) {
+            return targetAngle; // not near any wall
+        }
+        // Clamp magnitude to 1.0
+        if (pushMag > 1.0) {
+            pushX /= pushMag;
+            pushY /= pushMag;
+            pushMag = 1.0;
+        }
+
+        // Push angle in Robocode heading convention (0=north, CW positive)
+        double pushAngle = Math.atan2(pushX, pushY);
+        double deflection = pushMag * WALL_SMOOTH_MAX_DEFLECTION;
+        // Blend: rotate targetAngle toward pushAngle by deflection amount
+        double diff = RoboMath.normalRelativeAngle(pushAngle - targetAngle);
+        double adjust = Math.signum(diff) * Math.min(Math.abs(diff), deflection);
+        return targetAngle + adjust;
+    }
+
+    /**
+     * Blend two angles by weight. Returns angle1*(1-w) + angle2*w,
+     * handling wraparound correctly.
+     */
+    private static double blendAngles(double angle1, double angle2, double weight) {
+        double diff = RoboMath.normalRelativeAngle(angle2 - angle1);
+        return angle1 + diff * weight;
+    }
+
+    /**
      * Pre-emptive lateral movement proportional to predicted fire probability.
      * Moves perpendicular to bearing line at max speed when P(fire) is high.
      * Direction does NOT randomly flip during a pre-emptive dodge — only at
@@ -258,7 +365,9 @@ public final class WaveSurfMovement implements IMovementStrategy {
         double perpAngle = bearing + preemptiveDir * Math.PI / 2;
         double turn = RoboMath.normalRelativeAngle(perpAngle - ourHeading);
 
+        maybeChangeSpeed(wb);
         double ahead = computeAhead(turn);
+        ahead = Math.signum(ahead) * currentSpeed;
         turn = adjustTurnForReverse(turn, ahead);
 
         // No random direction flip during pre-emptive dodge — maintain commitment.
@@ -292,9 +401,13 @@ public final class WaveSurfMovement implements IMovementStrategy {
 
         // Move perpendicular to bearing (orbit the opponent)
         double perpAngle = bearing + preemptiveDir * Math.PI / 2;
+        // Apply wall smoothing — gradually deflect away from walls
+        perpAngle = applyWallSmoothing(perpAngle, wb);
         double turn = RoboMath.normalRelativeAngle(perpAngle - ourHeading);
 
+        maybeChangeSpeed(wb);
         double ahead = computeAhead(turn);
+        ahead = Math.signum(ahead) * currentSpeed;
         turn = adjustTurnForReverse(turn, ahead);
 
         // Random direction reversal for unpredictability
@@ -311,6 +424,17 @@ public final class WaveSurfMovement implements IMovementStrategy {
         if (wb.getTick() >= nextFlipTick) {
             preemptiveDir = -preemptiveDir;
             nextFlipTick = wb.getTick() + FLIP_MIN_TICKS + rng.nextInt(FLIP_RANGE_TICKS);
+        }
+    }
+
+    /**
+     * Change lateral speed at random intervals for velocity oscillation.
+     * Makes our movement harder to profile by varying speed between 80-150.
+     */
+    private void maybeChangeSpeed(Whiteboard wb) {
+        if (wb.getTick() >= nextSpeedChangeTick) {
+            currentSpeed = MIN_SPEED_AHEAD + rng.nextDouble() * (MAX_SPEED_AHEAD - MIN_SPEED_AHEAD);
+            nextSpeedChangeTick = wb.getTick() + SPEED_CHANGE_MIN_TICKS + rng.nextInt(SPEED_CHANGE_RANGE_TICKS);
         }
     }
 

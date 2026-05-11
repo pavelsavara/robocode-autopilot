@@ -31,7 +31,7 @@ public final class PersistenceManager {
     private static final int MAGIC = 0x52424150;
 
     /** Bump this when the serialisation schema changes. */
-    public static final int VERSION = 1;
+    public static final int VERSION = 2;
 
     private final List<IPersistable> sections = new ArrayList<IPersistable>();
 

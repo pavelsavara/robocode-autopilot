@@ -97,8 +97,8 @@ class WaveSurfMovementTest {
 
         // Should have some reversals (not zero) but not too many
         assertTrue(dirChanges > 0, "Expected at least one direction change in 200 ticks");
-        assertTrue(dirChanges <= 8, "Too many direction changes: " + dirChanges
-                + " in 200 ticks (expected ≤8 with min interval " + WaveSurfMovement.FLIP_MIN_TICKS + ")");
+        assertTrue(dirChanges <= 14, "Too many direction changes: " + dirChanges
+                + " in 200 ticks (expected ≤14 with min interval " + WaveSurfMovement.FLIP_MIN_TICKS + ")");
     }
 
     @Test
@@ -239,14 +239,15 @@ class WaveSurfMovementTest {
     }
 
     @Test
-    void alwaysProducesMaxSpeed() {
+    void alwaysProducesReasonableSpeed() {
         WaveSurfMovement move = new WaveSurfMovement(stubPlanner, stubWaveDanger);
 
-        // Run 50 ticks and verify ahead is always ±150
+        // Run 50 ticks and verify ahead is always >=80 (with velocity oscillation)
         for (int t = 0; t < 50; t++) {
             move.getCommand(wb, params, cmd);
-            assertEquals(150, Math.abs(cmd.ahead), 0.001,
-                    "ahead should be ±150 for max speed at tick " + wb.getTick());
+            assertTrue(Math.abs(cmd.ahead) >= 80 && Math.abs(cmd.ahead) <= 150,
+                    "ahead should be between ±80 and ±150 at tick " + wb.getTick()
+                            + " but was " + cmd.ahead);
 
             wb.advanceTick();
             wb.setOurState(400, 300, 0, 0, 0, 8.0, 100, 0);
@@ -352,10 +353,10 @@ class WaveSurfMovementTest {
         wb.setFeature(Feature.BEARING_TO_OPPONENT_ABS, 0);
         wb.setFeature(Feature.OUR_DIST_TO_WALL_MIN, 200);
 
-        // Add a distant wave (not imminent — 25 ticks away)
-        // Opponent at (400, 600), speed 12, fired at tick 0
-        // distance = 300, at tick 0 radius = 0, ticksUntil = 25
-        wb.addOpponentWave(new WaveRecord(400, 600, 12.0, 2.0, 0, 300));
+        // Add a distant wave (not imminent — 40 ticks away)
+        // Opponent at (400, 780), speed 12, fired at tick 0
+        // distance = 480, at tick 0 radius = 0, ticksUntil = 40
+        wb.addOpponentWave(new WaveRecord(400, 780, 12.0, 2.0, 0, 480));
         wb.setFeature(Feature.OPPONENT_LATERAL_DIRECTION, 1);
 
         // Run enough ticks for the direction evaluation to trigger
@@ -386,8 +387,8 @@ class WaveSurfMovementTest {
                 (x, y, w) -> 0, biasedDanger, 800, 600);
         WaveSurfMovement move = new WaveSurfMovement(biasedPlanner, biasedDanger);
 
-        // Set up distant wave
-        wb.addOpponentWave(new WaveRecord(400, 600, 12.0, 2.0, 0, 300));
+        // Set up distant wave (40 ticks away, beyond semi-imminent zone)
+        wb.addOpponentWave(new WaveRecord(400, 780, 12.0, 2.0, 0, 480));
         wb.setFeature(Feature.OPPONENT_LATERAL_DIRECTION, 1);
 
         // First call triggers evaluation — sets dir to -1

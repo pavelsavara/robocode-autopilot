@@ -18,7 +18,7 @@ import cz.zamboch.autopilot.core.strategy.StrategyParams;
  */
 public final class EnergyRatioStrategyComputer extends StrategyComputer {
 
-    /** Preferred engagement distance. Balanced for both accuracy and dodge time. */
+    /** Preferred engagement distance. Far enough for dodge time, close enough for accuracy. */
     private static final double PREFERRED_DISTANCE = 350.0;
 
     @Override
@@ -105,19 +105,19 @@ public final class EnergyRatioStrategyComputer extends StrategyComputer {
             return 0.5;
         }
         if (opponentEnergy < 20.0 && ourEnergy > 20.0) {
-            return 3.0;
+            return 2.0;
         }
         // Distance-scaled fire power: close = max damage, far = fast bullet for accuracy
         // Robocode bullet speed = 20 - 3*power, so power 1.0 = speed 17, power 3.0 = speed 11
         double distPower;
-        if (distance < 150) {
-            distPower = 3.0;  // close range: max damage, bullet still arrives fast
-        } else if (distance < 300) {
-            distPower = 2.0;  // medium: balanced
-        } else if (distance < 500) {
-            distPower = 1.5;  // medium-far: faster bullet
+        if (distance < 200) {
+            distPower = 2.0;  // close range: good damage, fast bullet
+        } else if (distance < 400) {
+            distPower = 1.5;  // medium: balanced
+        } else if (distance < 600) {
+            distPower = 1.0;  // medium-far: faster bullet
         } else {
-            distPower = 1.0;  // far: fast bullet essential
+            distPower = 0.5;  // far: fastest bullet essential
         }
         // Aggression adjusts ±0.5 around distance base
         double desired = Math.max(0.5, Math.min(3.0, distPower + (aggression - 0.5) * 0.5));

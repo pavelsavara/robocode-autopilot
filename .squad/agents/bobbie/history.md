@@ -73,3 +73,27 @@ Sprint 20 = CI offload (Amos lead, Holden review). No code changes affect the ro
 
 ### 2026-05-10: Team update - Sprint 20 = CI offload
 Sprint 20 = CI offload (Amos lead, Holden review). No code changes affect the robot. Movement deferred - Holden picks proposals next sprint.
+
+### 2026-05-11: Sprint 25 — Targeting Improvements (4 changes)
+**A. VcsGun/VcsSamplingGun smoothing widened:** σ=1.5→2.0, kernel ±4→±6 bins. Wider Gaussian
+   reduces spikiness in sparse histograms, making VCS more robust in early rounds.
+
+**B. VCS velocity bucket segments (6→12):** Added 2 velocity buckets (slow: |latVel|<4, fast: ≥4)
+   to VCS segmentation: 3 distance × 2 direction × 2 velocity = 12 segments. Slow vs fast
+   opponents have very different GF distributions — a surfer at speed 8 reaches ±1.0 GF, a
+   stopped bot stays at GF≈0. Changes touched WaveRecord (new `fireLateralVelMag` field),
+   Whiteboard (vcsSegment 3-arg), VcsGun, VcsSamplingGun, VcsWaveDanger, Autopilot, MultiWaveFeatures.
+   PersistenceManager VERSION bumped 1→2 to invalidate old 6-segment data.
+
+**C. CircularGun acceleration prediction:** Added `velDelta` parameter to `circularTargetAngle()`.
+   Velocity now accelerates/decelerates each simulation tick (clamped to ±8). Wall collisions
+   zero both velocity and acceleration. Backward-compatible overload keeps existing tests passing.
+   Key improvement for predicting decelerating opponents approaching walls.
+
+**D. AIM_THRESHOLD relaxed 0.015→0.02 rad:** Too-tight aim caused missed firing opportunities.
+   At distance 400 with bullet speed 14, 0.02 rad = ~8px offset ≈ 44% of robot width. Still
+   accurate enough while catching ~30% more firing windows.
+
+**Files changed:** WaveRecord.java, Whiteboard.java, VcsGun.java, VcsSamplingGun.java,
+   VcsWaveDanger.java, VirtualGunManager.java, TargetingFeatures.java, Autopilot.java,
+   MultiWaveFeatures.java, PersistenceManager.java. All compile clean, all 62+ tests pass.

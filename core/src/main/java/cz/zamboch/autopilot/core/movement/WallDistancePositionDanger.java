@@ -7,7 +7,7 @@ import cz.zamboch.autopilot.core.Whiteboard;
  *
  * <p>Danger components (all in [0, 1], combined via weighted average):</p>
  * <ul>
- *   <li><b>Wall danger</b>: increases sharply within 50px of any wall</li>
+ *   <li><b>Wall danger</b>: increases sharply within 120px of any wall</li>
  *   <li><b>Corner danger</b>: high when close to two walls simultaneously</li>
  *   <li><b>Distance danger</b>: too close (&lt;150px) or too far (&gt;500px) is bad</li>
  * </ul>
@@ -15,14 +15,14 @@ import cz.zamboch.autopilot.core.Whiteboard;
 public final class WallDistancePositionDanger implements IPositionDanger {
 
     private static final int MARGIN = 18; // robot half-size
-    private static final double WALL_DANGER_THRESHOLD = 100.0;
-    private static final double CORNER_DANGER_THRESHOLD = 150.0;
+    private static final double WALL_DANGER_THRESHOLD = 120.0;
+    private static final double CORNER_DANGER_THRESHOLD = 180.0;
     private static final double PREFERRED_DIST_MIN = 150.0;
     private static final double PREFERRED_DIST_MAX = 600.0;
 
-    private static final double W_WALL = 0.45;
+    private static final double W_WALL = 0.50;
     private static final double W_CORNER = 0.30;
-    private static final double W_DISTANCE = 0.25;
+    private static final double W_DISTANCE = 0.20;
 
     @Override
     public double danger(double x, double y, Whiteboard wb) {
@@ -37,7 +37,7 @@ public final class WallDistancePositionDanger implements IPositionDanger {
         double minWall = Math.min(Math.min(distLeft, distRight),
                 Math.min(distBottom, distTop));
         double wallDanger = minWall < WALL_DANGER_THRESHOLD
-                ? 1.0 - (minWall / WALL_DANGER_THRESHOLD) : 0.0;
+                ? squared(1.0 - (minWall / WALL_DANGER_THRESHOLD)) : 0.0;
 
         // Corner danger: proximity to nearest corner (geometric mean of two wall distances)
         double minHoriz = Math.min(distLeft, distRight);
@@ -66,5 +66,9 @@ public final class WallDistancePositionDanger implements IPositionDanger {
 
     private static double clamp(double v) {
         return v < 0 ? 0 : v > 1 ? 1 : v;
+    }
+
+    private static double squared(double v) {
+        return v * v;
     }
 }
