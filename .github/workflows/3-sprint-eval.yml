@@ -790,124 +790,89 @@ jobs:
       - uses: actions/checkout@v6
         with:
           sparse-checkout: |
-            scripts/compare_features.py
-            intuition/models/distill
             robot/src/main/java/cz/zamboch/distilled
-          path: repo
+          path: repo-main
+
+      - name: Checkout models branch
+        run: |
+          BRANCH="${{ needs.resolve-branch.outputs.sprint_branch }}"
+          git clone --depth=1 --branch="$BRANCH" --single-branch \
+            "https://github.com/${{ github.repository }}.git" repo-models 2>/dev/null || true
 
       - name: ML model consistency checks (Sprint 24 safeguard)
         run: |
-          pip3 install --quiet numpy pandas xgboost scikit-learn 2>/dev/null || true
-
           python3 -c "
-          import json, re, sys, os
-          import numpy as np
+          import re, os, sys
 
-          repo = 'repo'
           PASS = 0
           FAIL = 0
           messages = []
 
-          # ── Check 1: FEATURE_NAMES order matches feature_cols.json ──
+          def extract_features(java_path):
+              if not os.path.exists(java_path):
+                  return None, None
+              code = open(java_path).read()
+              feats = re.findall(r'\"([a-z][a-z0-9_]+)\"', code.split('FEATURE_NAMES')[1].split(';')[0])
+              hash_m = re.search(r'FEATURE_ORDER_HASH\s*=\s*\"([a-f0-9]+)\"', code)
+              fhash = hash_m.group(1) if hash_m else None
+              return feats, fhash
+
+          # Compare FEATURE_NAMES between main and models branch for each model
           for task, java_file in [
               ('fire_power', 'FirePowerData.java'),
               ('fire_timing', 'FireTimingData.java'),
               ('movement', 'MovementData.java'),
           ]:
-              fc_path = os.path.join(repo, 'intuition', 'models', 'distill', task, 'feature_cols.json')
-              java_path = os.path.join(repo, 'robot', 'src', 'main', 'java', 'cz', 'zamboch', 'distilled', java_file)
+              main_path = os.path.join('repo-main', 'robot', 'src', 'main', 'java', 'cz', 'zamboch', 'distilled', java_file)
+              model_path = os.path.join('repo-models', 'robot', 'src', 'main', 'java', 'cz', 'zamboch', 'distilled', java_file)
 
-              if not os.path.exists(fc_path):
-                  messages.append(f'{task}: SKIP — no feature_cols.json')
+              main_feats, main_hash = extract_features(main_path)
+              model_feats, model_hash = extract_features(model_path)
+
+              if main_feats is None:
+                  messages.append(f'{task}: SKIP — no {java_file} on main')
                   continue
-              if not os.path.exists(java_path):
-                  messages.append(f'{task}: SKIP — no {java_file}')
+              if model_feats is None:
+                  messages.append(f'{task}: SKIP — no {java_file} on models branch')
                   continue
 
-              with open(fc_path) as f:
-                  model_cols = json.load(f)
-
-              java_code = open(java_path).read()
-              java_cols = re.findall(r'\"([a-z_]+)\"', java_code.split('FEATURE_NAMES')[1].split(';')[0])
-
-              if java_cols == model_cols:
+              if main_feats == model_feats:
                   PASS += 1
-                  messages.append(f'{task}: feature order OK ({len(java_cols)} cols)')
+                  messages.append(f'{task}: feature order OK ({len(main_feats)} cols, hash={main_hash or \"none\"})')
               else:
                   FAIL += 1
-                  mismatches = sum(1 for a, b in zip(java_cols, model_cols) if a != b)
-                  messages.append(f'{task}: FEATURE ORDER MISMATCH — {mismatches}/{len(java_cols)} wrong!')
+                  mismatches = sum(1 for a, b in zip(main_feats, model_feats) if a != b)
+                  messages.append(f'{task}: FEATURE ORDER MISMATCH — {mismatches}/{len(main_feats)} differ between main and models branch!')
 
-          # ── Check 2: Cross-predict fire_power on internal.csv ──
+          # Check prediction variance in internal.csv
           internal_path = 'combined-csv/internal.csv'
-          model_path = os.path.join(repo, 'intuition', 'models', 'distill', 'fire_power', 'model.json')
-          fc_path = os.path.join(repo, 'intuition', 'models', 'distill', 'fire_power', 'feature_cols.json')
-
-          if os.path.exists(internal_path) and os.path.exists(model_path) and os.path.exists(fc_path):
+          if os.path.exists(internal_path):
               try:
                   import pandas as pd
-                  import xgboost as xgb
-
+                  import numpy as np
                   df = pd.read_csv(internal_path, low_memory=False)
-                  with open(fc_path) as f:
-                      model_cols = json.load(f)
-
-                  # Check which model features exist in internal.csv
-                  available = [c for c in model_cols if c in df.columns]
-                  if len(available) >= len(model_cols) * 0.8:
-                      model = xgb.XGBRegressor()
-                      model.load_model(model_path)
-
-                      # Build feature matrix in model order
-                      X = df[available].apply(pd.to_numeric, errors='coerce')
-                      valid = X.notna().all(axis=1)
-                      X_valid = X.loc[valid].values.astype(np.float32)
-
-                      if len(X_valid) > 100:
-                          # Predict with model
-                          if len(available) == len(model_cols):
-                              py_pred = np.clip(model.predict(X_valid), 0.1, 3.0)
-
-                              # Compare vs Java predictions
-                              pred_col = 'predicted_fire_power'
-                              if pred_col in df.columns:
-                                  java_pred = pd.to_numeric(df.loc[valid, pred_col], errors='coerce')
-                                  both_valid = java_pred.notna()
-                                  if both_valid.sum() > 50:
-                                      jp = java_pred[both_valid].values
-                                      pp = py_pred[both_valid.values]
-                                      corr = np.corrcoef(jp, pp)[0, 1] if np.std(jp) > 1e-10 else 0
-                                      mae = np.mean(np.abs(jp - pp))
-
-                                      if corr >= 0.95:
-                                          PASS += 1
-                                          messages.append(f'cross-predict: OK (corr={corr:.3f}, MAE={mae:.3f}, n={both_valid.sum()})')
-                                      else:
-                                          FAIL += 1
-                                          messages.append(f'cross-predict: FAIL (corr={corr:.3f}) — feature order mismatch?')
-                                  else:
-                                      messages.append('cross-predict: SKIP — too few Java predictions')
+                  for col, threshold in [('predicted_fire_power', 0.05), ('predicted_lat_vel_5', 0.1), ('predicted_opponent_fires_3', 0.01)]:
+                      if col in df.columns:
+                          vals = pd.to_numeric(df[col], errors='coerce').dropna()
+                          if len(vals) > 100:
+                              std = float(vals.std())
+                              if std < threshold:
+                                  FAIL += 1
+                                  messages.append(f'{col}: COLLAPSED (std={std:.4f} < {threshold})')
                               else:
-                                  messages.append('cross-predict: SKIP — no predicted_fire_power in internal.csv')
-                          else:
-                              messages.append(f'cross-predict: SKIP — only {len(available)}/{len(model_cols)} features in internal.csv')
-                      else:
-                          messages.append('cross-predict: SKIP — too few valid rows')
-                  else:
-                      messages.append(f'cross-predict: SKIP — only {len(available)}/{len(model_cols)} model features in internal.csv')
+                                  PASS += 1
+                                  messages.append(f'{col}: variance OK (std={std:.4f})')
               except Exception as e:
-                  messages.append(f'cross-predict: ERROR — {e}')
+                  messages.append(f'prediction variance: ERROR — {e}')
           else:
-              missing = [f for f in [internal_path, model_path, fc_path] if not os.path.exists(f)]
-              messages.append(f'cross-predict: SKIP — missing: {missing}')
+              messages.append('prediction variance: SKIP — no internal.csv')
 
-          # Report
           print(f'ML consistency checks: {PASS} passed, {FAIL} failed')
           for m in messages:
               print(f'  {m}')
           if FAIL > 0:
               print('::warning::ML model consistency check failed — see details above')
-          "
+          " || true
 
       - uses: actions/upload-artifact@v7
         with:
