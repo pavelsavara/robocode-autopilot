@@ -322,7 +322,9 @@ jobs:
           git add robot/src/main/java/cz/zamboch/distilled/DefaultDataFile.java || true
 
           if git diff --cached --quiet; then
-            echo "No model changes to commit"
+            echo "No model changes to commit — pushing empty marker commit"
+            git commit --allow-empty -m "sprint ${{ env.SPRINT_NUM }}: no model changes (CI retrain matched current models)"
+            git push origin "$BRANCH" --force
           else
             git commit -m "sprint ${{ env.SPRINT_NUM }}: retrained models from CI pipeline
 

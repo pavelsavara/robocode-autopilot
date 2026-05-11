@@ -107,17 +107,29 @@ jobs:
       image: ghcr.io/pavelsavara/robocode-autopilot/battle-runner:latest
     strategy:
       fail-fast: false
-      max-parallel: 4
+      max-parallel: 20
       matrix:
         chunk:
           - id: 0
-            opponents: '["abc.Shadow","voidious.Diamond","jk.mega.DrussGT","jk.mini.CunobelinDC"]'
+            opponents: '["abc.Shadow", "voidious.Diamond", "jk.mega.DrussGT"]'
           - id: 1
-            opponents: '["pe.SandboxDT","oog.mega.saguaro.Saguaro","cx.BlestPain","ary.FourWD"]'
+            opponents: '["wiki.mega.CunobelinDC", "pe.SandboxDT", "oog.mega.saguaro.Saguaro"]'
           - id: 2
-            opponents: '["ej.ChocolateBar","dft.Cardigan","eem.zapper","darkcanuck.Pris"]'
+            opponents: '["cx.BlestPain", "ary.FourWD", "ej.ChocolateBar"]'
           - id: 3
-            opponents: '["tobe.Fusion","mld.Moebius","simonton.mini.WeeksOnEnd","simonton.mega.SniperFrog"]'
+            opponents: '["dft.Cardigan", "eem.zapper", "darkcanuck.Pris"]'
+          - id: 4
+            opponents: '["rsj.Electro", "tobe.Fusion", "simonton.Wyrm"]'
+          - id: 5
+            opponents: '["mld.Moebius", "florent.FloatingTadpole", "kid.Gladiator"]'
+          - id: 6
+            opponents: '["da.NewBGank", "ary.Help", "gh.GresSuffurd"]'
+          - id: 7
+            opponents: '["kawigi.micro.Shiz", "nz.jdc.nano.LittleBlackBook", "rdt.AgentSmith.AgentSmith"]'
+          - id: 8
+            opponents: '["fromHell.BlackBox", "tobe.mini.Charon", "dw.Rattlesnake"]'
+          - id: 9
+            opponents: '["sample.TrackFire", "sample.Walls"]'
     steps:
       - uses: actions/checkout@v6
         with:

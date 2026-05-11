@@ -226,10 +226,10 @@ def train_movement(ticks: pd.DataFrame):
     valid = np.isfinite(target) & np.all(np.isfinite(X), axis=1)
     X, target, groups = X[valid], target[valid], groups[valid]
 
-    # Subsample if too large
-    if len(X) > 500_000:
+    # Subsample if too large (1.5M balances accuracy vs training time)
+    if len(X) > 1_500_000:
         rng = np.random.RandomState(42)
-        idx = rng.choice(len(X), 500_000, replace=False)
+        idx = rng.choice(len(X), 1_500_000, replace=False)
         X, target, groups = X[idx], target[idx], groups[idx]
 
     print(f"  Samples: {len(X):,}, features: {X.shape[1]}")
@@ -302,9 +302,10 @@ def train_fire_timing(ticks: pd.DataFrame):
     valid = np.isfinite(target) & np.all(np.isfinite(X), axis=1)
     X, target, groups = X[valid], target[valid], groups[valid]
 
-    if len(X) > 500_000:
+    # Subsample if too large (1.5M balances accuracy vs training time)
+    if len(X) > 1_500_000:
         rng = np.random.RandomState(42)
-        idx = rng.choice(len(X), 500_000, replace=False)
+        idx = rng.choice(len(X), 1_500_000, replace=False)
         X, target, groups = X[idx], target[idx], groups[idx]
 
     print(f"  Samples: {len(X):,}, features: {X.shape[1]}")
