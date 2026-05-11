@@ -554,7 +554,7 @@ jobs:
             self-battle/results.json 2>/dev/null || echo 0)
 
           jq -n \
-            --argjson all "$(cat all-results.json)" \
+            --slurpfile all all-results.json \
             --argjson self_avg "$SELF_AVG" \
             --argjson self_count "$SELF_COUNT" \
             --arg ts "$(date -u +%Y-%m-%dT%H:%M:%S)" \
@@ -562,6 +562,8 @@ jobs:
             --arg sha "${{ github.sha }}" \
             --arg sprint_branch "${{ needs.resolve-branch.outputs.sprint_branch }}" \
             '
+            # --slurpfile wraps in an array, so $all[0] is the actual list
+            ($all[0]) as $all |
             def tag_sides:
               if (.bot_a.name | startswith("cz.zamboch.Autopilot")) then
                 . + {our_score: .bot_a.score_pct, opp_score: .bot_b.score_pct, opp_name: .bot_b.name}
