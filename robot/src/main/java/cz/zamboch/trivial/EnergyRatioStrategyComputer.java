@@ -102,26 +102,27 @@ public final class EnergyRatioStrategyComputer extends StrategyComputer {
             return Math.max(0.1, Math.min(3.0, opponentEnergy / 4.0));
         }
         if (ourEnergy < 5.0) {
-            return 0.5;
+            return 0.1; // conserve energy when low
         }
-        if (opponentEnergy < 20.0 && ourEnergy > 20.0) {
+        // Kill-shot at close range when we have energy advantage
+        if (opponentEnergy < 20.0 && ourEnergy > 30.0 && distance < 300) {
             return 2.0;
         }
-        // Distance-scaled fire power: close = max damage, far = fast bullet for accuracy
-        // Robocode bullet speed = 20 - 3*power, so power 1.0 = speed 17, power 3.0 = speed 11
+        // Distance-scaled fire power — conserve energy, use fast bullets
+        // Robocode bullet speed = 20 - 3*power, so power 0.5 = speed 18.5 (very fast)
         double distPower;
-        if (distance < 200) {
-            distPower = 2.5;  // close range: max damage, still fast enough (speed 12.5)
-        } else if (distance < 400) {
-            distPower = 1.5;  // medium: balanced
-        } else if (distance < 600) {
-            distPower = 1.0;  // medium-far: faster bullet
+        if (distance < 150) {
+            distPower = 1.5;  // close range: good damage, still fast
+        } else if (distance < 300) {
+            distPower = 1.0;  // medium-close: balanced
+        } else if (distance < 500) {
+            distPower = 0.5;  // medium: fast bullet, conserve energy
         } else {
-            distPower = 0.5;  // far: fastest bullet essential
+            distPower = 0.3;  // far: fastest bullet, minimal energy spend
         }
-        // Aggression adjusts ±0.5 around distance base
-        double desired = Math.max(0.5, Math.min(3.0, distPower + (aggression - 0.5) * 0.5));
-        double maxAffordable = Math.max(0.5, ourEnergy / 4.0);
-        return Math.min(desired, Math.min(3.0, maxAffordable));
+        // Aggression adjusts ±0.3 around distance base
+        double desired = Math.max(0.1, Math.min(2.0, distPower + (aggression - 0.5) * 0.3));
+        double maxAffordable = Math.max(0.1, ourEnergy / 6.0);
+        return Math.min(desired, Math.min(2.0, maxAffordable));
     }
 }
