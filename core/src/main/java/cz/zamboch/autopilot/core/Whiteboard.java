@@ -68,16 +68,13 @@ public final class Whiteboard {
     private final List<WaveRecord> ourWaves = new ArrayList<WaveRecord>(20);
 
     // VCS (Visit Count Statistics) histograms — pre-allocated, persist across rounds
-    // Segments: 3 distance bins × 2 lateral direction × 2 velocity bins = 12
+    // Segments: 3 distance bins × 2 lateral direction = 6
     public static final int VCS_BINS = 61;
     public static final int VCS_DISTANCE_BINS = 3;
     public static final int VCS_DIR_BINS = 2;
-    public static final int VCS_VEL_BINS = 2;
-    public static final int VCS_SEGMENTS = VCS_DISTANCE_BINS * VCS_DIR_BINS * VCS_VEL_BINS;
+    public static final int VCS_SEGMENTS = VCS_DISTANCE_BINS * VCS_DIR_BINS;
     private static final double VCS_DIST_CLOSE = 250.0;
     private static final double VCS_DIST_MID = 500.0;
-    /** Velocity threshold for slow vs fast bucket (px/tick). Half max speed. */
-    public static final double VCS_VEL_THRESHOLD = 4.0;
 
     /** Gun VCS: where the opponent has been at our wave breaks. Used by VcsGun. */
     private final int[][] gunVcs = new int[VCS_SEGMENTS][VCS_BINS];
@@ -288,7 +285,7 @@ public final class Whiteboard {
                     // Use fire-time distance and lateral direction for segmentation
                     int latDir = w.fireLateralDir;
                     if (latDir == 0) latDir = 1;
-                    int segment = vcsSegment(w.fireDistance, latDir, w.fireOpponentAbsVelocity);
+                    int segment = vcsSegment(w.fireDistance, latDir);
                     incrementMoveVcs(segment, gfToBin(gf));
                 }
                 it.remove();
@@ -310,7 +307,7 @@ public final class Whiteboard {
                     // (must match VcsGun's query-time segmentation)
                     int latDir = w.fireLateralDir;
                     if (latDir == 0) latDir = 1;
-                    int segment = vcsSegment(w.fireDistance, latDir, w.fireOpponentAbsVelocity);
+                    int segment = vcsSegment(w.fireDistance, latDir);
                     incrementGunVcs(segment, gfToBin(gf));
                 }
                 it.remove();
@@ -320,18 +317,12 @@ public final class Whiteboard {
 
     // === VCS helpers ===
 
-    /** Compute VCS segment index from distance, lateral direction, and absolute velocity. */
-    public static int vcsSegment(double distance, int lateralDir, double absVelocity) {
+    /** Compute VCS segment index from distance and lateral direction. */
+    public static int vcsSegment(double distance, int lateralDir) {
         int distBin = distance < VCS_DIST_CLOSE ? 0
                 : distance < VCS_DIST_MID ? 1 : 2;
         int dirBin = lateralDir >= 0 ? 0 : 1;
-        int velBin = absVelocity < VCS_VEL_THRESHOLD ? 0 : 1;
-        return (distBin * VCS_DIR_BINS + dirBin) * VCS_VEL_BINS + velBin;
-    }
-
-    /** Backward-compatible overload — assumes fast velocity (>= threshold). */
-    public static int vcsSegment(double distance, int lateralDir) {
-        return vcsSegment(distance, lateralDir, VCS_VEL_THRESHOLD);
+        return distBin * VCS_DIR_BINS + dirBin;
     }
 
     /** Convert a GF value in [-1,1] to a histogram bin index in [0, VCS_BINS-1]. */

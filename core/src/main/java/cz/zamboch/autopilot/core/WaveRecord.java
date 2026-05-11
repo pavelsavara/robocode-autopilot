@@ -24,13 +24,10 @@ public final class WaveRecord {
     public final double fireBearing;
     /** Target's lateral direction at fire time (+1/-1). Used for VCS segmentation at wave break. */
     public final int fireLateralDir;
-    /** Target's absolute velocity at fire time (px/tick). Used for VCS velocity segmentation. */
-    public final double fireOpponentAbsVelocity;
 
     public WaveRecord(double originX, double originY, double bulletSpeed,
                       double bulletPower, long fireTick, double fireDistance,
-                      double fireBearing, int fireLateralDir,
-                      double fireOpponentAbsVelocity) {
+                      double fireBearing, int fireLateralDir) {
         this.originX = originX;
         this.originY = originY;
         this.bulletSpeed = bulletSpeed;
@@ -39,15 +36,6 @@ public final class WaveRecord {
         this.fireDistance = fireDistance;
         this.fireBearing = fireBearing;
         this.fireLateralDir = fireLateralDir;
-        this.fireOpponentAbsVelocity = fireOpponentAbsVelocity;
-    }
-
-    /** Backward-compatible constructor — fireOpponentAbsVelocity defaults to 8.0 (max speed). */
-    public WaveRecord(double originX, double originY, double bulletSpeed,
-                      double bulletPower, long fireTick, double fireDistance,
-                      double fireBearing, int fireLateralDir) {
-        this(originX, originY, bulletSpeed, bulletPower, fireTick, fireDistance,
-                fireBearing, fireLateralDir, 8.0);
     }
 
     /** Backward-compatible constructor — fireLateralDir defaults to 1. */
@@ -55,14 +43,14 @@ public final class WaveRecord {
                       double bulletPower, long fireTick, double fireDistance,
                       double fireBearing) {
         this(originX, originY, bulletSpeed, bulletPower, fireTick, fireDistance,
-                fireBearing, 1, 8.0);
+                fireBearing, 1);
     }
 
     /** Backward-compatible constructor — fireBearing defaults to NaN, fireLateralDir to 1. */
     public WaveRecord(double originX, double originY, double bulletSpeed,
                       double bulletPower, long fireTick, double fireDistance) {
         this(originX, originY, bulletSpeed, bulletPower, fireTick, fireDistance,
-                Double.NaN, 1, 8.0);
+                Double.NaN, 1);
     }
 
     /** Damage this bullet would deal on hit. */
