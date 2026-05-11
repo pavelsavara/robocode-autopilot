@@ -36,12 +36,44 @@ permissions:
   actions: write
 
 env:
-  SPRINT_NUM: ${{ inputs.sprint_number || '21' }}
   SOURCE_RUN: ${{ inputs.source_run_id || github.event.workflow_run.id }}
 
 jobs:
+  # ─── Resolve sprint number ───
+  resolve-sprint:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    outputs:
+      sprint_num: ${{ steps.resolve.outputs.num }}
+    steps:
+      - name: Determine sprint number
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -n "${{ inputs.sprint_number }}" ] && [ "${{ inputs.sprint_number }}" != "" ]; then
+            NUM="${{ inputs.sprint_number }}"
+            echo "Using explicit sprint number: $NUM"
+          else
+            # Auto-detect: find highest existing sprint/*-models branch and increment
+            LATEST=$(git ls-remote --heads "https://github.com/${{ github.repository }}.git" 'refs/heads/sprint/*-models' \
+              | sed 's|.*refs/heads/sprint/||; s|-models||' \
+              | sort -n \
+              | tail -n1)
+            if [ -z "$LATEST" ]; then
+              NUM=25
+            else
+              NUM=$((LATEST + 1))
+            fi
+            echo "Auto-detected next sprint number: $NUM (latest was ${LATEST:-none})"
+          fi
+          echo "num=$NUM" >> "$GITHUB_OUTPUT"
+
   # ======= Train fire_power model =======
   train-fire-power:
+    needs: [resolve-sprint]
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/pavelsavara/robocode-autopilot/sprint-runner:latest
@@ -217,13 +249,14 @@ jobs:
 
   # ======= Assemble: collect model artifacts, merge .dat, commit to sprint branch =======
   assemble:
-    needs: [train-fire-power, train-fire-timing, train-movement]
+    needs: [resolve-sprint, train-fire-power, train-fire-timing, train-movement]
     if: always() && !cancelled()
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/pavelsavara/robocode-autopilot/sprint-runner:latest
     env:
       GH_TOKEN: ${{ github.token }}
+      SPRINT_NUM: ${{ needs.resolve-sprint.outputs.sprint_num }}
     steps:
       - uses: actions/checkout@v6
 
