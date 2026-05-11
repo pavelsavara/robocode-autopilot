@@ -6,6 +6,9 @@ Documents are prefixed with their creation date and are immutable once archived.
 
 | Date | Document | Topic |
 |---|---|---|
+| 2026-05-11 | [2026-05-11-plan.md](2026-05-11-plan.md) | Project plan v5 (superseded by v6 — removed completed workstreams A, A2, B.5, D.4) |
+| 2026-05-11 | [2026-05-11-retrospective-23.md](2026-05-11-retrospective-23.md) | Twenty-third retrospective — Always-PathPlanner reverted, 9.5% score, imminent-wave-only movement validated |
+| 2026-05-11 | [2026-05-11-retrospective-22.md](2026-05-11-retrospective-22.md) | Twenty-second retrospective — gun heat in-game, VcsSamplingGun wired, wave surf lateral fix, 9.9% score |
 | 2026-05-10 | [2026-05-10-retrospective-21.md](2026-05-10-retrospective-21.md) | Twenty-first retrospective — full CI pipeline operational, 2-stage automation, 10.4% score, 7/7 sanity, 9 bugs fixed |
 | 2026-05-10 | [2026-05-10-retrospective-20.md](2026-05-10-retrospective-20.md) | Twentieth retrospective — CI offload complete, 10.2% score, 15 opponents in CI, self-battle 52% |
 | 2026-05-10 | [2026-05-10-plan.md](2026-05-10-plan.md) | Project plan v4 (superseded by v5 — added Workstream F: code quality & tests, plus design-proposals merge) |
