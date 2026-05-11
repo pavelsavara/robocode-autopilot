@@ -1,7 +1,7 @@
 # robocode-autopilot — Project Plan (v6)
 
 *Updated: 2026-05-11 · Previous plans: [archive/2026-05-11-plan.md](archive/2026-05-11-plan.md), [archive/2026-05-10-plan.md](archive/2026-05-10-plan.md)*
-*Latest sprint: 23 · Score: 9.5% · In-game R²: +0.48*
+*Latest sprint: 24 · Score: 3.2% (top-50) · In-game R²: TBD (first correct deployment)*
 *Companion design review (full code audit, 2026-05-10): [archive/2026-05-10-design-proposals.md](design-proposals.md)*
 
 ## Vision
@@ -10,18 +10,19 @@ Build a competitive Robocode 1v1 robot powered by offline-trained ML models
 distilled to Java. The robot uses a multi-strategy architecture with virtual
 guns, competing movement strategies, and energy-aware strategy layer.
 
-## Current Performance (16-opponent eval, 2026-05-11)
+## Current Performance (50-opponent eval, 2026-05-11)
 
-| Metric | Sprint 9 (baseline) | Sprint 23 (current) | Target |
+| Metric | Sprint 23 (16 opp) | Sprint 24 (50 opp) | Target |
 |---|---|---|---|
-| Overall score % | 6.1% | **9.5%** | >50% vs top-50 |
-| Battle win rate | 0.0% | 2.1% | >30% |
-| Our hit rate | 3.5% | 3.6% | >10% |
-| Opponent hit rate | ~46% | ~40% | <20% |
-| Fire power R² (in-game) | −3.67 | **+0.48** | >0.7 |
-| Skipped turns/battle | 0.6 | 0.0 | 0 |
-| CI eval pipeline | ❌ | ✅ | ✅ |
-| CI sprint pipeline | ❌ | ✅ | ✅ |
+| Overall score % | 9.5% | **3.2%** | >50% vs top-50 |
+| Battle win rate | 0/48 | 0/150 | >30% |
+| Our hit rate | 3.6% | ~3% | >10% |
+| Opponent hit rate | ~40% | ~40% | <20% |
+| Fire power R² (offline) | 0.84 (inflated) | **0.94** (honest) | >0.7 |
+| Skipped turns/battle | 0.0 | 0.0 | 0 |
+| CI eval pipeline | ✅ | ✅ (50 opp) | ✅ |
+| CI sprint pipeline | ✅ | ✅ (3-stage auto) | ✅ |
+| ML safeguards | ❌ | ✅ | ✅ |
 
 ## Completed Phases (archived — see retrospectives in `archive/`)
 
@@ -32,7 +33,8 @@ Sprints 13–18 (sprint loop: score 6.1%→9.1%, R² −3.67→+0.48, VCS fixes,
 Sprint 19–20 (CI eval offload: `eval-sprint.yml`, 16-opponent CI eval, self-battle sanity),
 Sprint 21 (full CI sprint pipeline: 2-stage automation, deterministic CSV, column-aware combine),
 Sprint 22 (OPPONENT_INFERRED_GUN_HEAT in-game, VcsSamplingGun wired, wave surf lateral fix),
-Sprint 23 (always-PathPlanner movement tested & reverted — imminent-wave-only design validated).
+Sprint 23 (always-PathPlanner movement tested & reverted — imminent-wave-only design validated),
+Sprint 24 (feature ordering bug fixed, ML safeguards, GroupKFold by opponent, 50-opponent eval).
 
 ---
 
@@ -142,13 +144,13 @@ focused JUnit test class. Full rationale in
 
 ---
 
-## Honest ML Baselines (Sprint 21)
+## Honest ML Baselines (Sprint 24)
 
-| Task | Model | Metric | Offline | In-Game |
+| Task | Model | Metric | Offline (cross-opp) | In-Game |
 |---|---|---|---|---|
-| Fire power | XGBoost (200t) | R² | **0.840** | **+0.48** |
-| Movement N=5 | GBM-window (200t) | R² | **0.884** | — |
-| Fire timing | GBM-window (200t) | AUC | **0.981** | — |
+| Fire power | XGBoost (200t) | R² | **0.940** | TBD |
+| Movement N=5 | GBM-window (200t) | R² | **0.737** | — |
+| Fire timing | GBM-window (200t) | AUC | **0.762** | — |
 
 ---
 
@@ -185,6 +187,12 @@ focused JUnit test class. Full rationale in
 | 27 | merge-dat.mjs for parallel VCS priors | Combine autopilot.dat from parallel battle chunks into DefaultDataFile.java |
 | 28 | Drop legacy CI workflows | Remove process-recordings, scrape-wiki, bot-submit; merge build-docker pair |
 | 29 | Always-PathPlanner reverted (Sprint 23) | Constant precise dodging is predictable; imminent-wave-only + random orbital is better anti-profiling |
+| 30 | Feature ordering fix (Sprint 24) | 53/80 features scrambled — model was random noise since Sprint 10 |
+| 31 | GroupKFold by opponent_bot_id_hash | Honest cross-opponent CV, no within-opponent inflation |
+| 32 | Fixture-based prediction tests | Definitive guard against ordering bugs |
+| 33 | Full top-50 opponent eval | Previous 16-opponent set was misleading |
+| 34 | Git SHA for models branch | Deterministic, no sprint-number fragility |
+| 35 | Subsample cap 500K→1.5M | Confirmed capacity-limited, not data-limited |
 
 ---
 

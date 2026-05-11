@@ -6,6 +6,7 @@ Documents are prefixed with their creation date and are immutable once archived.
 
 | Date | Document | Topic |
 |---|---|---|
+| 2026-05-11 | [2026-05-11-retrospective-24.md](2026-05-11-retrospective-24.md) | Twenty-fourth retrospective — Feature ordering bug (53/80 scrambled), ML safeguards, 50-opponent eval, 3.2% baseline |
 | 2026-05-11 | [2026-05-11-plan.md](2026-05-11-plan.md) | Project plan v5 (superseded by v6 — removed completed workstreams A, A2, B.5, D.4) |
 | 2026-05-11 | [2026-05-11-retrospective-23.md](2026-05-11-retrospective-23.md) | Twenty-third retrospective — Always-PathPlanner reverted, 9.5% score, imminent-wave-only movement validated |
 | 2026-05-11 | [2026-05-11-retrospective-22.md](2026-05-11-retrospective-22.md) | Twenty-second retrospective — gun heat in-game, VcsSamplingGun wired, wave surf lateral fix, 9.9% score |
