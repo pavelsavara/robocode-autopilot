@@ -158,7 +158,7 @@ public class TargetingFeatures implements IInGameFeatures {
         double vd = velDelta;
         double t = 0;
         int maxIter = 256;
-        while (++t * ourSpeed < Math.hypot(ourX - px, ourY - py) && --maxIter > 0) {
+        while ((++t <= 5 || t * ourSpeed < Math.hypot(ourX - px, ourY - py)) && --maxIter > 0) {
             // Apply velocity acceleration, clamped to physics limits
             vel += vd;
             if (vel > MAX_VELOCITY) vel = MAX_VELOCITY;

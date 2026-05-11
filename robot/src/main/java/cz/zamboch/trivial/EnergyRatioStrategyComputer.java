@@ -111,7 +111,7 @@ public final class EnergyRatioStrategyComputer extends StrategyComputer {
         // Robocode bullet speed = 20 - 3*power, so power 1.0 = speed 17, power 3.0 = speed 11
         double distPower;
         if (distance < 200) {
-            distPower = 2.0;  // close range: good damage, fast bullet
+            distPower = 2.5;  // close range: max damage, still fast enough (speed 12.5)
         } else if (distance < 400) {
             distPower = 1.5;  // medium: balanced
         } else if (distance < 600) {

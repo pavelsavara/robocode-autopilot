@@ -24,11 +24,11 @@ public final class VirtualGunManager implements IPersistable {
 
     public static final int SECTION_ID = 1;
 
-    private static final int WINDOW = 50;
+    private static final int WINDOW = 25;
     private static final double HIT_RATE_EPSILON = 0.03;
     private static final double AIM_THRESHOLD = 0.02; // ~1.15 degrees — slightly relaxed for more firing opportunities
     /** Exploration rate: fraction of shots fired with a random gun. */
-    private static final double EXPLORE_RATE = 0.03;
+    private static final double EXPLORE_RATE = 0.01;
 
     /** Max virtual bullets in flight per strategy. Longest flight: ~40 ticks. */
     private static final int BULLET_POOL_SIZE = 64;
