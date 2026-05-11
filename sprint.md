@@ -158,7 +158,7 @@ push to main
 [2] 2-sprint-train.yml (~3 min)
     ├── train: 3 models in parallel (fire_power, fire_timing, movement)
     ├── notebooks: R01–R10 retrospective notebooks → HTML
-    └── assemble: collect models + .dat → commit to sprint/{N}-models branch
+    └── assemble: collect models + .dat → commit to models/{sha8} branch
          │ workflow_run [completed]
 [3] 3-sprint-eval.yml (~7 min)
     ├── build: compile robot JAR with retrained *Data.java overlaid
@@ -197,11 +197,11 @@ gh run download <stage-3-id> -n eval-sanity-report -D output/sprint-s3
 
 **Manual Stage 3 trigger** (if auto-trigger fails due to workflow rename):
 ```bash
-gh workflow run 3-sprint-eval.yml -f sprint_branch=sprint/N-models
+gh workflow run 3-sprint-eval.yml -f sprint_branch=models/<sha8>
 ```
 
 **CI outputs stay in CI:**
-- `sprint/{N}-models` branch with `*Data.java` + `DefaultDataFile.java`
+- `models/{sha8}` branch with `*Data.java` + `DefaultDataFile.java`
 - Recording artifacts (7-day retention)
 - CSV artifacts (14-day retention)
 
@@ -289,7 +289,7 @@ Review the training metrics produced by CI Stage 2:
 - **Fire power R²** — compare with previous sprint's offline R²
 - **Movement R²** — same
 - **Fire timing AUC** — same
-- **Sprint branch** — inspect `sprint/{N}-models` diff if metrics changed
+- **Models branch** — inspect `models/{sha8}` diff if metrics changed
 
 **Exit criteria:** All sanity checks pass in both Stage 1 and Stage 3.
 Metrics reviewed and compared with previous sprint. Decision made on
@@ -337,14 +337,14 @@ Required sections:
 ### 5b. Merge CI models
 
 CI Stage 2 trains models and commits `*Data.java` files to a
-`sprint/{N}-models` branch. Stage 3 has already evaluated the robot
+`models/{sha8}` branch. Stage 3 has already evaluated the robot
 with these models — use the **Stage 3 score** to decide.
 
 1. **If Stage 3 score improved or held steady:** merge the model files
    into `main`:
    ```bash
    git fetch origin
-   git checkout origin/sprint/{N}-models -- \
+   git checkout origin/models/{sha8} -- \
      robot/src/main/java/cz/zamboch/distilled/FirePowerData.java \
      robot/src/main/java/cz/zamboch/distilled/FireTimingData.java \
      robot/src/main/java/cz/zamboch/distilled/MovementData.java \

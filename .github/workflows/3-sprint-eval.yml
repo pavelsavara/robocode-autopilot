@@ -24,7 +24,7 @@ on:
   workflow_dispatch:
     inputs:
       sprint_branch:
-        description: 'Sprint models branch (e.g. sprint/21-models)'
+        description: 'Models branch (e.g. models/a40e5fcf)'
         required: true
         type: string
       rounds:
@@ -63,14 +63,14 @@ jobs:
             BRANCH="${{ inputs.sprint_branch }}"
             echo "Using manually specified branch: $BRANCH"
           else
-            # Find most recent sprint/*-models branch
-            BRANCH=$(git ls-remote --heads https://github.com/${{ github.repository }}.git 'refs/heads/sprint/*-models' \
+            # Find most recent models/* branch
+            BRANCH=$(git ls-remote --heads https://github.com/${{ github.repository }}.git 'refs/heads/models/*' \
               | awk '{print $2}' \
               | sed 's|refs/heads/||' \
-              | sort -t/ -k2 -V \
+              | sort -t/ -k2 \
               | tail -n1)
             if [ -z "$BRANCH" ]; then
-              echo "::error::No sprint/*-models branch found"
+              echo "::error::No models/* branch found"
               exit 1
             fi
             echo "Auto-detected sprint models branch: $BRANCH"
