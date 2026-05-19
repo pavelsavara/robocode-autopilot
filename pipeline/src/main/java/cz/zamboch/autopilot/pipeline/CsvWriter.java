@@ -82,7 +82,7 @@ public final class CsvWriter implements Closeable {
         ticksWriter.beginRow();
         ticksWriter.writeRaw(battleId);
         ticksWriter.writeInt(round);
-        ticksWriter.writeLong(wb.getTick());
+        ticksWriter.writeLong((long) wb.getFeature(Feature.TICK));
         for (Feature f : ticksFeatures) {
             ticksWriter.writeDouble(wb, f);
         }
@@ -94,8 +94,8 @@ public final class CsvWriter implements Closeable {
         wavesWriter.beginRow();
         wavesWriter.writeRaw(battleId);
         wavesWriter.writeInt(round);
-        wavesWriter.writeLong(wb.getTick());
-        wavesWriter.writeRaw(Double.toString(wb.getOpponentFirePower()));
+        wavesWriter.writeLong((long) wb.getFeature(Feature.TICK));
+        wavesWriter.writeRaw(Double.toString(wb.getFeature(Feature.OPPONENT_FIRE_POWER)));
         for (Feature f : wavesFeatures) {
             wavesWriter.writeDouble(wb, f);
         }
@@ -107,7 +107,7 @@ public final class CsvWriter implements Closeable {
         scoresWriter.beginRow();
         scoresWriter.writeRaw(battleId);
         scoresWriter.writeInt(round);
-        scoresWriter.writeInt(wb.getRoundResult());
+        scoresWriter.writeInt((int) wb.getFeature(Feature.ROUND_RESULT));
         for (Feature f : scoresFeatures) {
             scoresWriter.writeDouble(wb, f);
         }

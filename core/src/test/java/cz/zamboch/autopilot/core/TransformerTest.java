@@ -1,6 +1,5 @@
 package cz.zamboch.autopilot.core;
 
-import cz.zamboch.autopilot.core.features.EnergyFeatures;
 import cz.zamboch.autopilot.core.features.MovementFeatures;
 import cz.zamboch.autopilot.core.features.SpatialFeatures;
 import cz.zamboch.autopilot.core.features.TimingFeatures;
@@ -11,50 +10,57 @@ import static org.junit.jupiter.api.Assertions.*;
 final class TransformerTest {
 
     @Test
-    void resolvesWithoutCycle() {
-        Transformer t = new Transformer();
-        t.register(new SpatialFeatures());
-        t.register(new MovementFeatures());
-        t.register(new EnergyFeatures());
-        t.register(new TimingFeatures());
-        t.resolveDependencies();
+    void processWritesComputedFeatures() {
+        Whiteboard wb = new Whiteboard();
+        wb.registerFeatures(
+                new SpatialFeatures(),
+                new MovementFeatures(),
+                new TimingFeatures());
 
-        IInGameFeatures[] order = t.getExecutionOrder();
-        assertEquals(4, order.length);
+        // Set input features
+        wb.setFeature(Feature.TICK, 42);
+        wb.setFeature(Feature.OUR_X, 100);
+        wb.setFeature(Feature.OUR_Y, 200);
+        wb.setFeature(Feature.OUR_HEADING, Math.toRadians(45));
+        wb.setFeature(Feature.OUR_VELOCITY, 5.0);
+        wb.setFeature(Feature.OUR_ENERGY, 85.0);
+        wb.setFeature(Feature.GUN_HEAT, 1.5);
+        wb.setFeature(Feature.BEARING_RADIANS, Math.toRadians(30));
+        wb.setFeature(Feature.OPPONENT_HEADING, Math.toRadians(180));
+        wb.setFeature(Feature.OPPONENT_VELOCITY, 4.0);
+        wb.setFeature(Feature.LAST_SCAN_TICK, 40);
 
-        // MovementFeatures depends on SpatialFeatures output
-        // (OPPONENT_BEARING_ABSOLUTE)
-        int spatialIdx = -1, movementIdx = -1;
-        for (int i = 0; i < order.length; i++) {
-            if (order[i] instanceof SpatialFeatures)
-                spatialIdx = i;
-            if (order[i] instanceof MovementFeatures)
-                movementIdx = i;
-        }
-        assertTrue(spatialIdx < movementIdx,
-                "SpatialFeatures must execute before MovementFeatures");
+        wb.process();
+
+        // OPPONENT_BEARING_ABSOLUTE = OUR_HEADING + BEARING_RADIANS
+        double expectedAbsBearing = Math.toRadians(45) + Math.toRadians(30);
+        assertEquals(expectedAbsBearing, wb.getFeature(Feature.OPPONENT_BEARING_ABSOLUTE), 1e-9);
+
+        // TICKS_SINCE_SCAN = TICK - LAST_SCAN_TICK
+        assertEquals(2.0, wb.getFeature(Feature.TICKS_SINCE_SCAN), 1e-9);
+
+        // Lateral/advancing should be computed (not NaN)
+        assertFalse(Double.isNaN(wb.getFeature(Feature.OPPONENT_LATERAL_VELOCITY)));
+        assertFalse(Double.isNaN(wb.getFeature(Feature.OPPONENT_ADVANCING_VELOCITY)));
     }
 
     @Test
-    void processWritesFeatures() {
-        Transformer t = new Transformer();
-        t.register(new SpatialFeatures());
-        t.register(new EnergyFeatures());
-        t.register(new TimingFeatures());
-
+    void missingInputLeavesComputedAsNaN() {
         Whiteboard wb = new Whiteboard();
-        wb.setTick(42);
-        wb.setOurPosition(100, 200);
-        wb.setOurEnergy(85.0);
-        wb.setGunHeat(1.5);
-        wb.clearFeatures();
+        wb.registerFeatures(
+                new SpatialFeatures(),
+                new MovementFeatures(),
+                new TimingFeatures());
 
-        t.process(wb);
+        // Only set TICK, no scan data
+        wb.setFeature(Feature.TICK, 10);
+        wb.setFeature(Feature.OUR_HEADING, 0);
 
-        assertEquals(100.0, wb.getFeature(Feature.OUR_X));
-        assertEquals(200.0, wb.getFeature(Feature.OUR_Y));
-        assertEquals(85.0, wb.getFeature(Feature.OUR_ENERGY));
-        assertEquals(42.0, wb.getFeature(Feature.TICK));
-        assertEquals(1.5, wb.getFeature(Feature.GUN_HEAT));
+        wb.process();
+
+        // No bearing → OPPONENT_BEARING_ABSOLUTE should remain NaN
+        assertTrue(Double.isNaN(wb.getFeature(Feature.OPPONENT_BEARING_ABSOLUTE)));
+        // No LAST_SCAN_TICK → TICKS_SINCE_SCAN should remain NaN
+        assertTrue(Double.isNaN(wb.getFeature(Feature.TICKS_SINCE_SCAN)));
     }
 }

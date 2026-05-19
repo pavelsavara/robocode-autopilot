@@ -1,35 +1,47 @@
 package cz.zamboch.autopilot.core;
 
 /**
- * Minimal feature enum. Each entry is an array index into Whiteboard's feature
- * store. Each feature declares which CSV file it belongs to via
- * {@link FileType}.
- * Grow this as new features are needed — but only add what's actually consumed.
+ * Feature enum. Each entry is an array index into Whiteboard's feature store.
+ * Each feature declares which CSV file it belongs to via {@link FileType}.
+ * Features are either "input" (set by event handlers or pipeline) or "computed"
+ * (derived by IInGameFeatures during process()).
  */
 public enum Feature {
-    // --- Spatial (per-tick) ---
-    DISTANCE(FileType.TICKS),
-    BEARING_RADIANS(FileType.TICKS),
+    // --- Input: spatial (set by onStatus / pipeline) ---
     OUR_X(FileType.TICKS),
     OUR_Y(FileType.TICKS),
+    OUR_HEADING(FileType.TICKS),
+    OUR_VELOCITY(FileType.TICKS),
+    OUR_ENERGY(FileType.TICKS),
+    GUN_HEAT(FileType.TICKS),
+    GUN_HEADING(FileType.TICKS),
+    TICK(FileType.TICKS),
+    BATTLEFIELD_WIDTH(FileType.TICKS),
+    BATTLEFIELD_HEIGHT(FileType.TICKS),
+
+    // --- Input: scan (set by onScannedRobot / pipeline) ---
+    DISTANCE(FileType.TICKS),
+    BEARING_RADIANS(FileType.TICKS),
+    OPPONENT_HEADING(FileType.TICKS),
+    OPPONENT_VELOCITY(FileType.TICKS),
+    OPPONENT_ENERGY(FileType.TICKS),
+    LAST_SCAN_TICK(FileType.TICKS),
+
+    // --- Computed: spatial ---
     OPPONENT_BEARING_ABSOLUTE(FileType.TICKS),
 
-    // --- Movement (per-tick) ---
-    OUR_VELOCITY(FileType.TICKS),
-    OUR_HEADING(FileType.TICKS),
-    OPPONENT_VELOCITY(FileType.TICKS),
-    OPPONENT_HEADING(FileType.TICKS),
+    // --- Computed: movement ---
     OPPONENT_LATERAL_VELOCITY(FileType.TICKS),
     OPPONENT_ADVANCING_VELOCITY(FileType.TICKS),
 
-    // --- Energy (per-tick) ---
-    OUR_ENERGY(FileType.TICKS),
-    OPPONENT_ENERGY(FileType.TICKS),
+    // --- Computed: timing ---
+    TICKS_SINCE_SCAN(FileType.TICKS),
 
-    // --- Timing (per-tick) ---
-    TICK(FileType.TICKS),
-    GUN_HEAT(FileType.TICKS),
-    TICKS_SINCE_SCAN(FileType.TICKS);
+    // --- Input: fire detection ---
+    OPPONENT_FIRE_POWER(FileType.WAVES),
+
+    // --- Round result ---
+    ROUND_RESULT(FileType.SCORES);
 
     private final FileType fileType;
 

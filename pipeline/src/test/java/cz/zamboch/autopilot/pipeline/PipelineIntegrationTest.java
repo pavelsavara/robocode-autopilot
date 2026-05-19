@@ -1,9 +1,7 @@
 package cz.zamboch.autopilot.pipeline;
 
 import cz.zamboch.autopilot.core.Feature;
-import cz.zamboch.autopilot.core.Transformer;
 import cz.zamboch.autopilot.core.Whiteboard;
-import cz.zamboch.autopilot.core.features.EnergyFeatures;
 import cz.zamboch.autopilot.core.features.MovementFeatures;
 import cz.zamboch.autopilot.core.features.SpatialFeatures;
 import cz.zamboch.autopilot.core.features.TimingFeatures;
@@ -22,7 +20,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Integration test: exercises Player → Transformer → CsvWriter pipeline
+ * Integration test: exercises Player → Whiteboard → CsvWriter pipeline
  * with synthetic turn snapshots (no .br file needed).
  */
 final class PipelineIntegrationTest {
@@ -40,10 +38,8 @@ final class PipelineIntegrationTest {
         double bfWidth = 800;
         double bfHeight = 600;
 
-        Whiteboard wbA = new Whiteboard();
-        Whiteboard wbB = new Whiteboard();
-        Transformer tA = createTransformer();
-        Transformer tB = createTransformer();
+        Whiteboard wbA = createWhiteboard();
+        Whiteboard wbB = createWhiteboard();
 
         File dirA = tempDir.resolve(battleId).resolve("BotA").toFile();
         File dirB = tempDir.resolve(battleId).resolve("BotB").toFile();
@@ -82,31 +78,30 @@ final class PipelineIntegrationTest {
                     1, RobotState.ACTIVE, "BotB");
 
             ITurnSnapshot turn = TestSnapshots.turn(tick, robotA, robotB);
-            boolean newRound = player.processTurn(0, turn, bfWidth, bfHeight);
+            player.processTurn(0, turn, bfWidth, bfHeight);
 
-            // Compute features
-            wbA.clearFeatures();
-            wbB.clearFeatures();
-            tA.process(wbA);
-            tB.process(wbB);
+            // Compute derived features
+            wbA.process();
+            wbB.process();
 
             // Write tick rows
             csvA.writeTickRow(wbA, battleId, 0);
             csvB.writeTickRow(wbB, battleId, 0);
 
             // Write wave rows if opponent fired
-            if (wbA.hasOpponentFired()) {
+            if (!Double.isNaN(wbA.getFeature(Feature.OPPONENT_FIRE_POWER))) {
                 csvA.writeWaveRow(wbA, battleId, 0);
             }
-            if (wbB.hasOpponentFired()) {
+            if (!Double.isNaN(wbB.getFeature(Feature.OPPONENT_FIRE_POWER))) {
                 csvB.writeWaveRow(wbB, battleId, 0);
             }
 
             lastRobotA = robotA;
             lastRobotB = robotB;
 
-            wbA.advanceTick();
-            wbB.advanceTick();
+            // Reset per-tick fire detection
+            wbA.setFeature(Feature.OPPONENT_FIRE_POWER, Double.NaN);
+            wbB.setFeature(Feature.OPPONENT_FIRE_POWER, Double.NaN);
         }
 
         // Finalize round
@@ -180,10 +175,8 @@ final class PipelineIntegrationTest {
         double bfWidth = 800;
         double bfHeight = 600;
 
-        Whiteboard wbA = new Whiteboard();
-        Whiteboard wbB = new Whiteboard();
-        Transformer tA = createTransformer();
-        Transformer tB = createTransformer();
+        Whiteboard wbA = createWhiteboard();
+        Whiteboard wbB = createWhiteboard();
 
         File dirA = tempDir.resolve(battleId).resolve("BotA").toFile();
         File dirB = tempDir.resolve(battleId).resolve("BotB").toFile();
@@ -194,13 +187,6 @@ final class PipelineIntegrationTest {
 
         Player player = new Player(wbA, wbB);
 
-        // Tick 0: radar at 0 (north), tick 1: radar at 0.01 (barely moved, still north)
-        // Opponent B is to the east (bearing ~0 from A = due east, but radar sweeps
-        // north)
-        // A at (100,300), B at (700,300) → bearing ≈ PI/2 east
-        // Radar at 0 (north) → should NOT intersect on tick 0 (first tick always scans)
-        // On tick 1, radar barely moves → should not sweep across B
-
         // First tick always produces a scan (per Player logic), so we need tick 1+
         IRobotSnapshot robotA0 = TestSnapshots.robot(
                 100, 300, 0, 0, 100, 0, 0, 0.0, // radar north
@@ -210,10 +196,8 @@ final class PipelineIntegrationTest {
                 1, RobotState.ACTIVE, "BotB");
         ITurnSnapshot turn0 = TestSnapshots.turn(0, robotA0, robotB0);
         player.processTurn(0, turn0, bfWidth, bfHeight);
-        wbA.clearFeatures();
-        tA.process(wbA);
+        wbA.process();
         csvA.writeTickRow(wbA, battleId, 0);
-        wbA.advanceTick();
 
         // Tick 1: radar barely moves (still north), opponent is east
         IRobotSnapshot robotA1 = TestSnapshots.robot(
@@ -224,8 +208,7 @@ final class PipelineIntegrationTest {
                 1, RobotState.ACTIVE, "BotB");
         ITurnSnapshot turn1 = TestSnapshots.turn(1, robotA1, robotB1);
         player.processTurn(0, turn1, bfWidth, bfHeight);
-        wbA.clearFeatures();
-        tA.process(wbA);
+        wbA.process();
         csvA.writeTickRow(wbA, battleId, 0);
 
         csvA.close();
@@ -247,13 +230,12 @@ final class PipelineIntegrationTest {
         assertEquals("NaN", cols[distIdx], "Distance should be NaN when radar misses");
     }
 
-    private static Transformer createTransformer() {
-        Transformer t = new Transformer();
-        t.register(new SpatialFeatures());
-        t.register(new MovementFeatures());
-        t.register(new EnergyFeatures());
-        t.register(new TimingFeatures());
-        t.resolveDependencies();
-        return t;
+    private static Whiteboard createWhiteboard() {
+        Whiteboard wb = new Whiteboard();
+        wb.registerFeatures(
+                new SpatialFeatures(),
+                new MovementFeatures(),
+                new TimingFeatures());
+        return wb;
     }
 }

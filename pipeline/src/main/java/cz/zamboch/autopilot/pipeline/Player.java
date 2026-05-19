@@ -1,10 +1,9 @@
 package cz.zamboch.autopilot.pipeline;
 
+import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.Whiteboard;
-import robocode.control.snapshot.IBulletSnapshot;
 import robocode.control.snapshot.IRobotSnapshot;
 import robocode.control.snapshot.ITurnSnapshot;
-import robocode.control.snapshot.BulletState;
 import robocode.control.snapshot.RobotState;
 
 import java.awt.geom.Arc2D;
@@ -17,6 +16,7 @@ import java.util.Map;
  * Replays turn snapshots into two Whiteboard perspectives.
  * Synthesizes scan events via radar sweep intersection and detects
  * opponent fire events via energy drops.
+ * Sets features directly on the Whiteboard (no event objects needed).
  */
 public final class Player {
     private static final double SCAN_RADIUS = 1200.0; // robocode.Rules.RADAR_SCAN_RADIUS
@@ -44,7 +44,7 @@ public final class Player {
     }
 
     /**
-     * Process one turn snapshot. Injects state into both whiteboards.
+     * Process one turn snapshot. Injects state into both whiteboards as features.
      *
      * @return true if a new round started (caller should finalize previous round)
      */
@@ -74,11 +74,13 @@ public final class Player {
 
         // Inject perspective A: robotA is "us", robotB is opponent
         injectOwnState(wbA, robotA, tick, bfWidth, bfHeight);
+        resetScanFeatures(wbA);
         synthesizeScan(wbA, robotA, robotB, tick, true);
         detectOpponentFire(wbA, robotB, true);
 
         // Inject perspective B: robotB is "us", robotA is opponent
         injectOwnState(wbB, robotB, tick, bfWidth, bfHeight);
+        resetScanFeatures(wbB);
         synthesizeScan(wbB, robotB, robotA, tick, false);
         detectOpponentFire(wbB, robotA, false);
 
@@ -87,14 +89,28 @@ public final class Player {
 
     private void injectOwnState(Whiteboard wb, IRobotSnapshot self,
             long tick, double bfWidth, double bfHeight) {
-        wb.setTick(tick);
-        wb.setOurPosition(self.getX(), self.getY());
-        wb.setOurHeading(self.getBodyHeading());
-        wb.setOurVelocity(self.getVelocity());
-        wb.setOurEnergy(self.getEnergy());
-        wb.setGunHeat(self.getGunHeat());
-        wb.setGunHeadingRadians(self.getGunHeading());
-        wb.setBattlefieldSize(bfWidth, bfHeight);
+        wb.setFeature(Feature.TICK, tick);
+        wb.setFeature(Feature.OUR_X, self.getX());
+        wb.setFeature(Feature.OUR_Y, self.getY());
+        wb.setFeature(Feature.OUR_HEADING, self.getBodyHeading());
+        wb.setFeature(Feature.OUR_VELOCITY, self.getVelocity());
+        wb.setFeature(Feature.OUR_ENERGY, self.getEnergy());
+        wb.setFeature(Feature.GUN_HEAT, self.getGunHeat());
+        wb.setFeature(Feature.GUN_HEADING, self.getGunHeading());
+        wb.setFeature(Feature.BATTLEFIELD_WIDTH, bfWidth);
+        wb.setFeature(Feature.BATTLEFIELD_HEIGHT, bfHeight);
+    }
+
+    /**
+     * Reset scan-related features to NaN before scan synthesis (only set if scan
+     * fires).
+     */
+    private void resetScanFeatures(Whiteboard wb) {
+        wb.setFeature(Feature.DISTANCE, Double.NaN);
+        wb.setFeature(Feature.BEARING_RADIANS, Double.NaN);
+        wb.setFeature(Feature.OPPONENT_HEADING, Double.NaN);
+        wb.setFeature(Feature.OPPONENT_VELOCITY, Double.NaN);
+        wb.setFeature(Feature.OPPONENT_ENERGY, Double.NaN);
     }
 
     /**
@@ -150,13 +166,13 @@ public final class Player {
         while (bearing < -Math.PI)
             bearing += 2 * Math.PI;
 
-        // Opponent heading and velocity
-        double oppHeading = opponent.getBodyHeading();
-        double oppVelocity = opponent.getVelocity();
-        double oppEnergy = opponent.getEnergy();
-
-        wb.setScanData(tick, distance, Math.toDegrees(bearing),
-                oppHeading, oppVelocity, oppEnergy);
+        // Set scan features directly
+        wb.setFeature(Feature.DISTANCE, distance);
+        wb.setFeature(Feature.BEARING_RADIANS, bearing);
+        wb.setFeature(Feature.OPPONENT_HEADING, opponent.getBodyHeading());
+        wb.setFeature(Feature.OPPONENT_VELOCITY, opponent.getVelocity());
+        wb.setFeature(Feature.OPPONENT_ENERGY, opponent.getEnergy());
+        wb.setFeature(Feature.LAST_SCAN_TICK, tick);
     }
 
     /**
@@ -171,7 +187,7 @@ public final class Player {
             double drop = prevEnergy - currentEnergy;
             // Fire power is between 0.1 and 3.0
             if (drop >= 0.1 && drop <= 3.0) {
-                wb.setOpponentFired(drop);
+                wb.setFeature(Feature.OPPONENT_FIRE_POWER, drop);
             }
         }
 
@@ -189,16 +205,16 @@ public final class Player {
         boolean aDead = (robotA.getState() == RobotState.DEAD);
         boolean bDead = (robotB.getState() == RobotState.DEAD);
         if (aDead && !bDead) {
-            wbA.setRoundResult(-1);
-            wbB.setRoundResult(1);
+            wbA.setFeature(Feature.ROUND_RESULT, -1);
+            wbB.setFeature(Feature.ROUND_RESULT, 1);
         } else if (bDead && !aDead) {
-            wbA.setRoundResult(1);
-            wbB.setRoundResult(-1);
+            wbA.setFeature(Feature.ROUND_RESULT, 1);
+            wbB.setFeature(Feature.ROUND_RESULT, -1);
         } else {
             // Tie or timeout — compare energy
             double diff = robotA.getEnergy() - robotB.getEnergy();
-            wbA.setRoundResult(diff > 0 ? 1 : (diff < 0 ? -1 : 0));
-            wbB.setRoundResult(diff > 0 ? -1 : (diff < 0 ? 1 : 0));
+            wbA.setFeature(Feature.ROUND_RESULT, diff > 0 ? 1 : (diff < 0 ? -1 : 0));
+            wbB.setFeature(Feature.ROUND_RESULT, diff > 0 ? -1 : (diff < 0 ? 1 : 0));
         }
     }
 

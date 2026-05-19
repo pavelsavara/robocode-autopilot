@@ -15,8 +15,9 @@ import java.util.Queue;
  * and executes them in dependency order each tick.
  *
  * Deterministic: ties broken by class name.
+ * Package-private: used internally by Whiteboard.
  */
-public final class Transformer {
+final class Transformer {
     private final List<IInGameFeatures> registered = new ArrayList<IInGameFeatures>();
     private IInGameFeatures[] executionOrder;
 

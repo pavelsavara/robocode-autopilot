@@ -6,15 +6,11 @@ import cz.zamboch.autopilot.core.IInGameFeatures;
 import cz.zamboch.autopilot.core.Whiteboard;
 
 /**
- * Timing features: tick number, gun heat, ticks since last scan.
+ * Computes ticks since last scan from TICK and LAST_SCAN_TICK features.
  */
 public final class TimingFeatures implements IInGameFeatures {
-    private static final Feature[] DEPS = {};
-    private static final Feature[] OUTPUTS = {
-            Feature.TICK,
-            Feature.GUN_HEAT,
-            Feature.TICKS_SINCE_SCAN
-    };
+    private static final Feature[] DEPS = { Feature.TICK, Feature.LAST_SCAN_TICK };
+    private static final Feature[] OUTPUTS = { Feature.TICKS_SINCE_SCAN };
 
     public Feature[] getDependencies() {
         return DEPS;
@@ -29,14 +25,11 @@ public final class TimingFeatures implements IInGameFeatures {
     }
 
     public void process(Whiteboard wb) {
-        wb.setFeature(Feature.TICK, wb.getTick());
-        wb.setFeature(Feature.GUN_HEAT, wb.getGunHeat());
-
-        long lastScanTick = wb.getLastScanTick();
-        if (lastScanTick >= 0) {
-            wb.setFeature(Feature.TICKS_SINCE_SCAN, wb.getTick() - lastScanTick);
-        } else {
-            wb.setFeature(Feature.TICKS_SINCE_SCAN, Double.NaN);
+        double tick = wb.getFeature(Feature.TICK);
+        double lastScanTick = wb.getFeature(Feature.LAST_SCAN_TICK);
+        if (Double.isNaN(tick) || Double.isNaN(lastScanTick)) {
+            return;
         }
+        wb.setFeature(Feature.TICKS_SINCE_SCAN, tick - lastScanTick);
     }
 }

@@ -80,3 +80,4 @@ intuition/_nb11_*.png
 .squad-workstream
 
 node_modules/
+bin/

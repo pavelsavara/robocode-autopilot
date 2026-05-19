@@ -1,9 +1,7 @@
 package cz.zamboch.autopilot.pipeline;
 
 import cz.zamboch.autopilot.core.Feature;
-import cz.zamboch.autopilot.core.Transformer;
 import cz.zamboch.autopilot.core.Whiteboard;
-import cz.zamboch.autopilot.core.features.EnergyFeatures;
 import cz.zamboch.autopilot.core.features.MovementFeatures;
 import cz.zamboch.autopilot.core.features.SpatialFeatures;
 import cz.zamboch.autopilot.core.features.TimingFeatures;
@@ -106,12 +104,9 @@ public final class Main {
         String nameB = names[1];
         System.out.println("  " + battleId + ": " + nameA + " vs " + nameB);
 
-        // Set up whiteboards, transformers, CSV writers
-        Whiteboard wbA = new Whiteboard();
-        Whiteboard wbB = new Whiteboard();
-
-        Transformer tA = createTransformer();
-        Transformer tB = createTransformer();
+        // Set up whiteboards, CSV writers
+        Whiteboard wbA = createWhiteboard();
+        Whiteboard wbB = createWhiteboard();
 
         File dirA = outBase.resolve(battleId).resolve(nameA).toFile();
         File dirB = outBase.resolve(battleId).resolve(nameB).toFile();
@@ -154,30 +149,28 @@ public final class Main {
                     }
                     state[0] = roundIndex;
 
-                    // Compute features
-                    wbA.clearFeatures();
-                    wbB.clearFeatures();
-                    tA.process(wbA);
-                    tB.process(wbB);
+                    // Compute derived features
+                    wbA.process();
+                    wbB.process();
 
                     // Write tick rows
                     csvA.writeTickRow(wbA, battleId, roundIndex);
                     csvB.writeTickRow(wbB, battleId, roundIndex);
 
                     // Write wave rows if opponent fired
-                    if (wbA.hasOpponentFired()) {
+                    if (!Double.isNaN(wbA.getFeature(Feature.OPPONENT_FIRE_POWER))) {
                         csvA.writeWaveRow(wbA, battleId, roundIndex);
                     }
-                    if (wbB.hasOpponentFired()) {
+                    if (!Double.isNaN(wbB.getFeature(Feature.OPPONENT_FIRE_POWER))) {
                         csvB.writeWaveRow(wbB, battleId, roundIndex);
                     }
 
                     // Track last robots for round finalization
                     lastRobots[0] = turn.getRobots();
 
-                    // Advance tick (reset per-tick flags)
-                    wbA.advanceTick();
-                    wbB.advanceTick();
+                    // Reset per-tick fire detection
+                    wbA.setFeature(Feature.OPPONENT_FIRE_POWER, Double.NaN);
+                    wbB.setFeature(Feature.OPPONENT_FIRE_POWER, Double.NaN);
                 } catch (IOException e) {
                     throw new RuntimeException("CSV write error", e);
                 }
@@ -196,14 +189,13 @@ public final class Main {
         loader.close();
     }
 
-    private static Transformer createTransformer() {
-        Transformer t = new Transformer();
-        t.register(new SpatialFeatures());
-        t.register(new MovementFeatures());
-        t.register(new EnergyFeatures());
-        t.register(new TimingFeatures());
-        t.resolveDependencies();
-        return t;
+    private static Whiteboard createWhiteboard() {
+        Whiteboard wb = new Whiteboard();
+        wb.registerFeatures(
+                new SpatialFeatures(),
+                new MovementFeatures(),
+                new TimingFeatures());
+        return wb;
     }
 
     /** Derive a battle ID from the .br file path (filename without extension). */
