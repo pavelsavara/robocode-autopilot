@@ -56,10 +56,12 @@ public final class Player {
         IRobotSnapshot robotA = robots[0];
         IRobotSnapshot robotB = robots[1];
 
-        // Stop processing after robot dies or is disabled (energy=0)
-        if (robotA.getState() == RobotState.DEAD || robotA.getEnergy() <= 0)
+        // Stop processing only after robot is truly dead (not just disabled).
+        // A disabled robot (energy=0) can recover from bullet hits and still
+        // receives scan events.
+        if (robotA.getState() == RobotState.DEAD)
             deadA = true;
-        if (robotB.getState() == RobotState.DEAD || robotB.getEnergy() <= 0)
+        if (robotB.getState() == RobotState.DEAD)
             deadB = true;
 
         long tick = (long) turn.getTurn();
