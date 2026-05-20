@@ -2,6 +2,10 @@ plugins {
     `java-library`
 }
 
+tasks.withType<JavaCompile> {
+    options.release.set(8)
+}
+
 dependencies {
     api(libs.robocode.api)
 

@@ -2,6 +2,10 @@ plugins {
     java
 }
 
+tasks.withType<JavaCompile> {
+    options.release.set(8)
+}
+
 dependencies {
     implementation(project(":core"))
     compileOnly(libs.robocode.api)

@@ -25,6 +25,7 @@ val stageBattle = tasks.register<Copy>("stageBattle") {
     dependsOn(":robot:jar", ":test-bots:jar")
     from(project(":robot").tasks.named<Jar>("jar").get().archiveFile)
     from(project(":test-bots").tasks.named<Jar>("jar").get().archiveFile)
+    from("c:/robocode/robots/kc.mega.BeepBoop_2.0.jar")
     into(layout.buildDirectory.dir("battle-stage"))
 }
 
@@ -46,7 +47,15 @@ tasks.register<JavaExec>("runBattle") {
     )
     mainClass.set("cz.zamboch.autopilot.pipeline.BattleRunner")
 
-    jvmArgs("-Djava.awt.headless=true")
+    jvmArgs(
+        "-Djava.awt.headless=true",
+        "--add-opens", "java.base/sun.net.www.protocol.jar=ALL-UNNAMED",
+        "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED",
+        "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+        "--add-opens", "java.base/java.net=ALL-UNNAMED",
+        "--add-opens", "java.base/java.util=ALL-UNNAMED",
+        "--add-opens", "java.base/java.io=ALL-UNNAMED"
+    )
 
     systemProperty("robot.jar", robotJar.absolutePath)
     systemProperty("battle.stage", stageDir.absolutePath)
@@ -87,7 +96,15 @@ tasks.register<Test>("battleTest") {
 
     val stageDir = layout.buildDirectory.dir("battle-stage").get().asFile
     systemProperty("battle.stage", stageDir.absolutePath)
-    jvmArgs("-Djava.awt.headless=true")
+    jvmArgs(
+        "-Djava.awt.headless=true",
+        "--add-opens", "java.base/sun.net.www.protocol.jar=ALL-UNNAMED",
+        "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED",
+        "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+        "--add-opens", "java.base/java.net=ALL-UNNAMED",
+        "--add-opens", "java.base/java.util=ALL-UNNAMED",
+        "--add-opens", "java.base/java.io=ALL-UNNAMED"
+    )
 
     if (project.hasProperty("opponent")) {
         systemProperty("battle.opponent", project.property("opponent")!!)

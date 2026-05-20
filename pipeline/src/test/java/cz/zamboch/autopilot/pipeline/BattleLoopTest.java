@@ -38,7 +38,7 @@ final class BattleLoopTest {
 
     @ParameterizedTest(name = "vs {0}")
     @ValueSource(strings = { "test.SittingDuck", "test.Aggressive", "sample.Fire",
-            "sample.Walls", "sample.Crazy" })
+            "sample.Walls", "sample.Crazy", "kc.mega.BeepBoop" })
     void battleProducesCsvAndValidatesDebugProperties(String opponent) {
         // Allow system property override (single-opponent mode)
         String overrideOpponent = System.getProperty("battle.opponent");
