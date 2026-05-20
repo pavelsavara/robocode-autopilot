@@ -31,14 +31,6 @@ final class BattleLoopTest {
     @TempDir
     Path tempDir;
 
-    private static final String[] ALL_OPPONENTS = {
-            "test.SittingDuck",
-            "test.Aggressive",
-            "sample.Fire",
-            "sample.Walls",
-            "sample.Crazy"
-    };
-
     @ParameterizedTest(name = "vs {0}")
     @ValueSource(strings = { "test.SittingDuck", "test.Aggressive", "sample.Fire",
             "sample.Walls", "sample.Crazy", "kc.mega.BeepBoop" })
@@ -68,7 +60,8 @@ final class BattleLoopTest {
         String outputDir = tempDir.toFile().getAbsolutePath();
         int rounds = Integer.parseInt(System.getProperty("battle.rounds", "2"));
 
-        // Run the battle — may fail if --add-opens JVM args are missing (VS Code test panel)
+        // Run the battle — may fail if --add-opens JVM args are missing (VS Code test
+        // panel)
         StreamingPipelineObserver observer;
         try {
             observer = BattleRunner.runBattle(opponent, rounds, outputDir);
