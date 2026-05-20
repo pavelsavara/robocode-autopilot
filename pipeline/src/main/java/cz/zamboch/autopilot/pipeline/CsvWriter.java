@@ -49,7 +49,9 @@ public final class CsvWriter implements Closeable {
                     ourWavesFeatures.add(f);
                     break;
                 case SCORES:
-                    scoresFeatures.add(f);
+                    if (f != Feature.ROUND_RESULT) {
+                        scoresFeatures.add(f);
+                    }
                     break;
             }
         }

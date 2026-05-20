@@ -77,6 +77,7 @@ public enum Feature {
     OUR_BREAK_HIT(FileType.OUR_WAVES),
 
     // --- Round result ---
+    ROUND_HIT_RATE(FileType.SCORES),
     ROUND_RESULT(FileType.SCORES);
 
     private final FileType fileType;

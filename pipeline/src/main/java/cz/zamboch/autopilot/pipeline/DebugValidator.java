@@ -40,7 +40,7 @@ public final class DebugValidator {
                 continue;
             }
 
-            if (feature == Feature.ROUND_RESULT)
+            if (feature == Feature.ROUND_RESULT || feature == Feature.ROUND_HIT_RATE)
                 continue;
 
             double robotValue = parseValue(prop.getValue());
