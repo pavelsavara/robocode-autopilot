@@ -15,22 +15,25 @@ import java.util.List;
  * Routes features to the correct CSV file based on their FileType.
  * <p>
  * Output structure:
- * {@code <outputDir>/<battleId>/<robotName>/ticks.csv|waves.csv|scores.csv}
+ * {@code <outputDir>/<battleId>/<robotName>/ticks.csv|their-waves.csv|our-waves.csv|scores.csv}
  */
 public final class CsvWriter implements Closeable {
     private final CsvRowWriter ticksWriter;
-    private final CsvRowWriter wavesWriter;
+    private final CsvRowWriter theirWavesWriter;
+    private final CsvRowWriter ourWavesWriter;
     private final CsvRowWriter scoresWriter;
 
     private final List<Feature> ticksFeatures = new ArrayList<Feature>();
-    private final List<Feature> wavesFeatures = new ArrayList<Feature>();
+    private final List<Feature> theirWavesFeatures = new ArrayList<Feature>();
+    private final List<Feature> ourWavesFeatures = new ArrayList<Feature>();
     private final List<Feature> scoresFeatures = new ArrayList<Feature>();
 
     public CsvWriter(File outputDir) throws IOException {
         outputDir.mkdirs();
 
         ticksWriter = new CsvRowWriter(new FileOutputStream(new File(outputDir, "ticks.csv")));
-        wavesWriter = new CsvRowWriter(new FileOutputStream(new File(outputDir, "waves.csv")));
+        theirWavesWriter = new CsvRowWriter(new FileOutputStream(new File(outputDir, "their-waves.csv")));
+        ourWavesWriter = new CsvRowWriter(new FileOutputStream(new File(outputDir, "our-waves.csv")));
         scoresWriter = new CsvRowWriter(new FileOutputStream(new File(outputDir, "scores.csv")));
 
         // Group features by file type
@@ -40,7 +43,10 @@ public final class CsvWriter implements Closeable {
                     ticksFeatures.add(f);
                     break;
                 case THEIR_WAVES:
-                    wavesFeatures.add(f);
+                    theirWavesFeatures.add(f);
+                    break;
+                case OUR_WAVES:
+                    ourWavesFeatures.add(f);
                     break;
                 case SCORES:
                     scoresFeatures.add(f);
@@ -49,7 +55,7 @@ public final class CsvWriter implements Closeable {
         }
     }
 
-    /** Write header rows for all three CSV files. */
+    /** Write header rows for all CSV files. */
     public void writeHeaders(String battleId) throws IOException {
         // ticks.csv: battle_id, round, tick, then all TICKS features
         ticksWriter.beginRow();
@@ -59,13 +65,22 @@ public final class CsvWriter implements Closeable {
         }
         ticksWriter.endRow();
 
-        // waves.csv: battle_id, round, tick, fire_power, then all WAVES features
-        wavesWriter.beginRow();
-        wavesWriter.writeHeaders("battle_id", "round", "tick", "fire_power");
-        for (Feature f : wavesFeatures) {
-            wavesWriter.writeHeader(f.name().toLowerCase());
+        // their-waves.csv: battle_id, round, tick, fire_power, then all THEIR_WAVES
+        // features
+        theirWavesWriter.beginRow();
+        theirWavesWriter.writeHeaders("battle_id", "round", "tick", "fire_power");
+        for (Feature f : theirWavesFeatures) {
+            theirWavesWriter.writeHeader(f.name().toLowerCase());
         }
-        wavesWriter.endRow();
+        theirWavesWriter.endRow();
+
+        // our-waves.csv: battle_id, round, tick, then all OUR_WAVES features
+        ourWavesWriter.beginRow();
+        ourWavesWriter.writeHeaders("battle_id", "round", "tick");
+        for (Feature f : ourWavesFeatures) {
+            ourWavesWriter.writeHeader(f.name().toLowerCase());
+        }
+        ourWavesWriter.endRow();
 
         // scores.csv: battle_id, round, result, then all SCORES features
         scoresWriter.beginRow();
@@ -88,17 +103,29 @@ public final class CsvWriter implements Closeable {
         ticksWriter.endRow();
     }
 
-    /** Write one row to waves.csv (called when opponent fire is detected). */
-    public void writeWaveRow(Whiteboard wb, String battleId, int round) throws IOException {
-        wavesWriter.beginRow();
-        wavesWriter.writeRaw(battleId);
-        wavesWriter.writeInt(round);
-        wavesWriter.writeLong((long) wb.getFeature(Feature.TICK));
-        wavesWriter.writeRaw(Double.toString(wb.getFeature(Feature.THEIR_FIRE_POWER)));
-        for (Feature f : wavesFeatures) {
-            wavesWriter.writeDouble(wb, f);
+    /** Write one row to their-waves.csv (called when opponent fire is detected). */
+    public void writeTheirWaveRow(Whiteboard wb, String battleId, int round) throws IOException {
+        theirWavesWriter.beginRow();
+        theirWavesWriter.writeRaw(battleId);
+        theirWavesWriter.writeInt(round);
+        theirWavesWriter.writeLong((long) wb.getFeature(Feature.TICK));
+        theirWavesWriter.writeRaw(Double.toString(wb.getFeature(Feature.THEIR_FIRE_POWER)));
+        for (Feature f : theirWavesFeatures) {
+            theirWavesWriter.writeDouble(wb, f);
         }
-        wavesWriter.endRow();
+        theirWavesWriter.endRow();
+    }
+
+    /** Write one row to our-waves.csv (called when we fire a bullet). */
+    public void writeOurWaveRow(Whiteboard wb, String battleId, int round) throws IOException {
+        ourWavesWriter.beginRow();
+        ourWavesWriter.writeRaw(battleId);
+        ourWavesWriter.writeInt(round);
+        ourWavesWriter.writeLong((long) wb.getFeature(Feature.TICK));
+        for (Feature f : ourWavesFeatures) {
+            ourWavesWriter.writeDouble(wb, f);
+        }
+        ourWavesWriter.endRow();
     }
 
     /** Write one row to scores.csv (called at end of each round). */
@@ -116,7 +143,8 @@ public final class CsvWriter implements Closeable {
     @Override
     public void close() throws IOException {
         ticksWriter.close();
-        wavesWriter.close();
+        theirWavesWriter.close();
+        ourWavesWriter.close();
         scoresWriter.close();
     }
 }

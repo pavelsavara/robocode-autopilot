@@ -161,10 +161,10 @@ public final class Main {
 
                     // Write wave rows if opponent fired
                     if (!Double.isNaN(wbA.getFeature(Feature.THEIR_FIRE_POWER))) {
-                        csvA.writeWaveRow(wbA, battleId, roundIndex);
+                        csvA.writeTheirWaveRow(wbA, battleId, roundIndex);
                     }
                     if (!Double.isNaN(wbB.getFeature(Feature.THEIR_FIRE_POWER))) {
-                        csvB.writeWaveRow(wbB, battleId, roundIndex);
+                        csvB.writeTheirWaveRow(wbB, battleId, roundIndex);
                     }
 
                     // Track last robots for round finalization

@@ -153,4 +153,4 @@ filters these via event correlation.
 ### One-Tick Detection Lag
 Energy drop is observed on the tick *after* the opponent fires. The bullet
 has already traveled one tick by the time we detect it. This means
-`fireDistance` in waves.csv is the distance minus one tick of bullet travel.
+`fireDistance` in their-waves.csv is the distance minus one tick of bullet travel.
