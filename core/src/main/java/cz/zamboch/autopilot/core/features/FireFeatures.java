@@ -6,14 +6,23 @@ import cz.zamboch.autopilot.core.IInGameFeatures;
 import cz.zamboch.autopilot.core.Whiteboard;
 
 /**
- * Detects opponent fire via scan-to-scan energy drop.
- * If the opponent's energy decreased by 0.1–3.0 between consecutive scans,
- * records the drop as OPPONENT_FIRE_POWER (the valid bullet power range).
+ * Detects opponent fire via scan-to-scan energy drop, corrected for known
+ * energy changes from bullet hits and rams.
+ * <p>
+ * Correction formula:
+ * adjustedDrop = observedDrop - ourBulletDamage - ramDamage +
+ * opponentBulletGain
+ * <p>
+ * If 0.1 ≤ adjustedDrop ≤ 3.0 → opponent fired with that power.
  * Uses PREV_SCAN_OPPONENT_ENERGY stored in the Whiteboard as inter-tick state.
+ * Resets accumulator features after consumption.
  */
 public final class FireFeatures implements IInGameFeatures {
     private static final Feature[] DEPS = {
-            Feature.TICK, Feature.LAST_SCAN_TICK, Feature.OPPONENT_ENERGY
+            Feature.TICK, Feature.LAST_SCAN_TICK, Feature.OPPONENT_ENERGY,
+            Feature.OUR_BULLET_DAMAGE_TO_OPPONENT,
+            Feature.OPPONENT_BULLET_ENERGY_GAIN,
+            Feature.RAM_DAMAGE_TO_OPPONENT
     };
     private static final Feature[] OUTPUTS = {
             Feature.OPPONENT_FIRE_POWER, Feature.PREV_SCAN_OPPONENT_ENERGY
@@ -45,13 +54,32 @@ public final class FireFeatures implements IInGameFeatures {
 
         if (!Double.isNaN(prevEnergy)) {
             double drop = prevEnergy - currentEnergy;
-            if (drop >= 0.1 && drop <= 3.0) {
-                wb.setFeature(Feature.OPPONENT_FIRE_POWER, drop);
+
+            // Subtract known energy changes
+            double bulletDmg = wb.getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT);
+            double bulletGain = wb.getFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN);
+            double ramDmg = wb.getFeature(Feature.RAM_DAMAGE_TO_OPPONENT);
+            if (Double.isNaN(bulletDmg))
+                bulletDmg = 0;
+            if (Double.isNaN(bulletGain))
+                bulletGain = 0;
+            if (Double.isNaN(ramDmg))
+                ramDmg = 0;
+
+            double adjustedDrop = drop - bulletDmg - ramDmg + bulletGain;
+
+            if (adjustedDrop >= 0.1 && adjustedDrop <= 3.0) {
+                wb.setFeature(Feature.OPPONENT_FIRE_POWER, adjustedDrop);
             } else {
                 wb.setFeature(Feature.OPPONENT_FIRE_POWER, Double.NaN);
             }
         }
 
         wb.setFeature(Feature.PREV_SCAN_OPPONENT_ENERGY, currentEnergy);
+
+        // Reset accumulators for next inter-scan period
+        wb.setFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT, 0);
+        wb.setFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN, 0);
+        wb.setFeature(Feature.RAM_DAMAGE_TO_OPPONENT, 0);
     }
 }

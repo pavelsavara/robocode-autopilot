@@ -27,6 +27,11 @@ public enum Feature {
     OPPONENT_ENERGY(FileType.TICKS),
     LAST_SCAN_TICK(FileType.TICKS),
 
+    // --- Input: bullet & ram events (accumulated between scans) ---
+    OUR_BULLET_DAMAGE_TO_OPPONENT(FileType.TICKS),
+    OPPONENT_BULLET_ENERGY_GAIN(FileType.TICKS),
+    RAM_DAMAGE_TO_OPPONENT(FileType.TICKS),
+
     // --- Computed: spatial ---
     OPPONENT_BEARING_ABSOLUTE(FileType.TICKS),
 

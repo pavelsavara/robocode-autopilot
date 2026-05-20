@@ -2,6 +2,9 @@ package cz.zamboch.autopilot.pipeline;
 
 import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.Whiteboard;
+import robocode.Rules;
+import robocode.control.snapshot.BulletState;
+import robocode.control.snapshot.IBulletSnapshot;
 import robocode.control.snapshot.IRobotSnapshot;
 import robocode.control.snapshot.ITurnSnapshot;
 import robocode.control.snapshot.RobotState;
@@ -88,6 +91,12 @@ public final class Player {
             injectOwnState(wbB, robotB, tick, bfWidth, bfHeight);
             if (!deadA)
                 synthesizeScan(wbB, robotB, robotA, tick, false);
+        }
+
+        // Detect bullet hits and rams from snapshot
+        if (!deadA || !deadB) {
+            detectBulletHits(turn, robotA, robotB);
+            detectRams(robotA, robotB);
         }
 
         return newRound;
@@ -194,6 +203,79 @@ public final class Player {
         wb.setFeature(Feature.OPPONENT_ENERGY, opponent.getEnergy());
         wb.setFeature(Feature.LAST_SCAN_TICK, tick);
 
+    }
+
+    /**
+     * Detect bullet hits from turn snapshot and accumulate energy changes.
+     * Mirrors robot's onBulletHit and onHitByBullet events.
+     */
+    private void detectBulletHits(ITurnSnapshot turn, IRobotSnapshot robotA, IRobotSnapshot robotB) {
+        IBulletSnapshot[] bullets = turn.getBullets();
+        if (bullets == null)
+            return;
+
+        for (IBulletSnapshot bullet : bullets) {
+            if (bullet.getState() != BulletState.HIT_VICTIM)
+                continue;
+
+            int owner = bullet.getOwnerIndex();
+            int victim = bullet.getVictimIndex();
+            double power = bullet.getPower();
+
+            // Perspective A: robotA(0) is us, robotB(1) is opponent
+            if (!deadA) {
+                if (owner == 0 && victim == 1) {
+                    // Our bullet hit opponent → accumulate damage
+                    accumulate(wbA, Feature.OUR_BULLET_DAMAGE_TO_OPPONENT, Rules.getBulletDamage(power));
+                } else if (owner == 1 && victim == 0) {
+                    // Opponent bullet hit us → opponent gains energy
+                    accumulate(wbA, Feature.OPPONENT_BULLET_ENERGY_GAIN, Rules.getBulletHitBonus(power));
+                }
+            }
+
+            // Perspective B: robotB(1) is us, robotA(0) is opponent
+            if (!deadB) {
+                if (owner == 1 && victim == 0) {
+                    // Our bullet hit opponent → accumulate damage
+                    accumulate(wbB, Feature.OUR_BULLET_DAMAGE_TO_OPPONENT, Rules.getBulletDamage(power));
+                } else if (owner == 0 && victim == 1) {
+                    // Opponent bullet hit us → opponent gains energy
+                    accumulate(wbB, Feature.OPPONENT_BULLET_ENERGY_GAIN, Rules.getBulletHitBonus(power));
+                }
+            }
+        }
+    }
+
+    /**
+     * Detect rams from robot states and accumulate damage.
+     * Engine sets RobotState.HIT_ROBOT on the "at fault" robot.
+     * Each at-fault robot causes 0.6 damage to both robots.
+     */
+    private void detectRams(IRobotSnapshot robotA, IRobotSnapshot robotB) {
+        boolean aHitRobot = (robotA.getState() == RobotState.HIT_ROBOT);
+        boolean bHitRobot = (robotB.getState() == RobotState.HIT_ROBOT);
+
+        if (!aHitRobot && !bHitRobot)
+            return;
+
+        // Total damage to opponent = 0.6 per at-fault robot
+        double ramDmg = 0;
+        if (aHitRobot)
+            ramDmg += Rules.ROBOT_HIT_DAMAGE;
+        if (bHitRobot)
+            ramDmg += Rules.ROBOT_HIT_DAMAGE;
+
+        // Both perspectives see the same total ram damage (symmetrical)
+        if (!deadA)
+            accumulate(wbA, Feature.RAM_DAMAGE_TO_OPPONENT, ramDmg);
+        if (!deadB)
+            accumulate(wbB, Feature.RAM_DAMAGE_TO_OPPONENT, ramDmg);
+    }
+
+    /** Accumulate a value into a whiteboard feature (treats NaN as 0). */
+    private static void accumulate(Whiteboard wb, Feature feature, double value) {
+        double current = wb.getFeature(feature);
+        wb.setFeature(feature, (Double.isNaN(current) ? 0 : current) + value);
     }
 
     /** Normalize angle to [0, 2*PI) — matches engine's normalAbsoluteAngle. */

@@ -7,8 +7,8 @@ dependencies {
 }
 
 tasks.jar {
-    archiveFileName.set("test.SittingDuck_1.0.jar")
+    archiveFileName.set("test-bots_1.0.jar")
     manifest {
-        attributes["robots"] = "test.SittingDuck"
+        attributes["robots"] = "test.SittingDuck,test.Aggressive"
     }
 }

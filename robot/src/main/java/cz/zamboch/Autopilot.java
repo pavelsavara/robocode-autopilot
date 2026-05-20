@@ -7,7 +7,11 @@ import cz.zamboch.autopilot.core.features.SpatialFeatures;
 import cz.zamboch.autopilot.core.features.FireFeatures;
 import cz.zamboch.autopilot.core.features.TimingFeatures;
 import robocode.AdvancedRobot;
+import robocode.BulletHitEvent;
+import robocode.HitByBulletEvent;
+import robocode.HitRobotEvent;
 import robocode.RobotStatus;
+import robocode.Rules;
 import robocode.ScannedRobotEvent;
 import robocode.StatusEvent;
 
@@ -41,6 +45,26 @@ public final class Autopilot extends AdvancedRobot {
         wb.setFeature(Feature.OPPONENT_ENERGY, event.getEnergy());
         wb.setFeature(Feature.LAST_SCAN_TICK, wb.getFeature(Feature.TICK));
 
+    }
+
+    @Override
+    public void onBulletHit(BulletHitEvent e) {
+        double current = wb.getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT);
+        double damage = Rules.getBulletDamage(e.getBullet().getPower());
+        wb.setFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT, (Double.isNaN(current) ? 0 : current) + damage);
+    }
+
+    @Override
+    public void onHitByBullet(HitByBulletEvent e) {
+        double current = wb.getFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN);
+        double gain = Rules.getBulletHitBonus(e.getBullet().getPower());
+        wb.setFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN, (Double.isNaN(current) ? 0 : current) + gain);
+    }
+
+    @Override
+    public void onHitRobot(HitRobotEvent e) {
+        double current = wb.getFeature(Feature.RAM_DAMAGE_TO_OPPONENT);
+        wb.setFeature(Feature.RAM_DAMAGE_TO_OPPONENT, (Double.isNaN(current) ? 0 : current) + Rules.ROBOT_HIT_DAMAGE);
     }
 
     @Override
