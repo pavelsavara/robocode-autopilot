@@ -31,10 +31,11 @@ public final class Whiteboard {
         transformer.process(this);
     }
 
-    /** Set a feature value. */
+    /** Set a feature value. Throws if value is infinite. */
     public void setFeature(Feature f, double value) {
         if (Double.isInfinite(value)) {
-            value = Double.NaN;
+            throw new IllegalArgumentException(
+                    "Infinite value for feature " + f.name());
         }
         features[f.ordinal()] = value;
     }

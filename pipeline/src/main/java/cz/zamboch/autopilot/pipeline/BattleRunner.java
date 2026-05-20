@@ -36,35 +36,39 @@ public final class BattleRunner {
         StreamingPipelineObserver observer = new StreamingPipelineObserver(outputDir, 800, 600);
         engine.addBattleListener(observer);
 
-        String robotFilter = "cz.zamboch.Autopilot," + opponent;
-        RobotSpecification[] robots = engine.getLocalRepository(robotFilter);
+        try {
+            String robotFilter = "cz.zamboch.Autopilot," + opponent;
+            RobotSpecification[] robots = engine.getLocalRepository(robotFilter);
 
-        RobotSpecification ourBot = null;
-        RobotSpecification oppBot = null;
-        for (RobotSpecification spec : robots) {
-            String name = spec.getClassName();
-            if ("cz.zamboch.Autopilot".equals(name)) {
-                ourBot = spec;
+            RobotSpecification ourBot = null;
+            RobotSpecification oppBot = null;
+            for (RobotSpecification spec : robots) {
+                String name = spec.getClassName();
+                if ("cz.zamboch.Autopilot".equals(name)) {
+                    ourBot = spec;
+                }
+                if (opponent.equals(name)) {
+                    oppBot = spec;
+                }
             }
-            if (opponent.equals(name)) {
-                oppBot = spec;
+
+            if (ourBot == null) {
+                throw new IllegalStateException("Cannot find cz.zamboch.Autopilot in ROBOTPATH");
             }
-        }
+            if (oppBot == null) {
+                throw new IllegalStateException("Cannot find opponent: " + opponent);
+            }
 
-        if (ourBot == null) {
+            BattlefieldSpecification battlefield = new BattlefieldSpecification(800, 600);
+            BattleSpecification spec = new BattleSpecification(
+                    rounds, battlefield, new RobotSpecification[] { ourBot, oppBot });
+
+            engine.runBattle(spec, true);
+        } catch (Exception e) {
+            observer.close();
             engine.close();
-            throw new IllegalStateException("Cannot find cz.zamboch.Autopilot in ROBOTPATH");
+            throw e;
         }
-        if (oppBot == null) {
-            engine.close();
-            throw new IllegalStateException("Cannot find opponent: " + opponent);
-        }
-
-        BattlefieldSpecification battlefield = new BattlefieldSpecification(800, 600);
-        BattleSpecification spec = new BattleSpecification(
-                rounds, battlefield, new RobotSpecification[] { ourBot, oppBot });
-
-        engine.runBattle(spec, true);
         engine.close();
         return observer;
     }

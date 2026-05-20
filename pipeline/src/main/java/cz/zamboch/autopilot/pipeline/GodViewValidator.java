@@ -8,8 +8,6 @@ import robocode.control.snapshot.IBulletSnapshot;
 import robocode.control.snapshot.IRobotSnapshot;
 import robocode.control.snapshot.ITurnSnapshot;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -22,54 +20,26 @@ import java.util.Set;
  * <p>
  * Unlike {@link DebugValidator} (which fails fast on pipeline bugs), this
  * accumulates per-feature statistics to measure estimation quality over time.
- * <p>
- * Validation modes per feature:
- * <ul>
- * <li><b>EXACT</b> — must match within epsilon</li>
- * <li><b>DELAYED</b> — ground truth may match a recent pipeline value (1–N
- * ticks)</li>
- * <li><b>MARGIN</b> — allows a configurable absolute tolerance</li>
- * </ul>
+ * All comparisons are exact (within epsilon).
  */
 public final class GodViewValidator {
 
-    public enum Mode {
-        EXACT, DELAYED, MARGIN
-    }
+    private static final double EPSILON = 1e-4;
 
-    private static final double DEFAULT_EPSILON = 1e-4;
-    private static final int HISTORY_CAPACITY = 4;
-
-    private final Map<Feature, Rule> rules = new EnumMap<>(Feature.class);
+    private static final Feature[] VALIDATED_FEATURES = {
+            Feature.OPPONENT_HEADING,
+            Feature.OPPONENT_VELOCITY,
+            Feature.DISTANCE,
+            Feature.BEARING_RADIANS,
+            Feature.OPPONENT_ENERGY,
+            Feature.OPPONENT_FIRE_POWER,
+    };
 
     // Per-perspective state indexed by robotIndex (0 or 1)
     private final PerspectiveState[] state = { new PerspectiveState(), new PerspectiveState() };
 
     // Track known bullet IDs to detect new bullets (FIRED state not in snapshots)
     private final Set<Integer> knownBulletIds = new HashSet<>();
-
-    public GodViewValidator() {
-        exact(Feature.OPPONENT_HEADING);
-        exact(Feature.OPPONENT_VELOCITY);
-        exact(Feature.DISTANCE);
-        exact(Feature.BEARING_RADIANS);
-        exact(Feature.OPPONENT_ENERGY);
-        exact(Feature.OPPONENT_FIRE_POWER);
-    }
-
-    // --- Configuration ---
-
-    private void exact(Feature feature) {
-        rules.put(feature, new Rule(Mode.EXACT, DEFAULT_EPSILON, 0));
-    }
-
-    private void margin(Feature feature, double tolerance) {
-        rules.put(feature, new Rule(Mode.MARGIN, tolerance, 0));
-    }
-
-    private void delayed(Feature feature, int maxDelay) {
-        rules.put(feature, new Rule(Mode.DELAYED, DEFAULT_EPSILON, maxDelay));
-    }
 
     /**
      * Reset per-round state. Call at the start of each new round.
@@ -150,10 +120,7 @@ public final class GodViewValidator {
     private void validatePerspective(Whiteboard wb, IRobotSnapshot self,
             IRobotSnapshot opponent, Map<Feature, Stats> stats,
             double opponentFirePower, int opponentFireCount) {
-        for (Map.Entry<Feature, Rule> entry : rules.entrySet()) {
-            Feature feature = entry.getKey();
-            Rule rule = entry.getValue();
-
+        for (Feature feature : VALIDATED_FEATURES) {
             double estimated = wb.getFeature(feature);
             double truth = getGroundTruth(feature, self, opponent,
                     opponentFirePower, opponentFireCount);
@@ -164,25 +131,10 @@ public final class GodViewValidator {
             Stats s = stats.computeIfAbsent(feature, k -> new Stats());
             s.checks++;
 
-            boolean match;
-            switch (rule.mode) {
-                case DELAYED:
-                    rule.recordTruth(truth);
-                    match = matchesHistory(estimated, rule);
-                    break;
-                case MARGIN:
-                    match = Math.abs(estimated - truth) <= rule.tolerance;
-                    break;
-                default: // EXACT
-                    match = Math.abs(estimated - truth) <= rule.tolerance;
-                    break;
-            }
-
-            if (match) {
+            if (Math.abs(estimated - truth) <= EPSILON) {
                 s.hits++;
             } else {
                 s.misses++;
-                s.totalError += Math.abs(estimated - truth);
             }
         }
     }
@@ -210,7 +162,6 @@ public final class GodViewValidator {
                 double absoluteBearing = Math.atan2(dx, dy);
                 return RoboMath.normalRelativeAngle(absoluteBearing - self.getBodyHeading());
             case OPPONENT_FIRE_POWER:
-                // Ground truth from FIRED bullets between scans.
                 if (opponentFireCount == 1) {
                     return opponentFirePower;
                 }
@@ -218,15 +169,6 @@ public final class GodViewValidator {
             default:
                 return Double.NaN;
         }
-    }
-
-    private static boolean matchesHistory(double estimated, Rule rule) {
-        for (double v : rule.history) {
-            if (!Double.isNaN(v) && Math.abs(estimated - v) <= rule.tolerance) {
-                return true;
-            }
-        }
-        return false;
     }
 
     // --- Reporting ---
@@ -269,7 +211,7 @@ public final class GodViewValidator {
         System.out.println(String.format("%-30s %8s %8s %8s %10s",
                 "Feature", "Checks", "Hits", "Misses", "Accuracy"));
 
-        for (Feature feature : rules.keySet()) {
+        for (Feature feature : VALIDATED_FEATURES) {
             long checks = 0, hits = 0, misses = 0;
             for (PerspectiveState ps : state) {
                 Stats s = ps.stats.getOrDefault(feature, Stats.EMPTY);
@@ -299,35 +241,10 @@ public final class GodViewValidator {
         final Map<Feature, Stats> stats = new EnumMap<>(Feature.class);
     }
 
-    private static final class Rule {
-        final Mode mode;
-        final double tolerance;
-        final int maxDelay;
-        final Deque<Double> history;
-
-        Rule(Mode mode, double tolerance, int maxDelay) {
-            this.mode = mode;
-            this.tolerance = tolerance;
-            this.maxDelay = maxDelay;
-            this.history = (mode == Mode.DELAYED)
-                    ? new ArrayDeque<>(HISTORY_CAPACITY)
-                    : null;
-        }
-
-        void recordTruth(double value) {
-            if (history == null)
-                return;
-            if (history.size() >= HISTORY_CAPACITY)
-                history.pollFirst();
-            history.addLast(value);
-        }
-    }
-
     private static final class Stats {
         static final Stats EMPTY = new Stats();
         long checks;
         long hits;
         long misses;
-        double totalError;
     }
 }

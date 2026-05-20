@@ -5,6 +5,7 @@ import robocode.control.snapshot.IDebugProperty;
 import robocode.control.snapshot.IRobotSnapshot;
 import robocode.control.snapshot.IScoreSnapshot;
 import robocode.control.snapshot.ITurnSnapshot;
+import robocode.control.snapshot.BulletState;
 import robocode.control.snapshot.RobotState;
 
 /**
@@ -17,6 +18,16 @@ final class TestSnapshots {
 
     static ITurnSnapshot turn(int tick, IRobotSnapshot robotA, IRobotSnapshot robotB) {
         return new StubTurn(tick, new IRobotSnapshot[] { robotA, robotB }, new IBulletSnapshot[0]);
+    }
+
+    static ITurnSnapshot turn(int tick, IRobotSnapshot robotA, IRobotSnapshot robotB,
+            IBulletSnapshot... bullets) {
+        return new StubTurn(tick, new IRobotSnapshot[] { robotA, robotB }, bullets);
+    }
+
+    static IBulletSnapshot bullet(int bulletId, int ownerIndex, int victimIndex,
+            double power, BulletState state) {
+        return new StubBullet(bulletId, ownerIndex, victimIndex, power, state);
     }
 
     static IRobotSnapshot robot(double x, double y, double bodyHeading,
@@ -206,6 +217,80 @@ final class TestSnapshots {
 
         public IScoreSnapshot getScoreSnapshot() {
             return null;
+        }
+    }
+
+    // ========== Bullet Stub ==========
+
+    private static final class StubBullet implements IBulletSnapshot {
+        private final int bulletId;
+        private final int ownerIndex;
+        private final int victimIndex;
+        private final double power;
+        private final BulletState state;
+
+        StubBullet(int bulletId, int ownerIndex, int victimIndex, double power, BulletState state) {
+            this.bulletId = bulletId;
+            this.ownerIndex = ownerIndex;
+            this.victimIndex = victimIndex;
+            this.power = power;
+            this.state = state;
+        }
+
+        public BulletState getState() {
+            return state;
+        }
+
+        public double getPower() {
+            return power;
+        }
+
+        public double getX() {
+            return 0;
+        }
+
+        public double getY() {
+            return 0;
+        }
+
+        public double getPaintX() {
+            return 0;
+        }
+
+        public double getPaintY() {
+            return 0;
+        }
+
+        public int getColor() {
+            return 0;
+        }
+
+        public int getFrame() {
+            return 0;
+        }
+
+        public boolean isExplosion() {
+            return state == BulletState.HIT_VICTIM;
+        }
+
+        public int getExplosionImageIndex() {
+            return 0;
+        }
+
+        public int getBulletId() {
+            return bulletId;
+        }
+
+        public double getHeading() {
+            return 0;
+        }
+
+        public int getOwnerIndex() {
+            return ownerIndex;
+        }
+
+        public int getVictimIndex() {
+            return victimIndex;
         }
     }
 }
