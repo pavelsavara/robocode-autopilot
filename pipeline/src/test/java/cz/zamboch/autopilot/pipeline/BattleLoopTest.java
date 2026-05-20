@@ -137,6 +137,21 @@ final class BattleLoopTest {
         System.out.println(String.format("GodView accuracy: %.1f%%", gvAccuracy * 100));
         assertTrue(gvAccuracy >= 0.99, "GodView accuracy should be >= 99%, was " + gvAccuracy);
 
+        // --- Debug validator: fire-time features must match exactly ---
+        observer.getDebugValidator().printSummary();
+        int nonBreakMismatches = observer.getDebugValidator().getNonBreakMismatchCount();
+        System.out.println(String.format("DebugValidator non-break mismatches: %d", nonBreakMismatches));
+        assertEquals(0, nonBreakMismatches,
+                "Fire-time and spatial features must match exactly between robot and pipeline");
+
+        // --- Mean absolute GF error (robot stale scan vs pipeline god-view) ---
+        double gfError = observer.getDebugValidator().getMeanAbsoluteGFError();
+        int gfCount = observer.getDebugValidator().getGFErrorCount();
+        System.out.println(String.format("Mean absolute GF error: %.4f (%d comparisons)", gfError, gfCount));
+        if (gfCount > 0) {
+            assertTrue(gfError < 0.1, "Mean absolute GF error should be < 0.1, was " + gfError);
+        }
+
         System.out.println("Output: " + battleDir.getAbsolutePath());
     }
 

@@ -162,6 +162,11 @@ public final class Autopilot extends AdvancedRobot {
 
         // Debug
         for (Feature f : Feature.values()) {
+            if (f == Feature.OPPONENT_ID) {
+                String s = wb.getStringFeature(f);
+                setDebugProperty(f.name(), s != null ? s : "");
+                continue;
+            }
             double v = wb.getFeature(f);
             setDebugProperty(f.name(), Double.isNaN(v) ? "NaN" : String.valueOf(v));
         }
