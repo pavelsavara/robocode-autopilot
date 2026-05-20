@@ -112,6 +112,7 @@ public final class Player {
         wb.setFeature(Feature.OUR_ENERGY, self.getEnergy());
         wb.setFeature(Feature.GUN_HEAT, self.getGunHeat());
         wb.setFeature(Feature.GUN_HEADING, self.getGunHeading());
+        wb.setFeature(Feature.RADAR_HEADING, self.getRadarHeading());
         wb.setFeature(Feature.BATTLEFIELD_WIDTH, bfWidth);
         wb.setFeature(Feature.BATTLEFIELD_HEIGHT, bfHeight);
     }

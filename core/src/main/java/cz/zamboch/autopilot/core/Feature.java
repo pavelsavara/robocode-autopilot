@@ -15,6 +15,7 @@ public enum Feature {
     OUR_ENERGY(FileType.TICKS),
     GUN_HEAT(FileType.TICKS),
     GUN_HEADING(FileType.TICKS),
+    RADAR_HEADING(FileType.TICKS),
     TICK(FileType.TICKS),
     BATTLEFIELD_WIDTH(FileType.TICKS),
     BATTLEFIELD_HEIGHT(FileType.TICKS),
