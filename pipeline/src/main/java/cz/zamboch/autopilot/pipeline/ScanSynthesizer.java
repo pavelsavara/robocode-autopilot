@@ -1,6 +1,7 @@
 package cz.zamboch.autopilot.pipeline;
 
 import cz.zamboch.autopilot.core.Feature;
+import cz.zamboch.autopilot.core.RoboMath;
 import cz.zamboch.autopilot.core.Whiteboard;
 import robocode.control.snapshot.IRobotSnapshot;
 
@@ -55,7 +56,7 @@ final class ScanSynthesizer {
             scanRadians -= 2 * Math.PI;
 
         // Convert to Java2D coords
-        double startAngle = normalAbsoluteAngle(prevRadar - Math.PI / 2);
+        double startAngle = RoboMath.normalAbsoluteAngle(prevRadar - Math.PI / 2);
 
         // Build Arc2D.PIE (same as engine)
         double r = SCAN_RADIUS;
@@ -94,7 +95,7 @@ final class ScanSynthesizer {
         double distance = Math.hypot(dx, dy);
 
         double angle = Math.atan2(dx, dy);
-        double bearing = normalRelativeAngle(angle - self.getBodyHeading());
+        double bearing = RoboMath.normalRelativeAngle(angle - self.getBodyHeading());
 
         wb.setFeature(Feature.DISTANCE, distance);
         wb.setFeature(Feature.BEARING_RADIANS, bearing);
@@ -104,13 +105,4 @@ final class ScanSynthesizer {
         wb.setFeature(Feature.LAST_SCAN_TICK, tick);
     }
 
-    private static double normalAbsoluteAngle(double angle) {
-        return (angle %= (2 * Math.PI)) >= 0 ? angle : (angle + 2 * Math.PI);
-    }
-
-    private static double normalRelativeAngle(double angle) {
-        return (angle %= (2 * Math.PI)) >= 0
-                ? (angle < Math.PI) ? angle : angle - 2 * Math.PI
-                : (angle >= -Math.PI) ? angle : angle + 2 * Math.PI;
-    }
 }

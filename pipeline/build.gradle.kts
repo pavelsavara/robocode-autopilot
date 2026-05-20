@@ -95,4 +95,8 @@ tasks.register<Test>("battleTest") {
     if (project.hasProperty("rounds")) {
         systemProperty("battle.rounds", project.property("rounds")!!)
     }
+
+    testLogging {
+        showStandardStreams = true
+    }
 }

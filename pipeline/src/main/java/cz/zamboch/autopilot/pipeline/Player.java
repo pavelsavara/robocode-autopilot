@@ -41,6 +41,7 @@ public final class Player {
         if (newRound) {
             currentRound = roundIndex;
             scanner.reset();
+            damage.reset();
             deadA = false;
             deadB = false;
             wbA.clearFeatures();
@@ -63,6 +64,14 @@ public final class Player {
 
         long tick = (long) turn.getTurn();
 
+        // Detect bullet hits and rams first — robot receives these events
+        // (onBulletHit, onHitByBullet) before onScannedRobot, so accumulators
+        // must be updated before FireFeatures reads them on scan ticks.
+        if (!deadA || !deadB) {
+            damage.detectBulletHits(turn, deadA, deadB);
+            damage.detectRams(robotA, robotB, deadA, deadB);
+        }
+
         // Inject perspective A: robotA is "us", robotB is opponent
         if (!deadA) {
             injectOwnState(wbA, robotA, tick, bfWidth, bfHeight);
@@ -75,12 +84,6 @@ public final class Player {
             injectOwnState(wbB, robotB, tick, bfWidth, bfHeight);
             if (!deadA)
                 scanner.tryScan(wbB, robotB, robotA, tick, false);
-        }
-
-        // Detect bullet hits and rams
-        if (!deadA || !deadB) {
-            damage.detectBulletHits(turn, deadA, deadB);
-            damage.detectRams(robotA, robotB, deadA, deadB);
         }
 
         return newRound;

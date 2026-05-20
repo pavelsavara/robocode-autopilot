@@ -1,6 +1,7 @@
 package cz.zamboch.autopilot.core.strategy;
 
 import cz.zamboch.autopilot.core.Feature;
+import cz.zamboch.autopilot.core.RoboMath;
 import cz.zamboch.autopilot.core.Whiteboard;
 
 /**
@@ -31,7 +32,7 @@ public final class OrbitMovementStrategy implements IMovementStrategy {
         } else if (distance < 350) {
             turn += Math.PI / 6; // veer outward
         }
-        out.set(100, normalizeTurn(turn));
+        out.set(100, RoboMath.normalRelativeAngle(turn));
     }
 
     @Override
@@ -39,11 +40,4 @@ public final class OrbitMovementStrategy implements IMovementStrategy {
         return "OrbitMovement";
     }
 
-    private static double normalizeTurn(double angle) {
-        while (angle > Math.PI)
-            angle -= 2 * Math.PI;
-        while (angle < -Math.PI)
-            angle += 2 * Math.PI;
-        return angle;
-    }
 }

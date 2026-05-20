@@ -1,7 +1,8 @@
 package cz.zamboch.autopilot.pipeline;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -11,12 +12,13 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Integration test that runs an actual Robocode battle with Autopilot vs
- * SittingDuck.
+ * Integration test that runs actual Robocode battles with Autopilot vs
+ * multiple opponents.
  * Validates that:
  * - CSV output is produced (ticks, waves, scores)
  * - Debug properties from the robot snapshot match the pipeline whiteboard
- * features
+ * features (DebugValidator)
+ * - Cross-perspective scan accuracy (GodViewValidator)
  * <p>
  * Requires: staged robot JARs in battle-stage/ (handled by Gradle battleTest
  * task).
@@ -26,8 +28,27 @@ final class BattleLoopTest {
     @TempDir
     Path tempDir;
 
-    @Test
-    void battleProducesCsvAndValidatesDebugProperties() {
+    private static final String[] ALL_OPPONENTS = {
+            "test.SittingDuck",
+            "test.Aggressive",
+            "sample.Fire",
+            "sample.Walls",
+            "sample.Crazy"
+    };
+
+    @ParameterizedTest(name = "vs {0}")
+    @ValueSource(strings = { "test.SittingDuck", "test.Aggressive", "sample.Fire",
+            "sample.Walls", "sample.Crazy" })
+    void battleProducesCsvAndValidatesDebugProperties(String opponent) {
+        // Allow system property override (single-opponent mode)
+        String overrideOpponent = System.getProperty("battle.opponent");
+        if (overrideOpponent != null && !overrideOpponent.isEmpty()) {
+            // When system property is set, only run the matching opponent
+            if (!opponent.equals(overrideOpponent)) {
+                return;
+            }
+        }
+
         // Resolve the battle-stage directory (set by Gradle task or fallback)
         String robotsPath = System.getProperty("battle.stage");
         if (robotsPath == null) {
@@ -43,7 +64,6 @@ final class BattleLoopTest {
 
         String outputDir = tempDir.toFile().getAbsolutePath();
         int rounds = Integer.parseInt(System.getProperty("battle.rounds", "2"));
-        String opponent = System.getProperty("battle.opponent", "test.SittingDuck");
 
         // Run the battle
         StreamingPipelineObserver observer = BattleRunner.runBattle(opponent, rounds, outputDir);

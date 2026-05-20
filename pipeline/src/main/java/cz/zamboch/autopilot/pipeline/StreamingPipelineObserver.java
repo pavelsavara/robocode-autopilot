@@ -33,6 +33,7 @@ final class StreamingPipelineObserver extends BattleAdaptor {
     private CsvWriter csvA;
     private CsvWriter csvB;
     private DebugValidator validator;
+    private GodViewValidator godView;
     private String battleId;
     private int currentRound = -1;
     private IRobotSnapshot lastRobotA;
@@ -46,6 +47,7 @@ final class StreamingPipelineObserver extends BattleAdaptor {
         wbB = createWhiteboard();
         player = new Player(wbA, wbB);
         validator = new DebugValidator();
+        godView = new GodViewValidator();
 
         if (outputDir != null) {
             try {
@@ -104,9 +106,15 @@ final class StreamingPipelineObserver extends BattleAdaptor {
             }
         }
 
-        // Validate debug properties if robot is alive
-        if (robots[0].getState() != RobotState.DEAD && robots[0].getEnergy() > 0) {
+        // Validate only while both robots are alive and active
+        boolean bothAlive = robots[0].getState() != RobotState.DEAD
+                && robots[1].getState() != RobotState.DEAD
+                && robots[0].getEnergy() > 0
+                && robots[1].getEnergy() > 0;
+
+        if (bothAlive) {
             validator.validate(robots[0], wbA);
+            godView.validate(wbA, robots[0], wbB, robots[1], turn);
         }
 
         // Track last snapshots for round finalization
@@ -155,6 +163,9 @@ final class StreamingPipelineObserver extends BattleAdaptor {
         if (csvA != null) {
             System.out.println("CSV output: " + battleId);
         }
+
+        validator.printSummary();
+        godView.printSummary();
     }
 
     @Override

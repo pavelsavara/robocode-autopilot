@@ -1,6 +1,7 @@
 package cz.zamboch.autopilot.core.strategy;
 
 import cz.zamboch.autopilot.core.Feature;
+import cz.zamboch.autopilot.core.RoboMath;
 import cz.zamboch.autopilot.core.Whiteboard;
 
 /**
@@ -24,7 +25,7 @@ public final class NarrowLockRadar implements IRadarStrategy {
             return Double.POSITIVE_INFINITY; // spin until we find opponent
         }
         double radarHeading = wb.getFeature(Feature.RADAR_HEADING);
-        double radarTurn = normalizeTurn(absoluteBearing - radarHeading);
+        double radarTurn = RoboMath.normalRelativeAngle(absoluteBearing - radarHeading);
         return radarTurn + Math.signum(radarTurn) * OVERSHOOT;
     }
 
@@ -33,11 +34,4 @@ public final class NarrowLockRadar implements IRadarStrategy {
         return "NarrowLockRadar";
     }
 
-    private static double normalizeTurn(double angle) {
-        while (angle > Math.PI)
-            angle -= 2 * Math.PI;
-        while (angle < -Math.PI)
-            angle += 2 * Math.PI;
-        return angle;
-    }
 }

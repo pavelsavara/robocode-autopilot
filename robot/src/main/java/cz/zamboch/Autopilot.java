@@ -1,6 +1,7 @@
 package cz.zamboch;
 
 import cz.zamboch.autopilot.core.Feature;
+import cz.zamboch.autopilot.core.RoboMath;
 import cz.zamboch.autopilot.core.Whiteboard;
 import cz.zamboch.autopilot.core.features.MovementFeatures;
 import cz.zamboch.autopilot.core.features.SpatialFeatures;
@@ -113,7 +114,7 @@ public final class Autopilot extends AdvancedRobot {
         if (!Double.isNaN(fireCmd.angle)) {
             double gunHeading = wb.getFeature(Feature.GUN_HEADING);
             double gunTurn = fireCmd.angle - gunHeading;
-            setTurnGunRightRadians(normalizeTurn(gunTurn));
+            setTurnGunRightRadians(RoboMath.normalRelativeAngle(gunTurn));
             if (fireCmd.power > 0 && Math.abs(getGunTurnRemaining()) < 5) {
                 setFire(fireCmd.power);
             }
@@ -126,11 +127,4 @@ public final class Autopilot extends AdvancedRobot {
         }
     }
 
-    private static double normalizeTurn(double angle) {
-        while (angle > Math.PI)
-            angle -= 2 * Math.PI;
-        while (angle < -Math.PI)
-            angle += 2 * Math.PI;
-        return angle;
-    }
 }
