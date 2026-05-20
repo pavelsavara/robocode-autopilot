@@ -16,8 +16,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Cross-robot quality validator. Compares what robot A's whiteboard says about
- * opponent B against B's actual engine state (and vice versa).
+ * Cross-robot quality validator. For each perspective ("us"), compares what
+ * our whiteboard says about the opponent ("them") against their actual engine
+ * state.
  * <p>
  * Unlike {@link DebugValidator} (which fails fast on pipeline bugs), this
  * accumulates per-feature statistics to measure estimation quality over time.
@@ -40,8 +41,12 @@ public final class GodViewValidator {
     private static final int HISTORY_CAPACITY = 4;
 
     private final Map<Feature, Rule> rules = new EnumMap<>(Feature.class);
-    private final Map<Feature, Stats> statsA = new EnumMap<>(Feature.class);
-    private final Map<Feature, Stats> statsB = new EnumMap<>(Feature.class);
+
+    // Per-perspective state indexed by robotIndex (0 or 1)
+    private final PerspectiveState[] state = { new PerspectiveState(), new PerspectiveState() };
+
+    // Track known bullet IDs to detect new bullets (FIRED state not in snapshots)
+    private final Set<Integer> knownBulletIds = new HashSet<>();
 
     public GodViewValidator() {
         exact(Feature.OPPONENT_HEADING);
@@ -66,15 +71,16 @@ public final class GodViewValidator {
         rules.put(feature, new Rule(Mode.DELAYED, DEFAULT_EPSILON, maxDelay));
     }
 
-    // Accumulated fire power from opponent bullets between scans
-    // Perspective A: opponent is robot index 1; Perspective B: opponent is index 0
-    private double firePowerAccumA;
-    private double firePowerAccumB;
-    private int fireCountA;
-    private int fireCountB;
-
-    // Track known bullet IDs to detect new bullets (FIRED state not in snapshots)
-    private final Set<Integer> knownBulletIds = new HashSet<>();
+    /**
+     * Reset per-round state. Call at the start of each new round.
+     */
+    public void resetRound() {
+        for (PerspectiveState ps : state) {
+            ps.firePowerAccum = 0;
+            ps.fireCount = 0;
+        }
+        knownBulletIds.clear();
+    }
 
     // --- Validation (called each tick) ---
 
@@ -86,48 +92,48 @@ public final class GodViewValidator {
      * Tracks opponent FIRED bullets each tick to provide ground truth for
      * OPPONENT_FIRE_POWER validation on scan ticks.
      */
-    public void validate(Whiteboard wbA, IRobotSnapshot robotA,
-            Whiteboard wbB, IRobotSnapshot robotB, ITurnSnapshot turn) {
-        // Track FIRED bullets from each perspective's opponent
-        trackFiredBullets(turn);
+    public void validate(Perspective[] perspectives, IRobotSnapshot[] robots, ITurnSnapshot turn) {
+        trackFiredBullets(turn, perspectives);
 
-        double tickA = wbA.getFeature(Feature.TICK);
-        double lastScanA = wbA.getFeature(Feature.LAST_SCAN_TICK);
-        if (tickA == lastScanA) {
-            validatePerspective(wbA, robotA, robotB, statsA, firePowerAccumA, fireCountA);
-            firePowerAccumA = 0;
-            fireCountA = 0;
-        }
+        for (Perspective us : perspectives) {
+            PerspectiveState ps = state[us.robotIndex()];
 
-        double tickB = wbB.getFeature(Feature.TICK);
-        double lastScanB = wbB.getFeature(Feature.LAST_SCAN_TICK);
-        if (tickB == lastScanB) {
-            validatePerspective(wbB, robotB, robotA, statsB, firePowerAccumB, fireCountB);
-            firePowerAccumB = 0;
-            fireCountB = 0;
+            double tick = us.wb().getFeature(Feature.TICK);
+            double lastScan = us.wb().getFeature(Feature.LAST_SCAN_TICK);
+            if (tick == lastScan) {
+                if (us.isOurs() && ps.fireCount > 1) {
+                    throw new IllegalStateException(
+                            "Multiple opponent fires (" + ps.fireCount
+                                    + ") between our scans — radar gap too large at tick "
+                                    + (long) tick);
+                }
+                validatePerspective(us.wb(), robots[us.robotIndex()],
+                        robots[us.peer().robotIndex()], ps.stats,
+                        ps.firePowerAccum, ps.fireCount);
+                ps.firePowerAccum = 0;
+                ps.fireCount = 0;
+            }
         }
     }
 
-    private void trackFiredBullets(ITurnSnapshot turn) {
+    private void trackFiredBullets(ITurnSnapshot turn, Perspective[] perspectives) {
         IBulletSnapshot[] bullets = turn.getBullets();
         if (bullets == null)
             return;
-        // Detect newly appeared bullets (FIRED state is not exposed in snapshots,
-        // so we track bullet IDs and count first appearances as fire events)
         for (IBulletSnapshot bullet : bullets) {
             if (bullet.getState() == BulletState.INACTIVE)
                 continue;
             int id = bullet.getBulletId();
             if (!knownBulletIds.add(id))
                 continue;
-            // New bullet — this is a fire event
+            // New bullet — attribute to the perspective where owner is "them"
             int owner = bullet.getOwnerIndex();
-            if (owner == 1) {
-                firePowerAccumA += bullet.getPower();
-                fireCountA++;
-            } else if (owner == 0) {
-                firePowerAccumB += bullet.getPower();
-                fireCountB++;
+            for (Perspective us : perspectives) {
+                if (owner == us.peer().robotIndex()) {
+                    PerspectiveState ps = state[us.robotIndex()];
+                    ps.firePowerAccum += bullet.getPower();
+                    ps.fireCount++;
+                }
             }
         }
         // Clean up IDs for bullets no longer in snapshot
@@ -205,8 +211,6 @@ public final class GodViewValidator {
                 return RoboMath.normalRelativeAngle(absoluteBearing - self.getBodyHeading());
             case OPPONENT_FIRE_POWER:
                 // Ground truth from FIRED bullets between scans.
-                // Only valid when exactly one bullet fired (multiple fires
-                // cause ambiguous energy-drop detection).
                 if (opponentFireCount == 1) {
                     return opponentFirePower;
                 }
@@ -231,15 +235,12 @@ public final class GodViewValidator {
     public double getAccuracy(Feature feature) {
         long totalChecks = 0;
         long totalHits = 0;
-        Stats sa = statsA.get(feature);
-        Stats sb = statsB.get(feature);
-        if (sa != null) {
-            totalChecks += sa.checks;
-            totalHits += sa.hits;
-        }
-        if (sb != null) {
-            totalChecks += sb.checks;
-            totalHits += sb.hits;
+        for (PerspectiveState ps : state) {
+            Stats s = ps.stats.get(feature);
+            if (s != null) {
+                totalChecks += s.checks;
+                totalHits += s.hits;
+            }
         }
         return totalChecks == 0 ? 1.0 : (double) totalHits / totalChecks;
     }
@@ -247,20 +248,18 @@ public final class GodViewValidator {
     /** Total checks performed across all features, both perspectives. */
     public long getTotalChecks() {
         long total = 0;
-        for (Stats s : statsA.values())
-            total += s.checks;
-        for (Stats s : statsB.values())
-            total += s.checks;
+        for (PerspectiveState ps : state)
+            for (Stats s : ps.stats.values())
+                total += s.checks;
         return total;
     }
 
     /** Total hits (matches) across all features, both perspectives. */
     public long getTotalHits() {
         long total = 0;
-        for (Stats s : statsA.values())
-            total += s.hits;
-        for (Stats s : statsB.values())
-            total += s.hits;
+        for (PerspectiveState ps : state)
+            for (Stats s : ps.stats.values())
+                total += s.hits;
         return total;
     }
 
@@ -271,11 +270,13 @@ public final class GodViewValidator {
                 "Feature", "Checks", "Hits", "Misses", "Accuracy"));
 
         for (Feature feature : rules.keySet()) {
-            Stats sa = statsA.getOrDefault(feature, Stats.EMPTY);
-            Stats sb = statsB.getOrDefault(feature, Stats.EMPTY);
-            long checks = sa.checks + sb.checks;
-            long hits = sa.hits + sb.hits;
-            long misses = sa.misses + sb.misses;
+            long checks = 0, hits = 0, misses = 0;
+            for (PerspectiveState ps : state) {
+                Stats s = ps.stats.getOrDefault(feature, Stats.EMPTY);
+                checks += s.checks;
+                hits += s.hits;
+                misses += s.misses;
+            }
             double accuracy = checks == 0 ? 1.0 : (double) hits / checks;
 
             System.out.println(String.format("%-30s %8d %8d %8d %9.1f%%",
@@ -291,6 +292,12 @@ public final class GodViewValidator {
     }
 
     // --- Internal types ---
+
+    private static final class PerspectiveState {
+        double firePowerAccum;
+        int fireCount;
+        final Map<Feature, Stats> stats = new EnumMap<>(Feature.class);
+    }
 
     private static final class Rule {
         final Mode mode;

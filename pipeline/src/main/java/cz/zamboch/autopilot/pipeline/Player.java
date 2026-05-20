@@ -14,20 +14,16 @@ import java.io.IOException;
  * damage detection to {@link DamageDetector}.
  */
 public final class Player {
-    private final Whiteboard wbA;
-    private final Whiteboard wbB;
+    private final Perspective[] perspectives;
     private final ScanSynthesizer scanner;
     private final DamageDetector damage;
 
     private int currentRound = -1;
-    private boolean deadA = false;
-    private boolean deadB = false;
 
-    public Player(Whiteboard wbA, Whiteboard wbB) {
-        this.wbA = wbA;
-        this.wbB = wbB;
+    public Player(Perspective[] perspectives) {
+        this.perspectives = perspectives;
         this.scanner = new ScanSynthesizer();
-        this.damage = new DamageDetector(wbA, wbB);
+        this.damage = new DamageDetector();
     }
 
     /**
@@ -40,12 +36,11 @@ public final class Player {
         boolean newRound = (roundIndex != currentRound);
         if (newRound) {
             currentRound = roundIndex;
-            scanner.reset();
             damage.reset();
-            deadA = false;
-            deadB = false;
-            wbA.clearFeatures();
-            wbB.clearFeatures();
+            for (Perspective us : perspectives) {
+                us.resetRound();
+                us.wb().clearFeatures();
+            }
         }
 
         IRobotSnapshot[] robots = turn.getRobots();
@@ -53,39 +48,30 @@ public final class Player {
             return newRound;
         }
 
-        IRobotSnapshot robotA = robots[0];
-        IRobotSnapshot robotB = robots[1];
-
-        // Stop processing only after robot is truly dead (not just disabled).
-        // A disabled robot (energy=0) can recover from bullet hits and still
-        // receives scan events.
-        if (robotA.getState() == RobotState.DEAD)
-            deadA = true;
-        if (robotB.getState() == RobotState.DEAD)
-            deadB = true;
+        // Mark dead perspectives
+        for (Perspective us : perspectives) {
+            if (robots[us.robotIndex()].getState() == RobotState.DEAD)
+                us.setDead(true);
+        }
 
         long tick = (long) turn.getTurn();
 
         // Detect bullet hits and rams first — robot receives these events
         // (onBulletHit, onHitByBullet) before onScannedRobot, so accumulators
         // must be updated before FireFeatures reads them on scan ticks.
-        if (!deadA || !deadB) {
-            damage.detectBulletHits(turn, deadA, deadB);
-            damage.detectRams(robotA, robotB, deadA, deadB);
+        boolean anyAlive = !perspectives[0].isDead() || !perspectives[1].isDead();
+        if (anyAlive) {
+            damage.detectBulletHits(turn, perspectives);
+            damage.detectRams(robots, perspectives);
         }
 
-        // Inject perspective A: robotA is "us", robotB is opponent
-        if (!deadA) {
-            injectOwnState(wbA, robotA, tick, bfWidth, bfHeight);
-            if (!deadB)
-                scanner.tryScan(wbA, robotA, robotB, tick, true);
-        }
-
-        // Inject perspective B: robotB is "us", robotA is opponent
-        if (!deadB) {
-            injectOwnState(wbB, robotB, tick, bfWidth, bfHeight);
-            if (!deadA)
-                scanner.tryScan(wbB, robotB, robotA, tick, false);
+        // Inject state for each perspective: "us" is self, "them" is opponent
+        for (Perspective us : perspectives) {
+            if (!us.isDead()) {
+                injectOwnState(us.wb(), robots[us.robotIndex()], tick, bfWidth, bfHeight);
+                if (!us.peer().isDead())
+                    scanner.tryScan(us, robots[us.robotIndex()], robots[us.peer().robotIndex()], tick);
+            }
         }
 
         return newRound;
@@ -106,22 +92,28 @@ public final class Player {
         wb.setFeature(Feature.BATTLEFIELD_HEIGHT, bfHeight);
     }
 
-    /** Determine round winner by robot states. */
-    public void finalizeRound(Whiteboard wbA, Whiteboard wbB,
-            IRobotSnapshot robotA, IRobotSnapshot robotB) {
-        boolean aDead = (robotA.getState() == RobotState.DEAD);
-        boolean bDead = (robotB.getState() == RobotState.DEAD);
-        if (aDead && !bDead) {
-            wbA.setFeature(Feature.ROUND_RESULT, -1);
-            wbB.setFeature(Feature.ROUND_RESULT, 1);
-        } else if (bDead && !aDead) {
-            wbA.setFeature(Feature.ROUND_RESULT, 1);
-            wbB.setFeature(Feature.ROUND_RESULT, -1);
+    /** Determine round winner and set ROUND_RESULT for both perspectives. */
+    public void finalizeRound(Perspective[] perspectives) {
+        IRobotSnapshot robot0 = perspectives[0].lastRobot();
+        IRobotSnapshot robot1 = perspectives[1].lastRobot();
+        if (robot0 == null || robot1 == null)
+            return;
+
+        boolean dead0 = (robot0.getState() == RobotState.DEAD);
+        boolean dead1 = (robot1.getState() == RobotState.DEAD);
+
+        double result0;
+        if (dead0 && !dead1) {
+            result0 = -1;
+        } else if (dead1 && !dead0) {
+            result0 = 1;
         } else {
-            double diff = robotA.getEnergy() - robotB.getEnergy();
-            wbA.setFeature(Feature.ROUND_RESULT, diff > 0 ? 1 : (diff < 0 ? -1 : 0));
-            wbB.setFeature(Feature.ROUND_RESULT, diff > 0 ? -1 : (diff < 0 ? 1 : 0));
+            double diff = robot0.getEnergy() - robot1.getEnergy();
+            result0 = diff > 0 ? 1 : (diff < 0 ? -1 : 0);
         }
+
+        perspectives[0].wb().setFeature(Feature.ROUND_RESULT, result0);
+        perspectives[1].wb().setFeature(Feature.ROUND_RESULT, -result0);
     }
 
     /**

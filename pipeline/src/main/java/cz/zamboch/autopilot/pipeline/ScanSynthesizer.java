@@ -18,33 +18,21 @@ final class ScanSynthesizer {
     private static final double SCAN_RADIUS = 1200.0;
     private static final double ROBOT_SIZE = 36.0;
 
-    private double prevRadarHeadingA = Double.NaN;
-    private double prevRadarHeadingB = Double.NaN;
-
     // Reusable Arc2D for scan detection (matches engine's scanArc)
     private final Arc2D.Double scanArc = new Arc2D.Double();
 
-    void reset() {
-        prevRadarHeadingA = Double.NaN;
-        prevRadarHeadingB = Double.NaN;
-    }
-
     /**
-     * Attempt to synthesize a scan from {@code self}'s radar sweep onto
-     * {@code opponent}.
-     * If the sweep intersects, injects scan features into the whiteboard.
+     * Attempt to synthesize a scan from {@code us}'s radar sweep onto
+     * {@code them}.
+     * If the sweep intersects, injects scan features into our whiteboard.
      */
-    void tryScan(Whiteboard wb, IRobotSnapshot self, IRobotSnapshot opponent,
-            long tick, boolean isA) {
+    void tryScan(Perspective us, IRobotSnapshot self, IRobotSnapshot opponent, long tick) {
         double radarHeading = self.getRadarHeading();
-        double prevRadar = isA ? prevRadarHeadingA : prevRadarHeadingB;
+        double prevRadar = us.prevRadarHeading();
 
         if (Double.isNaN(prevRadar)) {
             // First tick: no sweep yet
-            if (isA)
-                prevRadarHeadingA = radarHeading;
-            else
-                prevRadarHeadingB = radarHeading;
+            us.setPrevRadarHeading(radarHeading);
             return;
         }
 
@@ -69,13 +57,10 @@ final class ScanSynthesizer {
                 opponent.getX() - half, opponent.getY() - half, ROBOT_SIZE, ROBOT_SIZE);
 
         if (intersects(scanArc, targetBox)) {
-            injectScan(wb, self, opponent, tick);
+            injectScan(us.wb(), self, opponent, tick);
         }
 
-        if (isA)
-            prevRadarHeadingA = radarHeading;
-        else
-            prevRadarHeadingB = radarHeading;
+        us.setPrevRadarHeading(radarHeading);
     }
 
     /**

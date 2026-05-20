@@ -2,6 +2,7 @@ package cz.zamboch.autopilot.pipeline;
 
 import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.Whiteboard;
+import cz.zamboch.autopilot.core.features.FireFeatures;
 import cz.zamboch.autopilot.core.features.MovementFeatures;
 import cz.zamboch.autopilot.core.features.SpatialFeatures;
 import cz.zamboch.autopilot.core.features.TimingFeatures;
@@ -40,6 +41,7 @@ final class PipelineIntegrationTest {
 
         Whiteboard wbA = createWhiteboard();
         Whiteboard wbB = createWhiteboard();
+        Perspective[] perspectives = Perspective.createPair(wbA, wbB);
 
         File dirA = tempDir.resolve(battleId).resolve("BotA").toFile();
         File dirB = tempDir.resolve(battleId).resolve("BotB").toFile();
@@ -48,10 +50,12 @@ final class PipelineIntegrationTest {
         csvA.writeHeaders(battleId);
         csvB.writeHeaders(battleId);
 
-        Player player = new Player(wbA, wbB);
+        Player player = new Player(perspectives);
 
         // Simulate 5 ticks
         double[] bEnergies = { 100, 100, 100, 98, 98 }; // drops 2.0 at tick 3
+        // A's radar rotates to sweep across B (bearing from A to B ≈ 71.6°)
+        double[] radarA = { 60, 66, 72, 78, 84 }; // degrees
         RobotState[] aStates = {
                 RobotState.ACTIVE, RobotState.ACTIVE, RobotState.ACTIVE,
                 RobotState.ACTIVE, RobotState.DEAD
@@ -70,7 +74,7 @@ final class PipelineIntegrationTest {
 
             IRobotSnapshot robotA = TestSnapshots.robot(
                     ax, ay, Math.toRadians(45), 2.0, 100 - tick, 0.0,
-                    Math.toRadians(60), Math.toRadians(60),
+                    Math.toRadians(60), Math.toRadians(radarA[tick]),
                     0, aStates[tick], "BotA");
             IRobotSnapshot robotB = TestSnapshots.robot(
                     bx, by, Math.toRadians(180), 0.0, bEnergies[tick], 0.0,
@@ -105,7 +109,9 @@ final class PipelineIntegrationTest {
         }
 
         // Finalize round
-        player.finalizeRound(wbA, wbB, lastRobotA, lastRobotB);
+        perspectives[0].setLastRobot(lastRobotA);
+        perspectives[1].setLastRobot(lastRobotB);
+        player.finalizeRound(perspectives);
         csvA.writeScoreRow(wbA, battleId, 0);
         csvB.writeScoreRow(wbB, battleId, 0);
 
@@ -148,9 +154,10 @@ final class PipelineIntegrationTest {
         List<String> scoreBLines = Files.readAllLines(scoresB.toPath());
         assertTrue(scoreBLines.get(1).contains(",1"), "B's result should be 1 (win)");
 
-        // Verify no NaN in spatial features (scan should have been synthesized)
-        // Parse the tick row and check distance is not NaN
-        String[] cols = tickLines.get(1).split(",");
+        // Verify no NaN in spatial features on scan ticks (scan is synthesized starting
+        // tick 2)
+        // Parse the tick 2 row and check distance is not NaN
+        String[] cols = tickLines.get(3).split(","); // row 3 = tick 2 (first scan tick)
         // Find distance column index
         String[] headers = header.split(",");
         int distIdx = -1;
@@ -163,9 +170,9 @@ final class PipelineIntegrationTest {
         assertNotEquals(-1, distIdx, "Should find distance column");
         assertNotEquals("NaN", cols[distIdx], "Distance should not be NaN");
         double distance = Double.parseDouble(cols[distIdx]);
-        // Expected: sqrt((500-200)^2 + (400-300)^2) = sqrt(90000+10000) = sqrt(100000)
-        // ≈ 316.2
-        assertEquals(316.2, distance, 1.0, "Distance should be ~316.2");
+        // Expected at tick 2: A at (204,302), B at (500,400)
+        // sqrt((500-204)^2 + (400-302)^2) = sqrt(87616+9604) = sqrt(97220) ≈ 311.8
+        assertEquals(311.8, distance, 1.0, "Distance should be ~311.8 at tick 2");
     }
 
     @Test
@@ -177,6 +184,7 @@ final class PipelineIntegrationTest {
 
         Whiteboard wbA = createWhiteboard();
         Whiteboard wbB = createWhiteboard();
+        Perspective[] perspectives = Perspective.createPair(wbA, wbB);
 
         File dirA = tempDir.resolve(battleId).resolve("BotA").toFile();
         File dirB = tempDir.resolve(battleId).resolve("BotB").toFile();
@@ -185,7 +193,7 @@ final class PipelineIntegrationTest {
         csvA.writeHeaders(battleId);
         csvB.writeHeaders(battleId);
 
-        Player player = new Player(wbA, wbB);
+        Player player = new Player(perspectives);
 
         // First tick always produces a scan (per Player logic), so we need tick 1+
         IRobotSnapshot robotA0 = TestSnapshots.robot(
@@ -235,7 +243,8 @@ final class PipelineIntegrationTest {
         wb.registerFeatures(
                 new SpatialFeatures(),
                 new MovementFeatures(),
-                new TimingFeatures());
+                new TimingFeatures(),
+                new FireFeatures());
         return wb;
     }
 }

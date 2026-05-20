@@ -26,26 +26,23 @@ final class StreamingPipelineObserver extends BattleAdaptor {
     private final double bfWidth;
     private final double bfHeight;
 
-    // Pipeline state (null if outputDir not set = results-only mode)
-    private Whiteboard wbA;
-    private Whiteboard wbB;
+    // Pipeline state
+    private Perspective[] perspectives;
     private Player player;
-    private CsvWriter csvA;
-    private CsvWriter csvB;
     private DebugValidator validator;
     private GodViewValidator godView;
     private String battleId;
     private int currentRound = -1;
-    private IRobotSnapshot lastRobotA;
-    private IRobotSnapshot lastRobotB;
+    private boolean ourDetected = false;
 
     StreamingPipelineObserver(String outputDir, double bfWidth, double bfHeight) {
         this.bfWidth = bfWidth;
         this.bfHeight = bfHeight;
 
-        wbA = createWhiteboard();
-        wbB = createWhiteboard();
-        player = new Player(wbA, wbB);
+        Whiteboard wb0 = createWhiteboard();
+        Whiteboard wb1 = createWhiteboard();
+        perspectives = Perspective.createPair(wb0, wb1);
+        player = new Player(perspectives);
         validator = new DebugValidator();
         godView = new GodViewValidator();
 
@@ -55,14 +52,14 @@ final class StreamingPipelineObserver extends BattleAdaptor {
 
                 File dirA = new File(outputDir, battleId + "/Autopilot");
                 File dirB = new File(outputDir, battleId + "/Opponent");
-                csvA = new CsvWriter(dirA);
-                csvB = new CsvWriter(dirB);
-                csvA.writeHeaders(battleId);
-                csvB.writeHeaders(battleId);
+                perspectives[0].setCsv(new CsvWriter(dirA));
+                perspectives[1].setCsv(new CsvWriter(dirB));
+                perspectives[0].csv().writeHeaders(battleId);
+                perspectives[1].csv().writeHeaders(battleId);
             } catch (IOException e) {
                 System.err.println("ERROR: Cannot create CSV output: " + e.getMessage());
-                csvA = null;
-                csvB = null;
+                perspectives[0].setCsv(null);
+                perspectives[1].setCsv(null);
             }
         }
     }
@@ -80,26 +77,27 @@ final class StreamingPipelineObserver extends BattleAdaptor {
         if (roundIndex != currentRound && currentRound >= 0) {
             finalizeRound();
         }
+        if (roundIndex != currentRound) {
+            godView.resetRound();
+        }
         currentRound = roundIndex;
 
         // Feed snapshot into Player (populates whiteboards with features)
         player.processTurn(roundIndex, turn, bfWidth, bfHeight);
 
         // Compute derived features
-        wbA.process();
-        wbB.process();
+        for (Perspective us : perspectives) {
+            us.wb().process();
+        }
 
         // Write CSV if enabled
-        if (csvA != null) {
+        if (perspectives[0].csv() != null) {
             try {
-                csvA.writeTickRow(wbA, battleId, roundIndex);
-                csvB.writeTickRow(wbB, battleId, roundIndex);
-
-                if (!Double.isNaN(wbA.getFeature(Feature.OPPONENT_FIRE_POWER))) {
-                    csvA.writeWaveRow(wbA, battleId, roundIndex);
-                }
-                if (!Double.isNaN(wbB.getFeature(Feature.OPPONENT_FIRE_POWER))) {
-                    csvB.writeWaveRow(wbB, battleId, roundIndex);
+                for (Perspective us : perspectives) {
+                    us.csv().writeTickRow(us.wb(), battleId, roundIndex);
+                    if (!Double.isNaN(us.wb().getFeature(Feature.OPPONENT_FIRE_POWER))) {
+                        us.csv().writeWaveRow(us.wb(), battleId, roundIndex);
+                    }
                 }
             } catch (IOException e) {
                 System.err.println("CSV write error: " + e.getMessage());
@@ -113,13 +111,31 @@ final class StreamingPipelineObserver extends BattleAdaptor {
                 && robots[1].getEnergy() > 0;
 
         if (bothAlive) {
-            validator.validate(robots[0], wbA);
-            godView.validate(wbA, robots[0], wbB, robots[1], turn);
+            // Detect our robot by name on first opportunity
+            if (!ourDetected) {
+                for (Perspective us : perspectives) {
+                    if ("cz.zamboch.Autopilot".equals(robots[us.robotIndex()].getShortName())) {
+                        us.setOurs(true);
+                        ourDetected = true;
+                        break;
+                    }
+                }
+            }
+
+            // Debug validator only runs for our robot (has debug properties)
+            for (Perspective us : perspectives) {
+                if (us.isOurs()) {
+                    validator.validate(robots[us.robotIndex()], us.wb());
+                }
+            }
+
+            godView.validate(perspectives, robots, turn);
         }
 
         // Track last snapshots for round finalization
-        lastRobotA = robots[0];
-        lastRobotB = robots[1];
+        for (Perspective us : perspectives) {
+            us.setLastRobot(robots[us.robotIndex()]);
+        }
     }
 
     @Override
@@ -130,13 +146,14 @@ final class StreamingPipelineObserver extends BattleAdaptor {
     }
 
     private void finalizeRound() {
-        if (lastRobotA == null || lastRobotB == null)
+        if (perspectives[0].lastRobot() == null || perspectives[1].lastRobot() == null)
             return;
-        player.finalizeRound(wbA, wbB, lastRobotA, lastRobotB);
-        if (csvA != null) {
+        player.finalizeRound(perspectives);
+        if (perspectives[0].csv() != null) {
             try {
-                csvA.writeScoreRow(wbA, battleId, currentRound);
-                csvB.writeScoreRow(wbB, battleId, currentRound);
+                for (Perspective us : perspectives) {
+                    us.csv().writeScoreRow(us.wb(), battleId, currentRound);
+                }
             } catch (IOException e) {
                 System.err.println("CSV write error: " + e.getMessage());
             }
@@ -160,7 +177,7 @@ final class StreamingPipelineObserver extends BattleAdaptor {
         }
         System.out.println();
 
-        if (csvA != null) {
+        if (perspectives[0].csv() != null) {
             System.out.println("CSV output: " + battleId);
         }
 
@@ -175,10 +192,10 @@ final class StreamingPipelineObserver extends BattleAdaptor {
 
     void close() {
         try {
-            if (csvA != null)
-                csvA.close();
-            if (csvB != null)
-                csvB.close();
+            for (Perspective us : perspectives) {
+                if (us.csv() != null)
+                    us.csv().close();
+            }
         } catch (IOException e) {
             System.err.println("Error closing CSV: " + e.getMessage());
         }

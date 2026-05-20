@@ -18,17 +18,9 @@ import java.util.Set;
  */
 final class DamageDetector {
 
-    private final Whiteboard wbA;
-    private final Whiteboard wbB;
-
     // Track processed bullet IDs to avoid double-counting bullets that persist
     // in HIT_VICTIM state across multiple snapshots
     private final Set<Integer> processedBulletIds = new HashSet<>();
-
-    DamageDetector(Whiteboard wbA, Whiteboard wbB) {
-        this.wbA = wbA;
-        this.wbB = wbB;
-    }
 
     void reset() {
         processedBulletIds.clear();
@@ -39,7 +31,7 @@ final class DamageDetector {
      * The engine delivers onBulletHit/onHitByBullet in the SAME turn that
      * HIT_VICTIM appears in the snapshot — no buffering needed.
      */
-    void detectBulletHits(ITurnSnapshot turn, boolean deadA, boolean deadB) {
+    void detectBulletHits(ITurnSnapshot turn, Perspective[] perspectives) {
         IBulletSnapshot[] bullets = turn.getBullets();
         if (bullets == null)
             return;
@@ -56,18 +48,14 @@ final class DamageDetector {
             int victim = bullet.getVictimIndex();
             double power = bullet.getPower();
 
-            // Perspective A: robotA(0) is us, robotB(1) is opponent
-            if (owner == 0 && victim == 1 && !deadA) {
-                accumulate(wbA, Feature.OUR_BULLET_DAMAGE_TO_OPPONENT, Rules.getBulletDamage(power));
-            } else if (owner == 1 && victim == 0 && !deadA) {
-                accumulate(wbA, Feature.OPPONENT_BULLET_ENERGY_GAIN, Rules.getBulletHitBonus(power));
-            }
-
-            // Perspective B: robotB(1) is us, robotA(0) is opponent
-            if (owner == 1 && victim == 0 && !deadB) {
-                accumulate(wbB, Feature.OUR_BULLET_DAMAGE_TO_OPPONENT, Rules.getBulletDamage(power));
-            } else if (owner == 0 && victim == 1 && !deadB) {
-                accumulate(wbB, Feature.OPPONENT_BULLET_ENERGY_GAIN, Rules.getBulletHitBonus(power));
+            for (Perspective us : perspectives) {
+                if (us.isDead())
+                    continue;
+                if (owner == us.robotIndex() && victim == us.peer().robotIndex()) {
+                    accumulate(us.wb(), Feature.OUR_BULLET_DAMAGE_TO_OPPONENT, Rules.getBulletDamage(power));
+                } else if (owner == us.peer().robotIndex() && victim == us.robotIndex()) {
+                    accumulate(us.wb(), Feature.OPPONENT_BULLET_ENERGY_GAIN, Rules.getBulletHitBonus(power));
+                }
             }
         }
     }
@@ -76,10 +64,9 @@ final class DamageDetector {
      * Detect rams from robot states and accumulate damage.
      * Engine sets RobotState.HIT_ROBOT on the "at fault" robot.
      */
-    void detectRams(IRobotSnapshot robotA, IRobotSnapshot robotB,
-            boolean deadA, boolean deadB) {
-        boolean aHitRobot = (robotA.getState() == RobotState.HIT_ROBOT);
-        boolean bHitRobot = (robotB.getState() == RobotState.HIT_ROBOT);
+    void detectRams(IRobotSnapshot[] robots, Perspective[] perspectives) {
+        boolean aHitRobot = (robots[0].getState() == RobotState.HIT_ROBOT);
+        boolean bHitRobot = (robots[1].getState() == RobotState.HIT_ROBOT);
 
         if (!aHitRobot && !bHitRobot)
             return;
@@ -90,10 +77,10 @@ final class DamageDetector {
         if (bHitRobot)
             ramDmg += Rules.ROBOT_HIT_DAMAGE;
 
-        if (!deadA)
-            accumulate(wbA, Feature.RAM_DAMAGE_TO_OPPONENT, ramDmg);
-        if (!deadB)
-            accumulate(wbB, Feature.RAM_DAMAGE_TO_OPPONENT, ramDmg);
+        for (Perspective us : perspectives) {
+            if (!us.isDead())
+                accumulate(us.wb(), Feature.RAM_DAMAGE_TO_OPPONENT, ramDmg);
+        }
     }
 
     /** Accumulate a value into a whiteboard feature (treats NaN as 0). */

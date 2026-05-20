@@ -115,7 +115,8 @@ public final class Main {
         csvA.writeHeaders(battleId);
         csvB.writeHeaders(battleId);
 
-        Player player = new Player(wbA, wbB);
+        Perspective[] perspectives = Perspective.createPair(wbA, wbB);
+        Player player = new Player(perspectives);
 
         // Second pass: replay all turns
         final Loader loader = new Loader(brFile);
@@ -142,8 +143,9 @@ public final class Main {
 
                     // On new round (except first): finalize previous round
                     if (newRound && state[0] >= 0 && lastRobots[0] != null) {
-                        player.finalizeRound(wbA, wbB,
-                                lastRobots[0][0], lastRobots[0][1]);
+                        perspectives[0].setLastRobot(lastRobots[0][0]);
+                        perspectives[1].setLastRobot(lastRobots[0][1]);
+                        player.finalizeRound(perspectives);
                         csvA.writeScoreRow(wbA, battleId, state[0]);
                         csvB.writeScoreRow(wbB, battleId, state[0]);
                     }
@@ -179,7 +181,9 @@ public final class Main {
 
         // Finalize last round
         if (state[0] >= 0 && lastRobots[0] != null) {
-            player.finalizeRound(wbA, wbB, lastRobots[0][0], lastRobots[0][1]);
+            perspectives[0].setLastRobot(lastRobots[0][0]);
+            perspectives[1].setLastRobot(lastRobots[0][1]);
+            player.finalizeRound(perspectives);
             csvA.writeScoreRow(wbA, battleId, state[0]);
             csvB.writeScoreRow(wbB, battleId, state[0]);
         }
