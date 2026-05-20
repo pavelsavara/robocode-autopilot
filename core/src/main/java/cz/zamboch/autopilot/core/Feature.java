@@ -35,6 +35,8 @@ public enum Feature {
 
     // --- Computed: spatial ---
     OPPONENT_BEARING_ABSOLUTE(FileType.TICKS),
+    OPPONENT_X(FileType.TICKS),
+    OPPONENT_Y(FileType.TICKS),
 
     // --- Computed: movement ---
     OPPONENT_LATERAL_VELOCITY(FileType.TICKS),
@@ -46,6 +48,33 @@ public enum Feature {
     // --- Computed: fire detection ---
     THEIR_FIRE_POWER(FileType.THEIR_WAVES),
     PREV_SCAN_OPPONENT_ENERGY(FileType.TICKS),
+
+    // --- Computed: identity ---
+    OPPONENT_ID(FileType.TICKS),
+    OPPONENT_ID_HASH(FileType.TICKS),
+
+    // --- Our gun waves: fire-time features (set when we fire) ---
+    OUR_FIRE_DISTANCE(FileType.OUR_WAVES),
+    OUR_FIRE_LATERAL_VELOCITY(FileType.OUR_WAVES),
+    OUR_FIRE_ADVANCING_VELOCITY(FileType.OUR_WAVES),
+    OUR_FIRE_BULLET_SPEED(FileType.OUR_WAVES),
+    OUR_FIRE_MEA(FileType.OUR_WAVES),
+    OUR_FIRE_DIRECTION(FileType.OUR_WAVES),
+    OUR_FIRE_BEARING_ABSOLUTE(FileType.OUR_WAVES),
+    OUR_FIRE_X(FileType.OUR_WAVES),
+    OUR_FIRE_Y(FileType.OUR_WAVES),
+    OUR_FIRE_OPPONENT_X(FileType.OUR_WAVES),
+    OUR_FIRE_OPPONENT_Y(FileType.OUR_WAVES),
+    OUR_FIRE_POWER(FileType.OUR_WAVES),
+    OUR_FIRE_TICK(FileType.OUR_WAVES),
+
+    // --- Our gun waves: break-time features (set at wave resolution) ---
+    OUR_BREAK_TICK(FileType.OUR_WAVES),
+    OUR_BREAK_GF(FileType.OUR_WAVES),
+    OUR_BREAK_BEARING_OFFSET(FileType.OUR_WAVES),
+    OUR_BREAK_OPPONENT_X(FileType.OUR_WAVES),
+    OUR_BREAK_OPPONENT_Y(FileType.OUR_WAVES),
+    OUR_BREAK_HIT(FileType.OUR_WAVES),
 
     // --- Round result ---
     ROUND_RESULT(FileType.SCORES);

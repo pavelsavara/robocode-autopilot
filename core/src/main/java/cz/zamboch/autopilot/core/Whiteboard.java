@@ -1,5 +1,8 @@
 package cz.zamboch.autopilot.core;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Central state store for one robot's perspective during a battle.
  * All values are stored in a flat double[] array indexed by Feature ordinal.
@@ -12,7 +15,10 @@ package cz.zamboch.autopilot.core;
  */
 public final class Whiteboard {
     private final double[] features = new double[Feature.COUNT];
+    private final String[] stringFeatures = new String[Feature.COUNT];
     private final Transformer transformer = new Transformer();
+    private VcsStore vcsStore;
+    private final List<Wave> activeWaves = new ArrayList<>();
 
     public Whiteboard() {
         clearFeatures();
@@ -50,5 +56,30 @@ public final class Whiteboard {
         for (int i = 0; i < features.length; i++) {
             features[i] = Double.NaN;
         }
+    }
+
+    /** Set a string feature value. */
+    public void setStringFeature(Feature f, String value) {
+        stringFeatures[f.ordinal()] = value;
+    }
+
+    /** Get a string feature value. Returns null if not set. */
+    public String getStringFeature(Feature f) {
+        return stringFeatures[f.ordinal()];
+    }
+
+    /** Get the VCS store (may be null before first load). */
+    public VcsStore getVcsStore() {
+        return vcsStore;
+    }
+
+    /** Set the VCS store (loaded from persistence or newly created). */
+    public void setVcsStore(VcsStore store) {
+        this.vcsStore = store;
+    }
+
+    /** Active outgoing waves (mutable list, managed by WaveTracker). */
+    public List<Wave> getActiveWaves() {
+        return activeWaves;
     }
 }

@@ -29,4 +29,14 @@ public final class RoboMath {
         angle %= (2 * Math.PI);
         return angle >= 0 ? angle : angle + 2 * Math.PI;
     }
+
+    /** FNV-1a 32-bit hash of a string (for opponent identification). */
+    public static int fnv1a32(String s) {
+        int hash = 0x811c9dc5;
+        for (int i = 0; i < s.length(); i++) {
+            hash ^= s.charAt(i);
+            hash *= 0x01000193;
+        }
+        return hash;
+    }
 }
