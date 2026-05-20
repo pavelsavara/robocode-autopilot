@@ -44,7 +44,7 @@ public enum Feature {
     TICKS_SINCE_SCAN(FileType.TICKS),
 
     // --- Computed: fire detection ---
-    OPPONENT_FIRE_POWER(FileType.WAVES),
+    THEIR_FIRE_POWER(FileType.THEIR_WAVES),
     PREV_SCAN_OPPONENT_ENERGY(FileType.TICKS),
 
     // --- Round result ---

@@ -25,7 +25,7 @@ public final class FireFeatures implements IInGameFeatures {
             Feature.RAM_DAMAGE_TO_OPPONENT
     };
     private static final Feature[] OUTPUTS = {
-            Feature.OPPONENT_FIRE_POWER, Feature.PREV_SCAN_OPPONENT_ENERGY
+            Feature.THEIR_FIRE_POWER, Feature.PREV_SCAN_OPPONENT_ENERGY
     };
 
     public Feature[] getDependencies() {
@@ -37,7 +37,7 @@ public final class FireFeatures implements IInGameFeatures {
     }
 
     public FileType getFileType() {
-        return FileType.WAVES;
+        return FileType.THEIR_WAVES;
     }
 
     public void process(Whiteboard wb) {
@@ -69,9 +69,9 @@ public final class FireFeatures implements IInGameFeatures {
             double adjustedDrop = drop - bulletDmg - ramDmg + bulletGain;
 
             if (adjustedDrop >= 0.1 && adjustedDrop <= 3.0) {
-                wb.setFeature(Feature.OPPONENT_FIRE_POWER, adjustedDrop);
+                wb.setFeature(Feature.THEIR_FIRE_POWER, adjustedDrop);
             } else {
-                wb.setFeature(Feature.OPPONENT_FIRE_POWER, Double.NaN);
+                wb.setFeature(Feature.THEIR_FIRE_POWER, Double.NaN);
             }
         }
 

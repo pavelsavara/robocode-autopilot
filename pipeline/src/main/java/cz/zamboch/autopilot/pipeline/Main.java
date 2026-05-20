@@ -160,10 +160,10 @@ public final class Main {
                     csvB.writeTickRow(wbB, battleId, roundIndex);
 
                     // Write wave rows if opponent fired
-                    if (!Double.isNaN(wbA.getFeature(Feature.OPPONENT_FIRE_POWER))) {
+                    if (!Double.isNaN(wbA.getFeature(Feature.THEIR_FIRE_POWER))) {
                         csvA.writeWaveRow(wbA, battleId, roundIndex);
                     }
-                    if (!Double.isNaN(wbB.getFeature(Feature.OPPONENT_FIRE_POWER))) {
+                    if (!Double.isNaN(wbB.getFeature(Feature.THEIR_FIRE_POWER))) {
                         csvB.writeWaveRow(wbB, battleId, roundIndex);
                     }
 
@@ -171,8 +171,8 @@ public final class Main {
                     lastRobots[0] = turn.getRobots();
 
                     // Reset per-tick fire detection
-                    wbA.setFeature(Feature.OPPONENT_FIRE_POWER, Double.NaN);
-                    wbB.setFeature(Feature.OPPONENT_FIRE_POWER, Double.NaN);
+                    wbA.setFeature(Feature.THEIR_FIRE_POWER, Double.NaN);
+                    wbB.setFeature(Feature.THEIR_FIRE_POWER, Double.NaN);
                 } catch (IOException e) {
                     throw new RuntimeException("CSV write error", e);
                 }

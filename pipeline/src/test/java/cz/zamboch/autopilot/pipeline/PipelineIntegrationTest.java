@@ -93,10 +93,10 @@ final class PipelineIntegrationTest {
             csvB.writeTickRow(wbB, battleId, 0);
 
             // Write wave rows if opponent fired
-            if (!Double.isNaN(wbA.getFeature(Feature.OPPONENT_FIRE_POWER))) {
+            if (!Double.isNaN(wbA.getFeature(Feature.THEIR_FIRE_POWER))) {
                 csvA.writeWaveRow(wbA, battleId, 0);
             }
-            if (!Double.isNaN(wbB.getFeature(Feature.OPPONENT_FIRE_POWER))) {
+            if (!Double.isNaN(wbB.getFeature(Feature.THEIR_FIRE_POWER))) {
                 csvB.writeWaveRow(wbB, battleId, 0);
             }
 
@@ -104,8 +104,8 @@ final class PipelineIntegrationTest {
             lastRobotB = robotB;
 
             // Reset per-tick fire detection
-            wbA.setFeature(Feature.OPPONENT_FIRE_POWER, Double.NaN);
-            wbB.setFeature(Feature.OPPONENT_FIRE_POWER, Double.NaN);
+            wbA.setFeature(Feature.THEIR_FIRE_POWER, Double.NaN);
+            wbB.setFeature(Feature.THEIR_FIRE_POWER, Double.NaN);
         }
 
         // Finalize round

@@ -95,7 +95,7 @@ final class StreamingPipelineObserver extends BattleAdaptor {
             try {
                 for (Perspective us : perspectives) {
                     us.csv().writeTickRow(us.wb(), battleId, roundIndex);
-                    if (!Double.isNaN(us.wb().getFeature(Feature.OPPONENT_FIRE_POWER))) {
+                    if (!Double.isNaN(us.wb().getFeature(Feature.THEIR_FIRE_POWER))) {
                         us.csv().writeWaveRow(us.wb(), battleId, roundIndex);
                     }
                 }

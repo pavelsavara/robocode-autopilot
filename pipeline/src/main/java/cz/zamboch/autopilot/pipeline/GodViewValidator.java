@@ -32,7 +32,7 @@ public final class GodViewValidator {
             Feature.DISTANCE,
             Feature.BEARING_RADIANS,
             Feature.OPPONENT_ENERGY,
-            Feature.OPPONENT_FIRE_POWER,
+            Feature.THEIR_FIRE_POWER,
     };
 
     // Per-perspective state indexed by robotIndex (0 or 1)
@@ -161,7 +161,7 @@ public final class GodViewValidator {
                 double dy = opponent.getY() - self.getY();
                 double absoluteBearing = Math.atan2(dx, dy);
                 return RoboMath.normalRelativeAngle(absoluteBearing - self.getBodyHeading());
-            case OPPONENT_FIRE_POWER:
+            case THEIR_FIRE_POWER:
                 if (opponentFireCount == 1) {
                     return opponentFirePower;
                 }

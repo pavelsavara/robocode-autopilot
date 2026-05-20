@@ -39,7 +39,7 @@ public final class CsvWriter implements Closeable {
                 case TICKS:
                     ticksFeatures.add(f);
                     break;
-                case WAVES:
+                case THEIR_WAVES:
                     wavesFeatures.add(f);
                     break;
                 case SCORES:
@@ -94,7 +94,7 @@ public final class CsvWriter implements Closeable {
         wavesWriter.writeRaw(battleId);
         wavesWriter.writeInt(round);
         wavesWriter.writeLong((long) wb.getFeature(Feature.TICK));
-        wavesWriter.writeRaw(Double.toString(wb.getFeature(Feature.OPPONENT_FIRE_POWER)));
+        wavesWriter.writeRaw(Double.toString(wb.getFeature(Feature.THEIR_FIRE_POWER)));
         for (Feature f : wavesFeatures) {
             wavesWriter.writeDouble(wb, f);
         }
