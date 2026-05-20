@@ -67,3 +67,32 @@ tasks.register<JavaExec>("runBattle") {
         systemProperty("battle.output", project.property("output")!!)
     }
 }
+
+// --- Battle integration test (runs actual Robocode battle) ---
+// Usage: ./gradlew :pipeline:battleTest
+//        ./gradlew :pipeline:battleTest -Prounds=5 -Popponent=test.SittingDuck
+tasks.register<Test>("battleTest") {
+    dependsOn(stageBattle)
+    group = "verification"
+    description = "Run battle integration test with real Robocode engine"
+
+    useJUnitPlatform()
+
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+
+    filter {
+        includeTestsMatching("cz.zamboch.autopilot.pipeline.BattleLoopTest")
+    }
+
+    val stageDir = layout.buildDirectory.dir("battle-stage").get().asFile
+    systemProperty("battle.stage", stageDir.absolutePath)
+    jvmArgs("-Djava.awt.headless=true")
+
+    if (project.hasProperty("opponent")) {
+        systemProperty("battle.opponent", project.property("opponent")!!)
+    }
+    if (project.hasProperty("rounds")) {
+        systemProperty("battle.rounds", project.property("rounds")!!)
+    }
+}

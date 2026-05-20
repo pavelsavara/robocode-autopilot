@@ -9,8 +9,6 @@ import robocode.control.snapshot.RobotState;
 import java.awt.geom.Arc2D;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Replays turn snapshots into two Whiteboard perspectives.
@@ -31,12 +29,12 @@ public final class Player {
     private double prevRadarHeadingA = Double.NaN;
     private double prevRadarHeadingB = Double.NaN;
 
-    // Energy tracking for fire detection
-    private double prevEnergyA = Double.NaN;
-    private double prevEnergyB = Double.NaN;
+    // Dead robot tracking
+    private boolean deadA = false;
+    private boolean deadB = false;
 
-    // Bullet tracking
-    private final Map<Integer, Integer> bulletOwners = new HashMap<Integer, Integer>();
+    // Reusable Arc2D for scan detection (matches engine's scanArc)
+    private final Arc2D.Double scanArc = new Arc2D.Double();
 
     public Player(Whiteboard wbA, Whiteboard wbB) {
         this.wbA = wbA;
@@ -55,9 +53,9 @@ public final class Player {
             currentRound = roundIndex;
             prevRadarHeadingA = Double.NaN;
             prevRadarHeadingB = Double.NaN;
-            prevEnergyA = Double.NaN;
-            prevEnergyB = Double.NaN;
-            bulletOwners.clear();
+
+            deadA = false;
+            deadB = false;
             wbA.clearFeatures();
             wbB.clearFeatures();
         }
@@ -70,19 +68,27 @@ public final class Player {
         IRobotSnapshot robotA = robots[0];
         IRobotSnapshot robotB = robots[1];
 
+        // Stop processing after robot dies or is disabled (energy=0)
+        if (robotA.getState() == RobotState.DEAD || robotA.getEnergy() <= 0)
+            deadA = true;
+        if (robotB.getState() == RobotState.DEAD || robotB.getEnergy() <= 0)
+            deadB = true;
+
         long tick = (long) turn.getTurn();
 
         // Inject perspective A: robotA is "us", robotB is opponent
-        injectOwnState(wbA, robotA, tick, bfWidth, bfHeight);
-        resetScanFeatures(wbA);
-        synthesizeScan(wbA, robotA, robotB, tick, true);
-        detectOpponentFire(wbA, robotB, true);
+        if (!deadA) {
+            injectOwnState(wbA, robotA, tick, bfWidth, bfHeight);
+            if (!deadB)
+                synthesizeScan(wbA, robotA, robotB, tick, true);
+        }
 
         // Inject perspective B: robotB is "us", robotA is opponent
-        injectOwnState(wbB, robotB, tick, bfWidth, bfHeight);
-        resetScanFeatures(wbB);
-        synthesizeScan(wbB, robotB, robotA, tick, false);
-        detectOpponentFire(wbB, robotA, false);
+        if (!deadB) {
+            injectOwnState(wbB, robotB, tick, bfWidth, bfHeight);
+            if (!deadA)
+                synthesizeScan(wbB, robotB, robotA, tick, false);
+        }
 
         return newRound;
     }
@@ -102,20 +108,10 @@ public final class Player {
     }
 
     /**
-     * Reset scan-related features to NaN before scan synthesis (only set if scan
-     * fires).
-     */
-    private void resetScanFeatures(Whiteboard wb) {
-        wb.setFeature(Feature.DISTANCE, Double.NaN);
-        wb.setFeature(Feature.BEARING_RADIANS, Double.NaN);
-        wb.setFeature(Feature.OPPONENT_HEADING, Double.NaN);
-        wb.setFeature(Feature.OPPONENT_VELOCITY, Double.NaN);
-        wb.setFeature(Feature.OPPONENT_ENERGY, Double.NaN);
-    }
-
-    /**
-     * Synthesize a scan event if the radar sweep arc intersects the opponent's
-     * bounding box.
+     * Synthesize a scan event using the same Arc2D.PIE geometry as the engine.
+     * Engine scan condition: scan fires whenever anything moved (heading,
+     * position).
+     * Since we only call this when the robot is alive, it's always moving.
      */
     private void synthesizeScan(Whiteboard wb, IRobotSnapshot self,
             IRobotSnapshot opponent, long tick, boolean isA) {
@@ -123,48 +119,72 @@ public final class Player {
         double prevRadar = isA ? prevRadarHeadingA : prevRadarHeadingB;
 
         if (Double.isNaN(prevRadar)) {
-            // First tick of round — assume scan happens
-            if (isA) {
+            // First tick: engine's lastRadarHeading is initial heading (= body heading
+            // before move)
+            // On tick 0, nothing has moved yet so radar == body heading.
+            prevRadar = radarHeading;
+            if (isA)
                 prevRadarHeadingA = radarHeading;
-            } else {
+            else
                 prevRadarHeadingB = radarHeading;
-            }
-            injectScan(wb, self, opponent, tick);
+            // No sweep on very first tick (no commands processed yet)
             return;
         }
 
-        // Check if radar sweep arc intersects opponent bounding box
-        if (radarSweepIntersects(self.getX(), self.getY(), prevRadar, radarHeading,
-                opponent.getX(), opponent.getY())) {
-            injectScan(wb, self, opponent, tick);
+        // Replicate engine's scan() method:
+        // scanRadians = currentRadarHeading - lastRadarHeading
+        double scanRadians = radarHeading - prevRadar;
+        if (scanRadians < -Math.PI)
+            scanRadians += 2 * Math.PI;
+        else if (scanRadians > Math.PI)
+            scanRadians -= 2 * Math.PI;
+
+        // Convert to Java2D coords: startAngle = prevRadar - PI/2, normalized to [0,
+        // 2PI)
+        double startAngle = normalAbsoluteAngle(prevRadar - Math.PI / 2);
+
+        // Build Arc2D.PIE (same as engine)
+        double r = SCAN_RADIUS;
+        scanArc.setArc(self.getX() - r, self.getY() - r, 2 * r, 2 * r,
+                Math.toDegrees(startAngle), Math.toDegrees(scanRadians), Arc2D.PIE);
+
+        // Target bounding box (36x36 centered on opponent)
+        double half = ROBOT_SIZE / 2;
+        Rectangle2D.Double targetBox = new Rectangle2D.Double(
+                opponent.getX() - half, opponent.getY() - half, ROBOT_SIZE, ROBOT_SIZE);
+
+        // Engine's intersects check: line from center to start point OR arc intersects
+        // rect
+        if (intersects(scanArc, targetBox)) {
+            injectScan(wb, self, opponent, tick, isA);
         }
 
-        if (isA) {
+        if (isA)
             prevRadarHeadingA = radarHeading;
-        } else {
+        else
             prevRadarHeadingB = radarHeading;
-        }
+    }
+
+    /**
+     * Engine-exact intersection: line from arc center to start point, OR arc
+     * boundary.
+     */
+    private static boolean intersects(Arc2D arc, Rectangle2D rect) {
+        return rect.intersectsLine(arc.getCenterX(), arc.getCenterY(),
+                arc.getStartPoint().getX(), arc.getStartPoint().getY())
+                || arc.intersects(rect);
     }
 
     private void injectScan(Whiteboard wb, IRobotSnapshot self,
-            IRobotSnapshot opponent, long tick) {
-        // Compute ScannedRobotEvent-equivalent values
+            IRobotSnapshot opponent, long tick, boolean isA) {
+        // Compute ScannedRobotEvent-equivalent values (same as engine)
         double dx = opponent.getX() - self.getX();
         double dy = opponent.getY() - self.getY();
-        double distance = Math.sqrt(dx * dx + dy * dy);
+        double distance = Math.hypot(dx, dy);
 
-        // Absolute bearing from self to opponent (radians, robocode convention:
-        // 0=north, CW)
-        double absoluteBearing = Math.atan2(dx, dy);
-
-        // Bearing relative to self's heading
-        double selfHeadingRad = self.getBodyHeading();
-        double bearing = absoluteBearing - selfHeadingRad;
-        // Normalize to [-PI, PI]
-        while (bearing > Math.PI)
-            bearing -= 2 * Math.PI;
-        while (bearing < -Math.PI)
-            bearing += 2 * Math.PI;
+        // Engine: normalRelativeAngle(atan2(dx, dy) - getBodyHeading())
+        double angle = Math.atan2(dx, dy);
+        double bearing = normalRelativeAngle(angle - self.getBodyHeading());
 
         // Set scan features directly
         wb.setFeature(Feature.DISTANCE, distance);
@@ -173,29 +193,19 @@ public final class Player {
         wb.setFeature(Feature.OPPONENT_VELOCITY, opponent.getVelocity());
         wb.setFeature(Feature.OPPONENT_ENERGY, opponent.getEnergy());
         wb.setFeature(Feature.LAST_SCAN_TICK, tick);
+
     }
 
-    /**
-     * Detect opponent fire via energy drop (0.1 to 3.0 energy decrease without
-     * bullet hit).
-     */
-    private void detectOpponentFire(Whiteboard wb, IRobotSnapshot opponent, boolean isA) {
-        double currentEnergy = opponent.getEnergy();
-        double prevEnergy = isA ? prevEnergyA : prevEnergyB;
+    /** Normalize angle to [0, 2*PI) — matches engine's normalAbsoluteAngle. */
+    private static double normalAbsoluteAngle(double angle) {
+        return (angle %= (2 * Math.PI)) >= 0 ? angle : (angle + 2 * Math.PI);
+    }
 
-        if (!Double.isNaN(prevEnergy)) {
-            double drop = prevEnergy - currentEnergy;
-            // Fire power is between 0.1 and 3.0
-            if (drop >= 0.1 && drop <= 3.0) {
-                wb.setFeature(Feature.OPPONENT_FIRE_POWER, drop);
-            }
-        }
-
-        if (isA) {
-            prevEnergyA = currentEnergy;
-        } else {
-            prevEnergyB = currentEnergy;
-        }
+    /** Normalize angle to [-PI, PI) — matches engine's normalRelativeAngle. */
+    private static double normalRelativeAngle(double angle) {
+        return (angle %= (2 * Math.PI)) >= 0
+                ? (angle < Math.PI) ? angle : angle - 2 * Math.PI
+                : (angle >= -Math.PI) ? angle : angle + 2 * Math.PI;
     }
 
     /** Determine round winner by robot states. */
@@ -216,42 +226,6 @@ public final class Player {
             wbA.setFeature(Feature.ROUND_RESULT, diff > 0 ? 1 : (diff < 0 ? -1 : 0));
             wbB.setFeature(Feature.ROUND_RESULT, diff > 0 ? -1 : (diff < 0 ? 1 : 0));
         }
-    }
-
-    /**
-     * Check if a radar sweep arc (pie shape) intersects a robot's bounding box.
-     * Replicates Robocode engine's scan detection logic.
-     */
-    static boolean radarSweepIntersects(double selfX, double selfY,
-            double prevRadarHeading, double currentRadarHeading,
-            double targetX, double targetY) {
-        // Compute sweep angle
-        double sweep = currentRadarHeading - prevRadarHeading;
-        // Normalize to [-PI, PI]
-        while (sweep > Math.PI)
-            sweep -= 2 * Math.PI;
-        while (sweep < -Math.PI)
-            sweep += 2 * Math.PI;
-
-        if (Math.abs(sweep) < 0.0001) {
-            sweep = 0.001; // Minimum sweep
-        }
-
-        // Convert to Java2D angles (degrees, counter-clockwise from east)
-        double startAngleDeg = 90 - Math.toDegrees(prevRadarHeading);
-        double extentDeg = -Math.toDegrees(sweep);
-
-        Arc2D arc = new Arc2D.Double(
-                selfX - SCAN_RADIUS, selfY - SCAN_RADIUS,
-                2 * SCAN_RADIUS, 2 * SCAN_RADIUS,
-                startAngleDeg, extentDeg, Arc2D.PIE);
-
-        double halfSize = ROBOT_SIZE / 2;
-        Rectangle2D targetBox = new Rectangle2D.Double(
-                targetX - halfSize, targetY - halfSize,
-                ROBOT_SIZE, ROBOT_SIZE);
-
-        return arc.intersects(targetBox);
     }
 
     /**

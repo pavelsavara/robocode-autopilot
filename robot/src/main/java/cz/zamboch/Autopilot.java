@@ -4,6 +4,7 @@ import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.Whiteboard;
 import cz.zamboch.autopilot.core.features.MovementFeatures;
 import cz.zamboch.autopilot.core.features.SpatialFeatures;
+import cz.zamboch.autopilot.core.features.FireFeatures;
 import cz.zamboch.autopilot.core.features.TimingFeatures;
 import robocode.AdvancedRobot;
 import robocode.RobotStatus;
@@ -24,21 +25,22 @@ public final class Autopilot extends AdvancedRobot {
         wb.setFeature(Feature.TICK, status.getTime());
         wb.setFeature(Feature.OUR_X, status.getX());
         wb.setFeature(Feature.OUR_Y, status.getY());
-        wb.setFeature(Feature.OUR_HEADING, Math.toRadians(status.getHeading()));
+        wb.setFeature(Feature.OUR_HEADING, status.getHeadingRadians());
         wb.setFeature(Feature.OUR_VELOCITY, status.getVelocity());
         wb.setFeature(Feature.OUR_ENERGY, status.getEnergy());
         wb.setFeature(Feature.GUN_HEAT, status.getGunHeat());
-        wb.setFeature(Feature.GUN_HEADING, Math.toRadians(status.getGunHeading()));
+        wb.setFeature(Feature.GUN_HEADING, status.getGunHeadingRadians());
     }
 
     @Override
     public void onScannedRobot(ScannedRobotEvent event) {
         wb.setFeature(Feature.DISTANCE, event.getDistance());
-        wb.setFeature(Feature.BEARING_RADIANS, Math.toRadians(event.getBearing()));
-        wb.setFeature(Feature.OPPONENT_HEADING, Math.toRadians(event.getHeading()));
+        wb.setFeature(Feature.BEARING_RADIANS, event.getBearingRadians());
+        wb.setFeature(Feature.OPPONENT_HEADING, event.getHeadingRadians());
         wb.setFeature(Feature.OPPONENT_VELOCITY, event.getVelocity());
         wb.setFeature(Feature.OPPONENT_ENERGY, event.getEnergy());
         wb.setFeature(Feature.LAST_SCAN_TICK, wb.getFeature(Feature.TICK));
+
     }
 
     @Override
@@ -47,7 +49,8 @@ public final class Autopilot extends AdvancedRobot {
         wb.registerFeatures(
                 new SpatialFeatures(),
                 new MovementFeatures(),
-                new TimingFeatures());
+                new TimingFeatures(),
+                new FireFeatures());
 
         // Set battle constants
         wb.setFeature(Feature.BATTLEFIELD_WIDTH, getBattleFieldWidth());
@@ -104,12 +107,11 @@ public final class Autopilot extends AdvancedRobot {
             setTurnRadarRightRadians(normalizeTurn(radarTurn) * 1.9);
         }
 
-        // --- Debug properties (saved in .br recordings) ---
-        setDebugProperty("tick", String.valueOf((long) wb.getFeature(Feature.TICK)));
-        setDebugProperty("distance", fmt(wb.getFeature(Feature.DISTANCE)));
-        setDebugProperty("ourEnergy", fmt(wb.getFeature(Feature.OUR_ENERGY)));
-        setDebugProperty("oppEnergy", fmt(wb.getFeature(Feature.OPPONENT_ENERGY)));
-        setDebugProperty("gunHeat", fmt(wb.getFeature(Feature.GUN_HEAT)));
+        // --- Debug properties: dump all whiteboard features ---
+        for (Feature f : Feature.values()) {
+            double v = wb.getFeature(f);
+            setDebugProperty(f.name(), Double.isNaN(v) ? "NaN" : String.valueOf(v));
+        }
     }
 
     /** Normalize angle to [-PI, PI] */
@@ -121,9 +123,4 @@ public final class Autopilot extends AdvancedRobot {
         return angle;
     }
 
-    private static String fmt(double v) {
-        if (Double.isNaN(v))
-            return "NaN";
-        return String.format("%.1f", v);
-    }
 }

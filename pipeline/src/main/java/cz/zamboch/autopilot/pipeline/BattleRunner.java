@@ -2,6 +2,7 @@ package cz.zamboch.autopilot.pipeline;
 
 import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.Whiteboard;
+import cz.zamboch.autopilot.core.features.FireFeatures;
 import cz.zamboch.autopilot.core.features.MovementFeatures;
 import cz.zamboch.autopilot.core.features.SpatialFeatures;
 import cz.zamboch.autopilot.core.features.TimingFeatures;
@@ -13,8 +14,8 @@ import robocode.control.events.BattleAdaptor;
 import robocode.control.events.BattleCompletedEvent;
 import robocode.control.events.BattleErrorEvent;
 import robocode.control.events.RoundEndedEvent;
-import robocode.control.events.RoundStartedEvent;
 import robocode.control.events.TurnEndedEvent;
+import robocode.control.snapshot.IDebugProperty;
 import robocode.control.snapshot.IRobotSnapshot;
 import robocode.control.snapshot.ITurnSnapshot;
 
@@ -34,6 +35,55 @@ import java.io.IOException;
  * -Dbattle.output=path/to/csv/output (enables CSV pipeline)
  */
 public final class BattleRunner {
+
+    /**
+     * Run a battle with the given parameters. Reusable from main() and tests.
+     *
+     * @param opponent  fully-qualified opponent class name
+     * @param rounds    number of rounds
+     * @param outputDir CSV output directory (null for results-only mode)
+     * @return the StreamingPipelineObserver (caller should call close())
+     */
+    public static StreamingPipelineObserver runBattle(String opponent, int rounds, String outputDir) {
+        RobocodeEngine.setLogMessagesEnabled(false);
+        RobocodeEngine engine = new RobocodeEngine();
+
+        StreamingPipelineObserver observer = new StreamingPipelineObserver(outputDir, 800, 600);
+        engine.addBattleListener(observer);
+
+        String robotFilter = "cz.zamboch.Autopilot," + opponent;
+        RobotSpecification[] robots = engine.getLocalRepository(robotFilter);
+
+        RobotSpecification ourBot = null;
+        RobotSpecification oppBot = null;
+        for (RobotSpecification spec : robots) {
+            String name = spec.getClassName();
+            if ("cz.zamboch.Autopilot".equals(name)) {
+                ourBot = spec;
+            }
+            if (opponent.equals(name)) {
+                oppBot = spec;
+            }
+        }
+
+        if (ourBot == null) {
+            engine.close();
+            throw new IllegalStateException("Cannot find cz.zamboch.Autopilot in ROBOTPATH");
+        }
+        if (oppBot == null) {
+            engine.close();
+            throw new IllegalStateException("Cannot find opponent: " + opponent);
+        }
+
+        BattlefieldSpecification battlefield = new BattlefieldSpecification(800, 600);
+        BattleSpecification spec = new BattleSpecification(
+                rounds, battlefield, new RobotSpecification[] { ourBot, oppBot });
+
+        engine.runBattle(spec, true);
+        engine.close();
+        return observer;
+    }
+
     public static void main(String[] args) {
         String robotJar = System.getProperty("robot.jar");
         int rounds = Integer.parseInt(System.getProperty("battle.rounds", "10"));
@@ -78,52 +128,7 @@ public final class BattleRunner {
         }
         System.setProperty("NOSECURITY", "true");
 
-        RobocodeEngine.setLogMessagesEnabled(false);
-        RobocodeEngine engine = new RobocodeEngine();
-
-        // Create streaming pipeline observer
-        StreamingPipelineObserver observer = new StreamingPipelineObserver(
-                outputDir, 800, 600);
-        engine.addBattleListener(observer);
-
-        // Get robots by name
-        String robotFilter = "cz.zamboch.Autopilot," + opponent;
-        RobotSpecification[] robots = engine.getLocalRepository(robotFilter);
-
-        // Find our robot and the opponent
-        RobotSpecification ourBot = null;
-        RobotSpecification oppBot = null;
-        for (RobotSpecification spec : robots) {
-            String name = spec.getClassName();
-            if ("cz.zamboch.Autopilot".equals(name)) {
-                ourBot = spec;
-            }
-            if (opponent.equals(name)) {
-                oppBot = spec;
-            }
-        }
-
-        if (ourBot == null) {
-            System.err.println("ERROR: Cannot find cz.zamboch.Autopilot in " + robotJar);
-            engine.close();
-            System.exit(1);
-        }
-        if (oppBot == null) {
-            System.err.println("ERROR: Cannot find opponent: " + opponent);
-            System.err.println("Make sure the opponent is installed in " + roboHome + "/robots/");
-            engine.close();
-            System.exit(1);
-        }
-
-        // Run battle
-        BattlefieldSpecification battlefield = new BattlefieldSpecification(800, 600);
-        BattleSpecification spec = new BattleSpecification(
-                rounds, battlefield, new RobotSpecification[] { ourBot, oppBot });
-
-        engine.runBattle(spec, true);
-        engine.close();
-
-        // Close CSV writers
+        StreamingPipelineObserver observer = runBattle(opponent, rounds, outputDir);
         observer.close();
     }
 
@@ -217,9 +222,11 @@ public final class BattleRunner {
                 System.err.println("CSV write error: " + e.getMessage());
             }
 
-            // Reset per-tick fire detection
-            wbA.setFeature(Feature.OPPONENT_FIRE_POWER, Double.NaN);
-            wbB.setFeature(Feature.OPPONENT_FIRE_POWER, Double.NaN);
+            // Validate debug properties if robot is our Autopilot (skip if dead)
+            if (robots[0].getState() != robocode.control.snapshot.RobotState.DEAD
+                    && robots[0].getEnergy() > 0) {
+                validateDebugProperties(robots[0], wbA);
+            }
 
             // Track last snapshots for round finalization
             lastRobotA = robots[0];
@@ -286,12 +293,59 @@ public final class BattleRunner {
             }
         }
 
+        /**
+         * Validate that debug properties from the robot snapshot match the
+         * whiteboard features. Only validates if the robot is our Autopilot
+         * (has debug properties set). ROUND_RESULT is only set at round end.
+         */
+        private void validateDebugProperties(IRobotSnapshot robot, Whiteboard wb) {
+            IDebugProperty[] props = robot.getDebugProperties();
+            if (props == null || props.length == 0) {
+                return; // Not our robot or no debug output
+            }
+
+            for (IDebugProperty prop : props) {
+                String key = prop.getKey();
+                String robotStr = prop.getValue();
+                Feature feature;
+                try {
+                    feature = Feature.valueOf(key);
+                } catch (IllegalArgumentException e) {
+                    continue; // Unknown property, skip
+                }
+
+                // ROUND_RESULT only set at round end, skip mid-round
+                if (feature == Feature.ROUND_RESULT)
+                    continue;
+
+                double wbValue = wb.getFeature(feature);
+                String expected = formatValue(parseValue(robotStr));
+                String actual = formatValue(wbValue);
+
+                if (!expected.equals(actual)) {
+                    throw new AssertionError("MISMATCH tick " + (long) wb.getFeature(Feature.TICK)
+                            + " feature " + key + ": robot=" + expected + " pipeline=" + actual);
+                }
+            }
+        }
+
+        private static double parseValue(String s) {
+            return "NaN".equals(s) ? Double.NaN : Double.parseDouble(s);
+        }
+
+        private static String formatValue(double v) {
+            if (Double.isNaN(v))
+                return "NaN";
+            return String.format("%.4f", v);
+        }
+
         private static Whiteboard createWhiteboard() {
             Whiteboard wb = new Whiteboard();
             wb.registerFeatures(
                     new SpatialFeatures(),
                     new MovementFeatures(),
-                    new TimingFeatures());
+                    new TimingFeatures(),
+                    new FireFeatures());
             return wb;
         }
     }
