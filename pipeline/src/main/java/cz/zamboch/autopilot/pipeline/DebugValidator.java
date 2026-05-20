@@ -60,9 +60,12 @@ public final class DebugValidator {
             if (feature == Feature.OUR_BREAK_GF) {
                 boolean rNaN = Double.isNaN(robotValue);
                 boolean pNaN = Double.isNaN(pipelineValue);
-                if (rNaN && pNaN) gfBothNaN++;
-                else if (rNaN) gfRobotNaN++;
-                else if (pNaN) gfPipelineNaN++;
+                if (rNaN && pNaN)
+                    gfBothNaN++;
+                else if (rNaN)
+                    gfRobotNaN++;
+                else if (pNaN)
+                    gfPipelineNaN++;
                 else {
                     gfBothSet++;
                     gfErrorSum += Math.abs(robotValue - pipelineValue);
