@@ -1,6 +1,5 @@
 package cz.zamboch.autopilot.pipeline;
 
-import robocode.control.snapshot.BulletState;
 import robocode.control.snapshot.IBulletSnapshot;
 import robocode.control.snapshot.IDebugProperty;
 import robocode.control.snapshot.IRobotSnapshot;

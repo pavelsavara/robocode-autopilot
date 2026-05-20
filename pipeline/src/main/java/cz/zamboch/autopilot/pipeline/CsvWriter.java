@@ -1,7 +1,6 @@
 package cz.zamboch.autopilot.pipeline;
 
 import cz.zamboch.autopilot.core.Feature;
-import cz.zamboch.autopilot.core.FileType;
 import cz.zamboch.autopilot.core.Whiteboard;
 
 import java.io.Closeable;

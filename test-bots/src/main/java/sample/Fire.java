@@ -5,7 +5,8 @@ import robocode.ScannedRobotEvent;
 
 /**
  * Classic Fire sample bot. Sits still, tracks opponent with gun, fires
- * proportional to distance. Good for testing gun aiming against a stationary bot.
+ * proportional to distance. Good for testing gun aiming against a stationary
+ * bot.
  */
 public final class Fire extends AdvancedRobot {
     @Override

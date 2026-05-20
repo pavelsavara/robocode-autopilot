@@ -46,7 +46,7 @@ final class BattleLoopTest {
         String opponent = System.getProperty("battle.opponent", "test.SittingDuck");
 
         // Run the battle
-        BattleRunner.StreamingPipelineObserver observer = BattleRunner.runBattle(opponent, rounds, outputDir);
+        StreamingPipelineObserver observer = BattleRunner.runBattle(opponent, rounds, outputDir);
         observer.close();
 
         // --- Verify CSV output ---
