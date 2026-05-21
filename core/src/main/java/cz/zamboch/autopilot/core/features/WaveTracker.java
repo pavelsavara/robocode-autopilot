@@ -33,6 +33,7 @@ public final class WaveTracker implements IInGameFeatures {
             Feature.OUR_FIRE_DIRECTION,
             Feature.OUR_FIRE_DISTANCE,
             Feature.OUR_FIRE_LATERAL_VELOCITY,
+            Feature.OUR_FIRE_BULLET_ID,
             Feature.OPPONENT_X,
             Feature.OPPONENT_Y,
             Feature.TICK
@@ -85,8 +86,9 @@ public final class WaveTracker implements IInGameFeatures {
         int distSeg = GuessFactor.distanceSegment(distance);
         int latVelSeg = GuessFactor.lateralVelocitySegment(latVel);
 
+        int bulletId = (int) wb.getFeature(Feature.OUR_FIRE_BULLET_ID);
         Wave wave = new Wave(fireX, fireY, fireTick, bearing, bulletSpeed,
-                direction, distSeg, latVelSeg);
+                direction, distSeg, latVelSeg, bulletId);
         wb.getActiveWaves().add(wave);
 
         // Clear fire features so we don't re-create next tick
@@ -99,6 +101,7 @@ public final class WaveTracker implements IInGameFeatures {
         wb.setFeature(Feature.OUR_FIRE_DIRECTION, Double.NaN);
         wb.setFeature(Feature.OUR_FIRE_DISTANCE, Double.NaN);
         wb.setFeature(Feature.OUR_FIRE_LATERAL_VELOCITY, Double.NaN);
+        wb.setFeature(Feature.OUR_FIRE_BULLET_ID, Double.NaN);
     }
 
     private void resolveWaves(Whiteboard wb) {
@@ -135,9 +138,7 @@ public final class WaveTracker implements IInGameFeatures {
                 wb.setFeature(Feature.OUR_BREAK_BEARING_OFFSET, angleOffset);
                 wb.setFeature(Feature.OUR_BREAK_OPPONENT_X, oppX);
                 wb.setFeature(Feature.OUR_BREAK_OPPONENT_Y, oppY);
-                // Hit detection requires bullet event — set 0 by default,
-                // caller overrides to 1 if bullet hit confirmed
-                wb.setFeature(Feature.OUR_BREAK_HIT, 0);
+                wb.setFeature(Feature.OUR_BREAK_HIT, wave.hit ? 1 : 0);
 
                 it.remove();
             }

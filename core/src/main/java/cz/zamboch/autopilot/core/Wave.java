@@ -14,10 +14,20 @@ public final class Wave {
     public final int distanceSegment;
     public final int latVelSegment;
     public final double mea;
+    /** Bullet ID for hit correlation (from Bullet.hashCode()). */
+    public final int bulletId;
+    /** Set to true when onBulletHit fires for this wave's bullet. */
+    public boolean hit;
 
     public Wave(double fireX, double fireY, long fireTick, double fireBearing,
             double bulletSpeed, int direction, int distanceSegment,
             int latVelSegment) {
+        this(fireX, fireY, fireTick, fireBearing, bulletSpeed, direction, distanceSegment, latVelSegment, 0);
+    }
+
+    public Wave(double fireX, double fireY, long fireTick, double fireBearing,
+            double bulletSpeed, int direction, int distanceSegment,
+            int latVelSegment, int bulletId) {
         this.fireX = fireX;
         this.fireY = fireY;
         this.fireTick = fireTick;
@@ -27,6 +37,7 @@ public final class Wave {
         this.distanceSegment = distanceSegment;
         this.latVelSegment = latVelSegment;
         this.mea = GuessFactor.maxEscapeAngle(bulletSpeed);
+        this.bulletId = bulletId;
     }
 
     /**

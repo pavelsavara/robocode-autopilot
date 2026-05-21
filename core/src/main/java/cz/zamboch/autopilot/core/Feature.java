@@ -71,6 +71,7 @@ public enum Feature {
     OUR_FIRE_OPPONENT_Y(FileType.OUR_WAVES),
     OUR_FIRE_POWER(FileType.OUR_WAVES),
     OUR_FIRE_TICK(FileType.OUR_WAVES),
+    OUR_FIRE_BULLET_ID(FileType.OUR_WAVES),
 
     // --- Our gun waves: break-time features (set at wave resolution) ---
     OUR_BREAK_TICK(FileType.OUR_WAVES),

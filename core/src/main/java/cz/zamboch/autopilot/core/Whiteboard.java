@@ -82,4 +82,16 @@ public final class Whiteboard {
     public List<Wave> getActiveWaves() {
         return activeWaves;
     }
+
+    /** Mark a bullet ID as having hit the opponent (finds matching wave). */
+    public void markBulletHit(int bulletId) {
+        if (bulletId == 0)
+            return;
+        for (Wave w : activeWaves) {
+            if (w.bulletId == bulletId) {
+                w.hit = true;
+                return;
+            }
+        }
+    }
 }

@@ -15,6 +15,7 @@ import cz.zamboch.autopilot.core.features.WaveTracker;
 import cz.zamboch.autopilot.core.strategy.*;
 import robocode.AdvancedRobot;
 import robocode.BattleEndedEvent;
+import robocode.Bullet;
 import robocode.BulletHitEvent;
 import robocode.HitByBulletEvent;
 import robocode.HitRobotEvent;
@@ -92,6 +93,7 @@ public final class Autopilot extends AdvancedRobot {
 
     @Override
     public void onBulletHit(BulletHitEvent e) {
+        wb.markBulletHit(e.getBullet().hashCode());
         double current = wb.getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT);
         double damage = Rules.getBulletDamage(e.getBullet().getPower());
         wb.setFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT, (Double.isNaN(current) ? 0 : current) + damage);
@@ -155,8 +157,10 @@ public final class Autopilot extends AdvancedRobot {
             double gunTurn = fireCmd.angle - gunHeading;
             setTurnGunRightRadians(RoboMath.normalRelativeAngle(gunTurn));
             if (fireCmd.power > 0 && Math.abs(getGunTurnRemaining()) < 5) {
-                setFire(fireCmd.power);
-                snapshotFireFeatures(fireCmd.power);
+                Bullet bullet = setFireBullet(fireCmd.power);
+                if (bullet != null) {
+                    snapshotFireFeatures(fireCmd.power, bullet.hashCode());
+                }
             }
         }
 
@@ -176,8 +180,9 @@ public final class Autopilot extends AdvancedRobot {
      * Snapshot current state into OUR_FIRE_* features for WaveTracker to pick up
      * next tick.
      */
-    private void snapshotFireFeatures(double power) {
+    private void snapshotFireFeatures(double power, int bulletId) {
         wb.setFeature(Feature.OUR_FIRE_POWER, power);
+        wb.setFeature(Feature.OUR_FIRE_BULLET_ID, bulletId);
         wb.setFeature(Feature.OUR_FIRE_X, wb.getFeature(Feature.OUR_X));
         wb.setFeature(Feature.OUR_FIRE_Y, wb.getFeature(Feature.OUR_Y));
         wb.setFeature(Feature.OUR_FIRE_TICK, wb.getFeature(Feature.TICK));
