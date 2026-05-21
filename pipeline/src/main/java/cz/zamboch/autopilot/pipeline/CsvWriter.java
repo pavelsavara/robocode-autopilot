@@ -67,10 +67,9 @@ public final class CsvWriter implements Closeable {
         }
         ticksWriter.endRow();
 
-        // their-waves.csv: battle_id, round, tick, fire_power, then all THEIR_WAVES
-        // features
+        // their-waves.csv: battle_id, round, tick, then all THEIR_WAVES features
         theirWavesWriter.beginRow();
-        theirWavesWriter.writeHeaders("battle_id", "round", "tick", "fire_power");
+        theirWavesWriter.writeHeaders("battle_id", "round", "tick");
         for (Feature f : theirWavesFeatures) {
             theirWavesWriter.writeHeader(f.name().toLowerCase());
         }
@@ -105,13 +104,12 @@ public final class CsvWriter implements Closeable {
         ticksWriter.endRow();
     }
 
-    /** Write one row to their-waves.csv (called when opponent fire is detected). */
+    /** Write one row to their-waves.csv (called when their wave resolves). */
     public void writeTheirWaveRow(Whiteboard wb, String battleId, int round) throws IOException {
         theirWavesWriter.beginRow();
         theirWavesWriter.writeRaw(battleId);
         theirWavesWriter.writeInt(round);
         theirWavesWriter.writeLong((long) wb.getFeature(Feature.TICK));
-        theirWavesWriter.writeRaw(Double.toString(wb.getFeature(Feature.THEIR_FIRE_POWER)));
         for (Feature f : theirWavesFeatures) {
             theirWavesWriter.writeDouble(wb, f);
         }

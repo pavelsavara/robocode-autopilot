@@ -136,7 +136,8 @@ final class PipelineIntegrationTest {
         String firstRow = tickLines.get(1);
         assertTrue(firstRow.startsWith(battleId + ",0,0,"), "First row should have tick=0");
 
-        // Check their-waves.csv: perspective A should see B's fire (energy drop on tick 3)
+        // Check their-waves.csv: perspective A should see B's fire (energy drop on tick
+        // 3)
         File wavesA = new File(dirA, "their-waves.csv");
         assertTrue(wavesA.exists(), "their-waves.csv for A should exist");
         List<String> waveLines = Files.readAllLines(wavesA.toPath());

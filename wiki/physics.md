@@ -84,12 +84,21 @@ newY = y + newVelocity × cos(newHeading)
   - Power 1.0 → 4.0 damage
   - Power 3.0 → 16.0 damage (40× the damage of 0.1!)
 - Energy gain on hit: `3 × power` returned to firer
-- Bullet is a point; hit detection checks if point is within 18px of target center
+- Bullet is a **line segment** from previous to current position (one tick of travel)
+- Hit detection: `robot.getBoundingBox().intersectsLine(bulletLine)` (see BulletPeer.java)
+- Robot bounding box is **axis-aligned 36×36** (does NOT rotate with heading)
+- Cross-section at angle θ: `36 × (|cos θ| + |sin θ|)`
+  - At 0°/90°: 36 px
+  - At 45°: 36√2 ≈ 50.9 px (**41% larger target**)
+- Implication: robot is easiest to hit from 45° absolute angles (diagonal)
 
 ### Maximum Escape Angle (MEA)
-- `MEA = arcsin(8.0 / bulletSpeed)`
-- At power 3.0 (speed 11): MEA ≈ 46.7°
-- At power 0.1 (speed 19.7): MEA ≈ 23.9°
+- Classical: `MEA = arcsin(8.0 / bulletSpeed)` (assumes point robot)
+- Effective (accounting for hitbox width at angle θ):
+  `MEA_eff = arcsin((8.0 + hitbox_half_width(θ)) / bulletSpeed)`
+  where `hitbox_half_width(θ) = 18 × (|cos θ| + |sin θ|)` (18 at cardinal, 18√2 ≈ 25.5 at 45°)
+- At power 3.0 (speed 11): classical MEA ≈ 46.7°
+- At power 0.1 (speed 19.7): classical MEA ≈ 23.9°
 
 ## Energy Model
 

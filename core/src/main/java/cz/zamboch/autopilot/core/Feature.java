@@ -51,6 +51,20 @@ public enum Feature {
 
     // --- Computed: fire detection ---
     THEIR_FIRE_POWER(FileType.THEIR_WAVES),
+    THEIR_FIRE_TICK(FileType.THEIR_WAVES),
+    THEIR_FIRE_X(FileType.THEIR_WAVES),
+    THEIR_FIRE_Y(FileType.THEIR_WAVES),
+    THEIR_BULLET_SPEED(FileType.THEIR_WAVES),
+    THEIR_FIRE_BEARING(FileType.THEIR_WAVES),
+    THEIR_FIRE_DISTANCE(FileType.THEIR_WAVES),
+    THEIR_FIRE_OUR_X(FileType.THEIR_WAVES),
+    THEIR_FIRE_OUR_Y(FileType.THEIR_WAVES),
+    THEIR_BREAK_TICK(FileType.THEIR_WAVES),
+    THEIR_BREAK_OUR_X(FileType.THEIR_WAVES),
+    THEIR_BREAK_OUR_Y(FileType.THEIR_WAVES),
+    THEIR_BREAK_GF(FileType.THEIR_WAVES),
+    THEIR_BREAK_BEARING_OFFSET(FileType.THEIR_WAVES),
+    THEIR_HIT_US(FileType.THEIR_WAVES),
     PREV_SCAN_OPPONENT_ENERGY(FileType.TICKS),
 
     // --- Computed: identity ---
@@ -98,4 +112,21 @@ public enum Feature {
 
     /** Total number of features — use for array sizing. */
     public static final int COUNT = values().length;
+
+    /**
+     * Column index within this feature's table (TickRing, OurWaveTable, etc.).
+     * Computed from declaration order within each FileType group.
+     */
+    public int columnIndex() {
+        return COLUMN_INDICES[ordinal()];
+    }
+
+    private static final int[] COLUMN_INDICES;
+    static {
+        COLUMN_INDICES = new int[COUNT];
+        int[] perType = new int[FileType.values().length];
+        for (Feature f : values()) {
+            COLUMN_INDICES[f.ordinal()] = perType[f.getFileType().ordinal()]++;
+        }
+    }
 }

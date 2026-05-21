@@ -90,7 +90,8 @@ final class WaveResolver {
                 double oppY = robots[us.peer().robotIndex()].getY();
                 long tick = (long) us.wb().getFeature(Feature.TICK);
 
-                resolved[us.robotIndex()] = resolveWaves(us.wb(), pp, us.robotIndex(), oppX, oppY, tick);
+                resolved[us.robotIndex()] = resolveWaves(us.wb(), us.peer().wb(),
+                        pp, us.robotIndex(), oppX, oppY, tick);
             }
         }
 
@@ -186,7 +187,7 @@ final class WaveResolver {
         wb.setFeature(Feature.OUR_FIRE_OPPONENT_Y, tw.fireOpponentY);
     }
 
-    private boolean resolveWaves(Whiteboard wb, PerPerspective pp, int perspIndex,
+    private boolean resolveWaves(Whiteboard wb, Whiteboard peerWb, PerPerspective pp, int perspIndex,
             double oppX, double oppY, long currentTick) {
         boolean anyResolved = false;
         Iterator<TrackedWave> it = pp.activeWaves.iterator();
@@ -225,11 +226,42 @@ final class WaveResolver {
                 // Also re-set fire features so CSV row has both fire + break
                 setFireFeatures(wb, tw);
 
+                // Set THEIR_* features on the peer's whiteboard (their perspective)
+                setTheirWaveFeatures(peerWb, tw, oppX, oppY, currentTick, gf, angleOffset, hit);
+
                 anyResolved = true;
                 it.remove();
             }
         }
         return anyResolved;
+    }
+
+    /**
+     * Set their-wave fire + break features on the target's whiteboard.
+     * Called when OUR wave resolves — this is THEIR incoming wave from the target's perspective.
+     */
+    private void setTheirWaveFeatures(Whiteboard peerWb, TrackedWave tw,
+            double targetX, double targetY, long breakTick, double gf, double bearingOffset, boolean hit) {
+        Wave w = tw.wave;
+
+        // Fire-time features (from the firer to the target)
+        peerWb.setFeature(Feature.THEIR_FIRE_POWER, tw.power);
+        peerWb.setFeature(Feature.THEIR_FIRE_TICK, w.fireTick);
+        peerWb.setFeature(Feature.THEIR_FIRE_X, w.fireX);
+        peerWb.setFeature(Feature.THEIR_FIRE_Y, w.fireY);
+        peerWb.setFeature(Feature.THEIR_BULLET_SPEED, w.bulletSpeed);
+        peerWb.setFeature(Feature.THEIR_FIRE_BEARING, w.fireBearing);
+        peerWb.setFeature(Feature.THEIR_FIRE_DISTANCE, tw.fireDistance);
+        peerWb.setFeature(Feature.THEIR_FIRE_OUR_X, tw.fireOpponentX);
+        peerWb.setFeature(Feature.THEIR_FIRE_OUR_Y, tw.fireOpponentY);
+
+        // Break-time features
+        peerWb.setFeature(Feature.THEIR_BREAK_TICK, breakTick);
+        peerWb.setFeature(Feature.THEIR_BREAK_OUR_X, targetX);
+        peerWb.setFeature(Feature.THEIR_BREAK_OUR_Y, targetY);
+        peerWb.setFeature(Feature.THEIR_BREAK_GF, gf);
+        peerWb.setFeature(Feature.THEIR_BREAK_BEARING_OFFSET, bearingOffset);
+        peerWb.setFeature(Feature.THEIR_HIT_US, hit ? 1.0 : 0.0);
     }
 
     // --- Internal types ---

@@ -18,6 +18,8 @@ import cz.zamboch.autopilot.core.Whiteboard;
  * Resets accumulator features after consumption.
  */
 public final class FireFeatures implements IInGameFeatures {
+    private double lastProcessedTick = Double.NaN;
+
     private static final Feature[] DEPS = {
             Feature.TICK, Feature.LAST_SCAN_TICK, Feature.OPPONENT_ENERGY,
             Feature.OUR_BULLET_DAMAGE_TO_OPPONENT,
@@ -49,8 +51,14 @@ public final class FireFeatures implements IInGameFeatures {
             return;
         }
 
+        // Guard against re-processing when ring didn't advance (e.g. robot dead)
+        if (tick == lastProcessedTick) {
+            return;
+        }
+        lastProcessedTick = tick;
+
         double currentEnergy = wb.getFeature(Feature.OPPONENT_ENERGY);
-        double prevEnergy = wb.getFeature(Feature.PREV_SCAN_OPPONENT_ENERGY);
+        double prevEnergy = wb.getPreviousTickFeature(Feature.PREV_SCAN_OPPONENT_ENERGY);
 
         if (!Double.isNaN(prevEnergy)) {
             double drop = prevEnergy - currentEnergy;

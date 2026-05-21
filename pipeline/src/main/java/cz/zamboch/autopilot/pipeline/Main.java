@@ -2,6 +2,7 @@ package cz.zamboch.autopilot.pipeline;
 
 import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.Whiteboard;
+import cz.zamboch.autopilot.core.features.FireFeatures;
 import cz.zamboch.autopilot.core.features.MovementFeatures;
 import cz.zamboch.autopilot.core.features.SpatialFeatures;
 import cz.zamboch.autopilot.core.features.TimingFeatures;
@@ -198,7 +199,8 @@ public final class Main {
         wb.registerFeatures(
                 new SpatialFeatures(),
                 new MovementFeatures(),
-                new TimingFeatures());
+                new TimingFeatures(),
+                new FireFeatures());
         return wb;
     }
 

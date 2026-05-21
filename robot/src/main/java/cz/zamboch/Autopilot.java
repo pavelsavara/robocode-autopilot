@@ -12,6 +12,7 @@ import cz.zamboch.autopilot.core.features.FireFeatures;
 import cz.zamboch.autopilot.core.features.TimingFeatures;
 import cz.zamboch.autopilot.core.features.OurWaveFeatures;
 import cz.zamboch.autopilot.core.features.WaveTracker;
+import cz.zamboch.autopilot.core.features.TheirWaveTracker;
 import cz.zamboch.autopilot.core.strategy.*;
 import robocode.AdvancedRobot;
 import robocode.BattleEndedEvent;
@@ -104,6 +105,7 @@ public final class Autopilot extends AdvancedRobot {
         double current = wb.getFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN);
         double gain = Rules.getBulletHitBonus(e.getBullet().getPower());
         wb.setFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN, (Double.isNaN(current) ? 0 : current) + gain);
+        wb.markTheirBulletHitUs(e.getBullet().getPower());
     }
 
     @Override
@@ -122,7 +124,8 @@ public final class Autopilot extends AdvancedRobot {
                 new FireFeatures(),
                 new IdentityFeatures(),
                 new OurWaveFeatures(),
-                new WaveTracker());
+                new WaveTracker(),
+                new TheirWaveTracker());
 
         // Set battle constants
         wb.setFeature(Feature.BATTLEFIELD_WIDTH, getBattleFieldWidth());

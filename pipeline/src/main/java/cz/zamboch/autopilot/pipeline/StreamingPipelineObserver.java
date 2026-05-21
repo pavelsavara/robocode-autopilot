@@ -117,7 +117,8 @@ final class StreamingPipelineObserver extends BattleAdaptor {
             try {
                 for (Perspective us : perspectives) {
                     us.csv().writeTickRow(us.wb(), battleId, roundIndex);
-                    if (!Double.isNaN(us.wb().getFeature(Feature.THEIR_FIRE_POWER))) {
+                    // Write their-waves at resolution time (peer's wave reached us)
+                    if (waveResolved[us.peer().robotIndex()]) {
                         us.csv().writeTheirWaveRow(us.wb(), battleId, roundIndex);
                     }
                     if (waveResolved[us.robotIndex()]) {
