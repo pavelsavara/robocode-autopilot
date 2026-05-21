@@ -22,7 +22,7 @@ final class WaveTrackerTest {
                 new MovementFeatures(),
                 new TimingFeatures(),
                 new FireFeatures(),
-                new WaveFeatures(),
+                new OurWaveFeatures(),
                 new WaveTracker());
         wb.setVcsStore(new VcsStore());
     }

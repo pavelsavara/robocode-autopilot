@@ -7,6 +7,7 @@ import cz.zamboch.autopilot.core.VcsStore;
 import cz.zamboch.autopilot.core.Whiteboard;
 import cz.zamboch.autopilot.core.features.FireFeatures;
 import cz.zamboch.autopilot.core.features.MovementFeatures;
+import cz.zamboch.autopilot.core.features.OurWaveFeatures;
 import cz.zamboch.autopilot.core.features.SpatialFeatures;
 import cz.zamboch.autopilot.core.features.TimingFeatures;
 import robocode.control.events.BattleAdaptor;
@@ -285,7 +286,8 @@ final class StreamingPipelineObserver extends BattleAdaptor {
                 new SpatialFeatures(),
                 new MovementFeatures(),
                 new TimingFeatures(),
-                new FireFeatures());
+                new FireFeatures(),
+                new OurWaveFeatures());
         return wb;
     }
 

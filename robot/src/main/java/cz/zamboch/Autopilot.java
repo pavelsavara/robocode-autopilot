@@ -10,7 +10,7 @@ import cz.zamboch.autopilot.core.features.MovementFeatures;
 import cz.zamboch.autopilot.core.features.SpatialFeatures;
 import cz.zamboch.autopilot.core.features.FireFeatures;
 import cz.zamboch.autopilot.core.features.TimingFeatures;
-import cz.zamboch.autopilot.core.features.WaveFeatures;
+import cz.zamboch.autopilot.core.features.OurWaveFeatures;
 import cz.zamboch.autopilot.core.features.WaveTracker;
 import cz.zamboch.autopilot.core.strategy.*;
 import robocode.AdvancedRobot;
@@ -119,7 +119,7 @@ public final class Autopilot extends AdvancedRobot {
                 new TimingFeatures(),
                 new FireFeatures(),
                 new IdentityFeatures(),
-                new WaveFeatures(),
+                new OurWaveFeatures(),
                 new WaveTracker());
 
         // Set battle constants

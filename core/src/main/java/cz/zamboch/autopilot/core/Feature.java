@@ -42,6 +42,10 @@ public enum Feature {
     OPPONENT_LATERAL_VELOCITY(FileType.TICKS),
     OPPONENT_ADVANCING_VELOCITY(FileType.TICKS),
 
+    // --- Computed: gun aim (from GF strategy) ---
+    GUN_AIM_POWER(FileType.TICKS),
+    GUN_AIM_ANGLE(FileType.TICKS),
+
     // --- Computed: timing ---
     TICKS_SINCE_SCAN(FileType.TICKS),
 
