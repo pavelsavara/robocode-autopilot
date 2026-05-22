@@ -190,17 +190,19 @@ final class BattleLoopTest {
         }
     }
 
-    // --- Compute hit rate from our-waves.csv lines ---
+    // --- Compute hit rate from our-waves.csv lines (real bullets only) ---
     private double computeHitRate(List<String> lines) {
         if (lines.size() < 2)
             return 0;
         String header = lines.get(0);
         String[] cols = header.split(",");
         int hitIdx = -1;
+        int isRealIdx = -1;
         for (int i = 0; i < cols.length; i++) {
             if ("our_break_hit".equals(cols[i].trim())) {
                 hitIdx = i;
-                break;
+            } else if ("our_fire_is_real".equals(cols[i].trim())) {
+                isRealIdx = i;
             }
         }
         if (hitIdx < 0)
@@ -210,6 +212,13 @@ final class BattleLoopTest {
         int total = 0;
         for (int i = 1; i < lines.size(); i++) {
             String[] parts = lines.get(i).split(",");
+            // Skip virtual bullet rows
+            if (isRealIdx >= 0 && isRealIdx < parts.length) {
+                String realVal = parts[isRealIdx].trim();
+                if (!"1.0".equals(realVal) && !"1".equals(realVal)) {
+                    continue;
+                }
+            }
             if (hitIdx < parts.length) {
                 String val = parts[hitIdx].trim();
                 if (!val.isEmpty() && !"NaN".equals(val)) {
