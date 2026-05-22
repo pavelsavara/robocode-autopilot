@@ -195,6 +195,8 @@ public final class Autopilot extends AdvancedRobot {
         wb.setFeature(Feature.OUR_FIRE_ADVANCING_VELOCITY, wb.getFeature(Feature.OPPONENT_ADVANCING_VELOCITY));
         wb.setFeature(Feature.OUR_FIRE_OPPONENT_X, wb.getFeature(Feature.OPPONENT_X));
         wb.setFeature(Feature.OUR_FIRE_OPPONENT_Y, wb.getFeature(Feature.OPPONENT_Y));
+        wb.setFeature(Feature.OUR_FIRE_AIM_GF, wb.getFeature(Feature.GUN_AIM_GF));
+        wb.setFeature(Feature.OUR_FIRE_IS_REAL, 1.0);
     }
 
 }

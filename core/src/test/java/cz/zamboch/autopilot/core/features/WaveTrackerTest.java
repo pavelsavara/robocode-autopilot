@@ -61,15 +61,20 @@ final class WaveTrackerTest {
         wb.setFeature(Feature.OUR_FIRE_BEARING_ABSOLUTE, 0);
         wb.setFeature(Feature.OUR_FIRE_DISTANCE, 200);
         wb.setFeature(Feature.OUR_FIRE_LATERAL_VELOCITY, 0);
+        wb.setFeature(Feature.OUR_FIRE_AIM_GF, 0.0);
+        wb.setFeature(Feature.OUR_FIRE_IS_REAL, 1.0);
 
         wb.process();
 
-        assertEquals(1, wb.getActiveWaveCount());
+        // 1 real + 10 virtual = 11 active waves
+        assertEquals(1 + WaveTracker.VIRTUAL_BULLET_COUNT, wb.getActiveWaveCount());
         assertEquals(Whiteboard.WAVE_ACTIVE, wb.getOurWaveState(0));
         assertEquals(400, wb.getOurWave(0, OurWaveColumn.FIRE_X), 1e-9);
         assertEquals(300, wb.getOurWave(0, OurWaveColumn.FIRE_Y), 1e-9);
         assertEquals(10, (long) wb.getOurWave(0, OurWaveColumn.FIRE_TICK));
         assertEquals(14.0, wb.getOurWave(0, OurWaveColumn.FIRE_BULLET_SPEED), 1e-9);
+        assertEquals(1.0, wb.getOurWave(0, OurWaveColumn.IS_REAL), 1e-9);
+        assertEquals(0.0, wb.getOurWave(1, OurWaveColumn.IS_REAL), 1e-9);
 
         assertTrue(Double.isNaN(wb.getFeature(Feature.OUR_FIRE_POWER)));
     }
@@ -87,6 +92,7 @@ final class WaveTrackerTest {
         wb.setOurWave(slot, OurWaveColumn.FIRE_DIRECTION, 1);
         wb.setOurWave(slot, OurWaveColumn.FIRE_DISTANCE, 200);
         wb.setOurWave(slot, OurWaveColumn.FIRE_LATERAL_VELOCITY, 0);
+        wb.setOurWave(slot, OurWaveColumn.IS_REAL, 1.0);
         wb.setOurWaveState(slot, Whiteboard.WAVE_ACTIVE);
 
         // Opponent at (400, 500) → distance 200, tick 20: 15*14=210 > 200 → resolved
@@ -116,6 +122,7 @@ final class WaveTrackerTest {
         wb.setOurWave(slot, OurWaveColumn.FIRE_DIRECTION, 1);
         wb.setOurWave(slot, OurWaveColumn.FIRE_DISTANCE, 200);
         wb.setOurWave(slot, OurWaveColumn.FIRE_LATERAL_VELOCITY, 0);
+        wb.setOurWave(slot, OurWaveColumn.IS_REAL, 1.0);
         wb.setOurWaveState(slot, Whiteboard.WAVE_ACTIVE);
 
         // Tick 11: only 1*14 = 14 travelled, target at distance 200

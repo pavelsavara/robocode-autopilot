@@ -25,6 +25,7 @@ public final class OurWaveFeatures implements IInGameFeatures {
     private static final Feature[] OUTPUTS = {
             Feature.GUN_AIM_POWER,
             Feature.GUN_AIM_ANGLE,
+            Feature.GUN_AIM_GF,
             Feature.OUR_FIRE_BULLET_SPEED,
             Feature.OUR_FIRE_MEA,
             Feature.OUR_FIRE_DIRECTION
@@ -72,6 +73,7 @@ public final class OurWaveFeatures implements IInGameFeatures {
         int direction = Double.isNaN(latVel) ? 1 : GuessFactor.direction(latVel);
 
         double offset = 0;
+        double aimGf = 0;
         VcsStore vcs = wb.getVcsStore();
         if (vcs != null) {
             int distSeg = GuessFactor.distanceSegment(distance);
@@ -80,11 +82,13 @@ public final class OurWaveFeatures implements IInGameFeatures {
             int bestBin = vcs.getBestBin(distSeg, latVelSeg);
             double bestGf = GuessFactor.binIndexToGf(bestBin, GuessFactor.NUM_BINS);
             offset = bestGf * mea * direction;
+            aimGf = bestGf;
         }
 
         double aimAngle = absoluteBearing + offset;
         wb.setFeature(Feature.GUN_AIM_POWER, power);
         wb.setFeature(Feature.GUN_AIM_ANGLE, aimAngle);
+        wb.setFeature(Feature.GUN_AIM_GF, aimGf);
     }
 
     private void computeFireDerived(Whiteboard wb) {

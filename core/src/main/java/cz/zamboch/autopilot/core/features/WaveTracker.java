@@ -16,12 +16,20 @@ import cz.zamboch.autopilot.core.Whiteboard;
  * On each process() call:
  * <ol>
  * <li>If OUR_FIRE_POWER is set (we fired last tick), allocate a ring slot,
- * copy fire features from staging, mark ACTIVE, then clear staging.</li>
+ * copy fire features from staging, mark ACTIVE, then clear staging.
+ * Also creates K virtual bullet slots with evenly-spaced AIM_GFs.</li>
  * <li>Resolve any active wave slots that have reached the opponent's current
- * position → update VcsStore and set OUR_BREAK_* staging features.</li>
+ * position → update VcsStore (real only) and set OUR_BREAK_* staging features.</li>
  * </ol>
  */
 public final class WaveTracker implements IInGameFeatures {
+
+    /** Number of virtual bullets created per real fire event. */
+    public static final int VIRTUAL_BULLET_COUNT = 10;
+
+    /** Half-width of robot bounding box for geometric hit detection (px). */
+    static final double BOT_HALF_WIDTH = 18.0;
+
     private static final Feature[] DEPS = {
             Feature.OUR_FIRE_POWER,
             Feature.OUR_FIRE_X,
@@ -33,6 +41,8 @@ public final class WaveTracker implements IInGameFeatures {
             Feature.OUR_FIRE_DISTANCE,
             Feature.OUR_FIRE_LATERAL_VELOCITY,
             Feature.OUR_FIRE_BULLET_ID,
+            Feature.OUR_FIRE_AIM_GF,
+            Feature.OUR_FIRE_IS_REAL,
             Feature.OPPONENT_X,
             Feature.OPPONENT_Y,
             Feature.TICK
@@ -82,28 +92,32 @@ public final class WaveTracker implements IInGameFeatures {
         double bulletId = wb.getFeature(Feature.OUR_FIRE_BULLET_ID);
         double oppX = wb.getFeature(Feature.OUR_FIRE_OPPONENT_X);
         double oppY = wb.getFeature(Feature.OUR_FIRE_OPPONENT_Y);
+        double aimGf = wb.getFeature(Feature.OUR_FIRE_AIM_GF);
 
         if (Double.isNaN(fireX) || Double.isNaN(bearing) || Double.isNaN(bulletSpeed)) {
             return;
         }
 
-        // Allocate ring buffer slot and copy all fire columns
+        // Allocate real wave slot
         int slot = wb.allocateOurWave();
-        wb.setOurWave(slot, OurWaveColumn.FIRE_POWER, power);
-        wb.setOurWave(slot, OurWaveColumn.FIRE_X, fireX);
-        wb.setOurWave(slot, OurWaveColumn.FIRE_Y, fireY);
-        wb.setOurWave(slot, OurWaveColumn.FIRE_TICK, fireTick);
-        wb.setOurWave(slot, OurWaveColumn.FIRE_BEARING_ABSOLUTE, bearing);
-        wb.setOurWave(slot, OurWaveColumn.FIRE_BULLET_SPEED, bulletSpeed);
-        wb.setOurWave(slot, OurWaveColumn.FIRE_DIRECTION, direction);
-        wb.setOurWave(slot, OurWaveColumn.FIRE_DISTANCE, distance);
-        wb.setOurWave(slot, OurWaveColumn.FIRE_LATERAL_VELOCITY, latVel);
-        wb.setOurWave(slot, OurWaveColumn.FIRE_ADVANCING_VELOCITY, advVel);
-        wb.setOurWave(slot, OurWaveColumn.FIRE_MEA, mea);
-        wb.setOurWave(slot, OurWaveColumn.FIRE_BULLET_ID, bulletId);
-        wb.setOurWave(slot, OurWaveColumn.FIRE_OPPONENT_X, oppX);
-        wb.setOurWave(slot, OurWaveColumn.FIRE_OPPONENT_Y, oppY);
+        fillFireColumns(wb, slot, power, fireX, fireY, fireTick, bearing,
+                bulletSpeed, direction, distance, latVel, advVel, mea,
+                bulletId, oppX, oppY);
+        wb.setOurWave(slot, OurWaveColumn.AIM_GF, Double.isNaN(aimGf) ? 0.0 : aimGf);
+        wb.setOurWave(slot, OurWaveColumn.IS_REAL, 1.0);
         wb.setOurWaveState(slot, Whiteboard.WAVE_ACTIVE);
+
+        // Create virtual bullet slots
+        for (int i = 0; i < VIRTUAL_BULLET_COUNT; i++) {
+            double virtualGf = -1.0 + 2.0 * i / (VIRTUAL_BULLET_COUNT - 1);
+            int vSlot = wb.allocateOurWave();
+            fillFireColumns(wb, vSlot, power, fireX, fireY, fireTick, bearing,
+                    bulletSpeed, direction, distance, latVel, advVel, mea,
+                    0, oppX, oppY);
+            wb.setOurWave(vSlot, OurWaveColumn.AIM_GF, virtualGf);
+            wb.setOurWave(vSlot, OurWaveColumn.IS_REAL, 0.0);
+            wb.setOurWaveState(vSlot, Whiteboard.WAVE_ACTIVE);
+        }
 
         // Clear staging so we don't re-create next tick
         wb.setFeature(Feature.OUR_FIRE_POWER, Double.NaN);
@@ -120,6 +134,29 @@ public final class WaveTracker implements IInGameFeatures {
         wb.setFeature(Feature.OUR_FIRE_ADVANCING_VELOCITY, Double.NaN);
         wb.setFeature(Feature.OUR_FIRE_OPPONENT_X, Double.NaN);
         wb.setFeature(Feature.OUR_FIRE_OPPONENT_Y, Double.NaN);
+        wb.setFeature(Feature.OUR_FIRE_AIM_GF, Double.NaN);
+        wb.setFeature(Feature.OUR_FIRE_IS_REAL, Double.NaN);
+    }
+
+    private void fillFireColumns(Whiteboard wb, int slot,
+            double power, double fireX, double fireY, double fireTick,
+            double bearing, double bulletSpeed, double direction,
+            double distance, double latVel, double advVel, double mea,
+            double bulletId, double oppX, double oppY) {
+        wb.setOurWave(slot, OurWaveColumn.FIRE_POWER, power);
+        wb.setOurWave(slot, OurWaveColumn.FIRE_X, fireX);
+        wb.setOurWave(slot, OurWaveColumn.FIRE_Y, fireY);
+        wb.setOurWave(slot, OurWaveColumn.FIRE_TICK, fireTick);
+        wb.setOurWave(slot, OurWaveColumn.FIRE_BEARING_ABSOLUTE, bearing);
+        wb.setOurWave(slot, OurWaveColumn.FIRE_BULLET_SPEED, bulletSpeed);
+        wb.setOurWave(slot, OurWaveColumn.FIRE_DIRECTION, direction);
+        wb.setOurWave(slot, OurWaveColumn.FIRE_DISTANCE, distance);
+        wb.setOurWave(slot, OurWaveColumn.FIRE_LATERAL_VELOCITY, latVel);
+        wb.setOurWave(slot, OurWaveColumn.FIRE_ADVANCING_VELOCITY, advVel);
+        wb.setOurWave(slot, OurWaveColumn.FIRE_MEA, mea);
+        wb.setOurWave(slot, OurWaveColumn.FIRE_BULLET_ID, bulletId);
+        wb.setOurWave(slot, OurWaveColumn.FIRE_OPPONENT_X, oppX);
+        wb.setOurWave(slot, OurWaveColumn.FIRE_OPPONENT_Y, oppY);
     }
 
     private void resolveWaves(Whiteboard wb) {
@@ -158,14 +195,16 @@ public final class WaveTracker implements IInGameFeatures {
                 double actualBearing = Math.atan2(dx, dy);
                 double angleOffset = RoboMath.normalRelativeAngle(actualBearing - fireBearing);
                 double gf = GuessFactor.guessFactor(angleOffset, mea, direction);
-                int binIndex = GuessFactor.gfToBinIndex(gf, GuessFactor.NUM_BINS);
 
-                // Update VCS
-                if (vcs != null) {
+                boolean isReal = wb.getOurWave(slot, OurWaveColumn.IS_REAL) == 1.0;
+
+                // Update VCS only for real bullets
+                if (isReal && vcs != null) {
                     double distance = wb.getOurWave(slot, OurWaveColumn.FIRE_DISTANCE);
                     double latVel = wb.getOurWave(slot, OurWaveColumn.FIRE_LATERAL_VELOCITY);
                     int distSeg = GuessFactor.distanceSegment(distance);
                     int latVelSeg = GuessFactor.lateralVelocitySegment(latVel);
+                    int binIndex = GuessFactor.gfToBinIndex(gf, GuessFactor.NUM_BINS);
                     vcs.increment(distSeg, latVelSeg, binIndex);
                 }
 
@@ -175,19 +214,51 @@ public final class WaveTracker implements IInGameFeatures {
                 wb.setOurWave(slot, OurWaveColumn.BREAK_BEARING_OFFSET, angleOffset);
                 wb.setOurWave(slot, OurWaveColumn.BREAK_OPPONENT_X, oppX);
                 wb.setOurWave(slot, OurWaveColumn.BREAK_OPPONENT_Y, oppY);
-                // BREAK_HIT was set by markBulletHit (1.0) or stays 0
 
-                // Set staging features for debug output and CsvWriter
-                wb.setFeature(Feature.OUR_BREAK_TICK, currentTick);
-                wb.setFeature(Feature.OUR_BREAK_GF, gf);
-                wb.setFeature(Feature.OUR_BREAK_BEARING_OFFSET, angleOffset);
-                wb.setFeature(Feature.OUR_BREAK_OPPONENT_X, oppX);
-                wb.setFeature(Feature.OUR_BREAK_OPPONENT_Y, oppY);
-                double hitVal = wb.getOurWave(slot, OurWaveColumn.BREAK_HIT);
-                wb.setFeature(Feature.OUR_BREAK_HIT, Double.isNaN(hitVal) ? 0 : hitVal);
+                // For virtual bullets, compute geometric would-hit
+                if (!isReal) {
+                    double aimGf = wb.getOurWave(slot, OurWaveColumn.AIM_GF);
+                    boolean wouldHit = computeWouldHit(
+                            fireX, fireY, fireBearing, aimGf, mea, direction,
+                            oppX, oppY);
+                    wb.setOurWave(slot, OurWaveColumn.BREAK_HIT, wouldHit ? 1.0 : 0.0);
+                }
+                // For real bullets, BREAK_HIT was already set by markBulletHit (1.0) or stays 0
+
+                // Set staging features for debug output and CsvWriter (only for real)
+                if (isReal) {
+                    wb.setFeature(Feature.OUR_BREAK_TICK, currentTick);
+                    wb.setFeature(Feature.OUR_BREAK_GF, gf);
+                    wb.setFeature(Feature.OUR_BREAK_BEARING_OFFSET, angleOffset);
+                    wb.setFeature(Feature.OUR_BREAK_OPPONENT_X, oppX);
+                    wb.setFeature(Feature.OUR_BREAK_OPPONENT_Y, oppY);
+                    double hitVal = wb.getOurWave(slot, OurWaveColumn.BREAK_HIT);
+                    wb.setFeature(Feature.OUR_BREAK_HIT, Double.isNaN(hitVal) ? 0 : hitVal);
+                }
 
                 wb.setOurWaveState(slot, Whiteboard.WAVE_RESOLVED);
             }
         }
+    }
+
+    /**
+     * Compute whether a virtual bullet aimed at the given GF would have hit
+     * the opponent at their actual position. Uses point-distance approximation
+     * with robot half-width (18px).
+     */
+    public static boolean computeWouldHit(double fireX, double fireY,
+            double fireBearing, double aimGf, double mea, double direction,
+            double oppX, double oppY) {
+        double aimBearing = fireBearing + aimGf * mea * direction;
+        double dx = oppX - fireX;
+        double dy = oppY - fireY;
+        double distToTarget = Math.sqrt(dx * dx + dy * dy);
+        // Bullet position at the distance where wave reaches opponent
+        double bulletX = fireX + distToTarget * Math.sin(aimBearing);
+        double bulletY = fireY + distToTarget * Math.cos(aimBearing);
+        double missX = bulletX - oppX;
+        double missY = bulletY - oppY;
+        double missDistance = Math.sqrt(missX * missX + missY * missY);
+        return missDistance < BOT_HALF_WIDTH;
     }
 }

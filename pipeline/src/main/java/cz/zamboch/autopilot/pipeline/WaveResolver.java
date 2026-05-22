@@ -185,6 +185,16 @@ final class WaveResolver {
         wb.setFeature(Feature.OUR_FIRE_DIRECTION, w.direction);
         wb.setFeature(Feature.OUR_FIRE_OPPONENT_X, tw.fireOpponentX);
         wb.setFeature(Feature.OUR_FIRE_OPPONENT_Y, tw.fireOpponentY);
+        wb.setFeature(Feature.OUR_FIRE_IS_REAL, 1.0);
+
+        // Compute aim GF from VCS at fire time
+        VcsStore vcs = wb.getVcsStore();
+        double aimGf = 0.0;
+        if (vcs != null) {
+            int bestBin = vcs.getBestBin(w.distanceSegment, w.latVelSegment);
+            aimGf = GuessFactor.binIndexToGf(bestBin, GuessFactor.NUM_BINS);
+        }
+        wb.setFeature(Feature.OUR_FIRE_AIM_GF, aimGf);
     }
 
     private boolean resolveWaves(Whiteboard wb, Whiteboard peerWb, PerPerspective pp, int perspIndex,

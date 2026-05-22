@@ -21,6 +21,8 @@ public enum OurWaveColumn {
     FIRE_POWER,
     FIRE_TICK,
     FIRE_BULLET_ID,
+    AIM_GF,
+    IS_REAL,
     BREAK_TICK,
     BREAK_GF,
     BREAK_BEARING_OFFSET,

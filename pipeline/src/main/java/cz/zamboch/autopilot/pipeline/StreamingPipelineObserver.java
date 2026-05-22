@@ -10,6 +10,7 @@ import cz.zamboch.autopilot.core.features.MovementFeatures;
 import cz.zamboch.autopilot.core.features.OurWaveFeatures;
 import cz.zamboch.autopilot.core.features.SpatialFeatures;
 import cz.zamboch.autopilot.core.features.TimingFeatures;
+import cz.zamboch.autopilot.core.features.WaveTracker;
 import robocode.control.events.BattleAdaptor;
 import robocode.control.events.BattleCompletedEvent;
 import robocode.control.events.BattleErrorEvent;
@@ -123,6 +124,7 @@ final class StreamingPipelineObserver extends BattleAdaptor {
                     }
                     if (waveResolved[us.robotIndex()]) {
                         us.csv().writeOurWaveRow(us.wb(), battleId, roundIndex);
+                        writeVirtualBulletRows(us, battleId, roundIndex);
                     }
                 }
             } catch (IOException e) {
@@ -179,6 +181,46 @@ final class StreamingPipelineObserver extends BattleAdaptor {
         for (Perspective us : perspectives) {
             us.setLastRobot(robots[us.robotIndex()]);
         }
+    }
+
+    /**
+     * Write K virtual bullet rows after the real wave row.
+     * Temporarily overrides AIM_GF, IS_REAL, and BREAK_HIT on the whiteboard staging features,
+     * writes the row, then restores the real values.
+     */
+    private void writeVirtualBulletRows(Perspective us, String battleId, int roundIndex) throws IOException {
+        Whiteboard wb = us.wb();
+        // Save real values
+        double realAimGf = wb.getFeature(Feature.OUR_FIRE_AIM_GF);
+        double realIsReal = wb.getFeature(Feature.OUR_FIRE_IS_REAL);
+        double realBreakHit = wb.getFeature(Feature.OUR_BREAK_HIT);
+
+        // Fire geometry for geometric hit computation
+        double fireX = wb.getFeature(Feature.OUR_FIRE_X);
+        double fireY = wb.getFeature(Feature.OUR_FIRE_Y);
+        double fireBearing = wb.getFeature(Feature.OUR_FIRE_BEARING_ABSOLUTE);
+        double mea = wb.getFeature(Feature.OUR_FIRE_MEA);
+        double direction = wb.getFeature(Feature.OUR_FIRE_DIRECTION);
+        double oppX = wb.getFeature(Feature.OUR_BREAK_OPPONENT_X);
+        double oppY = wb.getFeature(Feature.OUR_BREAK_OPPONENT_Y);
+
+        wb.setFeature(Feature.OUR_FIRE_IS_REAL, 0.0);
+
+        for (int i = 0; i < WaveTracker.VIRTUAL_BULLET_COUNT; i++) {
+            double virtualGf = -1.0 + 2.0 * i / (WaveTracker.VIRTUAL_BULLET_COUNT - 1);
+            boolean wouldHit = WaveTracker.computeWouldHit(
+                    fireX, fireY, fireBearing, virtualGf, mea, (int) direction,
+                    oppX, oppY);
+
+            wb.setFeature(Feature.OUR_FIRE_AIM_GF, virtualGf);
+            wb.setFeature(Feature.OUR_BREAK_HIT, wouldHit ? 1.0 : 0.0);
+            us.csv().writeOurWaveRow(wb, battleId, roundIndex);
+        }
+
+        // Restore real values
+        wb.setFeature(Feature.OUR_FIRE_AIM_GF, realAimGf);
+        wb.setFeature(Feature.OUR_FIRE_IS_REAL, realIsReal);
+        wb.setFeature(Feature.OUR_BREAK_HIT, realBreakHit);
     }
 
     @Override

@@ -45,6 +45,7 @@ public enum Feature {
     // --- Computed: gun aim (from GF strategy) ---
     GUN_AIM_POWER(FileType.TICKS),
     GUN_AIM_ANGLE(FileType.TICKS),
+    GUN_AIM_GF(FileType.TICKS),
 
     // --- Computed: timing ---
     TICKS_SINCE_SCAN(FileType.TICKS),
@@ -86,6 +87,8 @@ public enum Feature {
     OUR_FIRE_POWER(FileType.OUR_WAVES),
     OUR_FIRE_TICK(FileType.OUR_WAVES),
     OUR_FIRE_BULLET_ID(FileType.OUR_WAVES),
+    OUR_FIRE_AIM_GF(FileType.OUR_WAVES),
+    OUR_FIRE_IS_REAL(FileType.OUR_WAVES),
 
     // --- Our gun waves: break-time features (set at wave resolution) ---
     OUR_BREAK_TICK(FileType.OUR_WAVES),
