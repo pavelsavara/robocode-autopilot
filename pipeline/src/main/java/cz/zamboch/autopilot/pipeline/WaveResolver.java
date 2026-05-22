@@ -2,6 +2,7 @@ package cz.zamboch.autopilot.pipeline;
 
 import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.GuessFactor;
+import cz.zamboch.autopilot.core.ModelSelector;
 import cz.zamboch.autopilot.core.RoboMath;
 import cz.zamboch.autopilot.core.VcsStore;
 import cz.zamboch.autopilot.core.Wave;
@@ -187,12 +188,17 @@ final class WaveResolver {
         wb.setFeature(Feature.OUR_FIRE_OPPONENT_Y, tw.fireOpponentY);
         wb.setFeature(Feature.OUR_FIRE_IS_REAL, 1.0);
 
-        // Compute aim GF from VCS at fire time
-        VcsStore vcs = wb.getVcsStore();
+        // Compute aim GF from ModelSelector or raw VCS at fire time
+        ModelSelector selector = wb.getModelSelector();
         double aimGf = 0.0;
-        if (vcs != null) {
-            int bestBin = vcs.getBestBin(w.distanceSegment, w.latVelSegment);
-            aimGf = GuessFactor.binIndexToGf(bestBin, GuessFactor.NUM_BINS);
+        if (selector != null) {
+            aimGf = selector.predictForAim(tw.fireDistance, tw.fireLateralVelocity);
+        } else {
+            VcsStore vcs = wb.getVcsStore();
+            if (vcs != null) {
+                int bestBin = vcs.getBestBin(w.distanceSegment, w.latVelSegment);
+                aimGf = GuessFactor.binIndexToGf(bestBin, GuessFactor.NUM_BINS);
+            }
         }
         wb.setFeature(Feature.OUR_FIRE_AIM_GF, aimGf);
     }
@@ -208,10 +214,23 @@ final class WaveResolver {
                 double gf = tw.wave.computeGuessFactor(oppX, oppY);
                 int binIndex = GuessFactor.gfToBinIndex(gf, GuessFactor.NUM_BINS);
 
-                // Update VCS store
-                VcsStore vcs = wb.getVcsStore();
-                if (vcs != null) {
-                    vcs.increment(tw.wave.distanceSegment, tw.wave.latVelSegment, binIndex);
+                // Update models (ModelSelector or raw VCS)
+                ModelSelector selector = wb.getModelSelector();
+                if (selector != null) {
+                    // We need a temporary slot for the model to read features from.
+                    // Use the direct VCS update path since pipeline waves aren't in
+                    // the ring buffer — they use TrackedWave objects.
+                    VcsStore vcs = wb.getVcsStore();
+                    if (vcs != null) {
+                        vcs.increment(tw.wave.distanceSegment, tw.wave.latVelSegment, binIndex);
+                    }
+                    // Record error for regret tracking using wave segments
+                    selector.recordPipelineUpdate(tw.wave.distanceSegment, tw.wave.latVelSegment, gf);
+                } else {
+                    VcsStore vcs = wb.getVcsStore();
+                    if (vcs != null) {
+                        vcs.increment(tw.wave.distanceSegment, tw.wave.latVelSegment, binIndex);
+                    }
                 }
 
                 wb.setFeature(Feature.OUR_BREAK_TICK, currentTick);

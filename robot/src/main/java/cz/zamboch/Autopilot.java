@@ -4,6 +4,7 @@ import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.RoboMath;
 import cz.zamboch.autopilot.core.VcsFile;
 import cz.zamboch.autopilot.core.VcsStore;
+import cz.zamboch.autopilot.core.ModelSelector;
 import cz.zamboch.autopilot.core.Whiteboard;
 import cz.zamboch.autopilot.core.features.IdentityFeatures;
 import cz.zamboch.autopilot.core.features.MovementFeatures;
@@ -76,6 +77,7 @@ public final class Autopilot extends AdvancedRobot {
             File dataFile = getDataFile("vcs.dat");
             VcsStore store = VcsFile.loadForOpponent(dataFile, opponentHash);
             wb.setVcsStore(store);
+            wb.setModelSelector(new ModelSelector(store));
             vcsLoaded = true;
         }
     }

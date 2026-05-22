@@ -7,8 +7,11 @@ import java.io.IOException;
 /**
  * Visit Count Stats histogram: distance × lateralVelocity × GF bins.
  * Compact int[5][5][31] = 775 bins total.
+ * <p>
+ * Implements {@link IOnlineModel} so it can be used interchangeably with
+ * future targeting models (pattern matchers, neural nets, etc.).
  */
-public final class VcsStore {
+public final class VcsStore implements IOnlineModel {
     private final int[][][] data = new int[GuessFactor.DISTANCE_SEGMENTS][GuessFactor.LAT_VEL_SEGMENTS][GuessFactor.NUM_BINS];
 
     /** Increment the bin for a resolved wave. */
@@ -75,5 +78,34 @@ public final class VcsStore {
     public static int serializedSize() {
         return GuessFactor.DISTANCE_SEGMENTS * GuessFactor.LAT_VEL_SEGMENTS
                 * GuessFactor.NUM_BINS * 4;
+    }
+
+    // ========== IOnlineModel implementation ==========
+
+    @Override
+    public double predict(Whiteboard wb, int slot) {
+        double distance = wb.getOurWave(slot, OurWaveColumn.FIRE_DISTANCE);
+        double latVel = wb.getOurWave(slot, OurWaveColumn.FIRE_LATERAL_VELOCITY);
+        int distSeg = GuessFactor.distanceSegment(distance);
+        int latVelSeg = GuessFactor.lateralVelocitySegment(
+                Double.isNaN(latVel) ? 0 : latVel);
+        int bestBin = getBestBin(distSeg, latVelSeg);
+        return GuessFactor.binIndexToGf(bestBin, GuessFactor.NUM_BINS);
+    }
+
+    @Override
+    public void update(Whiteboard wb, int slot, double breakGf) {
+        double distance = wb.getOurWave(slot, OurWaveColumn.FIRE_DISTANCE);
+        double latVel = wb.getOurWave(slot, OurWaveColumn.FIRE_LATERAL_VELOCITY);
+        int distSeg = GuessFactor.distanceSegment(distance);
+        int latVelSeg = GuessFactor.lateralVelocitySegment(
+                Double.isNaN(latVel) ? 0 : latVel);
+        int binIndex = GuessFactor.gfToBinIndex(breakGf, GuessFactor.NUM_BINS);
+        increment(distSeg, latVelSeg, binIndex);
+    }
+
+    @Override
+    public String getName() {
+        return "VCS";
     }
 }

@@ -1,6 +1,7 @@
 package cz.zamboch.autopilot.pipeline;
 
 import cz.zamboch.autopilot.core.Feature;
+import cz.zamboch.autopilot.core.ModelSelector;
 import cz.zamboch.autopilot.core.RoboMath;
 import cz.zamboch.autopilot.core.VcsFile;
 import cz.zamboch.autopilot.core.VcsStore;
@@ -159,6 +160,7 @@ final class StreamingPipelineObserver extends BattleAdaptor {
                                         ".data/cz/zamboch/Autopilot.data/vcs.dat");
                                 VcsStore store = VcsFile.loadForOpponent(vcsDataFile, opponentHash);
                                 us.wb().setVcsStore(store);
+                                us.wb().setModelSelector(new ModelSelector(store));
                             }
                             vcsLoaded = true;
                         }

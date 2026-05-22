@@ -61,6 +61,7 @@ public final class Whiteboard {
     // --- Infrastructure ---
     private final Transformer transformer = new Transformer();
     private VcsStore vcsStore;
+    private ModelSelector modelSelector;
 
     public Whiteboard() {
         clearFeatures();
@@ -180,6 +181,18 @@ public final class Whiteboard {
     /** Set the VCS store (loaded from persistence or newly created). */
     public void setVcsStore(VcsStore store) {
         this.vcsStore = store;
+    }
+
+    // ========== Model Selector ==========
+
+    /** Get the model selector (may be null before setup). */
+    public ModelSelector getModelSelector() {
+        return modelSelector;
+    }
+
+    /** Set the model selector. */
+    public void setModelSelector(ModelSelector selector) {
+        this.modelSelector = selector;
     }
 
     // ========== Our Wave Ring Buffer API ==========

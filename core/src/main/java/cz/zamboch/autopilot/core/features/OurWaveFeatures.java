@@ -4,6 +4,7 @@ import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.FileType;
 import cz.zamboch.autopilot.core.GuessFactor;
 import cz.zamboch.autopilot.core.IInGameFeatures;
+import cz.zamboch.autopilot.core.ModelSelector;
 import cz.zamboch.autopilot.core.VcsStore;
 import cz.zamboch.autopilot.core.Whiteboard;
 
@@ -67,22 +68,31 @@ public final class OurWaveFeatures implements IInGameFeatures {
             power = 0;
         }
 
-        // Compute aiming offset from VCS
+        // Compute aiming offset
         double bulletSpeed = GuessFactor.bulletSpeed(power > 0 ? power : 2.0);
         double mea = GuessFactor.maxEscapeAngle(bulletSpeed);
         int direction = Double.isNaN(latVel) ? 1 : GuessFactor.direction(latVel);
 
         double offset = 0;
         double aimGf = 0;
-        VcsStore vcs = wb.getVcsStore();
-        if (vcs != null) {
-            int distSeg = GuessFactor.distanceSegment(distance);
-            int latVelSeg = GuessFactor.lateralVelocitySegment(
+
+        // Prefer ModelSelector if available; fall back to raw VcsStore
+        ModelSelector selector = wb.getModelSelector();
+        if (selector != null) {
+            aimGf = selector.predictForAim(distance,
                     Double.isNaN(latVel) ? 0 : latVel);
-            int bestBin = vcs.getBestBin(distSeg, latVelSeg);
-            double bestGf = GuessFactor.binIndexToGf(bestBin, GuessFactor.NUM_BINS);
-            offset = bestGf * mea * direction;
-            aimGf = bestGf;
+            offset = aimGf * mea * direction;
+        } else {
+            VcsStore vcs = wb.getVcsStore();
+            if (vcs != null) {
+                int distSeg = GuessFactor.distanceSegment(distance);
+                int latVelSeg = GuessFactor.lateralVelocitySegment(
+                        Double.isNaN(latVel) ? 0 : latVel);
+                int bestBin = vcs.getBestBin(distSeg, latVelSeg);
+                double bestGf = GuessFactor.binIndexToGf(bestBin, GuessFactor.NUM_BINS);
+                offset = bestGf * mea * direction;
+                aimGf = bestGf;
+            }
         }
 
         double aimAngle = absoluteBearing + offset;

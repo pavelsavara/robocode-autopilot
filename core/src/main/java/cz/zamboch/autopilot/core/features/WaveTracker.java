@@ -4,6 +4,7 @@ import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.FileType;
 import cz.zamboch.autopilot.core.GuessFactor;
 import cz.zamboch.autopilot.core.IInGameFeatures;
+import cz.zamboch.autopilot.core.ModelSelector;
 import cz.zamboch.autopilot.core.OurWaveColumn;
 import cz.zamboch.autopilot.core.RoboMath;
 import cz.zamboch.autopilot.core.VcsStore;
@@ -168,6 +169,7 @@ public final class WaveTracker implements IInGameFeatures {
             return;
         }
 
+        ModelSelector selector = wb.getModelSelector();
         VcsStore vcs = wb.getVcsStore();
 
         for (int slot = 0; slot < Whiteboard.OUR_WAVE_CAPACITY; slot++) {
@@ -198,14 +200,13 @@ public final class WaveTracker implements IInGameFeatures {
 
                 boolean isReal = wb.getOurWave(slot, OurWaveColumn.IS_REAL) == 1.0;
 
-                // Update VCS only for real bullets
-                if (isReal && vcs != null) {
-                    double distance = wb.getOurWave(slot, OurWaveColumn.FIRE_DISTANCE);
-                    double latVel = wb.getOurWave(slot, OurWaveColumn.FIRE_LATERAL_VELOCITY);
-                    int distSeg = GuessFactor.distanceSegment(distance);
-                    int latVelSeg = GuessFactor.lateralVelocitySegment(latVel);
-                    int binIndex = GuessFactor.gfToBinIndex(gf, GuessFactor.NUM_BINS);
-                    vcs.increment(distSeg, latVelSeg, binIndex);
+                // Update models only for real bullets
+                if (isReal) {
+                    if (selector != null) {
+                        selector.update(wb, slot, gf);
+                    } else if (vcs != null) {
+                        vcs.update(wb, slot, gf);
+                    }
                 }
 
                 // Write break columns to ring buffer
