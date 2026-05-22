@@ -187,7 +187,8 @@ final class StreamingPipelineObserver extends BattleAdaptor {
 
     /**
      * Write K virtual bullet rows after the real wave row.
-     * Temporarily overrides AIM_GF, IS_REAL, and BREAK_HIT on the whiteboard staging features,
+     * Temporarily overrides AIM_GF, IS_REAL, and BREAK_HIT on the whiteboard
+     * staging features,
      * writes the row, then restores the real values.
      */
     private void writeVirtualBulletRows(Perspective us, String battleId, int roundIndex) throws IOException {

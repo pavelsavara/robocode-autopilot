@@ -14,8 +14,8 @@ public final class ModelSelector {
 
     private final IOnlineModel[] models;
     private final double[][] errors; // [modelIndex][ringIndex]
-    private final int[] errorCount;  // number of entries filled (up to WINDOW_SIZE)
-    private final int[] errorHead;   // next write position in ring
+    private final int[] errorCount; // number of entries filled (up to WINDOW_SIZE)
+    private final int[] errorHead; // next write position in ring
 
     public ModelSelector(IOnlineModel... models) {
         if (models.length == 0) {

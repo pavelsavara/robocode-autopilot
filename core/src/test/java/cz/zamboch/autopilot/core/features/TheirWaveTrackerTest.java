@@ -85,7 +85,8 @@ final class TheirWaveTrackerTest {
         wb.setTheirWave(slot, TheirWaveColumn.FIRE_X, 200);
         wb.setTheirWave(slot, TheirWaveColumn.FIRE_Y, 400);
         wb.setTheirWave(slot, TheirWaveColumn.BULLET_SPEED, 14.0);
-        wb.setTheirWave(slot, TheirWaveColumn.FIRE_BEARING, Math.atan2(0, -200)); // bearing from (200,400) to (200,200) = PI (south)
+        wb.setTheirWave(slot, TheirWaveColumn.FIRE_BEARING, Math.atan2(0, -200)); // bearing from (200,400) to (200,200)
+                                                                                  // = PI (south)
         wb.setTheirWave(slot, TheirWaveColumn.FIRE_DISTANCE, 200);
         wb.setTheirWave(slot, TheirWaveColumn.FIRE_OUR_X, 200);
         wb.setTheirWave(slot, TheirWaveColumn.FIRE_OUR_Y, 200);
@@ -125,7 +126,8 @@ final class TheirWaveTrackerTest {
         wb.setTheirWaveState(slot, Whiteboard.WAVE_ACTIVE);
 
         // We moved east to (280, 200) — offset from fire bearing
-        // Tick 20: 15*14=210, dist to (280,200) from (200,400) = sqrt(80^2+200^2) = sqrt(46400) ≈ 215 > 210? No.
+        // Tick 20: 15*14=210, dist to (280,200) from (200,400) = sqrt(80^2+200^2) =
+        // sqrt(46400) ≈ 215 > 210? No.
         // Let's use tick 21: 16*14=224 > 215 → resolves
         setBasicState(21, 280, 200, 200, 400);
         wb.process();
@@ -232,12 +234,14 @@ final class TheirWaveTrackerTest {
         wb.setTheirWave(slot1, TheirWaveColumn.FIRE_OUR_Y, 200);
         wb.setTheirWaveState(slot1, Whiteboard.WAVE_ACTIVE);
 
-        // Tick 20: slot0 = 15*11=165 < 200 (not resolved), slot1 = 10*17=170 < 200 (not resolved)
+        // Tick 20: slot0 = 15*11=165 < 200 (not resolved), slot1 = 10*17=170 < 200 (not
+        // resolved)
         setBasicState(20, 200, 200, 200, 400);
         wb.process();
         assertEquals(2, wb.getActiveTheirWaveCount());
 
-        // Tick 24: slot0 = 19*11=209 > 200 (resolved), slot1 = 14*17=238 > 200 (resolved)
+        // Tick 24: slot0 = 19*11=209 > 200 (resolved), slot1 = 14*17=238 > 200
+        // (resolved)
         setBasicState(24, 200, 200, 200, 400);
         wb.process();
         assertEquals(0, wb.getActiveTheirWaveCount());

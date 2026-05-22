@@ -20,7 +20,8 @@ import cz.zamboch.autopilot.core.Whiteboard;
  * copy fire features from staging, mark ACTIVE, then clear staging.
  * Also creates K virtual bullet slots with evenly-spaced AIM_GFs.</li>
  * <li>Resolve any active wave slots that have reached the opponent's current
- * position → update VcsStore (real only) and set OUR_BREAK_* staging features.</li>
+ * position → update VcsStore (real only) and set OUR_BREAK_* staging
+ * features.</li>
  * </ol>
  */
 public final class WaveTracker implements IInGameFeatures {

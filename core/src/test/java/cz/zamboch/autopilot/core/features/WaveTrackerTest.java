@@ -171,7 +171,8 @@ final class WaveTrackerTest {
         assertEquals(0.5, wb.getOurWave(0, OurWaveColumn.AIM_GF), 1e-9);
         assertEquals(1.0, wb.getOurWave(0, OurWaveColumn.IS_REAL), 1e-9);
 
-        // Virtual GFs: -1.0, -0.778, -0.556, -0.333, -0.111, 0.111, 0.333, 0.556, 0.778, 1.0
+        // Virtual GFs: -1.0, -0.778, -0.556, -0.333, -0.111, 0.111, 0.333, 0.556,
+        // 0.778, 1.0
         assertEquals(-1.0, wb.getOurWave(1, OurWaveColumn.AIM_GF), 1e-3);
         assertEquals(0.0, wb.getOurWave(1, OurWaveColumn.IS_REAL), 1e-9);
         assertEquals(1.0, wb.getOurWave(10, OurWaveColumn.AIM_GF), 1e-3);

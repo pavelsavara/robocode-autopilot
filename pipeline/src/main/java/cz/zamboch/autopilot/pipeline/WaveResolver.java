@@ -267,7 +267,8 @@ final class WaveResolver {
 
     /**
      * Set their-wave fire + break features on the target's whiteboard.
-     * Called when OUR wave resolves — this is THEIR incoming wave from the target's perspective.
+     * Called when OUR wave resolves — this is THEIR incoming wave from the target's
+     * perspective.
      */
     private void setTheirWaveFeatures(Whiteboard peerWb, TrackedWave tw,
             double targetX, double targetY, long breakTick, double gf, double bearingOffset, boolean hit) {

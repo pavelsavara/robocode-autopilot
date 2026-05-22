@@ -60,7 +60,7 @@ final class ModelSelectorTest {
 
     @Test
     void bestModelHasLowestRegret() {
-        FixedModel m1 = new FixedModel("Far", 0.8);   // always predicts 0.8
+        FixedModel m1 = new FixedModel("Far", 0.8); // always predicts 0.8
         FixedModel m2 = new FixedModel("Close", 0.1); // always predicts 0.1
 
         ModelSelector sel = new ModelSelector(m1, m2);

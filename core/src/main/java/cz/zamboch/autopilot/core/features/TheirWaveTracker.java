@@ -9,7 +9,8 @@ import cz.zamboch.autopilot.core.TheirWaveColumn;
 import cz.zamboch.autopilot.core.Whiteboard;
 
 /**
- * Manages the lifecycle of incoming opponent bullet waves using the Whiteboard's
+ * Manages the lifecycle of incoming opponent bullet waves using the
+ * Whiteboard's
  * their-wave ring buffer.
  * <p>
  * On each process() call:
