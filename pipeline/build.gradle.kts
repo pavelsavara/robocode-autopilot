@@ -20,12 +20,22 @@ application {
     mainClass.set("cz.zamboch.autopilot.pipeline.Main")
 }
 
-// Stage all battle JARs into a single directory for ROBOTPATH
+// Stage all battle JARs into a single directory for ROBOTPATH.
+// The robots branch is checked out into battle-stage first (all opponent JARs),
+// then our own robot and test-bots are copied on top.
+val checkoutRobots = tasks.register<Exec>("checkoutRobots") {
+    description = "Checkout robots branch into battle-stage directory"
+    val stageDir = layout.buildDirectory.dir("battle-stage").get().asFile
+    outputs.dir(stageDir)
+    workingDir = rootProject.projectDir
+    commandLine("git", "--work-tree=${stageDir.absolutePath}", "checkout", "robots", "--", ".")
+    doFirst { stageDir.mkdirs() }
+}
+
 val stageBattle = tasks.register<Copy>("stageBattle") {
-    dependsOn(":robot:jar", ":test-bots:jar")
+    dependsOn(":robot:jar", ":test-bots:jar", checkoutRobots)
     from(project(":robot").tasks.named<Jar>("jar").get().archiveFile)
     from(project(":test-bots").tasks.named<Jar>("jar").get().archiveFile)
-    from("c:/robocode/robots/kc.mega.BeepBoop_2.0.jar")
     into(layout.buildDirectory.dir("battle-stage"))
 }
 
