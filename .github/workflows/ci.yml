@@ -9,6 +9,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - uses: actions/checkout@v4
@@ -22,11 +24,8 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Run unit tests
-        run: chmod +x ./gradlew && ./gradlew test
-
-      - name: Run integration tests
-        run: ./gradlew battleTest
+      - name: Run all tests
+        run: chmod +x ./gradlew && ./gradlew test battleTest
 
       - name: Upload test reports
         if: failure()
