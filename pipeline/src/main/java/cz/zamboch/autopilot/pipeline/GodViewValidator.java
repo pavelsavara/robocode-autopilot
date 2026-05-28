@@ -26,15 +26,6 @@ public final class GodViewValidator {
 
     private static final double EPSILON = 1e-4;
 
-    private static final Feature[] VALIDATED_FEATURES = {
-            Feature.OPPONENT_HEADING,
-            Feature.OPPONENT_VELOCITY,
-            Feature.DISTANCE,
-            Feature.BEARING_RADIANS,
-            Feature.OPPONENT_ENERGY,
-            Feature.OPPONENT_FIRE_POWER,
-    };
-
     // Per-perspective state indexed by robotIndex (0 or 1)
     private final PerspectiveState[] state = { new PerspectiveState(), new PerspectiveState() };
 
@@ -120,7 +111,7 @@ public final class GodViewValidator {
     private void validatePerspective(Whiteboard wb, IRobotSnapshot self,
             IRobotSnapshot opponent, Map<Feature, Stats> stats,
             double opponentFirePower, int opponentFireCount) {
-        for (Feature feature : VALIDATED_FEATURES) {
+        for (Feature feature : Feature.values()) {
             double estimated = wb.getFeature(feature);
             double truth = getGroundTruth(feature, self, opponent,
                     opponentFirePower, opponentFireCount);
@@ -140,32 +131,86 @@ public final class GodViewValidator {
     }
 
     /**
-     * Map a whiteboard opponent-feature to the actual engine value.
+     * Map a whiteboard feature to the actual engine value.
+     * Returns NaN for features that cannot be computed from snapshots alone.
      */
     private static double getGroundTruth(Feature feature,
             IRobotSnapshot self, IRobotSnapshot opponent,
             double opponentFirePower, int opponentFireCount) {
         switch (feature) {
+            // --- Our state (always exact from snapshot) ---
+            case OUR_X:
+                return self.getX();
+            case OUR_Y:
+                return self.getY();
+            case OUR_HEADING:
+                return self.getBodyHeading();
+            case OUR_VELOCITY:
+                return self.getVelocity();
+            case OUR_ENERGY:
+                return self.getEnergy();
+            case GUN_HEAT:
+                return self.getGunHeat();
+            case GUN_HEADING:
+                return self.getGunHeading();
+            case RADAR_HEADING:
+                return self.getRadarHeading();
+
+            // --- Opponent state (exact on scan ticks) ---
             case OPPONENT_ENERGY:
                 return opponent.getEnergy();
             case OPPONENT_HEADING:
                 return opponent.getBodyHeading();
             case OPPONENT_VELOCITY:
                 return opponent.getVelocity();
+
+            // --- Computed spatial (exact on scan ticks) ---
             case DISTANCE:
                 return Math.hypot(
                         opponent.getX() - self.getX(),
                         opponent.getY() - self.getY());
-            case BEARING_RADIANS:
+            case BEARING_RADIANS: {
                 double dx = opponent.getX() - self.getX();
                 double dy = opponent.getY() - self.getY();
                 double absoluteBearing = Math.atan2(dx, dy);
                 return RoboMath.normalRelativeAngle(absoluteBearing - self.getBodyHeading());
-            case OPPONENT_FIRE_POWER:
+            }
+            case OPPONENT_BEARING_ABSOLUTE: {
+                double dx = opponent.getX() - self.getX();
+                double dy = opponent.getY() - self.getY();
+                double heading = self.getBodyHeading();
+                double relBearing = RoboMath.normalRelativeAngle(
+                        Math.atan2(dx, dy) - heading);
+                return heading + relBearing;
+            }
+            case OPPONENT_X:
+                return opponent.getX();
+            case OPPONENT_Y:
+                return opponent.getY();
+            case OPPONENT_LATERAL_VELOCITY: {
+                double dx = opponent.getX() - self.getX();
+                double dy = opponent.getY() - self.getY();
+                double absBearing = Math.atan2(dx, dy);
+                // Pipeline uses bearing-from-opponent (absBearing + PI)
+                double relHeading = opponent.getBodyHeading() - absBearing - Math.PI;
+                return opponent.getVelocity() * Math.sin(relHeading);
+            }
+            case OPPONENT_ADVANCING_VELOCITY: {
+                double dx = opponent.getX() - self.getX();
+                double dy = opponent.getY() - self.getY();
+                double absBearing = Math.atan2(dx, dy);
+                // Pipeline uses bearing-from-opponent (absBearing + PI)
+                double relHeading = opponent.getBodyHeading() - absBearing - Math.PI;
+                return opponent.getVelocity() * Math.cos(relHeading);
+            }
+
+            // --- Fire detection ---
+            case THEIR_FIRE_POWER:
                 if (opponentFireCount == 1) {
                     return opponentFirePower;
                 }
                 return Double.NaN;
+
             default:
                 return Double.NaN;
         }
@@ -208,10 +253,10 @@ public final class GodViewValidator {
     /** Print a summary table to stdout. */
     public void printSummary() {
         System.out.println("=== GOD VIEW VALIDATION ===");
-        System.out.println(String.format("%-30s %8s %8s %8s %10s",
+        System.out.println(String.format("%-35s %8s %8s %8s %10s",
                 "Feature", "Checks", "Hits", "Misses", "Accuracy"));
 
-        for (Feature feature : VALIDATED_FEATURES) {
+        for (Feature feature : Feature.values()) {
             long checks = 0, hits = 0, misses = 0;
             for (PerspectiveState ps : state) {
                 Stats s = ps.stats.getOrDefault(feature, Stats.EMPTY);
@@ -219,16 +264,18 @@ public final class GodViewValidator {
                 hits += s.hits;
                 misses += s.misses;
             }
-            double accuracy = checks == 0 ? 1.0 : (double) hits / checks;
+            if (checks == 0)
+                continue;
+            double accuracy = (double) hits / checks;
 
-            System.out.println(String.format("%-30s %8d %8d %8d %9.1f%%",
+            System.out.println(String.format("%-35s %8d %8d %8d %9.1f%%",
                     feature.name(), checks, hits, misses, accuracy * 100));
         }
 
         long totalChecks = getTotalChecks();
         long totalHits = getTotalHits();
         double overall = totalChecks == 0 ? 1.0 : (double) totalHits / totalChecks;
-        System.out.println(String.format("%-30s %8d %8d %8d %9.1f%%",
+        System.out.println(String.format("%-35s %8d %8d %8d %9.1f%%",
                 "TOTAL", totalChecks, totalHits, totalChecks - totalHits, overall * 100));
         System.out.println();
     }

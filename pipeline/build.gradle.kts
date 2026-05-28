@@ -20,20 +20,47 @@ application {
     mainClass.set("cz.zamboch.autopilot.pipeline.Main")
 }
 
-// Stage all battle JARs into a single directory for ROBOTPATH
+// Stage all battle JARs into a single directory for ROBOTPATH.
+// The robots branch is checked out into battle-stage first (all opponent JARs),
+// then our own robot and test-bots are copied on top.
+val checkoutRobots = tasks.register<Exec>("checkoutRobots") {
+    description = "Checkout robots branch into battle-stage directory"
+    val stageDir = layout.buildDirectory.dir("battle-stage").get().asFile
+    outputs.dir(stageDir)
+    workingDir = rootProject.projectDir
+    commandLine("git", "--work-tree=${stageDir.absolutePath}", "checkout", "robots", "--", ".")
+    doFirst { stageDir.mkdirs() }
+}
+
 val stageBattle = tasks.register<Copy>("stageBattle") {
-    dependsOn(":robot:jar", ":test-bots:jar")
+    dependsOn(":robot:jar", ":test-bots:jar", checkoutRobots)
     from(project(":robot").tasks.named<Jar>("jar").get().archiveFile)
     from(project(":test-bots").tasks.named<Jar>("jar").get().archiveFile)
-    from("c:/robocode/robots/kc.mega.BeepBoop_2.0.jar")
     into(layout.buildDirectory.dir("battle-stage"))
+}
+
+// Seed battle-stage with committed VCS data (if exists)
+val seedVcsData = tasks.register<Copy>("seedVcsData") {
+    dependsOn(stageBattle)
+    val vcsSource = project(":robot").projectDir.resolve("data/vcs.dat")
+    from(vcsSource)
+    into(layout.buildDirectory.dir("battle-stage/.data/cz/zamboch/Autopilot.data"))
+    onlyIf { vcsSource.exists() }
+}
+
+// Copy improved VCS data back to source for committing
+tasks.register<Copy>("updateVcsData") {
+    val vcsStaged = layout.buildDirectory.file("battle-stage/.data/cz/zamboch/Autopilot.data/vcs.dat").get().asFile
+    from(vcsStaged)
+    into(project(":robot").projectDir.resolve("data"))
+    onlyIf { vcsStaged.exists() }
 }
 
 // --- Quick headless battle task ---
 // Usage: ./gradlew :pipeline:runBattle
 //        ./gradlew :pipeline:runBattle -Poutput=build/csv -Prounds=5
 tasks.register<JavaExec>("runBattle") {
-    dependsOn(stageBattle)
+    dependsOn(seedVcsData)
     group = "robocode"
     description = "Run a headless battle with streaming CSV pipeline"
 
@@ -81,7 +108,7 @@ tasks.register<JavaExec>("runBattle") {
 // Usage: ./gradlew :pipeline:battleTest
 //        ./gradlew :pipeline:battleTest -Prounds=5 -Popponent=test.SittingDuck
 tasks.register<Test>("battleTest") {
-    dependsOn(stageBattle)
+    dependsOn(seedVcsData)
     group = "verification"
     description = "Run battle integration test with real Robocode engine"
 

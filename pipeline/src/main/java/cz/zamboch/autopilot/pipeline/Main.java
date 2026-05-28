@@ -2,6 +2,7 @@ package cz.zamboch.autopilot.pipeline;
 
 import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.Whiteboard;
+import cz.zamboch.autopilot.core.features.FireFeatures;
 import cz.zamboch.autopilot.core.features.MovementFeatures;
 import cz.zamboch.autopilot.core.features.SpatialFeatures;
 import cz.zamboch.autopilot.core.features.TimingFeatures;
@@ -160,19 +161,19 @@ public final class Main {
                     csvB.writeTickRow(wbB, battleId, roundIndex);
 
                     // Write wave rows if opponent fired
-                    if (!Double.isNaN(wbA.getFeature(Feature.OPPONENT_FIRE_POWER))) {
-                        csvA.writeWaveRow(wbA, battleId, roundIndex);
+                    if (!Double.isNaN(wbA.getFeature(Feature.THEIR_FIRE_POWER))) {
+                        csvA.writeTheirWaveRow(wbA, battleId, roundIndex);
                     }
-                    if (!Double.isNaN(wbB.getFeature(Feature.OPPONENT_FIRE_POWER))) {
-                        csvB.writeWaveRow(wbB, battleId, roundIndex);
+                    if (!Double.isNaN(wbB.getFeature(Feature.THEIR_FIRE_POWER))) {
+                        csvB.writeTheirWaveRow(wbB, battleId, roundIndex);
                     }
 
                     // Track last robots for round finalization
                     lastRobots[0] = turn.getRobots();
 
                     // Reset per-tick fire detection
-                    wbA.setFeature(Feature.OPPONENT_FIRE_POWER, Double.NaN);
-                    wbB.setFeature(Feature.OPPONENT_FIRE_POWER, Double.NaN);
+                    wbA.setFeature(Feature.THEIR_FIRE_POWER, Double.NaN);
+                    wbB.setFeature(Feature.THEIR_FIRE_POWER, Double.NaN);
                 } catch (IOException e) {
                     throw new RuntimeException("CSV write error", e);
                 }
@@ -198,7 +199,8 @@ public final class Main {
         wb.registerFeatures(
                 new SpatialFeatures(),
                 new MovementFeatures(),
-                new TimingFeatures());
+                new TimingFeatures(),
+                new FireFeatures());
         return wb;
     }
 

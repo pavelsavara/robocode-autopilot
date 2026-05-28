@@ -42,6 +42,16 @@ final class TestSnapshots {
         return robot(x, y, 0, 0, 100, 0, 0, 0, contestantIndex, RobotState.ACTIVE, name);
     }
 
+    static IRobotSnapshot robotWithDebug(double x, double y, int contestantIndex, String name,
+            IDebugProperty[] debugProperties) {
+        return new StubRobot(x, y, 0, 0, 100, 0, 0, 0, contestantIndex, RobotState.ACTIVE, name,
+                debugProperties);
+    }
+
+    static IDebugProperty debugProperty(String key, String value) {
+        return new StubDebugProperty(key, value);
+    }
+
     // ========== Stub implementations ==========
 
     private static final class StubTurn implements ITurnSnapshot {
@@ -90,10 +100,19 @@ final class TestSnapshots {
         private final int contestantIndex;
         private final RobotState state;
         private final String shortName;
+        private final IDebugProperty[] debugProperties;
 
         StubRobot(double x, double y, double bodyHeading, double velocity,
                 double energy, double gunHeat, double gunHeading, double radarHeading,
                 int contestantIndex, RobotState state, String shortName) {
+            this(x, y, bodyHeading, velocity, energy, gunHeat, gunHeading, radarHeading,
+                    contestantIndex, state, shortName, null);
+        }
+
+        StubRobot(double x, double y, double bodyHeading, double velocity,
+                double energy, double gunHeat, double gunHeading, double radarHeading,
+                int contestantIndex, RobotState state, String shortName,
+                IDebugProperty[] debugProperties) {
             this.x = x;
             this.y = y;
             this.bodyHeading = bodyHeading;
@@ -105,6 +124,7 @@ final class TestSnapshots {
             this.contestantIndex = contestantIndex;
             this.state = state;
             this.shortName = shortName;
+            this.debugProperties = debugProperties;
         }
 
         public double getX() {
@@ -208,7 +228,7 @@ final class TestSnapshots {
         }
 
         public IDebugProperty[] getDebugProperties() {
-            return null;
+            return debugProperties;
         }
 
         public String getOutputStreamSnapshot() {
@@ -291,6 +311,26 @@ final class TestSnapshots {
 
         public int getVictimIndex() {
             return victimIndex;
+        }
+    }
+
+    // ========== Debug Property Stub ==========
+
+    private static final class StubDebugProperty implements IDebugProperty {
+        private final String key;
+        private final String value;
+
+        StubDebugProperty(String key, String value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        public String getKey() {
+            return key;
+        }
+
+        public String getValue() {
+            return value;
         }
     }
 }

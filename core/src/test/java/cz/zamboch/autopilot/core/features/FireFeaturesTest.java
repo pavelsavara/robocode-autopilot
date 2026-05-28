@@ -36,7 +36,7 @@ final class FireFeaturesTest {
         // PREV_SCAN_OPPONENT_ENERGY should be stored
         assertEquals(100.0, wb.getFeature(Feature.PREV_SCAN_OPPONENT_ENERGY), 1e-9);
         // No fire power yet (first scan, no previous energy)
-        assertTrue(Double.isNaN(wb.getFeature(Feature.OPPONENT_FIRE_POWER)));
+        assertTrue(Double.isNaN(wb.getFeature(Feature.THEIR_FIRE_POWER)));
 
         // Second scan: energy dropped by 2.0 (opponent fired power 2.0)
         wb.setFeature(Feature.TICK, 8);
@@ -44,7 +44,7 @@ final class FireFeaturesTest {
         wb.setFeature(Feature.OPPONENT_ENERGY, 98.0);
         wb.process();
 
-        assertEquals(2.0, wb.getFeature(Feature.OPPONENT_FIRE_POWER), 1e-9);
+        assertEquals(2.0, wb.getFeature(Feature.THEIR_FIRE_POWER), 1e-9);
         assertEquals(98.0, wb.getFeature(Feature.PREV_SCAN_OPPONENT_ENERGY), 1e-9);
     }
 
@@ -70,7 +70,7 @@ final class FireFeaturesTest {
         wb.process();
 
         // adjustedDrop = (100 - 86.5) - 12.0 - 0 + 0 = 1.5
-        assertEquals(1.5, wb.getFeature(Feature.OPPONENT_FIRE_POWER), 1e-9);
+        assertEquals(1.5, wb.getFeature(Feature.THEIR_FIRE_POWER), 1e-9);
     }
 
     @Test
@@ -94,7 +94,7 @@ final class FireFeaturesTest {
         wb.process();
 
         // adjustedDrop = (100 - 98.4) - 0 - 0.6 + 0 = 1.0
-        assertEquals(1.0, wb.getFeature(Feature.OPPONENT_FIRE_POWER), 1e-9);
+        assertEquals(1.0, wb.getFeature(Feature.THEIR_FIRE_POWER), 1e-9);
     }
 
     @Test
@@ -119,7 +119,7 @@ final class FireFeaturesTest {
         wb.process();
 
         // adjustedDrop = (100 - 103) - 0 - 0 + 6 = 3.0
-        assertEquals(3.0, wb.getFeature(Feature.OPPONENT_FIRE_POWER), 1e-9);
+        assertEquals(3.0, wb.getFeature(Feature.THEIR_FIRE_POWER), 1e-9);
     }
 
     @Test
@@ -141,7 +141,7 @@ final class FireFeaturesTest {
         wb.process();
 
         // adjustedDrop = (100 - 103) = -3.0, not in [0.1, 3.0]
-        assertTrue(Double.isNaN(wb.getFeature(Feature.OPPONENT_FIRE_POWER)));
+        assertTrue(Double.isNaN(wb.getFeature(Feature.THEIR_FIRE_POWER)));
     }
 
     @Test
@@ -162,7 +162,7 @@ final class FireFeaturesTest {
         wb.setFeature(Feature.OPPONENT_ENERGY, 95.0);
         wb.process();
 
-        assertTrue(Double.isNaN(wb.getFeature(Feature.OPPONENT_FIRE_POWER)));
+        assertTrue(Double.isNaN(wb.getFeature(Feature.THEIR_FIRE_POWER)));
     }
 
     @Test
@@ -183,7 +183,7 @@ final class FireFeaturesTest {
         wb.process();
 
         // Should not have computed fire power
-        assertTrue(Double.isNaN(wb.getFeature(Feature.OPPONENT_FIRE_POWER)));
+        assertTrue(Double.isNaN(wb.getFeature(Feature.THEIR_FIRE_POWER)));
     }
 
     @Test
@@ -228,7 +228,7 @@ final class FireFeaturesTest {
         // 100.0 - 99.9 has FP rounding (~0.0999...) which is < 0.1
         // This reveals that the detector can miss minimum-power fires due to FP
         // Just below threshold → no detection
-        assertTrue(Double.isNaN(wb.getFeature(Feature.OPPONENT_FIRE_POWER)));
+        assertTrue(Double.isNaN(wb.getFeature(Feature.THEIR_FIRE_POWER)));
     }
 
     @Test
@@ -249,6 +249,6 @@ final class FireFeaturesTest {
         wb.setFeature(Feature.OPPONENT_ENERGY, 99.8);
         wb.process();
 
-        assertEquals(0.2, wb.getFeature(Feature.OPPONENT_FIRE_POWER), 1e-9);
+        assertEquals(0.2, wb.getFeature(Feature.THEIR_FIRE_POWER), 1e-9);
     }
 }

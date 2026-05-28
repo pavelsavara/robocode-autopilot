@@ -1,6 +1,6 @@
 """
 Quick CSV evaluation script for the local test loop.
-Reads ticks.csv, waves.csv, scores.csv from a battle directory
+Reads ticks.csv, their-waves.csv, scores.csv from a battle directory
 and prints statistical properties.
 
 Usage: python scripts/eval-csv.py <battle_dir>
@@ -79,13 +79,13 @@ def analyze_ticks(battle_dir, perspective):
 
 
 def analyze_waves(battle_dir, perspective):
-    """Analyze waves.csv."""
-    path = os.path.join(battle_dir, perspective, 'waves.csv')
+    """Analyze their-waves.csv."""
+    path = os.path.join(battle_dir, perspective, 'their-waves.csv')
     headers, rows = read_csv_simple(path)
     if not rows:
-        print(f"  {perspective}/waves.csv: EMPTY (no opponent fires detected)")
+        print(f"  {perspective}/their-waves.csv: EMPTY (no opponent fires detected)")
         return
-    print(f"  {perspective}/waves.csv: {len(rows)} fire events")
+    print(f"  {perspective}/their-waves.csv: {len(rows)} fire events")
 
     if 'fire_power' in headers:
         idx = headers.index('fire_power')

@@ -93,19 +93,19 @@ final class PipelineIntegrationTest {
             csvB.writeTickRow(wbB, battleId, 0);
 
             // Write wave rows if opponent fired
-            if (!Double.isNaN(wbA.getFeature(Feature.OPPONENT_FIRE_POWER))) {
-                csvA.writeWaveRow(wbA, battleId, 0);
+            if (!Double.isNaN(wbA.getFeature(Feature.THEIR_FIRE_POWER))) {
+                csvA.writeTheirWaveRow(wbA, battleId, 0);
             }
-            if (!Double.isNaN(wbB.getFeature(Feature.OPPONENT_FIRE_POWER))) {
-                csvB.writeWaveRow(wbB, battleId, 0);
+            if (!Double.isNaN(wbB.getFeature(Feature.THEIR_FIRE_POWER))) {
+                csvB.writeTheirWaveRow(wbB, battleId, 0);
             }
 
             lastRobotA = robotA;
             lastRobotB = robotB;
 
             // Reset per-tick fire detection
-            wbA.setFeature(Feature.OPPONENT_FIRE_POWER, Double.NaN);
-            wbB.setFeature(Feature.OPPONENT_FIRE_POWER, Double.NaN);
+            wbA.setFeature(Feature.THEIR_FIRE_POWER, Double.NaN);
+            wbB.setFeature(Feature.THEIR_FIRE_POWER, Double.NaN);
         }
 
         // Finalize round
@@ -136,11 +136,12 @@ final class PipelineIntegrationTest {
         String firstRow = tickLines.get(1);
         assertTrue(firstRow.startsWith(battleId + ",0,0,"), "First row should have tick=0");
 
-        // Check waves.csv: perspective A should see B's fire (energy drop on tick 3)
-        File wavesA = new File(dirA, "waves.csv");
-        assertTrue(wavesA.exists(), "waves.csv for A should exist");
+        // Check their-waves.csv: perspective A should see B's fire (energy drop on tick
+        // 3)
+        File wavesA = new File(dirA, "their-waves.csv");
+        assertTrue(wavesA.exists(), "their-waves.csv for A should exist");
         List<String> waveLines = Files.readAllLines(wavesA.toPath());
-        assertEquals(2, waveLines.size(), "waves.csv should have header + 1 fire event");
+        assertEquals(2, waveLines.size(), "their-waves.csv should have header + 1 fire event");
         assertTrue(waveLines.get(1).contains("2.0"), "Wave row should contain fire power 2.0");
 
         // Check scores.csv: A lost (DEAD), B won
