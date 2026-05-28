@@ -56,16 +56,9 @@ public final class Player {
 
         long tick = (long) turn.getTurn();
 
-        // Detect bullet hits and rams first — robot receives these events
-        // (onBulletHit, onHitByBullet) before onScannedRobot, so accumulators
-        // must be updated before FireFeatures reads them on scan ticks.
-        boolean anyAlive = !perspectives[0].isDead() || !perspectives[1].isDead();
-        if (anyAlive) {
-            damage.detectBulletHits(turn, perspectives);
-            damage.detectRams(robots, perspectives);
-        }
-
-        // Inject state for each perspective: "us" is self, "them" is opponent
+        // Inject own state FIRST — this sets TICK which rotates the ring buffer.
+        // Damage detection must come AFTER so accumulator values land in the
+        // correct (current) ring slot.
         for (Perspective us : perspectives) {
             if (!us.isDead()) {
                 injectOwnState(us.wb(), robots[us.robotIndex()], tick, bfWidth, bfHeight);
@@ -74,7 +67,27 @@ public final class Player {
             }
         }
 
+        // Detect bullet hits, rams, and wall hits — accumulates into
+        // DamageDetector's internal state (persists across ring rotations).
+        boolean anyAlive = !perspectives[0].isDead() || !perspectives[1].isDead();
+        if (anyAlive) {
+            damage.detectBulletHits(turn, perspectives);
+            damage.detectRams(robots, perspectives);
+            damage.detectWallHits(robots, perspectives);
+            damage.updateState(robots);
+            damage.flushToWhiteboard(perspectives);
+        }
+
         return newRound;
+    }
+
+    /**
+     * Reset accumulator features after wb.process() has consumed them on scan
+     * ticks.
+     * Call once per tick, after wb.process().
+     */
+    public void resetAccumulatorsIfScan() {
+        damage.resetAccumulatorsIfScan(perspectives);
     }
 
     private static void injectOwnState(Whiteboard wb, IRobotSnapshot self,

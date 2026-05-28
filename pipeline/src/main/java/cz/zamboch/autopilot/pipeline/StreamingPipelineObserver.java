@@ -7,6 +7,7 @@ import cz.zamboch.autopilot.core.VcsFile;
 import cz.zamboch.autopilot.core.VcsStore;
 import cz.zamboch.autopilot.core.Whiteboard;
 import cz.zamboch.autopilot.core.features.FireFeatures;
+import cz.zamboch.autopilot.core.features.IdentityFeatures;
 import cz.zamboch.autopilot.core.features.MovementFeatures;
 import cz.zamboch.autopilot.core.features.OurWaveFeatures;
 import cz.zamboch.autopilot.core.features.SpatialFeatures;
@@ -63,7 +64,7 @@ final class StreamingPipelineObserver extends BattleAdaptor {
         perspectives = Perspective.createPair(wb0, wb1);
         player = new Player(perspectives);
         validator = new DebugValidator();
-        godView = new GodViewValidator();
+        godView = new GodViewValidator(bfWidth, bfHeight);
         waveResolver = new WaveResolver();
 
         if (outputDir != null) {
@@ -110,6 +111,9 @@ final class StreamingPipelineObserver extends BattleAdaptor {
         for (Perspective us : perspectives) {
             us.wb().process();
         }
+
+        // Reset accumulators after FireFeatures has consumed them on scan ticks
+        player.resetAccumulatorsIfScan();
 
         // Resolve our-waves using god-view positions
         boolean[] waveResolved = waveResolver.processTick(perspectives, robots, turn);
@@ -333,6 +337,7 @@ final class StreamingPipelineObserver extends BattleAdaptor {
                 new MovementFeatures(),
                 new TimingFeatures(),
                 new FireFeatures(),
+                new IdentityFeatures(),
                 new OurWaveFeatures());
         return wb;
     }

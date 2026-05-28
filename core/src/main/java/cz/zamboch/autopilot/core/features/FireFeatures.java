@@ -7,10 +7,10 @@ import cz.zamboch.autopilot.core.Whiteboard;
 
 /**
  * Detects opponent fire via scan-to-scan energy drop, corrected for known
- * energy changes from bullet hits and rams.
+ * energy changes from bullet hits, rams, and wall hits.
  * <p>
  * Correction formula:
- * adjustedDrop = observedDrop - ourBulletDamage - ramDamage +
+ * adjustedDrop = observedDrop - ourBulletDamage - ramDamage - wallDamage +
  * opponentBulletGain
  * <p>
  * If 0.1 ≤ adjustedDrop ≤ 3.0 → opponent fired with that power.
@@ -24,7 +24,9 @@ public final class FireFeatures implements IInGameFeatures {
             Feature.TICK, Feature.LAST_SCAN_TICK, Feature.OPPONENT_ENERGY,
             Feature.OUR_BULLET_DAMAGE_TO_OPPONENT,
             Feature.OPPONENT_BULLET_ENERGY_GAIN,
-            Feature.RAM_DAMAGE_TO_OPPONENT
+            Feature.RAM_DAMAGE_TO_OPPONENT,
+            Feature.OPPONENT_RAM_ENERGY_GAIN,
+            Feature.OPPONENT_WALL_HIT_DAMAGE
     };
     private static final Feature[] OUTPUTS = {
             Feature.THEIR_FIRE_POWER, Feature.PREV_SCAN_OPPONENT_ENERGY
@@ -67,14 +69,20 @@ public final class FireFeatures implements IInGameFeatures {
             double bulletDmg = wb.getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT);
             double bulletGain = wb.getFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN);
             double ramDmg = wb.getFeature(Feature.RAM_DAMAGE_TO_OPPONENT);
+            double ramGain = wb.getFeature(Feature.OPPONENT_RAM_ENERGY_GAIN);
+            double wallDmg = wb.getFeature(Feature.OPPONENT_WALL_HIT_DAMAGE);
             if (Double.isNaN(bulletDmg))
                 bulletDmg = 0;
             if (Double.isNaN(bulletGain))
                 bulletGain = 0;
             if (Double.isNaN(ramDmg))
                 ramDmg = 0;
+            if (Double.isNaN(ramGain))
+                ramGain = 0;
+            if (Double.isNaN(wallDmg))
+                wallDmg = 0;
 
-            double adjustedDrop = drop - bulletDmg - ramDmg + bulletGain;
+            double adjustedDrop = drop - bulletDmg - ramDmg - wallDmg + bulletGain + ramGain;
 
             if (adjustedDrop >= 0.1 && adjustedDrop <= 3.0) {
                 wb.setFeature(Feature.THEIR_FIRE_POWER, adjustedDrop);
@@ -84,10 +92,5 @@ public final class FireFeatures implements IInGameFeatures {
         }
 
         wb.setFeature(Feature.PREV_SCAN_OPPONENT_ENERGY, currentEnergy);
-
-        // Reset accumulators for next inter-scan period
-        wb.setFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT, 0);
-        wb.setFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN, 0);
-        wb.setFeature(Feature.RAM_DAMAGE_TO_OPPONENT, 0);
     }
 }

@@ -11,6 +11,7 @@ import cz.zamboch.autopilot.core.features.MovementFeatures;
 import cz.zamboch.autopilot.core.features.SpatialFeatures;
 import cz.zamboch.autopilot.core.features.FireFeatures;
 import cz.zamboch.autopilot.core.features.TimingFeatures;
+import cz.zamboch.autopilot.core.features.WallHitEstimator;
 import cz.zamboch.autopilot.core.features.OurWaveFeatures;
 import cz.zamboch.autopilot.core.features.WaveTracker;
 import cz.zamboch.autopilot.core.features.TheirWaveTracker;
@@ -47,7 +48,11 @@ public final class Autopilot extends AdvancedRobot {
     @Override
     public void onStatus(StatusEvent event) {
         RobotStatus status = event.getStatus();
+        // Save accumulators before ring rotation (setFeature TICK rotates the ring)
+        carryForwardAccumulators();
         wb.setFeature(Feature.TICK, status.getTime());
+        // Restore accumulators into the new (cleared) ring slot
+        restoreAccumulators();
         wb.setFeature(Feature.OUR_X, status.getX());
         wb.setFeature(Feature.OUR_Y, status.getY());
         wb.setFeature(Feature.OUR_HEADING, status.getHeadingRadians());
@@ -57,6 +62,42 @@ public final class Autopilot extends AdvancedRobot {
         wb.setFeature(Feature.GUN_HEADING, status.getGunHeadingRadians());
         wb.setFeature(Feature.RADAR_HEADING, status.getRadarHeadingRadians());
     }
+
+    private static final Feature[] ACCUMULATOR_FEATURES = {
+            Feature.OUR_BULLET_DAMAGE_TO_OPPONENT,
+            Feature.OPPONENT_BULLET_ENERGY_GAIN,
+            Feature.RAM_DAMAGE_TO_OPPONENT,
+            Feature.OPPONENT_RAM_ENERGY_GAIN,
+            Feature.OPPONENT_WALL_HIT_DAMAGE
+    };
+
+    /**
+     * Copy accumulator values from current slot before ring rotation clears them.
+     */
+    private void carryForwardAccumulators() {
+        for (Feature f : ACCUMULATOR_FEATURES) {
+            double val = wb.getFeature(f);
+            if (!Double.isNaN(val) && val != 0) {
+                // Store in a temp — ring rotation will clear the slot,
+                // then we restore after TICK is set.
+                // Actually: we read BEFORE setFeature(TICK), so just save+restore.
+                accumulatorCarry[f.ordinal()] = val;
+            }
+        }
+    }
+
+    /** Restore carried-forward accumulators into the new (cleared) ring slot. */
+    private void restoreAccumulators() {
+        for (Feature f : ACCUMULATOR_FEATURES) {
+            double val = accumulatorCarry[f.ordinal()];
+            if (val != 0) {
+                wb.setFeature(f, val);
+                accumulatorCarry[f.ordinal()] = 0;
+            }
+        }
+    }
+
+    private final double[] accumulatorCarry = new double[Feature.COUNT];
 
     @Override
     public void onScannedRobot(ScannedRobotEvent event) {
@@ -112,8 +153,15 @@ public final class Autopilot extends AdvancedRobot {
 
     @Override
     public void onHitRobot(HitRobotEvent e) {
+        // Both robots always take ROBOT_HIT_DAMAGE
         double current = wb.getFeature(Feature.RAM_DAMAGE_TO_OPPONENT);
         wb.setFeature(Feature.RAM_DAMAGE_TO_OPPONENT, (Double.isNaN(current) ? 0 : current) + Rules.ROBOT_HIT_DAMAGE);
+
+        // If opponent is "at fault" (they rammed us), they gain ROBOT_HIT_BONUS
+        if (!e.isMyFault()) {
+            double gain = wb.getFeature(Feature.OPPONENT_RAM_ENERGY_GAIN);
+            wb.setFeature(Feature.OPPONENT_RAM_ENERGY_GAIN, (Double.isNaN(gain) ? 0 : gain) + Rules.ROBOT_HIT_BONUS);
+        }
     }
 
     @Override
@@ -123,6 +171,7 @@ public final class Autopilot extends AdvancedRobot {
                 new SpatialFeatures(),
                 new MovementFeatures(),
                 new TimingFeatures(),
+                new WallHitEstimator(),
                 new FireFeatures(),
                 new IdentityFeatures(),
                 new OurWaveFeatures(),
@@ -146,6 +195,15 @@ public final class Autopilot extends AdvancedRobot {
 
     private void doTurn() {
         wb.process();
+
+        // Reset accumulators after FireFeatures has consumed them on scan ticks
+        double tick = wb.getFeature(Feature.TICK);
+        double lastScan = wb.getFeature(Feature.LAST_SCAN_TICK);
+        if (!Double.isNaN(tick) && tick == lastScan) {
+            for (Feature f : ACCUMULATOR_FEATURES) {
+                wb.setFeature(f, 0);
+            }
+        }
 
         // Radar
         setTurnRadarRightRadians(radar.getRadarTurn());

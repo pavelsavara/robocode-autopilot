@@ -88,6 +88,7 @@ final class ScanSynthesizer {
         wb.setFeature(Feature.OPPONENT_VELOCITY, opponent.getVelocity());
         wb.setFeature(Feature.OPPONENT_ENERGY, opponent.getEnergy());
         wb.setFeature(Feature.LAST_SCAN_TICK, tick);
+        wb.setStringFeature(Feature.OPPONENT_ID, opponent.getShortName());
     }
 
 }

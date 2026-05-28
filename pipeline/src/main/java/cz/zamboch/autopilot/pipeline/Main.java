@@ -156,6 +156,9 @@ public final class Main {
                     wbA.process();
                     wbB.process();
 
+                    // Reset accumulators after FireFeatures has consumed them
+                    player.resetAccumulatorsIfScan();
+
                     // Write tick rows
                     csvA.writeTickRow(wbA, battleId, roundIndex);
                     csvB.writeTickRow(wbB, battleId, roundIndex);
