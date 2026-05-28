@@ -115,6 +115,14 @@ No live robot. The recording's `IDebugProperty[]` is only available if the recor
 | `CsvRowWriter.java` | Low-level CSV mechanics unchanged |
 | `Loader.java` | .br reading unchanged |
 
+### New outputs
+| File | Content |
+|------|---------|
+| `ticks-*.csv` | Whiteboard features per tick (existing format) |
+| `our-waves-*.csv` | Wave features at resolution (existing format) |
+| `their-waves-*.csv` | Opponent wave features (existing format) |
+| `decisions-*.csv` | Movement/gun/fire decisions per tick per perspective (new) |
+
 ### Files to REPLACE
 | Old File | New Replacement |
 |----------|----------------|
@@ -281,14 +289,27 @@ public final class ObserverContext {
 
 **Observer Autopilot instantiation:**
 ```java
-// Autopilot detects observer mode via a flag/system property
-// In observer mode: run() returns immediately, event handlers populate Whiteboard only
-// Commands (setAhead, setFire, etc.) are no-ops
+// Refactored Autopilot: extract init() as public, make doTurn() public, no while(true).
+// Observer mode uses a mock IBasicRobotPeer that:
+//   - Tracks gunHeat from StatusEvent, returns Bullet when heat==0
+//   - No-ops all movement/radar commands (but observer strategy still runs)
+//   - Returns battlefield dimensions, data directory, etc. from config
+
 Autopilot observer = new Autopilot();
-observer.setObserverMode(true);
+observer.initForObserver(mockPeer, vcsStore, battleWidth, battleHeight, randomSeed);
+// Then each tick: feed events → call doTurn() externally
 ```
 
-**Key design:** The observer Autopilot's event handlers (`onScannedRobot`, `onHitByBullet`, etc.) call the same `wb.setFeature()` code as the live robot. This ensures the Whiteboard gets populated identically. The only difference is that movement/gun/radar commands are discarded.
+**Key design:** The observer runs the **full Autopilot strategy** — radar, gun, movement, firing — not just event handlers. Commands go to mock peer (no-ops) but:
+- `setFireBullet()` → mock tracks gunHeat, returns fake Bullet when heat==0 → triggers `snapshotFireFeatures()` → WaveTracker creates real waves
+- Movement strategy runs → decisions logged to `decisions.csv` for regret analysis
+- Gun strategy runs → aim decisions logged for debugging problematic situations
+
+The observer is a full "shadow" Autopilot making identical decisions to the live robot (given same events + same random seed via `System.setProperty`). The only difference: its commands don't affect the battle.
+
+**VCS store:** Observer shares the live robot's VCS store reference (live battle mode). For .br replay, the VCS store from the recording session must be provided externally.
+
+**Random seed:** Both live robot and observer read the same seed from `System.setProperty`. This ensures deterministic PRNG alignment for firing/movement decisions.
 
 ---
 
@@ -301,8 +322,9 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
 
     private ObserverContext[] observers;    // [0]=ours, [1]=theirs
     private EventReconstructor reconstructor;
-    private GodViewWaveResolver waveResolver;
-    private ThreeWayValidator validator;
+    private GodViewWaveResolver godViewWaveResolver;
+    private PipelineValidator validator;
+    private CsvWriter decisionsCsv;        // movement/gun decisions per tick
     private ITurnSnapshot prevSnapshot;
 
     @Override
@@ -315,11 +337,11 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
             TickEvents events = reconstructor.reconstruct(
                 prevSnapshot, curr, ctx.perspectiveIndex(), ctx.tickState());
             
-            // 2. Feed events to observer Autopilot
-            ctx.feedTick(events);
+            // 2. Feed events to observer Autopilot (populates Whiteboard)
+            ctx.feedEvents(events);
             
-            // 3. Process derived features (Transformer)
-            ctx.wb().process();
+            // 3. Run full strategy: doTurn() computes features + makes decisions
+            ctx.doTurn();
         }
 
         // 4. God-view wave resolution (uses exact positions from snapshot)
@@ -338,13 +360,22 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                 ctx.observer().getWaveTracker(), godViewWaveResolver);
         }
 
-        // 7. Write CSV from observer Whiteboards
+        // 7. Write CSV: features + wave data
         writeCsv(observers, godViewResolved, curr);
+
+        // 8. Write decisions.csv: movement/gun/fire decisions per observer
+        writeDecisions(observers, curr);
 
         prevSnapshot = curr;
     }
 }
 ```
+
+**decisions.csv columns** (per perspective, per tick):
+- TICK, PERSPECTIVE
+- MOVE_AHEAD, MOVE_TURN_RIGHT (movement command output)
+- GUN_TURN, FIRE_POWER, FIRE_GF (gun/fire decisions)
+- Used for: regret analysis, debugging problematic decisions, ML training signal
 
 ---
 
@@ -687,19 +718,33 @@ BattleRunner.runBattle(opponent, rounds, outputDir);
 - Deduplication: same bullet hit not reported twice across consecutive ticks
 
 ### Phase 2: Observer Mode in Autopilot
-1. Add `observerMode` flag to Autopilot
-2. Guard strategy execution behind `!observerMode`
-3. Ensure event handlers populate Whiteboard identically in both modes
+1. Refactor `Autopilot`: extract `initForObserver(mockPeer, vcsStore, w, h, seed)` as public
+2. Make `doTurn()` public (called externally per tick, no `while(true)` loop)
+3. Create `ObserverRobotPeer` implementing `IBasicRobotPeer`:
+   - Tracks gunHeat (from StatusEvent), returns fake `Bullet` when heat==0
+   - No-ops movement/radar/gun turn commands
+   - Provides battlefield dimensions and data directory from config
+4. Wire random seed via `System.setProperty` before init
+5. Observer runs full strategy: radar, gun, movement decisions computed each tick
 
 **Unit tests** (`AutopilotObserverTest.java`):
 - Observer receives ScannedRobotEvent → Whiteboard has correct OPPONENT_X/Y/HEADING/VELOCITY/ENERGY
-- Observer receives HitByBulletEvent → Whiteboard has correct OUR_ENERGY (reduced by damage)
+- Observer receives HitByBulletEvent → Whiteboard accumulates OPPONENT_BULLET_ENERGY_GAIN
 - Observer receives StatusEvent → Whiteboard has correct OUR_X/Y/HEADING/VELOCITY/ENERGY/GUN_HEAT
-- Observer mode suppresses commands: setAhead/setFire/setTurnRadar are no-ops (verify no exception, no state change)
-- Observer mode suppresses strategy: run() returns immediately, no movement/gun/radar strategy executes
-- Feature computation: after onScannedRobot, derived features (DISTANCE, BEARING_RADIANS, LATERAL_VELOCITY) are computed via Transformer
-- Multiple ticks: feed 3 sequential event sets, verify TICKS_SINCE_SCAN tracks correctly
+- Full doTurn() executes: after events + doTurn(), derived features computed (LATERAL_VELOCITY etc.)
+- Firing works: mock peer returns Bullet when gunHeat==0 → OUR_FIRE_* features populated → WaveTracker creates wave
+- Firing blocked: mock peer returns null when gunHeat>0 → no OUR_FIRE_* set
+- Movement strategy produces output: moveCmd has non-zero values (strategy ran)
+- Gun strategy produces output: fireCmd has non-NaN angle (strategy ran)
+- Multiple ticks: feed 3 sequential event sets + doTurn() each, verify TICKS_SINCE_SCAN tracks correctly
 - Reset on round: new round resets Whiteboard state (no stale features from previous round)
+- Deterministic: same events + same seed → identical Whiteboard state across two runs
+
+**Unit tests** (`ObserverRobotPeerTest.java`):
+- gunHeat tracking: initial heat > 0, decreases each tick, returns null until 0, returns Bullet at 0
+- After firing: gunHeat resets to 1 + power/5
+- Movement commands accepted without error (no-op)
+- getBattleFieldWidth/Height return configured values
 
 ### Phase 3: ObserverContext + PipelineOrchestrator
 1. Create `ObserverContext` (instantiates observer, manages state)
@@ -708,15 +753,18 @@ BattleRunner.runBattle(opponent, rounds, outputDir);
 
 **Unit tests** (`ObserverContextTest.java`):
 - `createPair()` produces two contexts with perspectiveIndex 0 and 1, cross-linked as peers
-- `feedTick()` delivers events to observer and triggers Whiteboard.process()
-- Dead observer: after DeathEvent, subsequent feedTick() is skipped (no processing)
+- `feedEvents()` delivers events to observer's event handlers
+- `doTurn()` calls observer's public doTurn() → features computed, strategy decisions made
+- Dead observer: after DeathEvent, subsequent feedEvents()/doTurn() is skipped
 - Round reset: new round clears dead flag and tickState
 
 **Unit tests** (`PipelineOrchestratorTest.java`):
-- Single tick: feed one TurnSnapshot pair → both observers receive events, CSV row written
+- Single tick: feed one TurnSnapshot pair → both observers receive events + run strategy, CSV row written
 - Perspective correctness: Observer[0] gets ScannedRobotEvent about robot[1], Observer[1] gets ScannedRobotEvent about robot[0]
 - CSV output: verify tick row has expected Feature columns from observer Whiteboard
+- Decisions output: verify decisions.csv has MOVE_AHEAD/FIRE_POWER columns
 - Null prevSnapshot: first tick handled gracefully (StatusEvent only, no diff-based events)
+- Wave CSV row: when observer's WaveTracker resolves a wave, OUR_BREAK_* features appear in wave CSV
 
 ### Phase 4: Dual WaveResolver
 1. Rename/refactor current `WaveResolver` → `GodViewWaveResolver`
@@ -732,12 +780,18 @@ BattleRunner.runBattle(opponent, rounds, outputDir);
 - Multiple active waves: two bullets in flight, resolved independently
 - Bullet hit resolves wave: HIT_VICTIM state resolves wave at impact tick
 
-**Unit tests** (`WaveTrackerObserverTest.java`):
+**Unit tests** (`WaveTrackerObserverTest.java` — OUR outgoing waves via observer firing):
+- Observer fires: mock peer returns Bullet when gunHeat==0 → snapshotFireFeatures() populates OUR_FIRE_* → WaveTracker creates wave
+- Wave propagation: wave advances by bullet speed each tick, tracked by observer's WaveTracker
+- Wave resolution: wave reaches opponent (using scan-time position) → OUR_BREAK_GF computed
+- Stale position: resolution uses last-scanned opponent position (not god-view exact position)
+- No fire when gunHeat>0: mock peer returns null → no OUR_FIRE_* → no new wave
+- GF computation: known geometry → expected GF value (within floating point tolerance)
+
+**Unit tests** (`TheirWaveTrackerObserverTest.java` — opponent incoming waves via energy drop):
 - Fire detection via energy drop: opponent energy drops between scans → wave created at last-scanned position
-- Stale position: wave created at scan-time position (not current position) — verify offset from god-view
 - No scan, no detection: if opponent not scanned for N ticks, energy drop not observable → no wave
 - Resolution uses stale data: wave resolves at next scan tick using scan-time opponent position
-- GF computation: known geometry → expected GF value (within floating point tolerance)
 
 **Unit tests** (`WavePrecisionComparisonTest.java`):
 - Perfect lock (1-tick scan gap): robot-side and god-view GF differ by < 0.01
