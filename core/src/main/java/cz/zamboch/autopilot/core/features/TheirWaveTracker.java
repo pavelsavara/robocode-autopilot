@@ -150,7 +150,6 @@ public final class TheirWaveTracker implements IInGameFeatures {
                 double bearingOffset = RoboMath.normalRelativeAngle(actualBearing - fireBearing);
 
                 // GF from their perspective: use MEA based on fire distance
-                double fireDistance = wb.getTheirWave(slot, TheirWaveColumn.FIRE_DISTANCE);
                 double mea = GuessFactor.maxEscapeAngle(bulletSpeed);
                 double gf = (mea != 0) ? bearingOffset / mea : 0;
                 gf = Math.max(-1.0, Math.min(1.0, gf));
