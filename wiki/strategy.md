@@ -1,8 +1,7 @@
 # Competitive Strategy — Known Ideas & Top-Bot Analysis
 
-*Summary of Robocode competitive concepts, how top bots implement them,
-and ML prior art. Full reference:
-[archive/2026-05-01-rules-and-known-ideas.md](../archive/2026-05-01-rules-and-known-ideas.md).*
+*Summary of competitive concepts, how top bots implement them, and ML prior art.
+See also: [targeting.md](targeting.md), [movement.md](movement.md), [terminology.md](terminology.md), [physics.md](physics.md).*
 
 ## Core Concepts
 
