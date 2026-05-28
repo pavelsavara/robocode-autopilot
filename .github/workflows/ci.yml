@@ -23,7 +23,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Run unit tests
-        run: ./gradlew test
+        run: chmod +x ./gradlew && ./gradlew test
 
       - name: Run integration tests
         run: ./gradlew battleTest
