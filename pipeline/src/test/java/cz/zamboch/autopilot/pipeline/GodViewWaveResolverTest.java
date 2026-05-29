@@ -122,11 +122,13 @@ final class GodViewWaveResolverTest {
         }
         resolver.processTick(observers, tick1.getRobots(), tick1);
 
-        // Advance until resolution, then mark as HIT_VICTIM
+        // Advance until resolution. Mark bullet as HIT_VICTIM BEFORE resolution
+        // so that hitBulletIds contains the ID when the wave resolves.
+        // distance=200, power=2.0 → bulletSpeed=14, resolves at tick ~15.
         boolean resolved = false;
         for (int t = 2; t < 30; t++) {
-            BulletState state = BulletState.MOVING;
-            // After enough ticks, mark hit (simulate engine reporting hit on the same tick it resolves)
+            // Mark HIT_VICTIM a few ticks before expected resolution (engine reports hit)
+            BulletState state = (t >= 12) ? BulletState.HIT_VICTIM : BulletState.MOVING;
             IBulletSnapshot b = TestSnapshots.bullet(77, 0, 1, 2.0, state);
             ITurnSnapshot tickN = TestSnapshots.turn(t, r0, r1, b);
             for (ObserverContext ctx : observers) {
@@ -139,21 +141,11 @@ final class GodViewWaveResolverTest {
             }
         }
 
-        // Now do a tick where the bullet is HIT_VICTIM and re-resolve
-        if (!resolved) {
-            // Mark hit and resolve
-            IBulletSnapshot hitBullet = TestSnapshots.bullet(77, 0, 1, 2.0, BulletState.HIT_VICTIM);
-            ITurnSnapshot hitTick = TestSnapshots.turn(25, r0, r1, hitBullet);
-            for (ObserverContext ctx : observers) {
-                ctx.processTick(hitTick);
-            }
-            resolver.processTick(observers, hitTick.getRobots(), hitTick);
-        }
+        assertTrue(resolved, "Wave should have resolved within 30 ticks");
 
-        // The hit rate should reflect what happened
-        double hitRate = resolver.getRoundHitRate(0);
-        // At minimum, wave was counted
-        assertTrue(hitRate >= 0.0 || Double.isNaN(hitRate));
+        // OUR_BREAK_HIT must be 1.0 since the bullet was marked HIT_VICTIM before resolution
+        Whiteboard wb0 = observers[0].wb();
+        assertEquals(1.0, wb0.getFeature(Feature.OUR_BREAK_HIT), 1e-9);
     }
 
     @Test

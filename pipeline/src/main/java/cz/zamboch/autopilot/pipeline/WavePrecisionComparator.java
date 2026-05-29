@@ -15,7 +15,7 @@ import cz.zamboch.autopilot.core.Whiteboard;
  * <li>GF mean absolute error (when both resolve the same wave)</li>
  * </ul>
  */
-public final class WavePrecisionComparator {
+final class WavePrecisionComparator {
 
     // Per-perspective stats
     private final int[] godViewFires = { 0, 0 };
@@ -26,6 +26,9 @@ public final class WavePrecisionComparator {
     // Per-perspective last-seen break tick to detect new resolutions
     private final double[] lastRobotSideBreakTick = { Double.NaN, Double.NaN };
     private final double[] lastGodViewBreakTick = { Double.NaN, Double.NaN };
+
+    // Per-perspective last-seen fire tick to detect new robot-side fires
+    private final double[] lastRobotSideFireTick = { Double.NaN, Double.NaN };
 
     /**
      * Capture robot-side wave state BEFORE god-view overwrites the whiteboard.
@@ -62,6 +65,18 @@ public final class WavePrecisionComparator {
         }
     }
 
+    /**
+     * Capture robot-side fire detection BEFORE god-view overwrites the whiteboard.
+     * Detects a new fire if OUR_FIRE_TICK changed since last call.
+     */
+    public void captureRobotSideFire(int perspIndex, Whiteboard wb) {
+        double fireTick = wb.getFeature(Feature.OUR_FIRE_TICK);
+        if (!Double.isNaN(fireTick) && fireTick != lastRobotSideFireTick[perspIndex]) {
+            lastRobotSideFireTick[perspIndex] = fireTick;
+            robotSideFires[perspIndex]++;
+        }
+    }
+
     /** Record that god-view detected a new fire for this perspective. */
     public void recordGodViewFire(int perspIndex) {
         godViewFires[perspIndex]++;
@@ -91,6 +106,7 @@ public final class WavePrecisionComparator {
             gfErrorCount[i] = 0;
             lastRobotSideBreakTick[i] = Double.NaN;
             lastGodViewBreakTick[i] = Double.NaN;
+            lastRobotSideFireTick[i] = Double.NaN;
         }
     }
 

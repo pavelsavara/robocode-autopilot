@@ -37,6 +37,9 @@ final class GodViewWaveResolver {
     /** Per-perspective wave tracking state. */
     private final PerPerspective[] persp = { new PerPerspective(), new PerPerspective() };
 
+    /** Per-perspective flag: true if a new fire was detected this tick. */
+    private final boolean[] firedThisTick = { false, false };
+
     /** Set of bullet IDs already used to create waves. */
     private final Set<Integer> knownBulletIds = new HashSet<>();
 
@@ -65,6 +68,11 @@ final class GodViewWaveResolver {
         return roundFired[perspIndex] > 0 ? (double) roundHits[perspIndex] / roundFired[perspIndex] : Double.NaN;
     }
 
+    /** Returns true if a new fire was detected for the given perspective during the last processTick call. */
+    boolean firedThisTick(int perspIndex) {
+        return firedThisTick[perspIndex];
+    }
+
     /**
      * Main per-tick call. Detects new bullets (fire), resolves existing waves,
      * and sets features on whiteboards.
@@ -73,6 +81,8 @@ final class GodViewWaveResolver {
      */
     boolean[] processTick(ObserverContext[] observers, IRobotSnapshot[] robots, ITurnSnapshot turn) {
         boolean[] resolved = { false, false };
+        firedThisTick[0] = false;
+        firedThisTick[1] = false;
 
         detectNewBullets(turn, observers, robots);
         detectHitBullets(turn);
@@ -166,12 +176,15 @@ final class GodViewWaveResolver {
         Wave wave = new Wave(fireX, fireY, fireTick, absoluteBearing,
                 bulletSpeed, direction, distSeg, latVelSeg);
 
+        double advVel = oppVel * Math.cos(oppHeading - absoluteBearing);
+
         PerPerspective pp = persp[ctx.perspectiveIndex()];
         pp.activeWaves.add(new TrackedWave(wave, bullet.getBulletId(),
-                distance, latVel, oppVel, power,
+                distance, latVel, advVel, power,
                 opponent.getX(), opponent.getY()));
         pp.lastFiredWave = pp.activeWaves.get(pp.activeWaves.size() - 1);
         pp.pendingFire = true;
+        firedThisTick[ctx.perspectiveIndex()] = true;
     }
 
     private void setFireFeatures(Whiteboard wb, TrackedWave tw) {
@@ -217,19 +230,16 @@ final class GodViewWaveResolver {
                 double gf = tw.wave.computeGuessFactor(oppX, oppY);
                 int binIndex = GuessFactor.gfToBinIndex(gf, GuessFactor.NUM_BINS);
 
-                // Update models (ModelSelector or raw VCS)
+                // Update VCS store (common to both paths)
+                VcsStore vcs = wb.getVcsStore();
+                if (vcs != null) {
+                    vcs.increment(tw.wave.distanceSegment, tw.wave.latVelSegment, binIndex);
+                }
+
+                // Update model selector if present
                 ModelSelector selector = wb.getModelSelector();
                 if (selector != null) {
-                    VcsStore vcs = wb.getVcsStore();
-                    if (vcs != null) {
-                        vcs.increment(tw.wave.distanceSegment, tw.wave.latVelSegment, binIndex);
-                    }
                     selector.recordPipelineUpdate(tw.wave.distanceSegment, tw.wave.latVelSegment, gf);
-                } else {
-                    VcsStore vcs = wb.getVcsStore();
-                    if (vcs != null) {
-                        vcs.increment(tw.wave.distanceSegment, tw.wave.latVelSegment, binIndex);
-                    }
                 }
 
                 wb.setFeature(Feature.OUR_BREAK_TICK, currentTick);

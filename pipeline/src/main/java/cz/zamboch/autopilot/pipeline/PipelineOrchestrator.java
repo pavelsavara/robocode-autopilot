@@ -75,18 +75,21 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
         // Phase 2: Capture robot-side wave values BEFORE god-view overwrites
         double[] robotSideGf = new double[2];
         for (ObserverContext ctx : observers) {
-            robotSideGf[ctx.perspectiveIndex()] =
-                    wavePrecisionComparator.captureRobotSideBreak(ctx.perspectiveIndex(), ctx.wb());
+            int pi = ctx.perspectiveIndex();
+            robotSideGf[pi] = wavePrecisionComparator.captureRobotSideBreak(pi, ctx.wb());
+            wavePrecisionComparator.captureRobotSideFire(pi, ctx.wb());
         }
 
         // Phase 3: God-view wave resolution (overwrites OUR_FIRE_* and OUR_BREAK_*)
         boolean[] resolved = godViewWaveResolver.processTick(observers, robots, curr);
 
-        // Phase 4: Compare robot-side vs god-view
+        // Phase 4: Compare robot-side vs god-view, record god-view fires
         for (ObserverContext ctx : observers) {
-            wavePrecisionComparator.compareTick(
-                    ctx.perspectiveIndex(), ctx.wb(),
-                    robotSideGf[ctx.perspectiveIndex()], resolved[ctx.perspectiveIndex()]);
+            int pi = ctx.perspectiveIndex();
+            if (godViewWaveResolver.firedThisTick(pi)) {
+                wavePrecisionComparator.recordGodViewFire(pi);
+            }
+            wavePrecisionComparator.compareTick(pi, ctx.wb(), robotSideGf[pi], resolved[pi]);
         }
 
         // Write CSV if configured (after god-view has set authoritative features)

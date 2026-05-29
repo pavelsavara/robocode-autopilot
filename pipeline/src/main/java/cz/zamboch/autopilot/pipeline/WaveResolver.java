@@ -163,9 +163,11 @@ final class WaveResolver {
         Wave wave = new Wave(fireX, fireY, fireTick, absoluteBearing,
                 bulletSpeed, direction, distSeg, latVelSeg);
 
+        double advVel = oppVel * Math.cos(oppHeading - absoluteBearing);
+
         PerPerspective pp = persp[us.robotIndex()];
         pp.activeWaves.add(new TrackedWave(wave, bullet.getBulletId(),
-                distance, latVel, oppVel, power,
+                distance, latVel, advVel, power,
                 opponent.getX(), opponent.getY()));
         pp.lastFiredWave = pp.activeWaves.get(pp.activeWaves.size() - 1);
         pp.pendingFire = true;
@@ -214,23 +216,16 @@ final class WaveResolver {
                 double gf = tw.wave.computeGuessFactor(oppX, oppY);
                 int binIndex = GuessFactor.gfToBinIndex(gf, GuessFactor.NUM_BINS);
 
-                // Update models (ModelSelector or raw VCS)
+                // Update VCS store (common to both paths)
+                VcsStore vcs = wb.getVcsStore();
+                if (vcs != null) {
+                    vcs.increment(tw.wave.distanceSegment, tw.wave.latVelSegment, binIndex);
+                }
+
+                // Update model selector if present
                 ModelSelector selector = wb.getModelSelector();
                 if (selector != null) {
-                    // We need a temporary slot for the model to read features from.
-                    // Use the direct VCS update path since pipeline waves aren't in
-                    // the ring buffer — they use TrackedWave objects.
-                    VcsStore vcs = wb.getVcsStore();
-                    if (vcs != null) {
-                        vcs.increment(tw.wave.distanceSegment, tw.wave.latVelSegment, binIndex);
-                    }
-                    // Record error for regret tracking using wave segments
                     selector.recordPipelineUpdate(tw.wave.distanceSegment, tw.wave.latVelSegment, gf);
-                } else {
-                    VcsStore vcs = wb.getVcsStore();
-                    if (vcs != null) {
-                        vcs.increment(tw.wave.distanceSegment, tw.wave.latVelSegment, binIndex);
-                    }
                 }
 
                 wb.setFeature(Feature.OUR_BREAK_TICK, currentTick);
