@@ -56,13 +56,17 @@ public final class EventReconstructor {
     /**
      * Reconstruct events for the robot at {@code myIndex} from the given turn
      * snapshot.
+     * <p>
+     * In Robocode, physics and event delivery happen in the same turn:
+     * physics are resolved first, then events are dispatched to the robot
+     * in the same tick. The snapshot captures the post-physics state.
      *
      * @param turn     the turn snapshot
      * @param myIndex  contestant index of the robot whose perspective we
      *                 reconstruct (0 or 1)
      * @param bfWidth  battlefield width in pixels
      * @param bfHeight battlefield height in pixels
-     * @return reconstructed events for this tick
+     * @return events detected from this snapshot (delivered this tick)
      */
     public TickEvents reconstruct(ITurnSnapshot turn, int myIndex, double bfWidth, double bfHeight) {
         IRobotSnapshot[] robots = turn.getRobots();
@@ -88,8 +92,7 @@ public final class EventReconstructor {
         // === Death events ===
         detectDeath(me, opponent, events);
 
-        // === Set event time and sort by priority (engine dispatch order: highest
-        // first) ===
+        // === Set event time to current tick ===
         for (Event e : events) {
             e.setTime(tick);
         }
@@ -304,7 +307,7 @@ public final class EventReconstructor {
             double bearing = RoboMath.normalRelativeAngle(angle - me.getBodyHeading());
 
             events.add(new ScannedRobotEvent(
-                    opponent.getShortName(),
+                    opponent.getName(),
                     opponent.getEnergy(),
                     bearing,
                     distance,

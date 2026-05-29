@@ -1,6 +1,7 @@
 package cz.zamboch.autopilot.pipeline;
 
 import cz.zamboch.Autopilot;
+import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.Whiteboard;
 import net.sf.robocode.security.HiddenAccess;
 import robocode.*;
@@ -47,15 +48,17 @@ public final class ObserverContext {
         ObserverContext ctx1 = new ObserverContext(1, bfWidth, bfHeight, gunCoolingRate);
         ctx0.peerContext = ctx1;
         ctx1.peerContext = ctx0;
-        return new ObserverContext[]{ctx0, ctx1};
+        return new ObserverContext[] { ctx0, ctx1 };
     }
 
     /**
-     * Full tick pipeline: reconstruct events from snapshot, feed to observer, run strategy.
+     * Full tick pipeline: reconstruct events from snapshot, feed to observer, run
+     * strategy.
      * This is the primary API for the orchestrator.
      */
     public void processTick(ITurnSnapshot curr) {
-        if (dead) return;
+        if (dead)
+            return;
 
         IRobotSnapshot[] robots = curr.getRobots();
         IRobotSnapshot me = robots[perspectiveIndex];
@@ -96,7 +99,8 @@ public final class ObserverContext {
      * This lower-level method is useful for unit testing with hand-crafted events.
      */
     public void feedEvents(TickEvents events) {
-        if (dead) return;
+        if (dead)
+            return;
 
         // Dispatch events to the observer's handlers
         for (Event event : events.events()) {
@@ -122,7 +126,8 @@ public final class ObserverContext {
      * Prefer {@link #processTick(ITurnSnapshot)} for normal operation.
      */
     public void doTurn() {
-        if (dead) return;
+        if (dead)
+            return;
         observer.doTurn();
     }
 
@@ -131,6 +136,15 @@ public final class ObserverContext {
         dead = false;
         reconstructor.resetRound();
         peer.resetRound();
+        // Clear whiteboard so the observer starts fresh each round (matches live robot
+        // behavior).
+        // The live robot's ring rotation + carry-forward yields NaN for all features at
+        // round start
+        // because carryForward saves NaN (first tick of new round hasn't set anything
+        // yet).
+        observer.getWhiteboard().clearFeatures();
+        observer.getWhiteboard().setFeature(Feature.BATTLEFIELD_WIDTH, bfWidth);
+        observer.getWhiteboard().setFeature(Feature.BATTLEFIELD_HEIGHT, bfHeight);
     }
 
     public int perspectiveIndex() {

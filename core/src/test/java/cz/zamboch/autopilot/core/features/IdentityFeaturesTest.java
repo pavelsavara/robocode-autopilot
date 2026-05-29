@@ -41,15 +41,29 @@ final class IdentityFeaturesTest {
     }
 
     @Test
-    void differentNamesProduceDifferentHashes() {
+    void hashIsStickyAfterFirstComputation() {
         wb.setStringFeature(Feature.OPPONENT_ID, "Bot1");
         wb.process();
         double hash1 = wb.getFeature(Feature.OPPONENT_ID_HASH);
 
+        // After clearFeatures, hash persists (opponent identity never changes)
         wb.clearFeatures();
-        wb.setStringFeature(Feature.OPPONENT_ID, "Bot2");
         wb.process();
-        double hash2 = wb.getFeature(Feature.OPPONENT_ID_HASH);
+        assertEquals(hash1, wb.getFeature(Feature.OPPONENT_ID_HASH));
+    }
+
+    @Test
+    void differentInstancesProduceDifferentHashes() {
+        wb.setStringFeature(Feature.OPPONENT_ID, "Bot1");
+        wb.process();
+        double hash1 = wb.getFeature(Feature.OPPONENT_ID_HASH);
+
+        // A fresh whiteboard with different name produces different hash
+        Whiteboard wb2 = new Whiteboard();
+        wb2.registerFeatures(new IdentityFeatures());
+        wb2.setStringFeature(Feature.OPPONENT_ID, "Bot2");
+        wb2.process();
+        double hash2 = wb2.getFeature(Feature.OPPONENT_ID_HASH);
 
         assertNotEquals(hash1, hash2);
     }

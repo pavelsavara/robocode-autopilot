@@ -73,6 +73,9 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
 
         // Handle round transitions
         if (round != currentRound) {
+            if (currentRound >= 0) {
+                writeRoundScores(currentRound);
+            }
             resetRound();
             currentRound = round;
         }
@@ -86,10 +89,13 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
 
         // Phase 2: Capture robot-side wave values BEFORE god-view overwrites
         double[] robotSideGf = new double[2];
+        double[] savedFirePower = new double[2];
         for (ObserverContext ctx : observers) {
             int pi = ctx.perspectiveIndex();
             robotSideGf[pi] = wavePrecisionComparator.captureRobotSideBreak(pi, ctx.wb());
             wavePrecisionComparator.captureRobotSideFire(pi, ctx.wb());
+            // Save robot-side OUR_FIRE_POWER so we can restore after god-view overwrites
+            savedFirePower[pi] = ctx.wb().getFeature(Feature.OUR_FIRE_POWER);
         }
 
         // Phase 3: God-view wave resolution (overwrites OUR_FIRE_* and OUR_BREAK_*)
@@ -157,13 +163,30 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
         for (ObserverContext ctx : observers) {
             if (!ctx.isDead() && csvWriters != null && csvWriters[ctx.perspectiveIndex()] != null) {
                 try {
-                    csvWriters[ctx.perspectiveIndex()].writeTickRow(
+                    int pi = ctx.perspectiveIndex();
+                    csvWriters[pi].writeTickRow(
                             ctx.wb(), battleId != null ? battleId : "unknown", round);
+                    // Write wave rows when resolved
+                    if (resolved[pi]) {
+                        csvWriters[pi].writeOurWaveRow(
+                                ctx.wb(), battleId != null ? battleId : "unknown", round);
+                    }
+                    if (resolved[1 - pi]) {
+                        csvWriters[pi].writeTheirWaveRow(
+                                ctx.wb(), battleId != null ? battleId : "unknown", round);
+                    }
                 } catch (IOException e) {
                     throw new RuntimeException(
                             "Failed to write CSV for perspective " + ctx.perspectiveIndex(), e);
                 }
             }
+        }
+
+        // Restore robot-side OUR_FIRE_POWER so WaveTracker only sees robot's own fire
+        // signal next tick
+        for (ObserverContext ctx : observers) {
+            int pi = ctx.perspectiveIndex();
+            ctx.wb().setFeature(Feature.OUR_FIRE_POWER, savedFirePower[pi]);
         }
 
         prevSnapshot = curr;
@@ -203,10 +226,49 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
 
     @Override
     public void close() throws IOException {
+        // Write scores for the last round
+        if (currentRound >= 0) {
+            writeRoundScores(currentRound);
+            currentRound = -1;
+        }
         if (csvWriters != null) {
             for (CsvWriter w : csvWriters) {
                 if (w != null)
                     w.close();
+            }
+        }
+    }
+
+    private void writeRoundScores(int round) {
+        if (csvWriters == null)
+            return;
+        for (ObserverContext ctx : observers) {
+            int pi = ctx.perspectiveIndex();
+            if (csvWriters[pi] == null)
+                continue;
+
+            // Determine round result from prevSnapshot
+            double result = 0;
+            if (prevSnapshot != null) {
+                var robots = prevSnapshot.getRobots();
+                double ourEnergy = robots[pi].getEnergy();
+                double oppEnergy = robots[1 - pi].getEnergy();
+                if (ourEnergy > 0 && oppEnergy <= 0)
+                    result = 1;
+                else if (ourEnergy <= 0 && oppEnergy > 0)
+                    result = -1;
+            }
+            ctx.wb().setFeature(Feature.ROUND_RESULT, result);
+
+            // Hit rate from god-view resolver
+            double hitRate = godViewWaveResolver.getRoundHitRate(pi);
+            ctx.wb().setFeature(Feature.ROUND_HIT_RATE, Double.isNaN(hitRate) ? 0 : hitRate);
+
+            try {
+                csvWriters[pi].writeScoreRow(ctx.wb(),
+                        battleId != null ? battleId : "unknown", round);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to write score row for perspective " + pi, e);
             }
         }
     }

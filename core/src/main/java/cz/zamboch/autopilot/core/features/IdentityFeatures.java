@@ -15,6 +15,11 @@ public final class IdentityFeatures implements IInGameFeatures {
     private static final Feature[] DEPS = { Feature.OPPONENT_ID };
     private static final Feature[] OUTPUTS = { Feature.OPPONENT_ID_HASH };
 
+    /**
+     * Cached hash — once computed, never changes (opponent identity is constant).
+     */
+    private double cachedHash = Double.NaN;
+
     public Feature[] getDependencies() {
         return DEPS;
     }
@@ -28,13 +33,16 @@ public final class IdentityFeatures implements IInGameFeatures {
     }
 
     public void process(Whiteboard wb) {
-        String name = wb.getStringFeature(Feature.OPPONENT_ID);
-        if (name == null) {
-            return;
+        if (Double.isNaN(cachedHash)) {
+            String name = wb.getStringFeature(Feature.OPPONENT_ID);
+            if (name == null) {
+                return;
+            }
+            // Parse opponent bot ID (strip version suffix after space)
+            int sp = name.indexOf(' ');
+            String botId = (sp < 0) ? name : name.substring(0, sp);
+            cachedHash = RoboMath.fnv1a32(botId);
         }
-        // Parse opponent bot ID (strip version suffix after space)
-        int sp = name.indexOf(' ');
-        String botId = (sp < 0) ? name : name.substring(0, sp);
-        wb.setFeature(Feature.OPPONENT_ID_HASH, RoboMath.fnv1a32(botId));
+        wb.setFeature(Feature.OPPONENT_ID_HASH, cachedHash);
     }
 }

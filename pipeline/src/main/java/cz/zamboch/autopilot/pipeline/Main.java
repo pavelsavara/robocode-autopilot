@@ -19,7 +19,8 @@ import java.util.List;
  * Usage: pipeline --input <recordings-dir> --output <csv-dir>
  *
  * Each .br recording is replayed producing:
- * <output>/<battleId>/<perspectiveName>/ticks.csv, our-waves.csv, their-waves.csv, scores.csv
+ * <output>/<battleId>/<perspectiveName>/ticks.csv, our-waves.csv,
+ * their-waves.csv, scores.csv
  */
 public final class Main {
     public static void main(String[] args) {
@@ -86,8 +87,10 @@ public final class Main {
             throws IOException, ClassNotFoundException {
         Loader loader = new Loader(brFile);
 
-        // We need to peek at the first turn to get BattleRules (bfWidth, bfHeight, gunCoolingRate)
-        // Use a two-phase approach: first read header via forEachTurn (gets recordInfo), then replay
+        // We need to peek at the first turn to get BattleRules (bfWidth, bfHeight,
+        // gunCoolingRate)
+        // Use a two-phase approach: first read header via forEachTurn (gets
+        // recordInfo), then replay
         final BattleRecordInfo[] infoHolder = { null };
         final List<int[]> roundTurns = new ArrayList<>();
         final List<ITurnSnapshot> snapshots = new ArrayList<>();

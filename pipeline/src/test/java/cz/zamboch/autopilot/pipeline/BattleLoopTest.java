@@ -130,6 +130,7 @@ final class BattleLoopTest {
         // --- PipelineValidator: spatial accuracy ---
         int spatialMismatches = validator.getSpatialMismatches();
         System.out.println(String.format("Spatial mismatches: %d", spatialMismatches));
+        validator.printSummary();
         assertEquals(0, spatialMismatches,
                 "Spatial features must match exactly between observer and god-view");
 

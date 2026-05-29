@@ -75,7 +75,9 @@ public final class Autopilot extends AdvancedRobot {
      * Features that persist across ring rotations but are NOT reset on scan ticks.
      */
     private static final Feature[] STICKY_FEATURES = {
-            Feature.LAST_SCAN_TICK
+            Feature.LAST_SCAN_TICK,
+            Feature.BATTLEFIELD_WIDTH,
+            Feature.BATTLEFIELD_HEIGHT
     };
 
     /**
@@ -126,10 +128,12 @@ public final class Autopilot extends AdvancedRobot {
         wb.setFeature(Feature.OPPONENT_ENERGY, event.getEnergy());
         wb.setFeature(Feature.LAST_SCAN_TICK, wb.getFeature(Feature.TICK));
 
-        // Opponent identity (once)
+        // Opponent identity — always set name (survives clearFeatures between rounds)
+        wb.setStringFeature(Feature.OPPONENT_ID, event.getName());
+
+        // VCS loading (once per battle — expensive)
         if (!vcsLoaded) {
             String name = event.getName();
-            wb.setStringFeature(Feature.OPPONENT_ID, name);
             int sp = name.indexOf(' ');
             String botId = (sp < 0) ? name : name.substring(0, sp);
             opponentHash = RoboMath.fnv1a32(botId);

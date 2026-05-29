@@ -137,18 +137,23 @@ public final class PipelineValidator {
     // ========== Layer 1: Spatial & Kinematic Fidelity ==========
 
     /**
-     * Validate spatial/kinematic features on scan ticks.
-     * Skips silently if this is not a scan tick (TICK != LAST_SCAN_TICK).
+     * Validate spatial/kinematic features.
+     * Self and static features are checked every tick.
+     * Opponent-dependent features are only checked on scan ticks.
      */
     public void validateSpatial(int perspIndex, Whiteboard wb,
             IRobotSnapshot self, IRobotSnapshot opponent, ITurnSnapshot turn) {
         double tick = wb.getFeature(Feature.TICK);
-        double lastScanTick = wb.getFeature(Feature.LAST_SCAN_TICK);
-        if (Double.isNaN(tick) || Double.isNaN(lastScanTick) || Math.abs(tick - lastScanTick) > EPSILON) {
-            return; // not a scan tick — skip
+        if (Double.isNaN(tick)) {
+            throw new IllegalStateException("TICK must be set before validateSpatial is called");
         }
 
-        // Self features
+        // Skip if observer didn't process this turn (robot is dead)
+        if (Math.abs(tick - turn.getTurn()) > EPSILON) {
+            return;
+        }
+
+        // Self features (available every tick from StatusEvent)
         checkSpatialFeature(wb, Feature.OUR_X, self.getX());
         checkSpatialFeature(wb, Feature.OUR_Y, self.getY());
         checkSpatialFeature(wb, Feature.OUR_HEADING, self.getBodyHeading());
@@ -158,14 +163,26 @@ public final class PipelineValidator {
         checkSpatialFeature(wb, Feature.RADAR_HEADING, self.getRadarHeading());
         checkSpatialFeature(wb, Feature.GUN_HEAT, self.getGunHeat());
 
-        // Opponent features
+        // Static features
+        checkSpatialFeature(wb, Feature.BATTLEFIELD_WIDTH, bfWidth);
+        checkSpatialFeature(wb, Feature.BATTLEFIELD_HEIGHT, bfHeight);
+
+        // Timing (always available)
+        checkSpatialFeature(wb, Feature.TICK, turn.getTurn());
+
+        // Opponent features (only valid on scan ticks — whiteboard is stale otherwise)
+        double lastScanTick = wb.getFeature(Feature.LAST_SCAN_TICK);
+        if (Double.isNaN(lastScanTick) || Math.abs(tick - lastScanTick) > EPSILON) {
+            return; // not a scan tick — skip opponent features
+        }
+
         checkSpatialFeature(wb, Feature.OPPONENT_X, opponent.getX());
         checkSpatialFeature(wb, Feature.OPPONENT_Y, opponent.getY());
         checkSpatialFeature(wb, Feature.OPPONENT_HEADING, opponent.getBodyHeading());
         checkSpatialFeature(wb, Feature.OPPONENT_VELOCITY, opponent.getVelocity());
         checkSpatialFeature(wb, Feature.OPPONENT_ENERGY, opponent.getEnergy());
 
-        // Derived features
+        // Derived features (depend on opponent position)
         double dx = opponent.getX() - self.getX();
         double dy = opponent.getY() - self.getY();
         double expectedDistance = Math.hypot(dx, dy);
@@ -182,12 +199,7 @@ public final class PipelineValidator {
         checkSpatialFeature(wb, Feature.OPPONENT_LATERAL_VELOCITY, expectedLateral);
         checkSpatialFeature(wb, Feature.OPPONENT_ADVANCING_VELOCITY, expectedAdvancing);
 
-        // Static features
-        checkSpatialFeature(wb, Feature.BATTLEFIELD_WIDTH, bfWidth);
-        checkSpatialFeature(wb, Feature.BATTLEFIELD_HEIGHT, bfHeight);
-
-        // Timing
-        checkSpatialFeature(wb, Feature.TICK, turn.getTurn());
+        // Scan timing (only meaningful on scan ticks)
         checkSpatialFeature(wb, Feature.LAST_SCAN_TICK, turn.getTurn());
         checkSpatialFeature(wb, Feature.TICKS_SINCE_SCAN, 0.0);
     }
@@ -342,17 +354,24 @@ public final class PipelineValidator {
      * Only applicable when the robot is "cz.zamboch.Autopilot".
      */
     public void validateDebugProperties(IRobotSnapshot liveRobot, Whiteboard observerWb) {
+        double tick = observerWb.getFeature(Feature.TICK);
+        if (Double.isNaN(tick)) {
+            throw new IllegalStateException("TICK must be set before validateDebugProperties is called");
+        }
+
         IDebugProperty[] props = liveRobot.getDebugProperties();
         if (props == null)
             return;
 
+        // Verify debug properties are from the same tick (handles dead-robot
+        // and Robocode timing-offset edge cases).
+        double debugTick = getDebugPropertyValue(props, "TICK");
+        if (Double.isNaN(debugTick) || Math.abs(debugTick - tick) > EPSILON) {
+            return;
+        }
+
         for (IDebugProperty prop : props) {
             String key = prop.getKey();
-
-            // Skip features that are known to differ or are non-numeric
-            if ("ROUND_RESULT".equals(key) || "ROUND_HIT_RATE".equals(key) || "OPPONENT_ID".equals(key)) {
-                continue;
-            }
 
             Feature feature;
             try {

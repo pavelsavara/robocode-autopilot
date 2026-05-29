@@ -119,10 +119,20 @@ class PipelineValidatorTest {
         }
 
         @Test
-        void spatialChecks_skippedWhenNotScanTick() {
+        void spatialChecks_selfValidatedButOpponentSkippedWhenNotScanTick() {
                 Whiteboard wb = new Whiteboard();
                 wb.setFeature(Feature.TICK, 42);
                 wb.setFeature(Feature.LAST_SCAN_TICK, 40); // not a scan tick
+                wb.setFeature(Feature.OUR_X, 100);
+                wb.setFeature(Feature.OUR_Y, 200);
+                wb.setFeature(Feature.OUR_HEADING, 0);
+                wb.setFeature(Feature.OUR_VELOCITY, 0);
+                wb.setFeature(Feature.OUR_ENERGY, 100);
+                wb.setFeature(Feature.GUN_HEADING, 0);
+                wb.setFeature(Feature.RADAR_HEADING, 0);
+                wb.setFeature(Feature.GUN_HEAT, 0);
+                wb.setFeature(Feature.BATTLEFIELD_WIDTH, 800);
+                wb.setFeature(Feature.BATTLEFIELD_HEIGHT, 600);
 
                 IRobotSnapshot self = TestSnapshots.robot(100, 200, 0, "A");
                 IRobotSnapshot opp = TestSnapshots.robot(500, 400, 1, "B");
@@ -130,7 +140,12 @@ class PipelineValidatorTest {
 
                 validator.validateSpatial(0, wb, self, opp, turn);
 
-                assertEquals(0, validator.getSpatialChecks(), "Should skip non-scan ticks");
+                assertTrue(validator.getSpatialChecks(Feature.OUR_X) > 0,
+                                "Self features should be checked on non-scan ticks");
+                assertEquals(0, validator.getSpatialMismatches(Feature.OUR_X),
+                                "Self features should match");
+                assertEquals(0, validator.getSpatialChecks(Feature.OPPONENT_X),
+                                "Opponent features should NOT be checked on non-scan ticks");
         }
 
         // ========== Layer 2: Fire Detection ==========
@@ -399,11 +414,14 @@ class PipelineValidatorTest {
         @Test
         void debugProperties_matchingValues() {
                 Whiteboard wb = new Whiteboard();
+                wb.setFeature(Feature.TICK, 1.0);
+                wb.setFeature(Feature.LAST_SCAN_TICK, 1.0);
                 wb.setFeature(Feature.OUR_X, 150.0);
                 wb.setFeature(Feature.OUR_Y, 250.0);
 
                 IRobotSnapshot robot = TestSnapshots.robotWithDebug(150, 250, 0, "Autopilot",
                                 new robocode.control.snapshot.IDebugProperty[] {
+                                                TestSnapshots.debugProperty("TICK", "1.0"),
                                                 TestSnapshots.debugProperty("OUR_X", "150.0"),
                                                 TestSnapshots.debugProperty("OUR_Y", "250.0")
                                 });
@@ -417,10 +435,13 @@ class PipelineValidatorTest {
         @Test
         void debugProperties_mismatchDetected() {
                 Whiteboard wb = new Whiteboard();
+                wb.setFeature(Feature.TICK, 1.0);
+                wb.setFeature(Feature.LAST_SCAN_TICK, 1.0);
                 wb.setFeature(Feature.OUR_X, 150.0);
 
                 IRobotSnapshot robot = TestSnapshots.robotWithDebug(150, 250, 0, "Autopilot",
                                 new robocode.control.snapshot.IDebugProperty[] {
+                                                TestSnapshots.debugProperty("TICK", "1.0"),
                                                 TestSnapshots.debugProperty("OUR_X", "999.0")
                                 });
 
@@ -432,18 +453,22 @@ class PipelineValidatorTest {
         @Test
         void debugProperties_nonBreakMismatches() {
                 Whiteboard wb = new Whiteboard();
+                wb.setFeature(Feature.TICK, 1.0);
+                wb.setFeature(Feature.LAST_SCAN_TICK, 1.0);
                 wb.setFeature(Feature.OUR_X, 100.0);
                 wb.setFeature(Feature.OUR_BREAK_TICK, 50.0);
 
                 IRobotSnapshot robot = TestSnapshots.robotWithDebug(100, 200, 0, "Autopilot",
                                 new robocode.control.snapshot.IDebugProperty[] {
+                                                TestSnapshots.debugProperty("TICK", "1.0"),
                                                 TestSnapshots.debugProperty("OUR_X", "999.0"),
                                                 TestSnapshots.debugProperty("OUR_BREAK_TICK", "999.0")
                                 });
 
                 validator.validateDebugProperties(robot, wb);
 
-                assertEquals(2, validator.getDebugPropertyMismatches());
+                // OUR_BREAK_TICK is OUR_WAVES FileType → excluded by isWaveFeature
+                assertEquals(1, validator.getDebugPropertyMismatches());
                 assertEquals(1, validator.getNonBreakDebugPropertyMismatches());
         }
 
@@ -555,7 +580,7 @@ class PipelineValidatorTest {
         }
 
         @Test
-        void assertNonVacuous_throwsForEmptyLayer3() {
+        void assertNonVacuous_passesWithEmptyLayer3() {
                 Whiteboard wb = new Whiteboard();
                 wb.setFeature(Feature.TICK, 1);
                 wb.setFeature(Feature.LAST_SCAN_TICK, 1);
@@ -586,12 +611,11 @@ class PipelineValidatorTest {
                 validator.validateSpatial(0, wb, self, opp, turn);
 
                 validator.recordGodViewFire(0, 1.0, 0, 0, 0, 1);
-                // No Layer 3 wave comparisons
+                // No Layer 3 wave comparisons — not required for non-vacuous
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
 
-                IllegalStateException ex = assertThrows(IllegalStateException.class,
-                                () -> validator.assertNonVacuous());
-                assertTrue(ex.getMessage().contains("Layer 3"));
+                // Layer 3 is not required for assertNonVacuous (observer fires independently)
+                assertDoesNotThrow(() -> validator.assertNonVacuous());
         }
 }
