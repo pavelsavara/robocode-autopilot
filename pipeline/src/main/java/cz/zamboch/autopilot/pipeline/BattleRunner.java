@@ -31,6 +31,7 @@ public final class BattleRunner {
      */
     public static StreamingPipelineObserver runBattle(String opponent, int rounds, String outputDir) {
         RobocodeEngine.setLogMessagesEnabled(false);
+        RobocodeEngine.setLogErrorsEnabled(false);
         RobocodeEngine engine = new RobocodeEngine();
 
         StreamingPipelineObserver observer = new StreamingPipelineObserver(outputDir, 800, 600);
