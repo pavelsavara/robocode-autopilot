@@ -29,6 +29,8 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
     private CsvWriter[] csvWriters; // one per observer, nullable
     private String battleId;
     private int currentRound = -1;
+    private final double[] lastValidatorFireTick = { Double.NaN, Double.NaN };
+    private final double[] lastValidatorBreakTick = { Double.NaN, Double.NaN };
 
     public PipelineOrchestrator(double bfWidth, double bfHeight, double gunCoolingRate) {
         this.bfWidth = bfWidth;
@@ -108,8 +110,9 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                 int pi = ctx.perspectiveIndex();
                 int oppIndex = 1 - pi;
                 validator.validateSpatial(pi, ctx.wb(), robots[pi], robots[oppIndex], curr);
-                validator.accountEnergy(pi, robots, curr.getBullets(), curr);
+                validator.accountEnergy(pi, robots, curr.getBullets());
 
+                // Layer 2: god-view fire (our perspective fired)
                 if (godViewWaveResolver.firedThisTick(pi)) {
                     double power = ctx.wb().getFeature(Feature.OUR_FIRE_POWER);
                     double x = ctx.wb().getFeature(Feature.OUR_FIRE_X);
@@ -118,6 +121,35 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                     long tick = (long) ctx.wb().getFeature(Feature.OUR_FIRE_TICK);
                     validator.recordGodViewFire(pi, power, x, y, heading, tick);
                 }
+
+                // Layer 2: robot-side fire detection (observer detected own fire)
+                double fireTick = ctx.wb().getFeature(Feature.OUR_FIRE_TICK);
+                if (!Double.isNaN(fireTick) && fireTick != lastValidatorFireTick[pi]) {
+                    lastValidatorFireTick[pi] = fireTick;
+                    double rsPower = ctx.wb().getFeature(Feature.OUR_FIRE_POWER);
+                    double rsX = ctx.wb().getFeature(Feature.OUR_FIRE_X);
+                    double rsY = ctx.wb().getFeature(Feature.OUR_FIRE_Y);
+                    validator.recordRobotSideFire(pi, rsPower, rsX, rsY, (long) fireTick);
+                }
+
+                // Layer 3: wave resolution tracking
+                if (resolved[pi]) {
+                    validator.recordGodViewWaveResolution(pi);
+                }
+                if (!Double.isNaN(robotSideGf[pi])) {
+                    validator.recordRobotSideWaveResolution(pi);
+                }
+                // Layer 3: GF comparison when both sides resolved same tick
+                if (resolved[pi] && !Double.isNaN(robotSideGf[pi])) {
+                    double godViewGf = ctx.wb().getFeature(Feature.OUR_BREAK_GF);
+                    long godViewBreakTick = (long) ctx.wb().getFeature(Feature.OUR_BREAK_TICK);
+                    long robotSideBreakTick = godViewBreakTick; // same tick if both resolved
+                    validator.compareWaveBreak(pi, godViewGf, robotSideGf[pi],
+                            godViewBreakTick, robotSideBreakTick);
+                }
+
+                // Layer 5: debug property cross-check
+                validator.validateDebugProperties(robots[pi], ctx.wb());
             }
         }
 
@@ -147,6 +179,10 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
         if (validator != null) {
             validator.resetRound();
         }
+        lastValidatorFireTick[0] = Double.NaN;
+        lastValidatorFireTick[1] = Double.NaN;
+        lastValidatorBreakTick[0] = Double.NaN;
+        lastValidatorBreakTick[1] = Double.NaN;
     }
 
     public ObserverContext[] observers() {

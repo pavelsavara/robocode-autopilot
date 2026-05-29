@@ -52,6 +52,7 @@ public final class PipelineValidator {
     private final int[] energyChecks = { 0, 0 };
     private final int[] energyDiscrepancies = { 0, 0 };
     private final double[] prevEnergy = { Double.NaN, Double.NaN };
+    private final double[] prevVelocity = { Double.NaN, Double.NaN };
 
     // --- Layer 5: Debug Property Cross-Check (per-feature stats) ---
     private final EnumMap<Feature, ValidationStats> debugPropertyStats = new EnumMap<>(Feature.class);
@@ -273,12 +274,13 @@ public final class PipelineValidator {
      * On first tick per perspective, initializes prevEnergy without checking.
      */
     public void accountEnergy(int perspIndex, IRobotSnapshot[] robots,
-            IBulletSnapshot[] bullets, ITurnSnapshot turn) {
+            IBulletSnapshot[] bullets) {
         IRobotSnapshot self = robots[perspIndex];
         double currentEnergy = self.getEnergy();
 
         if (Double.isNaN(prevEnergy[perspIndex])) {
             prevEnergy[perspIndex] = currentEnergy;
+            prevVelocity[perspIndex] = self.getVelocity();
             return;
         }
 
@@ -313,9 +315,10 @@ public final class PipelineValidator {
             }
         }
 
-        // Wall hit damage
-        if (self.getState() == RobotState.HIT_WALL) {
-            expected -= wallDamage(self.getVelocity());
+        // Wall hit damage (use previous tick velocity — snapshot velocity is
+        // post-impact)
+        if (self.getState() == RobotState.HIT_WALL && !Double.isNaN(prevVelocity[perspIndex])) {
+            expected -= wallDamage(prevVelocity[perspIndex]);
         }
 
         // Ram damage
@@ -329,6 +332,7 @@ public final class PipelineValidator {
         }
 
         prevEnergy[perspIndex] = currentEnergy;
+        prevVelocity[perspIndex] = self.getVelocity();
     }
 
     // ========== Layer 5: IDebugProperty Cross-Check ==========
@@ -396,6 +400,8 @@ public final class PipelineValidator {
     public void resetRound() {
         prevEnergy[0] = Double.NaN;
         prevEnergy[1] = Double.NaN;
+        prevVelocity[0] = Double.NaN;
+        prevVelocity[1] = Double.NaN;
     }
 
     // ========== Non-Vacuous Assertion ==========
@@ -560,13 +566,13 @@ public final class PipelineValidator {
             double posMAE = t.getPositionMAE();
             double powMAE = t.getPowerMAE();
             double latency = t.getDetectionLatency();
-            System.out.printf("  Perspective %d: godView=%d, robotSide=%d, rate=%.3f%n",
+            System.out.printf("  Perspective %d: godView=%d, robotSide=%d, rate=%s%n",
                     pi, t.godViewFires.size(), t.robotSideFires.size(),
-                    Double.isNaN(rate) ? 0.0 : rate);
-            System.out.printf("    positionMAE=%.4f, powerMAE=%.4f, latency=%.2f%n",
-                    Double.isNaN(posMAE) ? 0.0 : posMAE,
-                    Double.isNaN(powMAE) ? 0.0 : powMAE,
-                    Double.isNaN(latency) ? 0.0 : latency);
+                    formatMetric(rate, "%.3f"));
+            System.out.printf("    positionMAE=%s, powerMAE=%s, latency=%s%n",
+                    formatMetric(posMAE, "%.4f"),
+                    formatMetric(powMAE, "%.4f"),
+                    formatMetric(latency, "%.2f"));
         }
         System.out.println();
 
@@ -578,14 +584,14 @@ public final class PipelineValidator {
             double maxErr = getGfMaxError(pi);
             double matchRate = t.getWaveMatchRate();
             double btMAE = t.getBreakTickMAE();
-            System.out.printf("  Perspective %d: comparisons=%d, MAE=%.6f, maxError=%.6f%n",
+            System.out.printf("  Perspective %d: comparisons=%d, MAE=%s, maxError=%s%n",
                     pi, t.gfComparisonCount,
-                    Double.isNaN(mae) ? 0.0 : mae,
-                    Double.isNaN(maxErr) ? 0.0 : maxErr);
-            System.out.printf("    waveMatchRate=%.3f (godView=%d, robotSide=%d), breakTickMAE=%.2f%n",
-                    Double.isNaN(matchRate) ? 0.0 : matchRate,
+                    formatMetric(mae, "%.6f"),
+                    formatMetric(maxErr, "%.6f"));
+            System.out.printf("    waveMatchRate=%s (godView=%d, robotSide=%d), breakTickMAE=%s%n",
+                    formatMetric(matchRate, "%.3f"),
                     t.godViewResolutions, t.robotSideResolutions,
-                    Double.isNaN(btMAE) ? 0.0 : btMAE);
+                    formatMetric(btMAE, "%.2f"));
         }
         System.out.println();
 
@@ -608,6 +614,10 @@ public final class PipelineValidator {
             }
         }
         System.out.println("=================================");
+    }
+
+    private static String formatMetric(double value, String format) {
+        return Double.isNaN(value) ? "N/A" : String.format(format, value);
     }
 
     // ========== Engine Damage Formulas ==========
