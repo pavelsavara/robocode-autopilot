@@ -161,3 +161,32 @@ tasks.test {
         "--add-opens", "java.base/java.io=ALL-UNNAMED"
     )
 }
+
+// Integration tests that need HiddenAccess.init() but no battle-stage directory.
+// Usage: ./gradlew :pipeline:integrationTest
+tasks.register<Test>("integrationTest") {
+    group = "verification"
+    description = "Run integration tests (tagged 'integration') that need HiddenAccess but not battle-stage"
+
+    useJUnitPlatform {
+        includeTags("integration")
+        excludeTags("battle")
+    }
+
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+
+    jvmArgs(
+        "-Djava.awt.headless=true",
+        "--add-opens", "java.base/sun.net.www.protocol.jar=ALL-UNNAMED",
+        "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED",
+        "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+        "--add-opens", "java.base/java.net=ALL-UNNAMED",
+        "--add-opens", "java.base/java.util=ALL-UNNAMED",
+        "--add-opens", "java.base/java.io=ALL-UNNAMED"
+    )
+
+    testLogging {
+        showStandardStreams = true
+    }
+}
