@@ -45,6 +45,10 @@ public final class Autopilot extends AdvancedRobot {
     private int opponentHash;
     private boolean vcsLoaded;
 
+    // Observer mode support
+    private boolean observerMode;
+    private int nextObserverBulletId = 1;
+
     @Override
     public void onStatus(StatusEvent event) {
         RobotStatus status = event.getStatus();
@@ -164,6 +168,47 @@ public final class Autopilot extends AdvancedRobot {
         }
     }
 
+    /**
+     * Initialize this Autopilot in observer mode — no real peer, no battle loop.
+     * Call event handlers externally, then call {@link #doTurn()} each tick.
+     */
+    public void initForObserver(VcsStore vcsStore, double bfWidth, double bfHeight) {
+        observerMode = true;
+
+        // Register feature processors
+        wb.registerFeatures(
+                new SpatialFeatures(),
+                new MovementFeatures(),
+                new TimingFeatures(),
+                new WallHitEstimator(),
+                new FireFeatures(),
+                new IdentityFeatures(),
+                new OurWaveFeatures(),
+                new WaveTracker(),
+                new TheirWaveTracker());
+
+        // Set battle constants
+        wb.setFeature(Feature.BATTLEFIELD_WIDTH, bfWidth);
+        wb.setFeature(Feature.BATTLEFIELD_HEIGHT, bfHeight);
+
+        // Create strategies
+        radar = new NarrowLockRadar(wb);
+        gun = new GFGunStrategy(wb);
+        movement = new OrbitMovementStrategy(wb);
+
+        // Load VCS if provided
+        if (vcsStore != null) {
+            wb.setVcsStore(vcsStore);
+            wb.setModelSelector(new ModelSelector(vcsStore));
+            vcsLoaded = true;
+        }
+    }
+
+    /** Access the whiteboard (for observer/pipeline integration). */
+    public Whiteboard getWhiteboard() {
+        return wb;
+    }
+
     @Override
     public void run() {
         // Register feature processors
@@ -193,7 +238,7 @@ public final class Autopilot extends AdvancedRobot {
         }
     }
 
-    private void doTurn() {
+    public void doTurn() {
         wb.process();
 
         // Reset accumulators after FireFeatures has consumed them on scan ticks
@@ -206,36 +251,50 @@ public final class Autopilot extends AdvancedRobot {
         }
 
         // Radar
-        setTurnRadarRightRadians(radar.getRadarTurn());
+        double radarTurn = radar.getRadarTurn();
+        if (!observerMode) {
+            setTurnRadarRightRadians(radarTurn);
+        }
 
         // Movement
         movement.getCommand(moveCmd);
-        setTurnRightRadians(moveCmd.turnRight);
-        setAhead(moveCmd.ahead);
+        if (!observerMode) {
+            setTurnRightRadians(moveCmd.turnRight);
+            setAhead(moveCmd.ahead);
+        }
 
         // Gun
         gun.getFireCommand(fireCmd);
         if (!Double.isNaN(fireCmd.angle)) {
             double gunHeading = wb.getFeature(Feature.GUN_HEADING);
             double gunTurn = fireCmd.angle - gunHeading;
-            setTurnGunRightRadians(RoboMath.normalRelativeAngle(gunTurn));
-            if (fireCmd.power > 0 && Math.abs(getGunTurnRemaining()) < 5) {
-                Bullet bullet = setFireBullet(fireCmd.power);
-                if (bullet != null) {
-                    snapshotFireFeatures(fireCmd.power, bullet.hashCode());
+            if (!observerMode) {
+                setTurnGunRightRadians(RoboMath.normalRelativeAngle(gunTurn));
+                if (fireCmd.power > 0 && Math.abs(getGunTurnRemaining()) < 5) {
+                    Bullet bullet = setFireBullet(fireCmd.power);
+                    if (bullet != null) {
+                        snapshotFireFeatures(fireCmd.power, bullet.hashCode());
+                    }
+                }
+            } else {
+                // Observer mode: fire when gun is cool
+                if (fireCmd.power > 0 && wb.getFeature(Feature.GUN_HEAT) <= 0) {
+                    snapshotFireFeatures(fireCmd.power, nextObserverBulletId++);
                 }
             }
         }
 
-        // Debug
-        for (Feature f : Feature.values()) {
-            if (f == Feature.OPPONENT_ID) {
-                String s = wb.getStringFeature(f);
-                setDebugProperty(f.name(), s != null ? s : "");
-                continue;
+        // Debug output (only in live mode)
+        if (!observerMode) {
+            for (Feature f : Feature.values()) {
+                if (f == Feature.OPPONENT_ID) {
+                    String s = wb.getStringFeature(f);
+                    setDebugProperty(f.name(), s != null ? s : "");
+                    continue;
+                }
+                double v = wb.getFeature(f);
+                setDebugProperty(f.name(), Double.isNaN(v) ? "NaN" : String.valueOf(v));
             }
-            double v = wb.getFeature(f);
-            setDebugProperty(f.name(), Double.isNaN(v) ? "NaN" : String.valueOf(v));
         }
     }
 

@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     implementation(project(":core"))
+    implementation(project(":robot"))
     implementation(libs.robocode.battle)
     implementation(libs.robocode.core)
     implementation(libs.robocode.host)
