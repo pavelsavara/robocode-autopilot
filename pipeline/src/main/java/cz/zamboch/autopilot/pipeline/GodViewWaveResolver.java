@@ -21,9 +21,12 @@ import java.util.Set;
 /**
  * Pipeline-side wave resolver using god-view (engine ground truth).
  * <p>
- * Adapted from the original {@code WaveResolver} to work with {@link ObserverContext}
- * instead of {@code Perspective}. Detects when each perspective's robot fires a bullet
- * (via IBulletSnapshot), creates a Wave with fire-time features, and resolves it using
+ * Adapted from the original {@code WaveResolver} to work with
+ * {@link ObserverContext}
+ * instead of {@code Perspective}. Detects when each perspective's robot fires a
+ * bullet
+ * (via IBulletSnapshot), creates a Wave with fire-time features, and resolves
+ * it using
  * the true opponent position from the engine snapshot.
  * <p>
  * Sets OUR_FIRE_* at fire time and OUR_BREAK_* at resolution time on the
@@ -68,7 +71,10 @@ final class GodViewWaveResolver {
         return roundFired[perspIndex] > 0 ? (double) roundHits[perspIndex] / roundFired[perspIndex] : Double.NaN;
     }
 
-    /** Returns true if a new fire was detected for the given perspective during the last processTick call. */
+    /**
+     * Returns true if a new fire was detected for the given perspective during the
+     * last processTick call.
+     */
     boolean firedThisTick(int perspIndex) {
         return firedThisTick[perspIndex];
     }

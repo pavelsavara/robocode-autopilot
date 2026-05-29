@@ -143,7 +143,8 @@ final class GodViewWaveResolverTest {
 
         assertTrue(resolved, "Wave should have resolved within 30 ticks");
 
-        // OUR_BREAK_HIT must be 1.0 since the bullet was marked HIT_VICTIM before resolution
+        // OUR_BREAK_HIT must be 1.0 since the bullet was marked HIT_VICTIM before
+        // resolution
         Whiteboard wb0 = observers[0].wb();
         assertEquals(1.0, wb0.getFeature(Feature.OUR_BREAK_HIT), 1e-9);
     }

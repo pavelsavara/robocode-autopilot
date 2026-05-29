@@ -4,8 +4,10 @@ import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.Whiteboard;
 
 /**
- * Compares robot-side wave detection (from observer's WaveTracker, using stale scan data)
- * with god-view wave detection (from GodViewWaveResolver, using exact positions).
+ * Compares robot-side wave detection (from observer's WaveTracker, using stale
+ * scan data)
+ * with god-view wave detection (from GodViewWaveResolver, using exact
+ * positions).
  * <p>
  * Tracks:
  * <ul>
@@ -32,9 +34,11 @@ final class WavePrecisionComparator {
 
     /**
      * Capture robot-side wave state BEFORE god-view overwrites the whiteboard.
-     * Must be called after ctx.doTurn() but before godViewWaveResolver.processTick().
+     * Must be called after ctx.doTurn() but before
+     * godViewWaveResolver.processTick().
      *
-     * @return robot-side OUR_BREAK_GF if a new break was detected this tick, else NaN
+     * @return robot-side OUR_BREAK_GF if a new break was detected this tick, else
+     *         NaN
      */
     public double captureRobotSideBreak(int perspIndex, Whiteboard wb) {
         double breakTick = wb.getFeature(Feature.OUR_BREAK_TICK);
@@ -49,7 +53,8 @@ final class WavePrecisionComparator {
      * Called after god-view has run. Checks if god-view resolved a wave this tick
      * and compares with the robot-side GF captured earlier.
      *
-     * @param robotSideGf the GF captured by {@link #captureRobotSideBreak} (NaN if no robot-side break)
+     * @param robotSideGf     the GF captured by {@link #captureRobotSideBreak} (NaN
+     *                        if no robot-side break)
      * @param godViewResolved true if god-view resolved a wave this tick
      */
     public void compareTick(int perspIndex, Whiteboard wb, double robotSideGf, boolean godViewResolved) {
