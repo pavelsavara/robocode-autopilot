@@ -45,10 +45,6 @@ public final class Autopilot extends AdvancedRobot {
     private int opponentHash;
     private boolean vcsLoaded;
 
-    // Observer mode support
-    private boolean observerMode;
-    private int nextObserverBulletId = 1;
-
     @Override
     public void onStatus(StatusEvent event) {
         RobotStatus status = event.getStatus();
@@ -170,31 +166,12 @@ public final class Autopilot extends AdvancedRobot {
 
     /**
      * Initialize this Autopilot in observer mode — no real peer, no battle loop.
+     * The peer must be an {@link cz.zamboch.autopilot.pipeline.ObserverRobotPeer}
+     * (set via setPeer before calling this).
      * Call event handlers externally, then call {@link #doTurn()} each tick.
      */
     public void initForObserver(VcsStore vcsStore, double bfWidth, double bfHeight) {
-        observerMode = true;
-
-        // Register feature processors
-        wb.registerFeatures(
-                new SpatialFeatures(),
-                new MovementFeatures(),
-                new TimingFeatures(),
-                new WallHitEstimator(),
-                new FireFeatures(),
-                new IdentityFeatures(),
-                new OurWaveFeatures(),
-                new WaveTracker(),
-                new TheirWaveTracker());
-
-        // Set battle constants
-        wb.setFeature(Feature.BATTLEFIELD_WIDTH, bfWidth);
-        wb.setFeature(Feature.BATTLEFIELD_HEIGHT, bfHeight);
-
-        // Create strategies
-        radar = new NarrowLockRadar(wb);
-        gun = new GFGunStrategy(wb);
-        movement = new OrbitMovementStrategy(wb);
+        initCommon(bfWidth, bfHeight);
 
         // Load VCS if provided
         if (vcsStore != null) {
@@ -204,14 +181,8 @@ public final class Autopilot extends AdvancedRobot {
         }
     }
 
-    /** Access the whiteboard (for observer/pipeline integration). */
-    public Whiteboard getWhiteboard() {
-        return wb;
-    }
-
-    @Override
-    public void run() {
-        // Register feature processors
+    /** Shared initialization for both live and observer modes. */
+    private void initCommon(double bfWidth, double bfHeight) {
         wb.registerFeatures(
                 new SpatialFeatures(),
                 new MovementFeatures(),
@@ -223,14 +194,22 @@ public final class Autopilot extends AdvancedRobot {
                 new WaveTracker(),
                 new TheirWaveTracker());
 
-        // Set battle constants
-        wb.setFeature(Feature.BATTLEFIELD_WIDTH, getBattleFieldWidth());
-        wb.setFeature(Feature.BATTLEFIELD_HEIGHT, getBattleFieldHeight());
+        wb.setFeature(Feature.BATTLEFIELD_WIDTH, bfWidth);
+        wb.setFeature(Feature.BATTLEFIELD_HEIGHT, bfHeight);
 
-        // Create strategies
         radar = new NarrowLockRadar(wb);
         gun = new GFGunStrategy(wb);
         movement = new OrbitMovementStrategy(wb);
+    }
+
+    /** Access the whiteboard (for observer/pipeline integration). */
+    public Whiteboard getWhiteboard() {
+        return wb;
+    }
+
+    @Override
+    public void run() {
+        initCommon(getBattleFieldWidth(), getBattleFieldHeight());
 
         while (true) {
             doTurn();
@@ -251,50 +230,42 @@ public final class Autopilot extends AdvancedRobot {
         }
 
         // Radar
-        double radarTurn = radar.getRadarTurn();
-        if (!observerMode) {
-            setTurnRadarRightRadians(radarTurn);
-        }
+        setTurnRadarRightRadians(radar.getRadarTurn());
 
         // Movement
         movement.getCommand(moveCmd);
-        if (!observerMode) {
-            setTurnRightRadians(moveCmd.turnRight);
-            setAhead(moveCmd.ahead);
-        }
+        setTurnRightRadians(moveCmd.turnRight);
+        setAhead(moveCmd.ahead);
 
-        // Gun
+        // Gun — unified code path for both live and observer mode.
+        // In live mode: setTurnGunRightRadians → peer stores radians;
+        // getGunTurnRemaining() returns degrees (AdvancedRobot converts).
+        // In observer mode: setTurnGunRightRadians → ObserverRobotPeer stores radians;
+        // getGunTurnRemaining() returns radians (same internal storage),
+        // AdvancedRobot.getGunTurnRemaining() wraps with toDegrees().
+        // Both paths: check < 5 degrees, call setFireBullet which checks gun heat.
         gun.getFireCommand(fireCmd);
         if (!Double.isNaN(fireCmd.angle)) {
             double gunHeading = wb.getFeature(Feature.GUN_HEADING);
             double gunTurn = fireCmd.angle - gunHeading;
-            if (!observerMode) {
-                setTurnGunRightRadians(RoboMath.normalRelativeAngle(gunTurn));
-                if (fireCmd.power > 0 && Math.abs(getGunTurnRemaining()) < 5) {
-                    Bullet bullet = setFireBullet(fireCmd.power);
-                    if (bullet != null) {
-                        snapshotFireFeatures(fireCmd.power, bullet.hashCode());
-                    }
-                }
-            } else {
-                // Observer mode: fire when gun is cool
-                if (fireCmd.power > 0 && wb.getFeature(Feature.GUN_HEAT) <= 0) {
-                    snapshotFireFeatures(fireCmd.power, nextObserverBulletId++);
+            setTurnGunRightRadians(RoboMath.normalRelativeAngle(gunTurn));
+            if (fireCmd.power > 0 && Math.abs(getGunTurnRemaining()) < 5) {
+                Bullet bullet = setFireBullet(fireCmd.power);
+                if (bullet != null) {
+                    snapshotFireFeatures(fireCmd.power, bullet.hashCode());
                 }
             }
         }
 
-        // Debug output (only in live mode)
-        if (!observerMode) {
-            for (Feature f : Feature.values()) {
-                if (f == Feature.OPPONENT_ID) {
-                    String s = wb.getStringFeature(f);
-                    setDebugProperty(f.name(), s != null ? s : "");
-                    continue;
-                }
-                double v = wb.getFeature(f);
-                setDebugProperty(f.name(), Double.isNaN(v) ? "NaN" : String.valueOf(v));
+        // Debug
+        for (Feature f : Feature.values()) {
+            if (f == Feature.OPPONENT_ID) {
+                String s = wb.getStringFeature(f);
+                setDebugProperty(f.name(), s != null ? s : "");
+                continue;
             }
+            double v = wb.getFeature(f);
+            setDebugProperty(f.name(), Double.isNaN(v) ? "NaN" : String.valueOf(v));
         }
     }
 

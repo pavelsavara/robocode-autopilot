@@ -11,25 +11,79 @@ import java.io.File;
 import java.util.List;
 
 /**
- * A no-op implementation of {@link IAdvancedRobotPeer} for observer-mode Autopilot.
+ * A faithful re-implementation of the Robocode engine's gun/fire mechanics for
+ * observer-mode Autopilot.
  * <p>
- * Tracks gun heat and energy, supports firing (returns a {@link Bullet} when the gun
- * is cool and energy is sufficient). All movement and radar commands are no-ops.
+ * Replicates the exact algorithm from {@code RobotPeer} and
+ * {@code BasicRobotProxy}:
+ * <ul>
+ * <li>{@link #updateState} provides authoritative position/heading/energy from
+ * snapshots.
+ * Gun heat is tracked internally (not from snapshot) to match the engine's
+ * fire-then-cool sequence.</li>
+ * <li>{@link #setTurnGun} stores gunTurnRemaining exactly as
+ * {@code setTurnGunRightRadians}
+ * does in the AdvancedRobotProxy — it REPLACES the remaining value.</li>
+ * <li>{@link #getGunTurnRemaining} returns the value in RADIANS (same as the
+ * internal
+ * storage in BasicRobotProxy). The AdvancedRobot API wrapper converts to
+ * degrees.</li>
+ * <li>{@link #setFire} checks gun heat (including accumulated firedHeat within
+ * the same
+ * tick), clamps power to [MIN_BULLET_POWER, MAX_BULLET_POWER] and available
+ * energy,
+ * deducts energy, adds heat = 1 + power/5.</li>
+ * <li>{@link #executeTick} simulates the engine's per-tick processing: cool gun
+ * by
+ * gunCoolingRate, reset firedHeat/firedEnergy accumulators (matching the
+ * proxy's
+ * reset after executeImpl).</li>
+ * </ul>
+ * <p>
+ * Engine tick order (from Battle.runTurn):
+ * <ol>
+ * <li>loadCommands → fireBullets (processes fire commands from last
+ * execute)</li>
+ * <li>performMove → updateGunHeat (cool), updateGunHeading (rotate),
+ * updateMovement</li>
+ * <li>performScan → generate ScannedRobotEvent</li>
+ * <li>publishStatuses → RobotStatus with current state</li>
+ * <li>wakeupRobots → robot code runs (receives events, calls set* methods)</li>
+ * </ol>
+ * The observer sees the status AFTER cooling and rotation (step 4), then makes
+ * decisions
+ * (step 5). Fire commands are processed at step 1 of the NEXT tick.
+ * <p>
+ * All movement and radar commands are no-ops (state comes from snapshots).
  */
+@SuppressWarnings("unchecked") // Robocode API uses raw List return types
 public class ObserverRobotPeer implements IAdvancedRobotPeer {
+
+    /** Max gun rotation per tick: 20 degrees in radians. */
+    private static final double GUN_TURN_RATE_RADIANS = Math.toRadians(20);
+    private static final double MIN_BULLET_POWER = 0.1;
+    private static final double MAX_BULLET_POWER = 3.0;
 
     private final double battleFieldWidth;
     private final double battleFieldHeight;
     private final double gunCoolingRate;
 
+    // --- Engine-tracked state ---
     private double gunHeat = 3.0;
     private double energy = 100.0;
-    private int bulletIdCounter = 1;
-
-    // Tracking heading for Bullet construction
     private double gunHeading;
     private double x;
     private double y;
+
+    // --- Per-tick accumulators (reset by executeTick, mirroring BasicRobotProxy)
+    // ---
+    private double firedHeat;
+    private double firedEnergy;
+
+    // --- Gun turn tracking (mirrors ExecCommands.gunTurnRemaining) ---
+    private double gunTurnRemaining;
+
+    private int bulletIdCounter = 1;
 
     public ObserverRobotPeer(double battleFieldWidth, double battleFieldHeight, double gunCoolingRate) {
         this.battleFieldWidth = battleFieldWidth;
@@ -37,39 +91,93 @@ public class ObserverRobotPeer implements IAdvancedRobotPeer {
         this.gunCoolingRate = gunCoolingRate;
     }
 
-    /** Call each tick to reduce gun heat by the cooling rate. */
-    public void coolGun() {
-        gunHeat = Math.max(0, gunHeat - gunCoolingRate);
-    }
-
-    /** Update position/heading from externally-fed StatusEvent data. */
+    /**
+     * Provide authoritative position/heading/energy from snapshot data.
+     * Called once per tick BEFORE the robot's event handlers and doTurn().
+     * <p>
+     * Gun heat is NOT taken from the snapshot — it is tracked internally to
+     * replicate the engine's fire→cool sequence. Position, heading, and energy
+     * are authoritative from the snapshot (movement physics are not simulated).
+     */
     public void updateState(double x, double y, double gunHeading, double gunHeat, double energy) {
         this.x = x;
         this.y = y;
         this.gunHeading = gunHeading;
-        this.gunHeat = gunHeat;
+        // Gun heat is tracked internally — ignore snapshot gunHeat.
+        // Energy is authoritative from snapshot (damage/ram events are external).
         this.energy = energy;
+    }
+
+    /**
+     * Simulate one tick of engine processing. Call BEFORE feeding the next tick's
+     * events. This mirrors the engine's performMove sequence:
+     * <ol>
+     * <li>Cool gun by gunCoolingRate (clamp to 0)</li>
+     * <li>Reset per-tick accumulators (firedHeat, firedEnergy)</li>
+     * </ol>
+     * Gun heading rotation is NOT simulated — heading comes from snapshots.
+     */
+    public void executeTick() {
+        // Engine: updateGunHeat() in performMove
+        gunHeat -= gunCoolingRate;
+        if (gunHeat < 0) {
+            gunHeat = 0;
+        }
+        // Engine: BasicRobotProxy resets after executeImpl
+        firedHeat = 0;
+        firedEnergy = 0;
     }
 
     public double getGunHeat() {
         return gunHeat;
     }
 
+    /**
+     * Effective gun heat as seen by the robot code (includes pending fires this
+     * tick).
+     * Mirrors BasicRobotProxy.getGunHeatImpl().
+     */
+    public double getGunHeatImpl() {
+        return gunHeat + firedHeat;
+    }
+
     public double getEnergy() {
         return energy;
     }
 
-    // --- Firing ---
+    /**
+     * Effective energy as seen by the robot code (excludes pending fires this
+     * tick).
+     * Mirrors BasicRobotProxy.getEnergyImpl().
+     */
+    public double getEnergyImpl() {
+        return energy - firedEnergy;
+    }
+
+    // --- Firing (mirrors BasicRobotProxy.setFireImpl) ---
 
     @Override
     public Bullet setFire(double power) {
-        if (gunHeat > 0 || energy <= 0 || power <= 0) {
+        if (Double.isNaN(power)) {
             return null;
         }
-        double actualPower = Math.min(power, energy);
-        energy -= actualPower;
-        gunHeat = 1.0 + actualPower / 5.0;
-        return new Bullet(gunHeading, x, y, actualPower, "Observer", null, true, bulletIdCounter++);
+        if (getGunHeatImpl() > 0 || getEnergyImpl() <= 0) {
+            return null;
+        }
+        // Clamp power to [MIN_BULLET_POWER, MAX_BULLET_POWER] and available energy
+        power = Math.min(getEnergyImpl(),
+                Math.min(Math.max(power, MIN_BULLET_POWER), MAX_BULLET_POWER));
+
+        firedEnergy += power;
+        firedHeat += 1.0 + power / 5.0;
+
+        // In the engine, actual energy deduction and heat addition happen in
+        // fireBullets() at loadCommands time. For observer, we apply immediately
+        // (same net effect since executeTick resets accumulators).
+        energy -= power;
+        gunHeat += 1.0 + power / 5.0;
+
+        return new Bullet(gunHeading, x, y, power, "Observer", null, true, bulletIdCounter++);
     }
 
     @Override
@@ -89,235 +197,344 @@ public class ObserverRobotPeer implements IAdvancedRobotPeer {
         return battleFieldHeight;
     }
 
-    // --- Movement commands (no-ops) ---
+    // --- Gun turn tracking (mirrors ExecCommands + BasicRobotProxy) ---
 
     @Override
-    public void setMove(double distance) { }
+    public void setTurnGun(double radians) {
+        // Mirrors BasicRobotProxy.setTurnGunImpl: REPLACES gunTurnRemaining
+        gunTurnRemaining = radians;
+    }
+
+    /**
+     * Returns gun turn remaining in RADIANS.
+     * Note: AdvancedRobot.getGunTurnRemaining() converts this to degrees via
+     * Math.toDegrees(peer.getGunTurnRemaining()). The Autopilot code checks
+     * Math.abs(getGunTurnRemaining()) < 5 which is in degrees (< 5°).
+     */
+    @Override
+    public double getGunTurnRemaining() {
+        return gunTurnRemaining;
+    }
+
+    // --- Movement commands (no-ops — state comes from snapshots) ---
 
     @Override
-    public void setTurnBody(double radians) { }
+    public void setMove(double distance) {
+    }
 
     @Override
-    public void setTurnGun(double radians) { }
+    public void setTurnBody(double radians) {
+    }
 
     @Override
-    public void setTurnRadar(double radians) { }
+    public void setTurnRadar(double radians) {
+    }
 
     @Override
-    public void setMaxTurnRate(double newTurnRate) { }
+    public void setMaxTurnRate(double newTurnRate) {
+    }
 
     @Override
-    public void setMaxVelocity(double newVelocity) { }
+    public void setMaxVelocity(double newVelocity) {
+    }
 
     @Override
-    public void setResume() { }
+    public void setResume() {
+    }
 
     @Override
-    public void setStop(boolean overwrite) { }
+    public void setStop(boolean overwrite) {
+    }
 
     @Override
-    public void move(double distance) { }
+    public void move(double distance) {
+    }
 
     @Override
-    public void turnBody(double radians) { }
+    public void turnBody(double radians) {
+    }
 
     @Override
-    public void turnGun(double radians) { }
+    public void turnGun(double radians) {
+    }
 
     @Override
-    public void turnRadar(double radians) { }
+    public void turnRadar(double radians) {
+    }
 
     // --- Getters returning 0 or default ---
 
     @Override
-    public double getDistanceRemaining() { return 0; }
+    public double getDistanceRemaining() {
+        return 0;
+    }
 
     @Override
-    public double getGunTurnRemaining() { return 0; }
+    public double getRadarTurnRemaining() {
+        return 0;
+    }
+
+    public String getName() {
+        return "Observer";
+    }
 
     @Override
-    public double getRadarTurnRemaining() { return 0; }
-
-    public String getName() { return "Observer"; }
-
-    @Override
-    public long getTime() { return 0; }
+    public long getTime() {
+        return 0;
+    }
 
     @Override
-    public double getBodyHeading() { return 0; }
+    public double getBodyHeading() {
+        return 0;
+    }
 
     @Override
-    public double getGunHeading() { return gunHeading; }
+    public double getGunHeading() {
+        return gunHeading;
+    }
 
     @Override
-    public double getRadarHeading() { return 0; }
+    public double getRadarHeading() {
+        return 0;
+    }
 
     @Override
-    public double getVelocity() { return 0; }
+    public double getVelocity() {
+        return 0;
+    }
 
     @Override
-    public double getX() { return x; }
+    public double getX() {
+        return x;
+    }
 
     @Override
-    public double getY() { return y; }
+    public double getY() {
+        return y;
+    }
 
     @Override
-    public double getBodyTurnRemaining() { return 0; }
+    public double getBodyTurnRemaining() {
+        return 0;
+    }
 
     @Override
-    public double getGunCoolingRate() { return gunCoolingRate; }
+    public double getGunCoolingRate() {
+        return gunCoolingRate;
+    }
 
     @Override
-    public int getOthers() { return 1; }
+    public int getOthers() {
+        return 1;
+    }
 
     @Override
-    public int getNumSentries() { return 0; }
+    public int getNumSentries() {
+        return 0;
+    }
 
     @Override
-    public int getSentryBorderSize() { return 0; }
+    public int getSentryBorderSize() {
+        return 0;
+    }
 
     @Override
-    public int getNumRounds() { return 1; }
+    public int getNumRounds() {
+        return 1;
+    }
 
     @Override
-    public int getRoundNum() { return 0; }
+    public int getRoundNum() {
+        return 0;
+    }
 
     @Override
-    public Graphics2D getGraphics() { return null; }
+    public Graphics2D getGraphics() {
+        return null;
+    }
 
     // --- Event management (no-ops) ---
 
     @Override
-    public void setInterruptible(boolean interruptable) { }
+    public void setInterruptible(boolean interruptable) {
+    }
 
     @Override
-    public void setEventPriority(String eventClass, int priority) { }
+    public void setEventPriority(String eventClass, int priority) {
+    }
 
     @Override
-    public int getEventPriority(String eventClass) { return 0; }
+    public int getEventPriority(String eventClass) {
+        return 0;
+    }
 
     @Override
-    public void addCustomEvent(Condition condition) { }
+    public void addCustomEvent(Condition condition) {
+    }
 
     @Override
-    public void removeCustomEvent(Condition condition) { }
+    public void removeCustomEvent(Condition condition) {
+    }
 
     @Override
-    public void clearAllEvents() { }
+    public void clearAllEvents() {
+    }
 
     @Override
-    public List<Event> getAllEvents() { return List.of(); }
+    public List<Event> getAllEvents() {
+        return List.of();
+    }
 
     @Override
-    public List<StatusEvent> getStatusEvents() { return List.of(); }
+    public List<StatusEvent> getStatusEvents() {
+        return List.of();
+    }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public List getBulletMissedEvents() { return List.of(); }
+    public List getBulletMissedEvents() {
+        return List.of();
+    }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public List getBulletHitBulletEvents() { return List.of(); }
+    public List getBulletHitBulletEvents() {
+        return List.of();
+    }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public List getBulletHitEvents() { return List.of(); }
+    public List getBulletHitEvents() {
+        return List.of();
+    }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public List getHitByBulletEvents() { return List.of(); }
+    public List getHitByBulletEvents() {
+        return List.of();
+    }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public List getHitRobotEvents() { return List.of(); }
+    public List getHitRobotEvents() {
+        return List.of();
+    }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public List getHitWallEvents() { return List.of(); }
+    public List getHitWallEvents() {
+        return List.of();
+    }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public List getRobotDeathEvents() { return List.of(); }
+    public List getRobotDeathEvents() {
+        return List.of();
+    }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public List getScannedRobotEvents() { return List.of(); }
+    public List getScannedRobotEvents() {
+        return List.of();
+    }
 
     @Override
-    public void waitFor(Condition condition) { }
+    public void waitFor(Condition condition) {
+    }
 
     // --- Data / IO ---
 
     @Override
-    public File getDataDirectory() { return null; }
+    public File getDataDirectory() {
+        return null;
+    }
 
     @Override
-    public File getDataFile(String filename) { return null; }
+    public File getDataFile(String filename) {
+        return null;
+    }
 
     @Override
-    public long getDataQuotaAvailable() { return 0; }
+    public long getDataQuotaAvailable() {
+        return 0;
+    }
 
     // --- Output (no-ops) ---
 
     @Override
-    public void setDebugProperty(String key, String value) { }
+    public void setDebugProperty(String key, String value) {
+    }
 
     @Override
-    public void rescan() { }
+    public void rescan() {
+    }
 
     // --- Adjust flags ---
 
     @Override
-    public void setAdjustGunForBodyTurn(boolean adjust) { }
+    public void setAdjustGunForBodyTurn(boolean adjust) {
+    }
 
     @Override
-    public void setAdjustRadarForBodyTurn(boolean adjust) { }
+    public void setAdjustRadarForBodyTurn(boolean adjust) {
+    }
 
     @Override
-    public void setAdjustRadarForGunTurn(boolean adjust) { }
+    public void setAdjustRadarForGunTurn(boolean adjust) {
+    }
 
     @Override
-    public boolean isAdjustGunForBodyTurn() { return true; }
+    public boolean isAdjustGunForBodyTurn() {
+        return true;
+    }
 
     @Override
-    public boolean isAdjustRadarForBodyTurn() { return true; }
+    public boolean isAdjustRadarForBodyTurn() {
+        return true;
+    }
 
     @Override
-    public boolean isAdjustRadarForGunTurn() { return true; }
+    public boolean isAdjustRadarForGunTurn() {
+        return true;
+    }
 
     // --- Misc ---
 
     @Override
-    public void execute() { }
+    public void execute() {
+    }
 
     @Override
-    public void setBodyColor(Color color) { }
+    public void setBodyColor(Color color) {
+    }
 
     @Override
-    public void setGunColor(Color color) { }
+    public void setGunColor(Color color) {
+    }
 
     @Override
-    public void setRadarColor(Color color) { }
+    public void setRadarColor(Color color) {
+    }
 
     @Override
-    public void setBulletColor(Color color) { }
+    public void setBulletColor(Color color) {
+    }
 
     @Override
-    public void setScanColor(Color color) { }
+    public void setScanColor(Color color) {
+    }
 
-    public void getCall() { }
+    public void getCall() {
+    }
 
-    public void setCall() { }
+    public void setCall() {
+    }
 
-    public void println(String s) { }
+    public void println(String s) {
+    }
 
-    public void print(String s) { }
+    public void print(String s) {
+    }
 
     // --- IStandardRobotPeer blocking methods ---
 
     @Override
-    public void stop(boolean overwrite) { }
+    public void stop(boolean overwrite) {
+    }
 
     @Override
-    public void resume() { }
+    public void resume() {
+    }
 }
