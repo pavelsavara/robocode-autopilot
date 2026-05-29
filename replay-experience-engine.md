@@ -800,20 +800,197 @@ BattleRunner.runBattle(opponent, rounds, outputDir);
 - False positive: robot-side detects wall-hit energy loss as fire → comparison flags it
 
 ### Phase 5: PipelineValidator
-1. Merge `DebugValidator` + `GodViewValidator` into `PipelineValidator`
-2. Add IDebugProperty comparison (gated: our perspective only, only when fighting)
-3. Add wave precision comparison (robot-side vs god-view, both perspectives)
-4. Port existing validation tests
+
+Replace `DebugValidator` + `GodViewValidator` with a single `PipelineValidator` that validates **all features** against engine ground truth and measures the precision gap between robot-side estimates and god-view reality.
+
+#### Design Principles
+
+1. **Nothing is vacuously true** — if a validation category has 0 checks, the test FAILS (not silently passes with 100%).
+2. **Ground truth comes from engine snapshots** — `IRobotSnapshot`, `IBulletSnapshot`, `ITurnSnapshot` provide exact state.
+3. **Engine math must be replicated verbatim** from `D:\robocode` source (see reference below).
+4. **Robot-side vs god-view comparison** measures quality loss from limited information — it's the whole point of the dual architecture.
+
+#### Engine Implementation Reference (from `D:\robocode`)
+
+The validator must use **identical math** to the engine. Key formulas:
+
+| Rule | Engine Source | Formula |
+|------|------|---------|
+| Bullet speed | `Rules.java:208-215` | `20 - 3 * power` |
+| Bullet damage | `Rules.java:196-205` | `4*power + (power > 1 ? 2*(power-1) : 0)` |
+| Hit energy bonus | `Rules.java:207-214` | `3 * power` |
+| Gun heat per shot | `Rules.java:217-224` | `1 + power/5` |
+| Wall hit damage | `Rules.java:180-186` | `max(|velocity|/2 - 1, 0)` |
+| Ram damage | `RobotPeer.java:1331-1354` | `0.6` to both; attacker bonus `1.2` |
+| Turn rate | `RobotPeer.java:1406-1413` | `(0.4 + 0.6*(1 - |v|/8)) * 10°` |
+| Velocity model | `RobotPeer.java:1510-1556` | Accel +1, Decel -2, max 8 px/turn |
+| Scan arc | `RobotPeer.java:1524-1556` | Pie wedge, last→current radar heading, 1200px radius |
+| Tick order | `Battle.java:486-508` | loadCommands → updateBullets → performMove → scan → handleDead |
+| Bullet collision | `BulletPeer.java:138-197` | Line2D from lastPos→currentPos vs 36×36 bounding box |
+
+#### Validation Layer 1: Spatial & Kinematic Fidelity (every tick, both perspectives)
+
+Compares pipeline whiteboard against `IRobotSnapshot` ground truth on **every scan tick**.
+
+| Feature Group | Ground Truth Source | Expected |
+|---------------|-------------------|----------|
+| OUR_X, OUR_Y, OUR_HEADING, OUR_VELOCITY, OUR_ENERGY | `IRobotSnapshot` self | Exact match (ε < 1e-4) |
+| GUN_HEADING, RADAR_HEADING, GUN_HEAT | `IRobotSnapshot` self | Exact match |
+| OPPONENT_X, OPPONENT_Y, OPPONENT_HEADING, OPPONENT_VELOCITY, OPPONENT_ENERGY | `IRobotSnapshot` opponent | Exact match on scan ticks |
+| DISTANCE, BEARING_RADIANS | Computed from snapshot positions | Exact match (engine uses `hypot`, `atan2`) |
+| LATERAL_VELOCITY, ADVANCING_VELOCITY | Derived from heading + bearing | Exact match (trig identity) |
+| BATTLEFIELD_WIDTH, BATTLEFIELD_HEIGHT | `ITurnSnapshot` | Exact match |
+| TICK, LAST_SCAN_TICK, TICKS_SINCE_SCAN | Turn number + scan detection | Exact match |
+
+**Threshold: 0 mismatches. Any spatial error = pipeline bug.**
+
+#### Validation Layer 2: Fire Detection Fidelity (both perspectives)
+
+God-view detects fires via `IBulletSnapshot` state == FIRED (exact). Robot-side detects via energy-drop between scans (delayed, lossy). Validates:
+
+| Metric | God-view (ground truth) | Robot-side (estimate) | What diff reveals |
+|--------|------------------------|----------------------|-------------------|
+| Fire count | Count of FIRED bullets from IBulletSnapshot | Count of energy-drop detections | Missed fires (radar gap) |
+| Fire tick | Exact tick bullet appeared | Scan tick when energy drop observed | Detection latency (1–N ticks) |
+| Fire power | `IBulletSnapshot.getPower()` | `prevEnergy - currEnergy` (clamped) | Misattribution (wall/ram damage as fire) |
+| Fire position (X, Y) | Bullet's spawn position from snapshot | Opponent's last-scanned position | Position error from stale scan |
+| Fire heading | `IBulletSnapshot.getHeading()` | Cannot be estimated from events | N/A (robot-side lacks this) |
+
+**Metrics (not pass/fail):**
+- Fire detection rate = robotSideFires / godViewFires
+- Fire position MAE = mean distance between estimated and actual fire origin
+- Fire power MAE = mean |estimated - actual| power
+- Detection latency = mean ticks between actual fire and robot's detection
+
+#### Validation Layer 3: Wave Resolution & GF Precision (both perspectives)
+
+When a wave resolves (wavefront reaches opponent), compare GF computation:
+
+| Metric | God-view (ground truth) | Robot-side (estimate) | What diff reveals |
+|--------|------------------------|----------------------|-------------------|
+| Break tick | Exact tick bullet passes opponent center | Scan tick closest to wave passage | Timing error (usually ±1 tick) |
+| Break GF | From exact opponent position at break | From stale-scan opponent position | **GF accuracy loss from radar gap** |
+| Break bearing offset | Exact angular offset | From stale scan bearing | Bearing staleness |
+| Hit detection | `IBulletSnapshot.state == HIT_VICTIM` | `BulletHitEvent` received | Should match exactly (both exact) |
+
+**Metrics:**
+- GF mean absolute error = mean |godViewGF - robotSideGF| per wave
+- GF max error = worst single-wave GF discrepancy
+- Waves resolved (god-view) vs waves resolved (robot-side) = wave match rate
+- Hit-wave correlation: % of hit bullets that were correctly paired to a wave
+
+#### Validation Layer 4: Energy Accounting (every tick)
+
+Track all energy changes against engine rules to catch missed/phantom events:
+
+```
+expectedEnergy[t] = energy[t-1]
+  - firePower (if fired this tick, from IBulletSnapshot)
+  + 3*hitPower (if our bullet hit, from IBulletSnapshot state=HIT_VICTIM)
+  - bulletDamage (if hit by bullet, from IBulletSnapshot hitting us)
+  - wallDamage (if state=HIT_WALL, formula: max(|v|/2-1, 0))
+  - 0.6 (if robot collision)
+  + inactivityDrain (if applicable)
+```
+
+Compare `expectedEnergy[t]` against `IRobotSnapshot.getEnergy()`. Any discrepancy = missed event or wrong damage formula.
+
+**Threshold: 0 energy discrepancies > 1e-4.**
+
+#### Validation Layer 5: IDebugProperty Cross-Check (our perspective only, when fighting)
+
+When Autopilot is the live fighter, its `IDebugProperty[]` captures what the in-game robot computed. Compare against observer whiteboard — any mismatch = event reconstruction bug.
+
+| Feature | IDebugProperty (live robot) | Observer Whiteboard | Expected |
+|---------|----------------------------|--------------------|-----------| 
+| All spatial features | From live `setDebugProperty()` | From reconstructed events | Exact match |
+| Fire-time features (THEIR_FIRE_*) | Energy-drop detection in-game | Energy-drop detection in observer | Exact match (same algorithm, same events) |
+| Wave-break features (OUR_BREAK_GF) | From live WaveTracker | From observer WaveTracker | Exact match (robot-side vs robot-side) |
+
+**Threshold: 0 non-break mismatches (fire-time spatial features must match exactly).**
+
+**Note:** OUR_BREAK_GF may differ between robot-side and god-view — that's measured in Layer 3, not flagged as error here.
+
+#### Implementation Steps
+
+1. Create `PipelineValidator.java` merging all 5 layers into one class
+2. Energy accounting: port damage formulas verbatim from `D:\robocode\robocode.api\src\main\java\robocode\Rules.java`
+3. Fire detection comparison: track `IBulletSnapshot` fires vs energy-drop detections per tick
+4. Wave resolution comparison: capture robot-side GF before god-view overwrites, compare after
+5. Add per-tick validation call in orchestrator (after all processing complete)
+6. **Fail the test if any validation layer has 0 checks** (prevents vacuous pass)
+7. Print comprehensive summary with per-layer breakdown
+
+```java
+public final class PipelineValidator {
+    // Layer 1: spatial/kinematic fidelity
+    private final EnumMap<Feature, ValidationStats> spatialStats;
+    
+    // Layer 2: fire detection precision
+    private final FireDetectionTracker[] fireTracking;  // [perspIndex]
+    
+    // Layer 3: wave resolution precision
+    private final WavePrecisionTracker[] waveTracking;  // [perspIndex]
+    
+    // Layer 4: energy accounting
+    private final EnergyAccountant[] energyAccounting;  // [perspIndex]
+    
+    // Layer 5: IDebugProperty cross-check
+    private final EnumMap<Feature, ValidationStats> debugPropertyStats;
+
+    /** Validate spatial features against snapshot ground truth. Called every tick. */
+    public void validateSpatial(Perspective us, IRobotSnapshot self, IRobotSnapshot opponent, ITurnSnapshot turn);
+
+    /** Track god-view fire (from IBulletSnapshot FIRED state). */
+    public void recordGodViewFire(int perspIndex, double power, double x, double y, double heading, long tick);
+    
+    /** Track robot-side fire detection (from energy drop). */
+    public void recordRobotSideFire(int perspIndex, double power, double x, double y, long tick);
+    
+    /** Compare wave resolutions when both sides resolve. */
+    public void compareWaveBreak(int perspIndex, double godViewGF, double robotSideGF,
+                                  long godViewBreakTick, long robotSideBreakTick);
+    
+    /** Update energy accounting with actual snapshot energy. */
+    public void accountEnergy(int perspIndex, double snapshotEnergy, long tick,
+                              IBulletSnapshot[] bullets, IRobotSnapshot[] robots);
+    
+    /** IDebugProperty comparison (our perspective only). */
+    public void validateDebugProperties(IRobotSnapshot liveRobot, Whiteboard observerWb);
+
+    /** Fails if any layer had 0 checks (prevents vacuous pass). */
+    public void assertNonVacuous();
+    
+    public void printSummary();
+}
+```
+
+#### Key Invariants (from engine source)
+
+These must hold exactly or the pipeline has a bug:
+
+1. **Bullet spawns at robot position** — `IBulletSnapshot` initial (x,y) must equal `IRobotSnapshot` (x,y) of owner on fire tick
+2. **Bullet moves before robot** — `Battle.java:489` vs `:493` ordering
+3. **Scan happens after movement** — `performScan()` runs after `performMove()` in same tick
+4. **Fire happens in loadCommands** — bullet created at START of tick, then moves in updateBullets on NEXT tick
+5. **Gun heat formula** — `1 + power/5`, cooling `0.1/tick`, initial `3.0`
+6. **Energy conservation** — all energy changes accounted for by known events (fire cost, bullet damage, hit bonus, wall damage, ram damage, inactivity drain)
 
 **Unit tests** (`PipelineValidatorTest.java`):
-- Event fidelity pass: IDebugProperty values match observer Whiteboard → 0 mismatches reported
-- Event fidelity fail: inject one wrong feature value → exactly 1 mismatch reported with Feature name
-- Gating: opponent perspective (index 1) skips IDebugProperty validation even if debug props present
-- Gating: null debug properties → validation skipped (no crash)
-- Wave precision stats: feed known robot-side vs god-view GF pairs → correct mean absolute error
-- Fire detection rate: 8 god-view fires, 6 robot-side detections → rate = 0.75
-- Spatial sanity: observer OUR_X/Y matches snapshot x/y → 0 mismatches
-- Summary output: printSummary() produces readable report (no exception)
+- Layer 1: spatial feature matches snapshot exactly → 0 mismatches
+- Layer 1: inject wrong OPPONENT_X → exactly 1 mismatch reported
+- Layer 2: 10 god-view fires, 8 robot-side detections → rate = 0.8
+- Layer 2: fire position error computed correctly (euclidean distance)
+- Layer 2: fire power error: energy-drop misattributes wall damage as fire → flagged
+- Layer 3: known GF pair (god=0.5, robot=0.3) → MAE = 0.2
+- Layer 3: god-view resolves wave but robot-side doesn't → wave match rate < 1.0
+- Layer 4: energy accounting sums correctly across fire+hit+damage+wall+ram
+- Layer 4: unaccounted energy drop (missed bullet hit event) → discrepancy flagged
+- Layer 5: IDebugProperty values match observer Whiteboard → 0 mismatches
+- Layer 5: gated — opponent perspective skips debug property check
+- Non-vacuous: if layer 1 has 0 checks → `assertNonVacuous()` throws
+- Non-vacuous: if fire detection has 0 fires → `assertNonVacuous()` throws (means battle was too short or wiring broken)
+- Summary output: printSummary() produces readable report with all 5 layers
 
 ### Phase 6: Cleanup
 1. Delete replaced files (Player, ScanSynthesizer, DamageDetector, old Perspective)
@@ -827,10 +1004,15 @@ BattleRunner.runBattle(opponent, rounds, outputDir);
 
 | Check | Threshold | Applies to |
 |-------|-----------|------------|
-| Event fidelity (IDebugProperty vs observer) — non-wave features | 0 mismatches | Our perspective only (when Autopilot is fighting) |
-| Spatial sanity (observer vs snapshot) | 0 mismatches | Both perspectives |
-| GF mean absolute error (robot-side vs god-view) | Measured, not threshold | Both perspectives (quality metric) |
-| Fire detection rate (robot-side finds fires god-view sees) | Measured, not threshold | Both perspectives (quality metric) |
+| Spatial fidelity (Layer 1) | 0 mismatches | Both perspectives, every scan tick |
+| Energy accounting (Layer 4) | 0 discrepancies > 1e-4 | Both perspectives, every tick |
+| Event fidelity / IDebugProperty (Layer 5) | 0 non-break mismatches | Our perspective only (when Autopilot fighting) |
+| Fire detection rate (Layer 2) | Measured ≥ 0.7 (warn if lower) | Both perspectives |
+| GF mean absolute error (Layer 3) | Measured, report | Both perspectives (quality metric) |
+| Fire position MAE (Layer 2) | Measured, report | Both perspectives (quality metric) |
+| Detection latency (Layer 2) | Measured, report | Both perspectives (quality metric) |
+| Wave match rate (Layer 3) | Measured ≥ 0.8 (warn if lower) | Both perspectives |
+| Non-vacuous check | ALL layers must have > 0 checks | Entire validator |
 | CSV output bit-identical to current pipeline | Yes (for tick rows) | Both perspectives |
 
 ---
