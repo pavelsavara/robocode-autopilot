@@ -1,11 +1,5 @@
 package cz.zamboch.autopilot.pipeline;
 
-import cz.zamboch.autopilot.core.Feature;
-import cz.zamboch.autopilot.core.Whiteboard;
-import cz.zamboch.autopilot.core.features.FireFeatures;
-import cz.zamboch.autopilot.core.features.MovementFeatures;
-import cz.zamboch.autopilot.core.features.SpatialFeatures;
-import cz.zamboch.autopilot.core.features.TimingFeatures;
 import net.sf.robocode.recording.BattleRecordInfo;
 import robocode.BattleRules;
 import robocode.control.snapshot.IRobotSnapshot;
@@ -21,12 +15,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Pipeline CLI: replays .br recordings and produces CSV files.
+ * Pipeline CLI: replays .br recordings through PipelineOrchestrator.
  * Usage: pipeline --input <recordings-dir> --output <csv-dir>
  *
- * Each .br recording is replayed from both perspectives, producing:
- * <output>/<battleId>/<robotNameA>/ticks.csv, waves.csv, scores.csv
- * <output>/<battleId>/<robotNameB>/ticks.csv, waves.csv, scores.csv
+ * Each .br recording is replayed producing:
+ * <output>/<battleId>/<perspectiveName>/ticks.csv, our-waves.csv, their-waves.csv, scores.csv
  */
 public final class Main {
     public static void main(String[] args) {
@@ -54,7 +47,7 @@ public final class Main {
         }
 
         // Find all .br files
-        List<Path> brFiles = new ArrayList<Path>();
+        List<Path> brFiles = new ArrayList<>();
         try {
             findBrFiles(Paths.get(inputDir), brFiles);
         } catch (IOException e) {
@@ -91,120 +84,64 @@ public final class Main {
 
     private static void processBattle(Path brFile, String battleId, Path outBase)
             throws IOException, ClassNotFoundException {
-        // First pass: get robot names
-        Loader nameLoader = new Loader(brFile);
-        String[] names = Player.getRobotNames(nameLoader);
-        nameLoader.close();
+        Loader loader = new Loader(brFile);
 
-        if (names == null || names.length < 2) {
-            System.err.println("WARN: Cannot read robot names from " + brFile);
+        // We need to peek at the first turn to get BattleRules (bfWidth, bfHeight, gunCoolingRate)
+        // Use a two-phase approach: first read header via forEachTurn (gets recordInfo), then replay
+        final BattleRecordInfo[] infoHolder = { null };
+        final List<int[]> roundTurns = new ArrayList<>();
+        final List<ITurnSnapshot> snapshots = new ArrayList<>();
+
+        loader.forEachTurn((roundIndex, turn) -> {
+            if (infoHolder[0] == null) {
+                infoHolder[0] = loader.getRecordInfo();
+            }
+            snapshots.add(turn);
+        });
+        loader.close();
+
+        if (infoHolder[0] == null || snapshots.isEmpty()) {
+            System.err.println("WARN: Empty recording: " + brFile);
             return;
         }
 
-        String nameA = names[0];
-        String nameB = names[1];
+        BattleRules rules = infoHolder[0].battleRules;
+        double bfWidth = rules.getBattlefieldWidth();
+        double bfHeight = rules.getBattlefieldHeight();
+        double gunCoolingRate = rules.getGunCoolingRate();
+
+        // Get robot names from first snapshot
+        IRobotSnapshot[] firstRobots = snapshots.get(0).getRobots();
+        String nameA = firstRobots[0].getShortName();
+        String nameB = firstRobots[1].getShortName();
         System.out.println("  " + battleId + ": " + nameA + " vs " + nameB);
 
-        // Set up whiteboards, CSV writers
-        Whiteboard wbA = createWhiteboard();
-        Whiteboard wbB = createWhiteboard();
+        // Set up PipelineOrchestrator
+        PipelineOrchestrator orchestrator = new PipelineOrchestrator(bfWidth, bfHeight, gunCoolingRate);
 
+        // Attach CSV writers
         File dirA = outBase.resolve(battleId).resolve(nameA).toFile();
         File dirB = outBase.resolve(battleId).resolve(nameB).toFile();
         CsvWriter csvA = new CsvWriter(dirA);
         CsvWriter csvB = new CsvWriter(dirB);
+        orchestrator.setCsvWriters(csvA, csvB);
+        orchestrator.setBattleId(battleId);
         csvA.writeHeaders(battleId);
         csvB.writeHeaders(battleId);
 
-        Perspective[] perspectives = Perspective.createPair(wbA, wbB);
-        Player player = new Player(perspectives);
+        // Attach validator
+        PipelineValidator validator = new PipelineValidator(bfWidth, bfHeight);
+        orchestrator.setValidator(validator);
 
-        // Second pass: replay all turns
-        final Loader loader = new Loader(brFile);
-        final int[] state = { -1 }; // currentRound
-        final IRobotSnapshot[][] lastRobots = { null };
-        // We need battlefield size. It's available after forEachTurn starts (reads
-        // header).
-        // Use a wrapper to get it from the first callback.
-        final double[][] bfSize = { null };
-
-        loader.forEachTurn(new Loader.TurnConsumer() {
-            @Override
-            public void accept(int roundIndex, ITurnSnapshot turn) {
-                try {
-                    if (bfSize[0] == null) {
-                        BattleRecordInfo info = loader.getRecordInfo();
-                        BattleRules rules = info.battleRules;
-                        bfSize[0] = new double[] { rules.getBattlefieldWidth(), rules.getBattlefieldHeight() };
-                    }
-                    double bfWidth = bfSize[0][0];
-                    double bfHeight = bfSize[0][1];
-
-                    boolean newRound = player.processTurn(roundIndex, turn, bfWidth, bfHeight);
-
-                    // On new round (except first): finalize previous round
-                    if (newRound && state[0] >= 0 && lastRobots[0] != null) {
-                        perspectives[0].setLastRobot(lastRobots[0][0]);
-                        perspectives[1].setLastRobot(lastRobots[0][1]);
-                        player.finalizeRound(perspectives);
-                        csvA.writeScoreRow(wbA, battleId, state[0]);
-                        csvB.writeScoreRow(wbB, battleId, state[0]);
-                    }
-                    state[0] = roundIndex;
-
-                    // Compute derived features
-                    wbA.process();
-                    wbB.process();
-
-                    // Reset accumulators after FireFeatures has consumed them
-                    player.resetAccumulatorsIfScan();
-
-                    // Write tick rows
-                    csvA.writeTickRow(wbA, battleId, roundIndex);
-                    csvB.writeTickRow(wbB, battleId, roundIndex);
-
-                    // Write wave rows if opponent fired
-                    if (!Double.isNaN(wbA.getFeature(Feature.THEIR_FIRE_POWER))) {
-                        csvA.writeTheirWaveRow(wbA, battleId, roundIndex);
-                    }
-                    if (!Double.isNaN(wbB.getFeature(Feature.THEIR_FIRE_POWER))) {
-                        csvB.writeTheirWaveRow(wbB, battleId, roundIndex);
-                    }
-
-                    // Track last robots for round finalization
-                    lastRobots[0] = turn.getRobots();
-
-                    // Reset per-tick fire detection
-                    wbA.setFeature(Feature.THEIR_FIRE_POWER, Double.NaN);
-                    wbB.setFeature(Feature.THEIR_FIRE_POWER, Double.NaN);
-                } catch (IOException e) {
-                    throw new RuntimeException("CSV write error", e);
-                }
-            }
-        });
-
-        // Finalize last round
-        if (state[0] >= 0 && lastRobots[0] != null) {
-            perspectives[0].setLastRobot(lastRobots[0][0]);
-            perspectives[1].setLastRobot(lastRobots[0][1]);
-            player.finalizeRound(perspectives);
-            csvA.writeScoreRow(wbA, battleId, state[0]);
-            csvB.writeScoreRow(wbB, battleId, state[0]);
+        // Replay all snapshots through the orchestrator
+        for (ITurnSnapshot snap : snapshots) {
+            orchestrator.processTurn(snap);
         }
 
-        csvA.close();
-        csvB.close();
-        loader.close();
-    }
+        orchestrator.close();
 
-    private static Whiteboard createWhiteboard() {
-        Whiteboard wb = new Whiteboard();
-        wb.registerFeatures(
-                new SpatialFeatures(),
-                new MovementFeatures(),
-                new TimingFeatures(),
-                new FireFeatures());
-        return wb;
+        // Print validation summary
+        validator.printSummary();
     }
 
     /** Derive a battle ID from the .br file path (filename without extension). */
@@ -222,14 +159,14 @@ public final class Main {
             }
             return;
         }
-        DirectoryStream<Path> stream = Files.newDirectoryStream(dir);
-        for (Path entry : stream) {
-            if (Files.isDirectory(entry)) {
-                findBrFiles(entry, result);
-            } else if (entry.toString().endsWith(".br")) {
-                result.add(entry);
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
+            for (Path entry : stream) {
+                if (Files.isDirectory(entry)) {
+                    findBrFiles(entry, result);
+                } else if (entry.toString().endsWith(".br")) {
+                    result.add(entry);
+                }
             }
         }
-        stream.close();
     }
 }
