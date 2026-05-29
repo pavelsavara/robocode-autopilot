@@ -127,8 +127,10 @@ final class WaveTrackerObserverTest {
             int victimIdx = (bState == BulletState.HIT_VICTIM) ? 1 : -1;
             IBulletSnapshot b = TestSnapshots.bullet(1, 0, victimIdx, 3.0, bState);
 
-            IRobotSnapshot r0_n = TestSnapshots.robot(400, 200, 0, 0, 97, Math.max(0, 1.4 - t * 0.1), 0, 0, 0, RobotState.ACTIVE, "alpha.Bot");
-            IRobotSnapshot r1_n = TestSnapshots.robot(400, 400, 0, 0, 100, Math.max(0, 2.9 - t * 0.1), 0, 0, 1, RobotState.ACTIVE, "beta.Bot");
+            IRobotSnapshot r0_n = TestSnapshots.robot(400, 200, 0, 0, 97, Math.max(0, 1.4 - t * 0.1), 0, 0, 0,
+                    RobotState.ACTIVE, "alpha.Bot");
+            IRobotSnapshot r1_n = TestSnapshots.robot(400, 400, 0, 0, 100, Math.max(0, 2.9 - t * 0.1), 0, 0, 1,
+                    RobotState.ACTIVE, "beta.Bot");
             ITurnSnapshot tickN = TestSnapshots.turn(t, r0_n, r1_n, b);
             for (ObserverContext ctx : observers) {
                 ctx.processTick(tickN);

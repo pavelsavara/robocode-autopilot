@@ -1,5 +1,6 @@
 package cz.zamboch.autopilot.pipeline;
 
+import cz.zamboch.autopilot.core.Feature;
 import robocode.control.events.BattleAdaptor;
 import robocode.control.events.TurnEndedEvent;
 import robocode.control.snapshot.IRobotSnapshot;
@@ -23,6 +24,7 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
     private final double bfHeight;
     private final GodViewWaveResolver godViewWaveResolver;
     private final WavePrecisionComparator wavePrecisionComparator;
+    private PipelineValidator validator; // optional unified validator
     private ITurnSnapshot prevSnapshot;
     private CsvWriter[] csvWriters; // one per observer, nullable
     private String battleId;
@@ -45,6 +47,14 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
 
     public void setBattleId(String battleId) {
         this.battleId = battleId;
+    }
+
+    public void setValidator(PipelineValidator validator) {
+        this.validator = validator;
+    }
+
+    public PipelineValidator validator() {
+        return validator;
     }
 
     @Override
@@ -92,6 +102,25 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
             wavePrecisionComparator.compareTick(pi, ctx.wb(), robotSideGf[pi], resolved[pi]);
         }
 
+        // Phase 5: Unified validation (if validator attached)
+        if (validator != null) {
+            for (ObserverContext ctx : observers) {
+                int pi = ctx.perspectiveIndex();
+                int oppIndex = 1 - pi;
+                validator.validateSpatial(pi, ctx.wb(), robots[pi], robots[oppIndex], curr);
+                validator.accountEnergy(pi, robots, curr.getBullets(), curr);
+
+                if (godViewWaveResolver.firedThisTick(pi)) {
+                    double power = ctx.wb().getFeature(Feature.OUR_FIRE_POWER);
+                    double x = ctx.wb().getFeature(Feature.OUR_FIRE_X);
+                    double y = ctx.wb().getFeature(Feature.OUR_FIRE_Y);
+                    double heading = ctx.wb().getFeature(Feature.OUR_FIRE_BEARING_ABSOLUTE);
+                    long tick = (long) ctx.wb().getFeature(Feature.OUR_FIRE_TICK);
+                    validator.recordGodViewFire(pi, power, x, y, heading, tick);
+                }
+            }
+        }
+
         // Write CSV if configured (after god-view has set authoritative features)
         for (ObserverContext ctx : observers) {
             if (!ctx.isDead() && csvWriters != null && csvWriters[ctx.perspectiveIndex()] != null) {
@@ -115,6 +144,9 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
         }
         godViewWaveResolver.resetRound();
         wavePrecisionComparator.resetRound();
+        if (validator != null) {
+            validator.resetRound();
+        }
     }
 
     public ObserverContext[] observers() {

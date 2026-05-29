@@ -97,9 +97,11 @@ final class WavePrecisionComparisonTest {
             int victimIdx = (bState == BulletState.HIT_VICTIM) ? 1 : -1;
             IBulletSnapshot b = TestSnapshots.bullet(1, 0, victimIdx, 3.0, bState);
 
-            IRobotSnapshot r0_n = TestSnapshots.robot(400, 200, 0, 0, 97, Math.max(0, 1.4 - t * 0.1), 0, 0, 0, RobotState.ACTIVE, "alpha.Bot");
+            IRobotSnapshot r0_n = TestSnapshots.robot(400, 200, 0, 0, 97, Math.max(0, 1.4 - t * 0.1), 0, 0, 0,
+                    RobotState.ACTIVE, "alpha.Bot");
             double r1Energy = (bState == BulletState.HIT_VICTIM) ? 100 - 4 * 3.0 + 2 : 100;
-            IRobotSnapshot r1_n = TestSnapshots.robot(400, 400, 0, 0, r1Energy, Math.max(0, 2.9 - t * 0.1), 0, 0, 1, RobotState.ACTIVE, "beta.Bot");
+            IRobotSnapshot r1_n = TestSnapshots.robot(400, 400, 0, 0, r1Energy, Math.max(0, 2.9 - t * 0.1), 0, 0, 1,
+                    RobotState.ACTIVE, "beta.Bot");
             ITurnSnapshot tickN = TestSnapshots.turn(t, r0_n, r1_n, b);
 
             // Robot-side
@@ -163,9 +165,9 @@ final class WavePrecisionComparisonTest {
     @Test
     void gfMaeComputed() {
         // Record some GF comparisons with known errors
-        comparator.recordGfComparison(0, 0.5, 0.3);  // error = 0.2
-        comparator.recordGfComparison(0, -0.2, 0.0);  // error = 0.2
-        comparator.recordGfComparison(0, 0.8, 0.6);  // error = 0.2
+        comparator.recordGfComparison(0, 0.5, 0.3); // error = 0.2
+        comparator.recordGfComparison(0, -0.2, 0.0); // error = 0.2
+        comparator.recordGfComparison(0, 0.8, 0.6); // error = 0.2
 
         assertEquals(0.2, comparator.getGfMeanAbsoluteError(0), 0.001);
         assertEquals(3, comparator.getGfComparisonCount(0));
