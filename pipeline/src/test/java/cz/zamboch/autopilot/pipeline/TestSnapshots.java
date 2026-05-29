@@ -17,12 +17,16 @@ final class TestSnapshots {
     }
 
     static ITurnSnapshot turn(int tick, IRobotSnapshot robotA, IRobotSnapshot robotB) {
-        return new StubTurn(tick, new IRobotSnapshot[] { robotA, robotB }, new IBulletSnapshot[0]);
+        return new StubTurn(tick, 0, new IRobotSnapshot[] { robotA, robotB }, new IBulletSnapshot[0]);
     }
 
     static ITurnSnapshot turn(int tick, IRobotSnapshot robotA, IRobotSnapshot robotB,
             IBulletSnapshot... bullets) {
-        return new StubTurn(tick, new IRobotSnapshot[] { robotA, robotB }, bullets);
+        return new StubTurn(tick, 0, new IRobotSnapshot[] { robotA, robotB }, bullets);
+    }
+
+    static ITurnSnapshot turn(int round, int tick, IRobotSnapshot robotA, IRobotSnapshot robotB) {
+        return new StubTurn(tick, round, new IRobotSnapshot[] { robotA, robotB }, new IBulletSnapshot[0]);
     }
 
     static IBulletSnapshot bullet(int bulletId, int ownerIndex, int victimIndex,
@@ -56,11 +60,13 @@ final class TestSnapshots {
 
     private static final class StubTurn implements ITurnSnapshot {
         private final int tick;
+        private final int round;
         private final IRobotSnapshot[] robots;
         private final IBulletSnapshot[] bullets;
 
-        StubTurn(int tick, IRobotSnapshot[] robots, IBulletSnapshot[] bullets) {
+        StubTurn(int tick, int round, IRobotSnapshot[] robots, IBulletSnapshot[] bullets) {
             this.tick = tick;
+            this.round = round;
             this.robots = robots;
             this.bullets = bullets;
         }
@@ -78,7 +84,7 @@ final class TestSnapshots {
         }
 
         public int getRound() {
-            return 0;
+            return round;
         }
 
         public int getTurn() {

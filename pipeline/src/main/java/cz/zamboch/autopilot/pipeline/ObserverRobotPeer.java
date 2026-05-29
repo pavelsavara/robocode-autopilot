@@ -128,6 +128,17 @@ public class ObserverRobotPeer implements IAdvancedRobotPeer {
         firedEnergy = 0;
     }
 
+    /**
+     * Reset state for a new round. Mirrors engine's round-start initialization:
+     * gunHeat=3.0, energy/position will come from first updateState() call.
+     */
+    public void resetRound() {
+        gunHeat = 3.0;
+        firedHeat = 0;
+        firedEnergy = 0;
+        gunTurnRemaining = 0;
+    }
+
     public double getGunHeat() {
         return gunHeat;
     }

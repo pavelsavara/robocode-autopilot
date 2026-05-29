@@ -30,6 +30,7 @@ val checkoutRobots = tasks.register<Exec>("checkoutRobots") {
     outputs.dir(stageDir)
     workingDir = rootProject.projectDir
     commandLine("git", "--work-tree=${stageDir.absolutePath}", "checkout", "robots", "--", ".")
+    environment("GIT_LFS_SKIP_SMUDGE", "1")
     doFirst { stageDir.mkdirs() }
 }
 

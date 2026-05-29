@@ -2,8 +2,13 @@ package cz.zamboch.autopilot.pipeline;
 
 import cz.zamboch.Autopilot;
 import cz.zamboch.autopilot.core.Whiteboard;
+import net.sf.robocode.security.HiddenAccess;
 import robocode.*;
 import robocode.control.snapshot.IRobotSnapshot;
+import robocode.control.snapshot.ITurnSnapshot;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Holds one observer Autopilot instance + its Whiteboard + per-round state.
@@ -15,11 +20,15 @@ public final class ObserverContext {
     private final Autopilot observer;
     private final ObserverRobotPeer peer;
     private final EventReconstructor reconstructor;
+    private final double bfWidth;
+    private final double bfHeight;
     private ObserverContext peerContext; // the other perspective
     private boolean dead;
 
     public ObserverContext(int perspectiveIndex, double bfWidth, double bfHeight, double gunCoolingRate) {
         this.perspectiveIndex = perspectiveIndex;
+        this.bfWidth = bfWidth;
+        this.bfHeight = bfHeight;
         this.observer = new Autopilot();
         this.peer = new ObserverRobotPeer(bfWidth, bfHeight, gunCoolingRate);
         this.reconstructor = new EventReconstructor();
@@ -42,14 +51,52 @@ public final class ObserverContext {
     }
 
     /**
+     * Full tick pipeline: reconstruct events from snapshot, feed to observer, run strategy.
+     * This is the primary API for the orchestrator.
+     */
+    public void processTick(ITurnSnapshot curr) {
+        if (dead) return;
+
+        IRobotSnapshot[] robots = curr.getRobots();
+        IRobotSnapshot me = robots[perspectiveIndex];
+
+        // 1. Advance peer tick mechanics (gun cooling)
+        peer.executeTick();
+
+        // 2. Update peer with authoritative snapshot state
+        peer.updateState(me.getX(), me.getY(), me.getGunHeading(), me.getGunHeat(), me.getEnergy());
+
+        // 3. Build StatusEvent from snapshot
+        RobotStatus status = HiddenAccess.createStatus(
+                me.getEnergy(), me.getX(), me.getY(),
+                me.getBodyHeading(), me.getGunHeading(), me.getRadarHeading(),
+                me.getVelocity(),
+                0, 0, 0, 0, // bodyTurnRemaining, radarTurnRemaining, gunTurnRemaining, distanceRemaining
+                me.getGunHeat(),
+                1, 0, // others, sentries
+                curr.getRound(), 1, curr.getTurn() // roundNum, numRounds, turn
+        );
+
+        // 4. Reconstruct combat events (scans, bullet hits, etc.)
+        TickEvents combatEvents = reconstructor.reconstruct(curr, perspectiveIndex, bfWidth, bfHeight);
+
+        // 5. Combine: StatusEvent first, then combat events
+        List<Event> allEvents = new ArrayList<>();
+        allEvents.add(new StatusEvent(status));
+        allEvents.addAll(combatEvents.events());
+
+        // 6. Dispatch events + run strategy
+        feedEvents(new TickEvents(allEvents));
+        doTurn();
+    }
+
+    /**
      * Feed reconstructed events to the observer Autopilot.
-     * If this observer is dead, the call is a no-op.
+     * Prefer {@link #processTick(ITurnSnapshot)} for normal operation.
+     * This lower-level method is useful for unit testing with hand-crafted events.
      */
     public void feedEvents(TickEvents events) {
         if (dead) return;
-
-        // Execute the peer's tick mechanics (gun cooling, etc.)
-        peer.executeTick();
 
         // Dispatch events to the observer's handlers
         for (Event event : events.events()) {
@@ -72,7 +119,7 @@ public final class ObserverContext {
 
     /**
      * Run the observer's strategy for this tick (computes derived features).
-     * If this observer is dead, the call is a no-op.
+     * Prefer {@link #processTick(ITurnSnapshot)} for normal operation.
      */
     public void doTurn() {
         if (dead) return;
@@ -83,6 +130,7 @@ public final class ObserverContext {
     public void resetRound() {
         dead = false;
         reconstructor.resetRound();
+        peer.resetRound();
     }
 
     public int perspectiveIndex() {

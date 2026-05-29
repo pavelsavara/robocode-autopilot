@@ -187,8 +187,8 @@ final class FireFeaturesTest {
     }
 
     @Test
-    void resetsAccumulatorsAfterScan() {
-        // First scan
+    void accumulatorsSubtractedFromEnergyDrop() {
+        // First scan: establish baseline
         wb.setFeature(Feature.TICK, 1);
         wb.setFeature(Feature.LAST_SCAN_TICK, 1);
         wb.setFeature(Feature.OUR_HEADING, 0);
@@ -196,15 +196,20 @@ final class FireFeaturesTest {
         wb.setFeature(Feature.OPPONENT_HEADING, 0);
         wb.setFeature(Feature.OPPONENT_VELOCITY, 0);
         wb.setFeature(Feature.OPPONENT_ENERGY, 100.0);
+        wb.process();
+
+        // Second scan: drop 7.6 total, but 5.0 from our bullet + 0.6 ram + 3.0 gain
+        // adjustedDrop = (100 - 96.4) - 5.0 - 0.6 + 3.0 = 1.0
+        wb.setFeature(Feature.TICK, 4);
+        wb.setFeature(Feature.LAST_SCAN_TICK, 4);
+        wb.setFeature(Feature.OPPONENT_ENERGY, 96.4);
         wb.setFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT, 5.0);
         wb.setFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN, 3.0);
         wb.setFeature(Feature.RAM_DAMAGE_TO_OPPONENT, 0.6);
         wb.process();
 
-        // After process on a scan tick, accumulators should be reset to 0
-        assertEquals(0.0, wb.getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT), 1e-9);
-        assertEquals(0.0, wb.getFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN), 1e-9);
-        assertEquals(0.0, wb.getFeature(Feature.RAM_DAMAGE_TO_OPPONENT), 1e-9);
+        // Fire power correctly accounts for all accumulators
+        assertEquals(1.0, wb.getFeature(Feature.THEIR_FIRE_POWER), 1e-9);
     }
 
     @Test

@@ -72,21 +72,32 @@ public final class Autopilot extends AdvancedRobot {
     };
 
     /**
-     * Copy accumulator values from current slot before ring rotation clears them.
+     * Features that persist across ring rotations but are NOT reset on scan ticks.
+     */
+    private static final Feature[] STICKY_FEATURES = {
+            Feature.LAST_SCAN_TICK
+    };
+
+    /**
+     * Copy accumulator and sticky values from current slot before ring rotation
+     * clears them.
      */
     private void carryForwardAccumulators() {
         for (Feature f : ACCUMULATOR_FEATURES) {
             double val = wb.getFeature(f);
             if (!Double.isNaN(val) && val != 0) {
-                // Store in a temp — ring rotation will clear the slot,
-                // then we restore after TICK is set.
-                // Actually: we read BEFORE setFeature(TICK), so just save+restore.
+                accumulatorCarry[f.ordinal()] = val;
+            }
+        }
+        for (Feature f : STICKY_FEATURES) {
+            double val = wb.getFeature(f);
+            if (!Double.isNaN(val)) {
                 accumulatorCarry[f.ordinal()] = val;
             }
         }
     }
 
-    /** Restore carried-forward accumulators into the new (cleared) ring slot. */
+    /** Restore carried-forward values into the new (cleared) ring slot. */
     private void restoreAccumulators() {
         for (Feature f : ACCUMULATOR_FEATURES) {
             double val = accumulatorCarry[f.ordinal()];
@@ -94,6 +105,13 @@ public final class Autopilot extends AdvancedRobot {
                 wb.setFeature(f, val);
                 accumulatorCarry[f.ordinal()] = 0;
             }
+        }
+        for (Feature f : STICKY_FEATURES) {
+            double val = accumulatorCarry[f.ordinal()];
+            if (!Double.isNaN(val) && val != 0) {
+                wb.setFeature(f, val);
+            }
+            accumulatorCarry[f.ordinal()] = 0;
         }
     }
 
