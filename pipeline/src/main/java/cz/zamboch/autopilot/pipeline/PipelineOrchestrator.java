@@ -2,6 +2,7 @@ package cz.zamboch.autopilot.pipeline;
 
 import robocode.control.events.BattleAdaptor;
 import robocode.control.events.TurnEndedEvent;
+import robocode.control.snapshot.IRobotSnapshot;
 import robocode.control.snapshot.ITurnSnapshot;
 
 import java.io.Closeable;
@@ -20,6 +21,8 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
     private final ObserverContext[] observers;
     private final double bfWidth;
     private final double bfHeight;
+    private final GodViewWaveResolver godViewWaveResolver;
+    private final WavePrecisionComparator wavePrecisionComparator;
     private ITurnSnapshot prevSnapshot;
     private CsvWriter[] csvWriters; // one per observer, nullable
     private String battleId;
@@ -29,6 +32,8 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
         this.bfWidth = bfWidth;
         this.bfHeight = bfHeight;
         this.observers = ObserverContext.createPair(bfWidth, bfHeight, gunCoolingRate);
+        this.godViewWaveResolver = new GodViewWaveResolver();
+        this.wavePrecisionComparator = new WavePrecisionComparator();
     }
 
     /**
@@ -60,11 +65,32 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
             currentRound = round;
         }
 
-        // Reconstruct events, feed to observer, run strategy
+        IRobotSnapshot[] robots = curr.getRobots();
+
+        // Phase 1: Reconstruct events, feed to observer, run strategy (robot-side)
         for (ObserverContext ctx : observers) {
             ctx.processTick(curr);
+        }
 
-            // Write CSV if configured
+        // Phase 2: Capture robot-side wave values BEFORE god-view overwrites
+        double[] robotSideGf = new double[2];
+        for (ObserverContext ctx : observers) {
+            robotSideGf[ctx.perspectiveIndex()] =
+                    wavePrecisionComparator.captureRobotSideBreak(ctx.perspectiveIndex(), ctx.wb());
+        }
+
+        // Phase 3: God-view wave resolution (overwrites OUR_FIRE_* and OUR_BREAK_*)
+        boolean[] resolved = godViewWaveResolver.processTick(observers, robots, curr);
+
+        // Phase 4: Compare robot-side vs god-view
+        for (ObserverContext ctx : observers) {
+            wavePrecisionComparator.compareTick(
+                    ctx.perspectiveIndex(), ctx.wb(),
+                    robotSideGf[ctx.perspectiveIndex()], resolved[ctx.perspectiveIndex()]);
+        }
+
+        // Write CSV if configured (after god-view has set authoritative features)
+        for (ObserverContext ctx : observers) {
             if (!ctx.isDead() && csvWriters != null && csvWriters[ctx.perspectiveIndex()] != null) {
                 try {
                     csvWriters[ctx.perspectiveIndex()].writeTickRow(
@@ -84,10 +110,20 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
         for (ObserverContext ctx : observers) {
             ctx.resetRound();
         }
+        godViewWaveResolver.resetRound();
+        wavePrecisionComparator.resetRound();
     }
 
     public ObserverContext[] observers() {
         return observers;
+    }
+
+    public GodViewWaveResolver godViewWaveResolver() {
+        return godViewWaveResolver;
+    }
+
+    public WavePrecisionComparator wavePrecisionComparator() {
+        return wavePrecisionComparator;
     }
 
     public ITurnSnapshot prevSnapshot() {
