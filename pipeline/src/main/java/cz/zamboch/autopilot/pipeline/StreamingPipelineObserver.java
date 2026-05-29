@@ -316,7 +316,11 @@ final class StreamingPipelineObserver extends BattleAdaptor {
 
     @Override
     public void onBattleError(BattleErrorEvent event) {
-        System.err.println("Battle error: " + event.getError());
+        String msg = event.getError();
+        if (msg != null && msg.contains("setVisible")) {
+            return; // suppress harmless headless-mode noise
+        }
+        System.err.println("Battle error: " + msg);
     }
 
     void close() {

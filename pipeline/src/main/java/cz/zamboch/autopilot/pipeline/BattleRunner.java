@@ -1,5 +1,6 @@
 package cz.zamboch.autopilot.pipeline;
 
+import net.sf.robocode.io.Logger;
 import robocode.control.BattleSpecification;
 import robocode.control.BattlefieldSpecification;
 import robocode.control.RobocodeEngine;
@@ -31,7 +32,6 @@ public final class BattleRunner {
      */
     public static StreamingPipelineObserver runBattle(String opponent, int rounds, String outputDir) {
         RobocodeEngine.setLogMessagesEnabled(false);
-        RobocodeEngine.setLogErrorsEnabled(false);
         RobocodeEngine engine = new RobocodeEngine();
 
         StreamingPipelineObserver observer = new StreamingPipelineObserver(outputDir, 800, 600);
@@ -67,9 +67,15 @@ public final class BattleRunner {
             engine.runBattle(spec, true);
         } catch (Exception e) {
             observer.close();
+            engine.removeBattleListener(observer);
+            Logger.initialized = true;
+            RobocodeEngine.setLogErrorsEnabled(false);
             engine.close();
             throw e;
         }
+        engine.removeBattleListener(observer);
+        Logger.initialized = true;
+        RobocodeEngine.setLogErrorsEnabled(false);
         engine.close();
         return observer;
     }
