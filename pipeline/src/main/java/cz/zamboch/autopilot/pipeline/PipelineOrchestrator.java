@@ -32,6 +32,7 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
     private CsvWriter[] csvWriters; // one per observer, nullable
     private String battleId;
     private DebugPropertyCsvWriter debugCsv; // optional IDebugProperty fidelity dump, nullable
+    private SnapshotFixtureWriter snapshotFixtureWriter; // optional engine-grounded test fixture recorder, nullable
     private int currentRound = -1;
     private final double[] lastValidatorFireTick = { Double.NaN, Double.NaN };
     private final double[] lastValidatorBreakTick = { Double.NaN, Double.NaN };
@@ -61,6 +62,15 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
      */
     public void setDebugCsv(DebugPropertyCsvWriter debugCsv) {
         this.debugCsv = debugCsv;
+    }
+
+    /**
+     * Attach a snapshot fixture recorder that captures the raw turn-snapshot stream
+     * for offline, engine-grounded unit-test replay. May be null when the
+     * {@code record.fixture.dir} property is unset (the default).
+     */
+    public void setSnapshotFixtureWriter(SnapshotFixtureWriter snapshotFixtureWriter) {
+        this.snapshotFixtureWriter = snapshotFixtureWriter;
     }
 
     public void setValidator(GodViewQualityValidator validator) {
@@ -113,6 +123,9 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
             for (ObserverContext ctx : observers) {
                 ctx.seedRoundStart(start);
             }
+            if (snapshotFixtureWriter != null) {
+                snapshotFixtureWriter.writeSpawn(start);
+            }
         }
     }
 
@@ -135,6 +148,10 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
             }
             resetRound(round);
             currentRound = round;
+        }
+
+        if (snapshotFixtureWriter != null) {
+            snapshotFixtureWriter.writeTurn(curr);
         }
 
         IRobotSnapshot[] robots = curr.getRobots();
@@ -326,6 +343,10 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
         if (debugCsv != null) {
             debugCsv.close();
             debugCsv = null;
+        }
+        if (snapshotFixtureWriter != null) {
+            snapshotFixtureWriter.close();
+            snapshotFixtureWriter = null;
         }
     }
 

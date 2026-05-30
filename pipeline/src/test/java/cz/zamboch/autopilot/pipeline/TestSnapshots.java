@@ -29,9 +29,20 @@ final class TestSnapshots {
         return new StubTurn(tick, round, new IRobotSnapshot[] { robotA, robotB }, new IBulletSnapshot[0]);
     }
 
+    /** Full-control turn factory used by the recorded-fixture loader. */
+    static ITurnSnapshot turn(int round, int tick, IRobotSnapshot[] robots, IBulletSnapshot[] bullets) {
+        return new StubTurn(tick, round, robots, bullets);
+    }
+
     static IBulletSnapshot bullet(int bulletId, int ownerIndex, int victimIndex,
             double power, BulletState state) {
         return new StubBullet(bulletId, ownerIndex, victimIndex, power, state);
+    }
+
+    /** Bullet factory with full geometry, used by the recorded-fixture loader. */
+    static IBulletSnapshot bullet(int bulletId, int ownerIndex, int victimIndex,
+            double power, BulletState state, double x, double y, double heading) {
+        return new StubBullet(bulletId, ownerIndex, victimIndex, power, state, x, y, heading);
     }
 
     static IRobotSnapshot robot(double x, double y, double bodyHeading,
@@ -50,6 +61,16 @@ final class TestSnapshots {
             IDebugProperty[] debugProperties) {
         return new StubRobot(x, y, 0, 0, 100, 0, 0, 0, contestantIndex, RobotState.ACTIVE, name,
                 debugProperties);
+    }
+
+    /** Robot factory with full kinematics, distinct full name, and debug props (fixture loader). */
+    static IRobotSnapshot robot(double x, double y, double bodyHeading,
+            double velocity, double energy, double gunHeat,
+            double gunHeading, double radarHeading,
+            int contestantIndex, RobotState state, String shortName, String fullName,
+            IDebugProperty[] debugProperties) {
+        return new StubRobot(x, y, bodyHeading, velocity, energy, gunHeat,
+                gunHeading, radarHeading, contestantIndex, state, shortName, fullName, debugProperties);
     }
 
     static IDebugProperty debugProperty(String key, String value) {
@@ -106,6 +127,7 @@ final class TestSnapshots {
         private final int contestantIndex;
         private final RobotState state;
         private final String shortName;
+        private final String fullName;
         private final IDebugProperty[] debugProperties;
 
         StubRobot(double x, double y, double bodyHeading, double velocity,
@@ -119,6 +141,14 @@ final class TestSnapshots {
                 double energy, double gunHeat, double gunHeading, double radarHeading,
                 int contestantIndex, RobotState state, String shortName,
                 IDebugProperty[] debugProperties) {
+            this(x, y, bodyHeading, velocity, energy, gunHeat, gunHeading, radarHeading,
+                    contestantIndex, state, shortName, null, debugProperties);
+        }
+
+        StubRobot(double x, double y, double bodyHeading, double velocity,
+                double energy, double gunHeat, double gunHeading, double radarHeading,
+                int contestantIndex, RobotState state, String shortName,
+                String fullName, IDebugProperty[] debugProperties) {
             this.x = x;
             this.y = y;
             this.bodyHeading = bodyHeading;
@@ -130,6 +160,7 @@ final class TestSnapshots {
             this.contestantIndex = contestantIndex;
             this.state = state;
             this.shortName = shortName;
+            this.fullName = fullName;
             this.debugProperties = debugProperties;
         }
 
@@ -178,7 +209,7 @@ final class TestSnapshots {
         }
 
         public String getName() {
-            return shortName;
+            return fullName != null ? fullName : shortName;
         }
 
         public String getVeryShortName() {
@@ -254,13 +285,22 @@ final class TestSnapshots {
         private final int victimIndex;
         private final double power;
         private final BulletState state;
+        private final double x, y, heading;
 
         StubBullet(int bulletId, int ownerIndex, int victimIndex, double power, BulletState state) {
+            this(bulletId, ownerIndex, victimIndex, power, state, 0, 0, 0);
+        }
+
+        StubBullet(int bulletId, int ownerIndex, int victimIndex, double power, BulletState state,
+                double x, double y, double heading) {
             this.bulletId = bulletId;
             this.ownerIndex = ownerIndex;
             this.victimIndex = victimIndex;
             this.power = power;
             this.state = state;
+            this.x = x;
+            this.y = y;
+            this.heading = heading;
         }
 
         public BulletState getState() {
@@ -272,19 +312,19 @@ final class TestSnapshots {
         }
 
         public double getX() {
-            return 0;
+            return x;
         }
 
         public double getY() {
-            return 0;
+            return y;
         }
 
         public double getPaintX() {
-            return 0;
+            return x;
         }
 
         public double getPaintY() {
-            return 0;
+            return y;
         }
 
         public int getColor() {
@@ -308,7 +348,7 @@ final class TestSnapshots {
         }
 
         public double getHeading() {
-            return 0;
+            return heading;
         }
 
         public int getOwnerIndex() {

@@ -13,6 +13,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @Tag("integration")
@@ -30,6 +33,18 @@ final class GodViewWaveResolverTest {
     void setUp() {
         resolver = new GodViewWaveResolver();
         observers = ObserverContext.createPair(800, 600, 0.1);
+    }
+
+    /**
+     * Mirror the orchestrator's Phase 1.5: seed each god-view whiteboard from the
+     * freshly-computed robot-side whiteboard so TICK/scan state is present when the
+     * god-view wave resolver runs. Without this the god-view TICK stays unset and
+     * waves never advance.
+     */
+    private void syncGodView() {
+        for (ObserverContext ctx : observers) {
+            ctx.godWb().copyFrom(ctx.wb());
+        }
     }
 
     @Test
@@ -54,8 +69,9 @@ final class GodViewWaveResolverTest {
         IRobotSnapshot[] robots = tick1.getRobots();
         boolean[] resolved = resolver.processTick(observers, robots, tick1);
 
-        // Fire should be detected but wave not yet resolved (too close)
-        Whiteboard wb0 = observers[0].wb();
+        // Fire should be detected but wave not yet resolved (too close).
+        // OUR_FIRE_* features are written to the god-view whiteboard.
+        Whiteboard wb0 = observers[0].godWb();
         assertEquals(2.0, wb0.getFeature(Feature.OUR_FIRE_POWER), 1e-9);
         assertFalse(resolved[0], "Wave should not resolve on fire tick");
     }
@@ -79,6 +95,7 @@ final class GodViewWaveResolverTest {
         for (ObserverContext ctx : observers) {
             ctx.processTick(tick1);
         }
+        syncGodView();
         resolver.processTick(observers, tick1.getRobots(), tick1);
 
         // Fast-forward ticks until wave resolves
@@ -90,6 +107,7 @@ final class GodViewWaveResolverTest {
             for (ObserverContext ctx : observers) {
                 ctx.processTick(tickN);
             }
+            syncGodView();
             boolean[] result = resolver.processTick(observers, tickN.getRobots(), tickN);
             if (result[0]) {
                 resolved = true;
@@ -99,7 +117,7 @@ final class GodViewWaveResolverTest {
 
         assertTrue(resolved, "Wave should have resolved within 30 ticks");
 
-        Whiteboard wb0 = observers[0].wb();
+        Whiteboard wb0 = observers[0].godWb();
         double breakGf = wb0.getFeature(Feature.OUR_BREAK_GF);
         assertFalse(Double.isNaN(breakGf), "Break GF should be set");
     }
@@ -120,6 +138,7 @@ final class GodViewWaveResolverTest {
         for (ObserverContext ctx : observers) {
             ctx.processTick(tick1);
         }
+        syncGodView();
         resolver.processTick(observers, tick1.getRobots(), tick1);
 
         // Advance until resolution. Mark bullet as HIT_VICTIM BEFORE resolution
@@ -134,6 +153,7 @@ final class GodViewWaveResolverTest {
             for (ObserverContext ctx : observers) {
                 ctx.processTick(tickN);
             }
+            syncGodView();
             boolean[] result = resolver.processTick(observers, tickN.getRobots(), tickN);
             if (result[0]) {
                 resolved = true;
@@ -145,7 +165,7 @@ final class GodViewWaveResolverTest {
 
         // OUR_BREAK_HIT must be 1.0 since the bullet was marked HIT_VICTIM before
         // resolution
-        Whiteboard wb0 = observers[0].wb();
+        Whiteboard wb0 = observers[0].godWb();
         assertEquals(1.0, wb0.getFeature(Feature.OUR_BREAK_HIT), 1e-9);
     }
 
@@ -194,6 +214,7 @@ final class GodViewWaveResolverTest {
         for (ObserverContext ctx : observers) {
             ctx.processTick(tick1);
         }
+        syncGodView();
         resolver.processTick(observers, tick1.getRobots(), tick1);
 
         // Advance until wave resolves
@@ -203,10 +224,11 @@ final class GodViewWaveResolverTest {
             for (ObserverContext ctx : observers) {
                 ctx.processTick(tickN);
             }
+            syncGodView();
             boolean[] result = resolver.processTick(observers, tickN.getRobots(), tickN);
             if (result[0]) {
-                // Check peer's (robot 1) whiteboard has THEIR_* features
-                Whiteboard peerWb = observers[1].wb();
+                // Check peer's (robot 1) god-view whiteboard has THEIR_* features
+                Whiteboard peerWb = observers[1].godWb();
                 assertEquals(2.0, peerWb.getFeature(Feature.THEIR_FIRE_POWER), 1e-9);
                 double theirBreakGf = peerWb.getFeature(Feature.THEIR_BREAK_GF);
                 assertFalse(Double.isNaN(theirBreakGf), "THEIR_BREAK_GF should be set on peer");
@@ -214,5 +236,60 @@ final class GodViewWaveResolverTest {
             }
         }
         fail("Wave should have resolved for THEIR_* feature test");
+    }
+
+    /**
+     * Engine-grounded: replay a real recorded battle through the god-view resolver and
+     * assert that the number of fires it detects per side equals the number of distinct
+     * bullets the engine actually shows owned by that side. This anchors god-view fire
+     * detection against authoritative engine bullet state rather than a hand-built stub.
+     */
+    @Test
+    void recordedReplay_godViewFireDetectionMatchesEngineBullets() {
+        RecordedBattle battle = RecordedBattle.load("/recorded/beepboop.fixture");
+        int my = battle.autopilotIndex();
+        int opp = 1 - my;
+        int round = battle.spawn().getRound();
+        for (ObserverContext ctx : observers) {
+            ctx.resetRound(round);
+            ctx.seedRoundStart(battle.spawn());
+        }
+        resolver.resetRound();
+
+        // Engine truth: distinct bullet ids each side fired (first non-inactive sighting).
+        Set<Integer> engineFiresMy = new HashSet<>();
+        Set<Integer> engineFiresOpp = new HashSet<>();
+        int godFiresMy = 0;
+        int godFiresOpp = 0;
+
+        for (RecordedBattle.Tick tick : battle.ticks()) {
+            for (IBulletSnapshot bs : tick.snapshot().getBullets()) {
+                if (bs.getState() == BulletState.INACTIVE) {
+                    continue;
+                }
+                if (bs.getOwnerIndex() == my) {
+                    engineFiresMy.add(bs.getBulletId());
+                } else {
+                    engineFiresOpp.add(bs.getBulletId());
+                }
+            }
+            for (ObserverContext ctx : observers) {
+                ctx.processTick(tick.snapshot());
+            }
+            syncGodView();
+            resolver.processTick(observers, tick.snapshot().getRobots(), tick.snapshot());
+            if (resolver.firedThisTick(my)) {
+                godFiresMy++;
+            }
+            if (resolver.firedThisTick(opp)) {
+                godFiresOpp++;
+            }
+        }
+
+        assertTrue(godFiresMy > 0, "expected god-view to detect at least one of our fires");
+        assertEquals(engineFiresMy.size(), godFiresMy,
+                "god-view should detect exactly the bullets engine shows we fired");
+        assertEquals(engineFiresOpp.size(), godFiresOpp,
+                "god-view should detect exactly the bullets engine shows opponent fired");
     }
 }

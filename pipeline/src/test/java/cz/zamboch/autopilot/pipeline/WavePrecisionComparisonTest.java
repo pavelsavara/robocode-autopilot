@@ -38,6 +38,18 @@ final class WavePrecisionComparisonTest {
         comparator = new WavePrecisionComparator();
     }
 
+    /**
+     * Mirror the orchestrator's Phase 1.5: seed each god-view whiteboard from the
+     * freshly-computed robot-side whiteboard so TICK/scan state is present when the
+     * god-view wave resolver runs. Without this the god-view TICK stays unset and
+     * waves never advance.
+     */
+    private void syncGodView() {
+        for (ObserverContext ctx : observers) {
+            ctx.godWb().copyFrom(ctx.wb());
+        }
+    }
+
     @Test
     void godViewDetectsFire() {
         // Tick 0: both robots alive, no bullets
@@ -62,8 +74,7 @@ final class WavePrecisionComparisonTest {
         boolean[] resolved = godView.processTick(observers, robots, tick1);
 
         // Should not resolve on fire tick — just detects the bullet
-        assertFalse(resolved[0], "Wave should not resolve on fire tick");
-        assertFalse(resolved[1], "No wave from robot 1");
+        assertFalse(resolved[0], "Wave should not resolve on fire tick");        assertFalse(resolved[1], "No wave from robot 1");
     }
 
     @Test
@@ -75,6 +86,7 @@ final class WavePrecisionComparisonTest {
         for (ObserverContext ctx : observers) {
             ctx.processTick(tick0);
         }
+        syncGodView();
         godView.processTick(observers, tick0.getRobots(), tick0);
 
         // Tick 1: bullet fired
@@ -85,6 +97,7 @@ final class WavePrecisionComparisonTest {
         for (ObserverContext ctx : observers) {
             ctx.processTick(tick1);
         }
+        syncGodView();
         godView.processTick(observers, tick1.getRobots(), tick1);
         comparator.recordGodViewFire(0);
 
@@ -114,6 +127,7 @@ final class WavePrecisionComparisonTest {
             double robotGf = comparator.captureRobotSideBreak(0, wb0);
 
             // God-view
+            syncGodView();
             boolean[] resolved = godView.processTick(observers, tickN.getRobots(), tickN);
 
             // Compare

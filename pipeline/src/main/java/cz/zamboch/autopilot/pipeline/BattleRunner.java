@@ -126,6 +126,18 @@ public final class BattleRunner {
             }
         }
 
+        // Attach the engine-grounded snapshot fixture recorder when the
+        // record.fixture.dir system property is set. Off by default; used to
+        // regenerate the committed test fixture replayed by EventReconstructorTest.
+        String fixtureDir = System.getProperty("record.fixture.dir");
+        if (fixtureDir != null && !fixtureDir.isBlank()) {
+            try {
+                orchestrator.setSnapshotFixtureWriter(new SnapshotFixtureWriter(new File(fixtureDir), opponent));
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to initialize snapshot fixture writer", e);
+            }
+        }
+
         // Score-tracking listener
         engine.addBattleListener(orchestrator);
         engine.addBattleListener(new BattleAdaptor() {

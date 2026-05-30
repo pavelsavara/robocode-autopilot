@@ -5,7 +5,13 @@ import org.junit.jupiter.api.Test;
 import robocode.*;
 import robocode.control.snapshot.*;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static cz.zamboch.autopilot.pipeline.TestSnapshots.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -695,5 +701,160 @@ class EventReconstructorTest {
                                 Math.PI - (Math.PI + Math.PI / 4));
                 assertEquals(expectedBearing, hwe.getBearingRadians(), 0.01,
                                 "Corner hit should use bottom wall (Y takes precedence over X)");
+        }
+
+        // ==================== Engine-grounded recorded-fixture replay ====================
+        //
+        // The tests above assert geometry the production code itself computes on
+        // synthetic stubs (author-recomputed formulas). The tests below instead
+        // replay a REAL recorded battle (pipeline/src/test/resources/recorded/
+        // beepboop.fixture, captured by SnapshotFixtureWriter) and anchor the
+        // reconstructor's output to two independent engine-truth sources:
+        //   1. the engine's authoritative bullet states (HIT_VICTIM / HIT_WALL),
+        //      which the reconstructor must map to the correct event types, and
+        //   2. the live Autopilot's published debug properties for the same turn,
+        //      which the live robot derived from the REAL ScannedRobotEvent it
+        //      received from the engine — NOT from our reconstruction formulas.
+        // A divergence here is a genuine fidelity bug, not a restated expectation.
+
+        private static final String FIXTURE = "/recorded/beepboop.fixture";
+
+        /** Bit-exact: live props and reconstruction derive from the same turn snapshot. */
+        private static final double GROUND_TOL = 1e-9;
+
+        @Test
+        void recordedReplay_scanTimingMatchesEngine() {
+                RecordedBattle battle = RecordedBattle.load(FIXTURE);
+                int my = battle.autopilotIndex();
+                recon.resetRound();
+                recon.seedRoundStart(battle.spawn(), my);
+
+                int compared = 0;
+                int scans = 0;
+                for (RecordedBattle.Tick tick : battle.ticks()) {
+                        TickEvents ev = recon.reconstruct(tick.snapshot(), my, BF_WIDTH, BF_HEIGHT);
+                        // Only compare once the live robot has begun reporting scan state.
+                        if (Double.isNaN(tick.liveValue("TICKS_SINCE_SCAN"))) {
+                                continue;
+                        }
+                        boolean reconScanned = ev.events().stream()
+                                        .anyMatch(e -> e instanceof ScannedRobotEvent);
+                        boolean liveScanned = tick.liveScannedThisTurn();
+                        assertEquals(liveScanned, reconScanned,
+                                        "scan timing mismatch at turn " + tick.turn()
+                                                        + ": engine scanned=" + liveScanned
+                                                        + " reconstructed=" + reconScanned);
+                        compared++;
+                        if (liveScanned) {
+                                scans++;
+                        }
+                }
+                assertTrue(compared > 100, "expected a substantial number of compared turns, got " + compared);
+                assertTrue(scans > 10, "fixture should contain many real scans, got " + scans);
+        }
+
+        @Test
+        void recordedReplay_scanFieldsMatchLiveDebugProperties() {
+                RecordedBattle battle = RecordedBattle.load(FIXTURE);
+                int my = battle.autopilotIndex();
+                String opponentName = battle.spawn().getRobots()[1 - my].getName();
+                recon.resetRound();
+                recon.seedRoundStart(battle.spawn(), my);
+
+                int checked = 0;
+                for (RecordedBattle.Tick tick : battle.ticks()) {
+                        TickEvents ev = recon.reconstruct(tick.snapshot(), my, BF_WIDTH, BF_HEIGHT);
+                        if (!tick.liveScannedThisTurn()) {
+                                continue;
+                        }
+                        ScannedRobotEvent sre = ev.events().stream()
+                                        .filter(e -> e instanceof ScannedRobotEvent)
+                                        .map(e -> (ScannedRobotEvent) e)
+                                        .findFirst().orElse(null);
+                        assertNotNull(sre, "engine scanned at turn " + tick.turn()
+                                        + " but reconstructor produced no ScannedRobotEvent");
+
+                        String at = " at turn " + tick.turn();
+                        assertEquals(tick.liveValue("DISTANCE"), sre.getDistance(), GROUND_TOL, "distance" + at);
+                        assertEquals(tick.liveValue("BEARING_RADIANS"), sre.getBearingRadians(), GROUND_TOL,
+                                        "bearing" + at);
+                        assertEquals(tick.liveValue("OPPONENT_HEADING"), sre.getHeadingRadians(), GROUND_TOL,
+                                        "opponent heading" + at);
+                        assertEquals(tick.liveValue("OPPONENT_VELOCITY"), sre.getVelocity(), GROUND_TOL,
+                                        "opponent velocity" + at);
+                        assertEquals(tick.liveValue("OPPONENT_ENERGY"), sre.getEnergy(), GROUND_TOL,
+                                        "opponent energy" + at);
+                        assertEquals(opponentName, sre.getName(), "scanned name" + at);
+                        checked++;
+                }
+                assertTrue(checked > 10, "expected many grounded scan comparisons, got " + checked);
+        }
+
+        @Test
+        void recordedReplay_bulletEventTypesMatchEngineBulletStates() {
+                RecordedBattle battle = RecordedBattle.load(FIXTURE);
+                int my = battle.autopilotIndex();
+                recon.resetRound();
+                recon.seedRoundStart(battle.spawn(), my);
+
+                // Engine truth: distinct bullets the engine marked HIT_VICTIM (ours), HIT_WALL
+                // (ours), and HIT_VICTIM against us. Keyed by bullet id; value = power.
+                Map<Integer, Double> engineMyHit = new HashMap<>();
+                Map<Integer, Double> engineMyMiss = new HashMap<>();
+                Set<Integer> engineHitByOpp = new HashSet<>();
+
+                // Reconstructed event powers (each engine bullet must yield exactly one event,
+                // so these multisets must match the engine's by value and count).
+                List<Double> reconHitPowers = new ArrayList<>();
+                List<Double> reconMissPowers = new ArrayList<>();
+                int reconHitByOpp = 0;
+
+                for (RecordedBattle.Tick tick : battle.ticks()) {
+                        for (IBulletSnapshot bs : tick.snapshot().getBullets()) {
+                                int id = bs.getBulletId();
+                                if (bs.getState() == BulletState.HIT_VICTIM && bs.getOwnerIndex() == my) {
+                                        engineMyHit.putIfAbsent(id, bs.getPower());
+                                } else if (bs.getState() == BulletState.HIT_VICTIM
+                                                && bs.getVictimIndex() == my && bs.getOwnerIndex() != my) {
+                                        engineHitByOpp.add(id);
+                                } else if (bs.getState() == BulletState.HIT_WALL && bs.getOwnerIndex() == my) {
+                                        engineMyMiss.putIfAbsent(id, bs.getPower());
+                                }
+                        }
+
+                        TickEvents ev = recon.reconstruct(tick.snapshot(), my, BF_WIDTH, BF_HEIGHT);
+                        for (Event e : ev.events()) {
+                                if (e instanceof BulletHitEvent bhe) {
+                                        reconHitPowers.add(bhe.getBullet().getPower());
+                                } else if (e instanceof BulletMissedEvent bme) {
+                                        reconMissPowers.add(bme.getBullet().getPower());
+                                } else if (e instanceof HitByBulletEvent) {
+                                        reconHitByOpp++;
+                                }
+                        }
+                }
+
+                // Exactly one reconstructed event per distinct engine bullet (dedup fidelity).
+                assertEquals(engineMyHit.size(), reconHitPowers.size(),
+                                "every engine HIT_VICTIM bullet of ours must map to one BulletHitEvent");
+                assertEquals(engineMyMiss.size(), reconMissPowers.size(),
+                                "every engine HIT_WALL bullet of ours must map to one BulletMissedEvent");
+                assertEquals(engineHitByOpp.size(), reconHitByOpp,
+                                "every engine HIT_VICTIM bullet against us must map to one HitByBulletEvent");
+
+                // Powers must match the engine's, value-for-value (bit-exact, same source).
+                assertEquals(sorted(engineMyHit.values()), sorted(reconHitPowers),
+                                "BulletHitEvent powers must equal the engine's bullet powers");
+                assertEquals(sorted(engineMyMiss.values()), sorted(reconMissPowers),
+                                "BulletMissedEvent powers must equal the engine's bullet powers");
+
+                assertFalse(engineMyHit.isEmpty(), "fixture should contain at least one of our bullets hitting");
+                assertFalse(engineMyMiss.isEmpty(), "fixture should contain at least one of our bullets missing");
+        }
+
+        private static List<Double> sorted(java.util.Collection<Double> values) {
+                List<Double> list = new ArrayList<>(values);
+                Collections.sort(list);
+                return list;
         }
 }

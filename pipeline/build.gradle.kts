@@ -107,6 +107,9 @@ tasks.register<JavaExec>("runBattle") {
     if (project.hasProperty("output")) {
         systemProperty("battle.output", project.property("output")!!)
     }
+    if (project.hasProperty("recordFixtureDir")) {
+        systemProperty("record.fixture.dir", project.property("recordFixtureDir")!!)
+    }
 }
 
 // --- Battle integration test (runs actual Robocode battle) ---

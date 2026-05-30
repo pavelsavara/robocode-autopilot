@@ -36,6 +36,18 @@ final class WaveTrackerObserverTest {
         godView = new GodViewWaveResolver();
     }
 
+    /**
+     * Mirror the orchestrator's Phase 1.5: seed each god-view whiteboard from the
+     * freshly-computed robot-side whiteboard so TICK/scan state is present when the
+     * god-view wave resolver runs. Without this the god-view TICK stays unset and
+     * waves never advance.
+     */
+    private void syncGodView() {
+        for (ObserverContext ctx : observers) {
+            ctx.godWb().copyFrom(ctx.wb());
+        }
+    }
+
     @Test
     void firePowerIsSetByGodView() {
         // Robot 0 at (400,300) fires 2.0 power at robot 1 at (400,500)
@@ -59,8 +71,8 @@ final class WaveTrackerObserverTest {
         }
         godView.processTick(observers, tick1.getRobots(), tick1);
 
-        // Robot 0's whiteboard should have OUR_FIRE_POWER = 2.0 (set by god-view)
-        Whiteboard wb0 = observers[0].wb();
+        // Robot 0's god-view whiteboard should have OUR_FIRE_POWER = 2.0 (set by god-view)
+        Whiteboard wb0 = observers[0].godWb();
         double ourFirePower = wb0.getFeature(Feature.OUR_FIRE_POWER);
         assertEquals(2.0, ourFirePower, 0.1, "OUR_FIRE_POWER from god-view bullet detection");
     }
@@ -88,7 +100,7 @@ final class WaveTrackerObserverTest {
         }
         godView.processTick(observers, tick1.getRobots(), tick1);
 
-        Whiteboard wb0 = observers[0].wb();
+        Whiteboard wb0 = observers[0].godWb();
         double firePower = wb0.getFeature(Feature.OUR_FIRE_POWER);
         double fireMea = wb0.getFeature(Feature.OUR_FIRE_MEA);
 
@@ -118,6 +130,7 @@ final class WaveTrackerObserverTest {
         for (ObserverContext ctx : observers) {
             ctx.processTick(tick1);
         }
+        syncGodView();
         godView.processTick(observers, tick1.getRobots(), tick1);
 
         // Advance ticks (opponent stays still)
@@ -135,11 +148,12 @@ final class WaveTrackerObserverTest {
             for (ObserverContext ctx : observers) {
                 ctx.processTick(tickN);
             }
+            syncGodView();
             boolean[] resolved = godView.processTick(observers, tickN.getRobots(), tickN);
 
             if (resolved[0]) {
                 waveResolved = true;
-                Whiteboard wb0 = observers[0].wb();
+                Whiteboard wb0 = observers[0].godWb();
                 double breakGf = wb0.getFeature(Feature.OUR_BREAK_GF);
                 // GF should be between -1 and 1
                 assertTrue(breakGf >= -1.0 && breakGf <= 1.0,
@@ -153,5 +167,47 @@ final class WaveTrackerObserverTest {
         }
 
         assertTrue(waveResolved, "God-view wave should have resolved within 30 ticks");
+    }
+
+    /**
+     * Engine-grounded replay: drive both observers over a real recorded BeepBoop
+     * battle and assert that the scan-derived whiteboard features the observer
+     * publishes (DISTANCE, OPPONENT_VELOCITY, OPPONENT_ENERGY) reproduce the live
+     * {@code Autopilot}'s own debug properties from that turn. The live values were
+     * computed by the real robot from real engine events, so matching them anchors
+     * the observer's feature pipeline to engine behavior rather than to hand-built
+     * stubs.
+     */
+    @Test
+    void recordedReplay_scanFeaturesMatchLiveDebugProperties() {
+        RecordedBattle battle = RecordedBattle.load("/recorded/beepboop.fixture");
+        int my = battle.autopilotIndex();
+        int round = battle.spawn().getRound();
+        for (ObserverContext ctx : observers) {
+            ctx.resetRound(round);
+            ctx.seedRoundStart(battle.spawn());
+        }
+
+        int checked = 0;
+        for (RecordedBattle.Tick tick : battle.ticks()) {
+            for (ObserverContext ctx : observers) {
+                ctx.processTick(tick.snapshot());
+            }
+            if (!tick.liveScannedThisTurn()) {
+                continue;
+            }
+            Whiteboard wb = observers[my].wb();
+            // 1e-9: these features flow from the same authoritative snapshot geometry
+            // the live robot saw, so they should be bit-for-bit equivalent.
+            assertEquals(tick.liveValue("DISTANCE"), wb.getFeature(Feature.DISTANCE), 1e-9,
+                    "DISTANCE at turn " + tick.turn());
+            assertEquals(tick.liveValue("OPPONENT_VELOCITY"), wb.getFeature(Feature.OPPONENT_VELOCITY), 1e-9,
+                    "OPPONENT_VELOCITY at turn " + tick.turn());
+            assertEquals(tick.liveValue("OPPONENT_ENERGY"), wb.getFeature(Feature.OPPONENT_ENERGY), 1e-9,
+                    "OPPONENT_ENERGY at turn " + tick.turn());
+            checked++;
+        }
+
+        assertTrue(checked > 10, "expected many grounded scan ticks, got " + checked);
     }
 }
