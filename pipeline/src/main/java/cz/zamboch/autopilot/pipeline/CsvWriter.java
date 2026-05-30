@@ -53,6 +53,9 @@ public final class CsvWriter implements Closeable {
                         scoresFeatures.add(f);
                     }
                     break;
+                case NONE:
+                    // intentionally excluded from CSV output
+                    break;
             }
         }
     }

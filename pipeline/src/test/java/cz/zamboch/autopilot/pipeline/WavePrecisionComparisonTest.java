@@ -1,6 +1,5 @@
 package cz.zamboch.autopilot.pipeline;
 
-import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.Whiteboard;
 import net.sf.robocode.security.HiddenAccess;
 import robocode.control.snapshot.BulletState;
@@ -44,9 +43,9 @@ final class WavePrecisionComparisonTest {
      * god-view wave resolver runs. Without this the god-view TICK stays unset and
      * waves never advance.
      */
-    private void syncGodView() {
+    private void syncGodView(ITurnSnapshot curr) {
         for (ObserverContext ctx : observers) {
-            ctx.godWb().copyFrom(ctx.wb());
+            ctx.seedGodView(curr);
         }
     }
 
@@ -87,7 +86,7 @@ final class WavePrecisionComparisonTest {
         for (ObserverContext ctx : observers) {
             ctx.processTick(tick0);
         }
-        syncGodView();
+        syncGodView(tick0);
         godView.processTick(observers, tick0.getRobots(), tick0);
 
         // Tick 1: bullet fired
@@ -98,7 +97,7 @@ final class WavePrecisionComparisonTest {
         for (ObserverContext ctx : observers) {
             ctx.processTick(tick1);
         }
-        syncGodView();
+        syncGodView(tick1);
         godView.processTick(observers, tick1.getRobots(), tick1);
         comparator.recordGodViewFire(0);
 
@@ -128,7 +127,7 @@ final class WavePrecisionComparisonTest {
             double robotGf = comparator.captureRobotSideBreak(0, wb0);
 
             // God-view
-            syncGodView();
+            syncGodView(tickN);
             boolean[] resolved = godView.processTick(observers, tickN.getRobots(), tickN);
 
             // Compare

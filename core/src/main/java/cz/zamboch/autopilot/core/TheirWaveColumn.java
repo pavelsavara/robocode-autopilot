@@ -16,6 +16,14 @@ public enum TheirWaveColumn {
     FIRE_OUR_X, // our position at their fire time
     FIRE_OUR_Y,
 
+    // --- Aim-time columns (tick before their fire tick, T-1) ---
+    AIM_X, // their position when their gun was aimed
+    AIM_Y,
+    AIM_OUR_X, // our position at their aim time
+    AIM_OUR_Y,
+    AIM_DISTANCE,
+    AIM_BEARING, // absolute bearing from them to us at aim time
+
     // --- Break-time columns (filled at resolution) ---
     BREAK_TICK,
     BREAK_OUR_X,

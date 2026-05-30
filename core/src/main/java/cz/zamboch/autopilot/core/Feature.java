@@ -17,8 +17,6 @@ public enum Feature {
     GUN_HEADING(FileType.TICKS),
     RADAR_HEADING(FileType.TICKS),
     TICK(FileType.TICKS),
-    BATTLEFIELD_WIDTH(FileType.TICKS),
-    BATTLEFIELD_HEIGHT(FileType.TICKS),
 
     // --- Input: scan (set by onScannedRobot / pipeline) ---
     DISTANCE(FileType.TICKS),
@@ -29,11 +27,13 @@ public enum Feature {
     LAST_SCAN_TICK(FileType.TICKS),
 
     // --- Input: bullet & ram events (accumulated between scans) ---
-    OUR_BULLET_DAMAGE_TO_OPPONENT(FileType.TICKS),
-    OPPONENT_BULLET_ENERGY_GAIN(FileType.TICKS),
-    RAM_DAMAGE_TO_OPPONENT(FileType.TICKS),
-    OPPONENT_RAM_ENERGY_GAIN(FileType.TICKS),
-    OPPONENT_WALL_HIT_DAMAGE(FileType.TICKS),
+    // FileType.NONE: inter-tick accumulators consumed by FireFeatures; not dataset
+    // features, so they are kept in the whiteboard but never written to CSV.
+    OUR_BULLET_DAMAGE_TO_OPPONENT(FileType.NONE),
+    OPPONENT_BULLET_ENERGY_GAIN(FileType.NONE),
+    RAM_DAMAGE_TO_OPPONENT(FileType.NONE),
+    OPPONENT_RAM_ENERGY_GAIN(FileType.NONE),
+    OPPONENT_WALL_HIT_DAMAGE(FileType.NONE),
 
     // --- Computed: spatial ---
     OPPONENT_BEARING_ABSOLUTE(FileType.TICKS),
@@ -45,9 +45,11 @@ public enum Feature {
     OPPONENT_ADVANCING_VELOCITY(FileType.TICKS),
 
     // --- Computed: gun aim (from GF strategy) ---
-    GUN_AIM_POWER(FileType.TICKS),
-    GUN_AIM_ANGLE(FileType.TICKS),
-    GUN_AIM_GF(FileType.TICKS),
+    // FileType.NONE: robot-side gun decision, not engine ground truth, so excluded
+    // from the dataset (the god-view cannot reproduce it without a gun strategy).
+    GUN_AIM_POWER(FileType.NONE),
+    GUN_AIM_ANGLE(FileType.NONE),
+    GUN_AIM_GF(FileType.NONE),
 
     // --- Computed: timing ---
     TICKS_SINCE_SCAN(FileType.TICKS),
@@ -62,13 +64,23 @@ public enum Feature {
     THEIR_FIRE_DISTANCE(FileType.THEIR_WAVES),
     THEIR_FIRE_OUR_X(FileType.THEIR_WAVES),
     THEIR_FIRE_OUR_Y(FileType.THEIR_WAVES),
+    // Aim-time geometry: the tick BEFORE their fire tick (T-1), i.e. two ticks
+    // before we detect the energy drop. That is when the opponent's gun was
+    // actually aimed, so it attributes the aiming decision to the proper tick.
+    THEIR_AIM_X(FileType.THEIR_WAVES),
+    THEIR_AIM_Y(FileType.THEIR_WAVES),
+    THEIR_AIM_OUR_X(FileType.THEIR_WAVES),
+    THEIR_AIM_OUR_Y(FileType.THEIR_WAVES),
+    THEIR_AIM_DISTANCE(FileType.THEIR_WAVES),
+    THEIR_AIM_BEARING(FileType.THEIR_WAVES),
     THEIR_BREAK_TICK(FileType.THEIR_WAVES),
     THEIR_BREAK_OUR_X(FileType.THEIR_WAVES),
     THEIR_BREAK_OUR_Y(FileType.THEIR_WAVES),
     THEIR_BREAK_GF(FileType.THEIR_WAVES),
     THEIR_BREAK_BEARING_OFFSET(FileType.THEIR_WAVES),
     THEIR_HIT_US(FileType.THEIR_WAVES),
-    PREV_SCAN_OPPONENT_ENERGY(FileType.TICKS),
+    // FileType.NONE: inter-tick state for fire detection; not a dataset feature.
+    PREV_SCAN_OPPONENT_ENERGY(FileType.NONE),
 
     // --- Computed: identity ---
     OPPONENT_ID(FileType.TICKS),
@@ -91,6 +103,16 @@ public enum Feature {
     OUR_FIRE_BULLET_ID(FileType.OUR_WAVES),
     OUR_FIRE_AIM_GF(FileType.OUR_WAVES),
     OUR_FIRE_IS_REAL(FileType.OUR_WAVES),
+
+    // --- Our gun waves: aim-time features (the tick BEFORE we fired, T-1) ---
+    // The gun was aimed reacting to the world state one tick before the fire
+    // command executed, so these attribute the aiming decision to that tick.
+    OUR_AIM_X(FileType.OUR_WAVES),
+    OUR_AIM_Y(FileType.OUR_WAVES),
+    OUR_AIM_OPPONENT_X(FileType.OUR_WAVES),
+    OUR_AIM_OPPONENT_Y(FileType.OUR_WAVES),
+    OUR_AIM_DISTANCE(FileType.OUR_WAVES),
+    OUR_AIM_BEARING_ABSOLUTE(FileType.OUR_WAVES),
 
     // --- Our gun waves: break-time features (set at wave resolution) ---
     OUR_BREAK_TICK(FileType.OUR_WAVES),

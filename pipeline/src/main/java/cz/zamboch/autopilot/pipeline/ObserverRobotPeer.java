@@ -58,11 +58,9 @@ import java.util.Map;
  * <p>
  * All movement and radar commands are no-ops (state comes from snapshots).
  */
-@SuppressWarnings("unchecked") // Robocode API uses raw List return types
+@SuppressWarnings({ "unchecked", "rawtypes" }) // Robocode API uses raw List return types
 public class ObserverRobotPeer implements IAdvancedRobotPeer {
 
-    /** Max gun rotation per tick: 20 degrees in radians. */
-    private static final double GUN_TURN_RATE_RADIANS = Math.toRadians(20);
     private static final double MIN_BULLET_POWER = 0.1;
     private static final double MAX_BULLET_POWER = 3.0;
 

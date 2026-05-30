@@ -42,6 +42,12 @@ public final class TheirWaveTracker implements IInGameFeatures {
             Feature.THEIR_FIRE_DISTANCE,
             Feature.THEIR_FIRE_OUR_X,
             Feature.THEIR_FIRE_OUR_Y,
+            Feature.THEIR_AIM_X,
+            Feature.THEIR_AIM_Y,
+            Feature.THEIR_AIM_OUR_X,
+            Feature.THEIR_AIM_OUR_Y,
+            Feature.THEIR_AIM_DISTANCE,
+            Feature.THEIR_AIM_BEARING,
             Feature.THEIR_BREAK_TICK,
             Feature.THEIR_BREAK_OUR_X,
             Feature.THEIR_BREAK_OUR_Y,
@@ -73,11 +79,20 @@ public final class TheirWaveTracker implements IInGameFeatures {
             return;
         }
 
-        double oppX = wb.getFeature(Feature.OPPONENT_X);
-        double oppY = wb.getFeature(Feature.OPPONENT_Y);
-        double ourX = wb.getFeature(Feature.OUR_X);
-        double ourY = wb.getFeature(Feature.OUR_Y);
-        double tick = wb.getFeature(Feature.TICK);
+        // FireFeatures detects the opponent's fire from a scan-to-scan energy
+        // drop observed at the CURRENT tick D. By Robocode timing, the opponent's
+        // fire code ran at tick D-1: the bullet is created (and energy deducted)
+        // at loadCommands of tick D from the opponent's position at the end of
+        // D-1, then advances one step before D's status is published. So the true
+        // muzzle is the opponent's position at tick D-1, and the true fire tick is
+        // D-1. Using the current-tick position would mis-place the wave origin by
+        // one tick of opponent movement (~6-8 px). Validated against god-view
+        // ground truth (back-projected IBulletSnapshot muzzle) to an exact match.
+        double oppX = wb.getPreviousTickFeature(Feature.OPPONENT_X);
+        double oppY = wb.getPreviousTickFeature(Feature.OPPONENT_Y);
+        double ourX = wb.getPreviousTickFeature(Feature.OUR_X);
+        double ourY = wb.getPreviousTickFeature(Feature.OUR_Y);
+        double tick = wb.getFeature(Feature.TICK) - 1.0;
 
         if (Double.isNaN(oppX) || Double.isNaN(ourX) || Double.isNaN(tick)) {
             return;
@@ -102,6 +117,27 @@ public final class TheirWaveTracker implements IInGameFeatures {
         wb.setTheirWave(slot, TheirWaveColumn.FIRE_OUR_Y, ourY);
         wb.setTheirWaveState(slot, Whiteboard.WAVE_ACTIVE);
 
+        // Aim-time geometry: the opponent aimed reacting to the world state one
+        // tick before its fire tick (T-1 = D-2, two ticks before our detection).
+        // Attribute the aiming decision to that tick. The opponent (firer) was the
+        // most recently scanned one at or before the aim tick — walk the ring back
+        // across any radar-lock gap so this is never NaN. Our own position at the
+        // aim tick is always known.
+        double aimOppX = wb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_X, 2);
+        double aimOppY = wb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_Y, 2);
+        double aimOurX = wb.getFeatureNTicksAgo(Feature.OUR_X, 2);
+        double aimOurY = wb.getFeatureNTicksAgo(Feature.OUR_Y, 2);
+        double aimDx = aimOurX - aimOppX;
+        double aimDy = aimOurY - aimOppY;
+        double aimDistance = Math.sqrt(aimDx * aimDx + aimDy * aimDy);
+        double aimBearing = Math.atan2(aimDx, aimDy);
+        wb.setTheirWave(slot, TheirWaveColumn.AIM_X, aimOppX);
+        wb.setTheirWave(slot, TheirWaveColumn.AIM_Y, aimOppY);
+        wb.setTheirWave(slot, TheirWaveColumn.AIM_OUR_X, aimOurX);
+        wb.setTheirWave(slot, TheirWaveColumn.AIM_OUR_Y, aimOurY);
+        wb.setTheirWave(slot, TheirWaveColumn.AIM_DISTANCE, aimDistance);
+        wb.setTheirWave(slot, TheirWaveColumn.AIM_BEARING, aimBearing);
+
         // Also write fire-time features to staging for CsvWriter
         wb.setFeature(Feature.THEIR_FIRE_TICK, tick);
         wb.setFeature(Feature.THEIR_FIRE_X, oppX);
@@ -111,6 +147,12 @@ public final class TheirWaveTracker implements IInGameFeatures {
         wb.setFeature(Feature.THEIR_FIRE_DISTANCE, distance);
         wb.setFeature(Feature.THEIR_FIRE_OUR_X, ourX);
         wb.setFeature(Feature.THEIR_FIRE_OUR_Y, ourY);
+        wb.setFeature(Feature.THEIR_AIM_X, aimOppX);
+        wb.setFeature(Feature.THEIR_AIM_Y, aimOppY);
+        wb.setFeature(Feature.THEIR_AIM_OUR_X, aimOurX);
+        wb.setFeature(Feature.THEIR_AIM_OUR_Y, aimOurY);
+        wb.setFeature(Feature.THEIR_AIM_DISTANCE, aimDistance);
+        wb.setFeature(Feature.THEIR_AIM_BEARING, aimBearing);
 
         // Clear fire power staging so we don't re-create next tick
         wb.setFeature(Feature.THEIR_FIRE_POWER, Double.NaN);

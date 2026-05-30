@@ -42,9 +42,9 @@ final class WaveTrackerObserverTest {
      * god-view wave resolver runs. Without this the god-view TICK stays unset and
      * waves never advance.
      */
-    private void syncGodView() {
+    private void syncGodView(ITurnSnapshot curr) {
         for (ObserverContext ctx : observers) {
-            ctx.godWb().copyFrom(ctx.wb());
+            ctx.seedGodView(curr);
         }
     }
 
@@ -131,7 +131,7 @@ final class WaveTrackerObserverTest {
         for (ObserverContext ctx : observers) {
             ctx.processTick(tick1);
         }
-        syncGodView();
+        syncGodView(tick1);
         godView.processTick(observers, tick1.getRobots(), tick1);
 
         // Advance ticks (opponent stays still)
@@ -149,7 +149,7 @@ final class WaveTrackerObserverTest {
             for (ObserverContext ctx : observers) {
                 ctx.processTick(tickN);
             }
-            syncGodView();
+            syncGodView(tickN);
             boolean[] resolved = godView.processTick(observers, tickN.getRobots(), tickN);
 
             if (resolved[0]) {

@@ -80,6 +80,17 @@ final class GodViewWaveResolver {
     }
 
     /**
+     * True muzzle heading (radians) of the most recent fire detected for the given
+     * perspective. This is the engine bullet's actual flight direction — the one
+     * piece of fire-time information the blindfolded robot cannot infer from an
+     * energy drop (it must assume a head-on bearing instead).
+     */
+    double getLastFiredTrueHeading(int perspIndex) {
+        TrackedWave tw = persp[perspIndex].lastFiredWave;
+        return tw != null ? tw.trueHeading : Double.NaN;
+    }
+
+    /**
      * Main per-tick call. Detects new bullets (fire), resolves existing waves,
      * and sets features on whiteboards.
      *
@@ -154,13 +165,24 @@ final class GodViewWaveResolver {
     }
 
     private void createWave(ObserverContext ctx, IBulletSnapshot bullet, IRobotSnapshot[] robots) {
-        IRobotSnapshot self = robots[ctx.perspectiveIndex()];
         IRobotSnapshot opponent = robots[ctx.peerContext().perspectiveIndex()];
 
-        double fireX = self.getX();
-        double fireY = self.getY();
         double power = bullet.getPower();
         double bulletSpeed = GuessFactor.bulletSpeed(power);
+
+        // Back-project the bullet to its muzzle (the true fire origin).
+        // A bullet is created at the robot's body position on the tick the fire
+        // command is loaded, then advanced exactly one step (v = 20 - 3*power along
+        // its heading) before it first appears in any snapshot. By that tick the
+        // robot body has already moved a full tick away from where it fired, so
+        // reading self.getX()/getY() here would report the post-fire body position
+        // — overstating the origin by up to one tick of robot movement (the
+        // residual Layer 2 positionMAE). Subtracting the single bullet step from the
+        // bullet's own coordinates recovers the exact muzzle, matching the
+        // robot-side OUR_FIRE_X/Y (which is captured at the fire tick).
+        double bulletHeading = bullet.getHeading();
+        double fireX = bullet.getX() - bulletSpeed * Math.sin(bulletHeading);
+        double fireY = bullet.getY() - bulletSpeed * Math.cos(bulletHeading);
 
         // Absolute bearing from us to opponent at fire time
         double dx = opponent.getX() - fireX;
@@ -177,17 +199,42 @@ final class GodViewWaveResolver {
         int distSeg = GuessFactor.distanceSegment(distance);
         int latVelSeg = GuessFactor.lateralVelocitySegment(latVel);
 
-        long fireTick = (long) ctx.godWb().getFeature(Feature.TICK);
+        // True fire tick. The bullet first appears in a snapshot one tick AFTER the
+        // fire command ran: it is created at loadCommands of the detection tick from
+        // the body position at the end of the previous tick (the muzzle we
+        // back-projected above), then advanced one step before this snapshot. So the
+        // tick the robot actually fired — and the tick the back-projected muzzle
+        // belongs to — is the detection tick minus one. Using the detection tick
+        // would (a) overstate the fire tick by one relative to the robot-side
+        // OUR_FIRE_TICK (captured at the true fire tick) and (b) undercount
+        // distanceTravelled by one bullet step in resolveWaves, resolving every wave
+        // one tick late.
+        long fireTick = (long) ctx.godWb().getFeature(Feature.TICK) - 1L;
 
         Wave wave = new Wave(fireX, fireY, fireTick, absoluteBearing,
                 bulletSpeed, direction, distSeg, latVelSeg);
 
         double advVel = oppVel * Math.cos(oppHeading - absoluteBearing);
 
+        // Aim-time positions: two ticks back from the detection tick D (= one tick
+        // before the fire tick D-1). The god-view tick ring is seeded from the
+        // robot-side ring in Phase 1.5. The firer's own position at the aim tick is
+        // always known; the target (opponent) position is the most recently scanned
+        // one at or before the aim tick — walk the ring back across any radar-lock
+        // gap so it is never NaN, matching the live robot's last-known lookup.
+        // Captured here and stored on the TrackedWave so both OUR_AIM_* (firer's wb)
+        // and THEIR_AIM_* (target's wb, written at break) read consistent values.
+        Whiteboard firerWb = ctx.godWb();
+        double aimFirerX = firerWb.getFeatureNTicksAgo(Feature.OUR_X, 2);
+        double aimFirerY = firerWb.getFeatureNTicksAgo(Feature.OUR_Y, 2);
+        double aimTargetX = firerWb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_X, 2);
+        double aimTargetY = firerWb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_Y, 2);
+
         PerPerspective pp = persp[ctx.perspectiveIndex()];
         pp.activeWaves.add(new TrackedWave(wave, bullet.getBulletId(),
                 distance, latVel, advVel, power,
-                opponent.getX(), opponent.getY()));
+                opponent.getX(), opponent.getY(), bulletHeading,
+                aimFirerX, aimFirerY, aimTargetX, aimTargetY));
         pp.lastFiredWave = pp.activeWaves.get(pp.activeWaves.size() - 1);
         pp.pendingFire = true;
         firedThisTick[ctx.perspectiveIndex()] = true;
@@ -199,6 +246,7 @@ final class GodViewWaveResolver {
         wb.setFeature(Feature.OUR_FIRE_X, w.fireX);
         wb.setFeature(Feature.OUR_FIRE_Y, w.fireY);
         wb.setFeature(Feature.OUR_FIRE_TICK, w.fireTick);
+        wb.setFeature(Feature.OUR_FIRE_BULLET_ID, tw.bulletId);
         wb.setFeature(Feature.OUR_FIRE_BEARING_ABSOLUTE, w.fireBearing);
         wb.setFeature(Feature.OUR_FIRE_DISTANCE, tw.fireDistance);
         wb.setFeature(Feature.OUR_FIRE_LATERAL_VELOCITY, tw.fireLateralVelocity);
@@ -209,6 +257,25 @@ final class GodViewWaveResolver {
         wb.setFeature(Feature.OUR_FIRE_OPPONENT_X, tw.fireOpponentX);
         wb.setFeature(Feature.OUR_FIRE_OPPONENT_Y, tw.fireOpponentY);
         wb.setFeature(Feature.OUR_FIRE_IS_REAL, 1.0);
+
+        // Aim-time geometry: the gun was aimed one tick before the fire tick. The
+        // bullet is detected at the current tick D, fired at D-1, so the gun was
+        // aimed reacting to the world state at D-2 — two ticks back in the god-view
+        // tick ring (which is seeded from the robot-side ring each tick and holds
+        // seeded from the robot-side ring each tick). Captured at createWave (detection
+        // tick),
+        // stored on the TrackedWave, because setFireFeatures is also re-invoked at
+        // break time when the ring no longer holds the fire tick.
+        double aimDx = tw.aimTargetX - tw.aimFirerX;
+        double aimDy = tw.aimTargetY - tw.aimFirerY;
+        double aimDistance = Math.sqrt(aimDx * aimDx + aimDy * aimDy);
+        double aimBearing = Math.atan2(aimDx, aimDy);
+        wb.setFeature(Feature.OUR_AIM_X, tw.aimFirerX);
+        wb.setFeature(Feature.OUR_AIM_Y, tw.aimFirerY);
+        wb.setFeature(Feature.OUR_AIM_OPPONENT_X, tw.aimTargetX);
+        wb.setFeature(Feature.OUR_AIM_OPPONENT_Y, tw.aimTargetY);
+        wb.setFeature(Feature.OUR_AIM_DISTANCE, aimDistance);
+        wb.setFeature(Feature.OUR_AIM_BEARING_ABSOLUTE, aimBearing);
 
         // Compute aim GF from ModelSelector or raw VCS at fire time
         ModelSelector selector = wb.getModelSelector();
@@ -300,6 +367,20 @@ final class GodViewWaveResolver {
         peerWb.setFeature(Feature.THEIR_FIRE_OUR_X, tw.fireOpponentX);
         peerWb.setFeature(Feature.THEIR_FIRE_OUR_Y, tw.fireOpponentY);
 
+        // Aim-time features (one tick before the fire tick). From the target's
+        // perspective "they" is the firer: THEIR_AIM_X/Y is the firer's position
+        // at aim time, THEIR_AIM_OUR_X/Y is the target's own position at aim time.
+        double aimDx = tw.aimTargetX - tw.aimFirerX;
+        double aimDy = tw.aimTargetY - tw.aimFirerY;
+        double aimDistance = Math.sqrt(aimDx * aimDx + aimDy * aimDy);
+        double aimBearing = Math.atan2(aimDx, aimDy);
+        peerWb.setFeature(Feature.THEIR_AIM_X, tw.aimFirerX);
+        peerWb.setFeature(Feature.THEIR_AIM_Y, tw.aimFirerY);
+        peerWb.setFeature(Feature.THEIR_AIM_OUR_X, tw.aimTargetX);
+        peerWb.setFeature(Feature.THEIR_AIM_OUR_Y, tw.aimTargetY);
+        peerWb.setFeature(Feature.THEIR_AIM_DISTANCE, aimDistance);
+        peerWb.setFeature(Feature.THEIR_AIM_BEARING, aimBearing);
+
         // Break-time features
         peerWb.setFeature(Feature.THEIR_BREAK_TICK, breakTick);
         peerWb.setFeature(Feature.THEIR_BREAK_OUR_X, targetX);
@@ -326,9 +407,17 @@ final class GodViewWaveResolver {
         final double power;
         final double fireOpponentX;
         final double fireOpponentY;
+        /** True muzzle heading (radians) from the engine bullet snapshot. */
+        final double trueHeading;
+        /** Aim-time positions (one tick before fire): firer + target. */
+        final double aimFirerX;
+        final double aimFirerY;
+        final double aimTargetX;
+        final double aimTargetY;
 
         TrackedWave(Wave wave, int bulletId, double distance, double latVel,
-                double advVel, double power, double oppX, double oppY) {
+                double advVel, double power, double oppX, double oppY, double trueHeading,
+                double aimFirerX, double aimFirerY, double aimTargetX, double aimTargetY) {
             this.wave = wave;
             this.bulletId = bulletId;
             this.fireDistance = distance;
@@ -337,6 +426,11 @@ final class GodViewWaveResolver {
             this.power = power;
             this.fireOpponentX = oppX;
             this.fireOpponentY = oppY;
+            this.trueHeading = trueHeading;
+            this.aimFirerX = aimFirerX;
+            this.aimFirerY = aimFirerY;
+            this.aimTargetX = aimTargetX;
+            this.aimTargetY = aimTargetY;
         }
     }
 }

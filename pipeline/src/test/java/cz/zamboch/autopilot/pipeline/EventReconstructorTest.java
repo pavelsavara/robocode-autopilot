@@ -36,7 +36,7 @@ class EventReconstructorTest {
                 ITurnSnapshot t0 = turn(0,
                                 robot(400, 300, 0, 0, 100, 0, 0, 0, MY_INDEX, RobotState.ACTIVE, "MyBot"),
                                 robot(500, 300, 0, 0, 100, 0, 0, 0, OPP_INDEX, RobotState.ACTIVE, "Enemy"));
-                TickEvents ev0 = recon.reconstruct(t0, MY_INDEX, BF_WIDTH, BF_HEIGHT);
+                recon.reconstruct(t0, MY_INDEX, BF_WIDTH, BF_HEIGHT);
 
                 // Tick 1 - still nothing (no radar movement)
                 ITurnSnapshot t1 = turn(1,

@@ -92,7 +92,6 @@ public final class Main {
         // Use a two-phase approach: first read header via forEachTurn (gets
         // recordInfo), then replay
         final BattleRecordInfo[] infoHolder = { null };
-        final List<int[]> roundTurns = new ArrayList<>();
         final List<ITurnSnapshot> snapshots = new ArrayList<>();
 
         loader.forEachTurn((roundIndex, turn) -> {
@@ -133,7 +132,7 @@ public final class Main {
         csvB.writeHeaders(battleId);
 
         // Attach validator
-        GodViewQualityValidator validator = new GodViewQualityValidator(bfWidth, bfHeight);
+        GodViewQualityValidator validator = new GodViewQualityValidator();
         orchestrator.setValidator(validator);
 
         // Replay all snapshots through the orchestrator
