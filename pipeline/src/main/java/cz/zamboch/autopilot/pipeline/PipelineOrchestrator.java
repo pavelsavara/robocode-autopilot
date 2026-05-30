@@ -97,7 +97,7 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
             if (currentRound >= 0) {
                 writeRoundScores(currentRound);
             }
-            resetRound();
+            resetRound(round);
             currentRound = round;
         }
 
@@ -219,10 +219,20 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
         prevSnapshot = curr;
     }
 
-    /** Reset both observers for a new round. */
+    /** Reset both observers for a new round (round 0, for tests/back-compat). */
     public void resetRound() {
+        resetRound(0);
+    }
+
+    /**
+     * Reset both observers for a new round.
+     *
+     * @param round zero-based round number (threaded to observers so their
+     *              bullet-id sequence matches the live engine's per-round numbering)
+     */
+    public void resetRound(int round) {
         for (ObserverContext ctx : observers) {
-            ctx.resetRound();
+            ctx.resetRound(round);
         }
         godViewWaveResolver.resetRound();
         wavePrecisionComparator.resetRound();

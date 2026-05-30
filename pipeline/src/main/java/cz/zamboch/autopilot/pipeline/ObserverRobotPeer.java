@@ -83,7 +83,15 @@ public class ObserverRobotPeer implements IAdvancedRobotPeer {
     // --- Gun turn tracking (mirrors ExecCommands.gunTurnRemaining) ---
     private double gunTurnRemaining;
 
-    private int bulletIdCounter = 1;
+    /**
+     * Next bullet id. Mirrors {@code BasicRobotProxy.nextBulletId}: reset at the
+     * start of each round to {@code 1 + robotIndex*10000 + roundNum*1000000}
+     * (see {@link #resetRound(int, int)}), then pre-incremented on each fire so
+     * the value matches the live engine's {@code Bullet.hashCode()} exactly. The
+     * default base (robotIndex 0, round 0) keeps unit tests that fire without a
+     * round reset deterministic.
+     */
+    private int nextBulletId = 1;
 
     /**
      * Read-only data directory for loading VCS data (e.g. vcs.dat).
@@ -140,12 +148,21 @@ public class ObserverRobotPeer implements IAdvancedRobotPeer {
     /**
      * Reset state for a new round. Mirrors engine's round-start initialization:
      * gunHeat=3.0, energy/position will come from first updateState() call.
+     * <p>
+     * Also reseeds {@link #nextBulletId} with the live engine's per-round formula
+     * ({@code BasicRobotProxy.initialize}:
+     * {@code 1 + robotIndex*10000 + roundNum*1000000}) so the first fire of the
+     * round produces the same {@code Bullet.hashCode()} the live robot sees.
+     *
+     * @param robotIndex this robot's battle index (0 or 1 in a 1v1 battle)
+     * @param roundNum   zero-based round number
      */
-    public void resetRound() {
+    public void resetRound(int robotIndex, int roundNum) {
         gunHeat = 3.0;
         firedHeat = 0;
         firedEnergy = 0;
         gunTurnRemaining = 0;
+        nextBulletId = 1 + robotIndex * 10000 + roundNum * 1000000;
     }
 
     public double getGunHeat() {
@@ -197,7 +214,9 @@ public class ObserverRobotPeer implements IAdvancedRobotPeer {
         energy -= power;
         gunHeat += 1.0 + power / 5.0;
 
-        return new Bullet(gunHeading, x, y, power, "Observer", null, true, bulletIdCounter++);
+        // Pre-increment to match BasicRobotProxy.setFireImpl (nextBulletId++ first).
+        nextBulletId++;
+        return new Bullet(gunHeading, x, y, power, "Observer", null, true, nextBulletId);
     }
 
     @Override

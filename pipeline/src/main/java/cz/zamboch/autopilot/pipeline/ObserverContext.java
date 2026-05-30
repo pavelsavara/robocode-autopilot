@@ -153,12 +153,22 @@ public final class ObserverContext {
         }
     }
 
-    /** Reset state for a new round. */
+    /** Reset state for a new round (round 0, for tests/back-compat). */
     public void resetRound() {
+        resetRound(0);
+    }
+
+    /**
+     * Reset state for a new round.
+     *
+     * @param round zero-based round number (used to seed the peer's bullet-id
+     *              sequence so it matches the live engine's per-round numbering)
+     */
+    public void resetRound(int round) {
         dead = false;
         diedThisTick = false;
         reconstructor.resetRound();
-        peer.resetRound();
+        peer.resetRound(perspectiveIndex, round);
         // Clear whiteboard so the observer starts fresh each round (matches live robot
         // behavior).
         // The live robot's ring rotation + carry-forward yields NaN for all features at
