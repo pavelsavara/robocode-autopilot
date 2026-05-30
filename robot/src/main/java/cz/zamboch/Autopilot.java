@@ -436,6 +436,17 @@ public final class Autopilot extends AdvancedRobot {
         wb.setFeature(Feature.OUR_FIRE_OPPONENT_Y, wb.getFeature(Feature.OPPONENT_Y));
         wb.setFeature(Feature.OUR_FIRE_AIM_GF, wb.getFeature(Feature.GUN_AIM_GF));
         wb.setFeature(Feature.OUR_FIRE_IS_REAL, 1.0);
+
+        // Aim-time geometry: the gun was aimed reacting to the previous tick's
+        // world state (T-1), one tick before this fire tick (T). Attribute the
+        // aiming decision to that tick by snapshotting the previous-tick features.
+        wb.setFeature(Feature.OUR_AIM_X, wb.getPreviousTickFeature(Feature.OUR_X));
+        wb.setFeature(Feature.OUR_AIM_Y, wb.getPreviousTickFeature(Feature.OUR_Y));
+        wb.setFeature(Feature.OUR_AIM_OPPONENT_X, wb.getPreviousTickFeature(Feature.OPPONENT_X));
+        wb.setFeature(Feature.OUR_AIM_OPPONENT_Y, wb.getPreviousTickFeature(Feature.OPPONENT_Y));
+        wb.setFeature(Feature.OUR_AIM_DISTANCE, wb.getPreviousTickFeature(Feature.DISTANCE));
+        wb.setFeature(Feature.OUR_AIM_BEARING_ABSOLUTE,
+                wb.getPreviousTickFeature(Feature.OPPONENT_BEARING_ABSOLUTE));
     }
 
 }

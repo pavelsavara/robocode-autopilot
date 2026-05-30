@@ -231,6 +231,13 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                     long tick = (long) ctx.godWb().getFeature(Feature.OUR_FIRE_TICK);
                     int bulletId = (int) ctx.godWb().getFeature(Feature.OUR_FIRE_BULLET_ID);
                     validator.recordGodViewFire(pi, bulletId, power, x, y, heading, tick);
+
+                    // Layer 2 (aim): god-view exact OUR aim geometry (tick before fire)
+                    double aimX = ctx.godWb().getFeature(Feature.OUR_AIM_X);
+                    double aimY = ctx.godWb().getFeature(Feature.OUR_AIM_Y);
+                    double aimDist = ctx.godWb().getFeature(Feature.OUR_AIM_DISTANCE);
+                    double aimBearing = ctx.godWb().getFeature(Feature.OUR_AIM_BEARING_ABSOLUTE);
+                    validator.recordGodViewOurAim(pi, bulletId, aimX, aimY, aimDist, aimBearing);
                 }
 
                 // Layer 2: robot-side fire detection (observer detected own fire)
@@ -242,6 +249,13 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                     double rsY = ctx.wb().getFeature(Feature.OUR_FIRE_Y);
                     int rsBulletId = (int) ctx.wb().getFeature(Feature.OUR_FIRE_BULLET_ID);
                     validator.recordRobotSideFire(pi, rsBulletId, rsPower, rsX, rsY, (long) fireTick);
+
+                    // Layer 2 (aim): robot-side inferred OUR aim geometry
+                    double rsAimX = ctx.wb().getFeature(Feature.OUR_AIM_X);
+                    double rsAimY = ctx.wb().getFeature(Feature.OUR_AIM_Y);
+                    double rsAimDist = ctx.wb().getFeature(Feature.OUR_AIM_DISTANCE);
+                    double rsAimBearing = ctx.wb().getFeature(Feature.OUR_AIM_BEARING_ABSOLUTE);
+                    validator.recordRobotSideOurAim(pi, rsBulletId, rsAimX, rsAimY, rsAimDist, rsAimBearing);
                 }
 
                 // Layer 2 (their): god-view incoming fire — the opponent's bullet as
@@ -256,6 +270,15 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                     double trueHeading = godViewWaveResolver.getLastFiredTrueHeading(oppIndex);
                     long tick = (long) oppCtx.godWb().getFeature(Feature.OUR_FIRE_TICK);
                     validator.recordGodViewTheirFire(pi, power, x, y, trueHeading, tick);
+
+                    // Layer 2 (aim): god-view exact THEIR aim geometry (tick before
+                    // their fire). From the opponent's god-view whiteboard its own
+                    // OUR_AIM_* is the firer position + firer→target geometry.
+                    double aimX = oppCtx.godWb().getFeature(Feature.OUR_AIM_X);
+                    double aimY = oppCtx.godWb().getFeature(Feature.OUR_AIM_Y);
+                    double aimDist = oppCtx.godWb().getFeature(Feature.OUR_AIM_DISTANCE);
+                    double aimBearing = oppCtx.godWb().getFeature(Feature.OUR_AIM_BEARING_ABSOLUTE);
+                    validator.recordGodViewTheirAim(pi, tick, aimX, aimY, aimDist, aimBearing);
                 }
 
                 // Layer 2 (their): robot-side incoming-fire inference from an enemy
@@ -274,6 +297,15 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                     double rsBearing = ctx.wb().getFeature(Feature.THEIR_FIRE_BEARING);
                     validator.recordRobotSideTheirFire(pi, rsPower, rsX, rsY, rsBearing,
                             (long) theirFireTick);
+
+                    // Layer 2 (aim): robot-side inferred THEIR aim geometry (tick
+                    // before their fire), keyed by the same fire tick.
+                    double rsAimX = ctx.wb().getFeature(Feature.THEIR_AIM_X);
+                    double rsAimY = ctx.wb().getFeature(Feature.THEIR_AIM_Y);
+                    double rsAimDist = ctx.wb().getFeature(Feature.THEIR_AIM_DISTANCE);
+                    double rsAimBearing = ctx.wb().getFeature(Feature.THEIR_AIM_BEARING);
+                    validator.recordRobotSideTheirAim(pi, (long) theirFireTick,
+                            rsAimX, rsAimY, rsAimDist, rsAimBearing);
                 }
 
                 // Layer 3: wave resolution tracking

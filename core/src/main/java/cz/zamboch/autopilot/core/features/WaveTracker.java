@@ -45,6 +45,12 @@ public final class WaveTracker implements IInGameFeatures {
             Feature.OUR_FIRE_BULLET_ID,
             Feature.OUR_FIRE_AIM_GF,
             Feature.OUR_FIRE_IS_REAL,
+            Feature.OUR_AIM_X,
+            Feature.OUR_AIM_Y,
+            Feature.OUR_AIM_OPPONENT_X,
+            Feature.OUR_AIM_OPPONENT_Y,
+            Feature.OUR_AIM_DISTANCE,
+            Feature.OUR_AIM_BEARING_ABSOLUTE,
             Feature.OPPONENT_X,
             Feature.OPPONENT_Y,
             Feature.TICK
@@ -95,6 +101,12 @@ public final class WaveTracker implements IInGameFeatures {
         double oppX = wb.getFeature(Feature.OUR_FIRE_OPPONENT_X);
         double oppY = wb.getFeature(Feature.OUR_FIRE_OPPONENT_Y);
         double aimGf = wb.getFeature(Feature.OUR_FIRE_AIM_GF);
+        double aimX = wb.getFeature(Feature.OUR_AIM_X);
+        double aimY = wb.getFeature(Feature.OUR_AIM_Y);
+        double aimOppX = wb.getFeature(Feature.OUR_AIM_OPPONENT_X);
+        double aimOppY = wb.getFeature(Feature.OUR_AIM_OPPONENT_Y);
+        double aimDist = wb.getFeature(Feature.OUR_AIM_DISTANCE);
+        double aimBearing = wb.getFeature(Feature.OUR_AIM_BEARING_ABSOLUTE);
 
         if (Double.isNaN(fireX) || Double.isNaN(bearing) || Double.isNaN(bulletSpeed)) {
             return;
@@ -105,6 +117,7 @@ public final class WaveTracker implements IInGameFeatures {
         fillFireColumns(wb, slot, power, fireX, fireY, fireTick, bearing,
                 bulletSpeed, direction, distance, latVel, advVel, mea,
                 bulletId, oppX, oppY);
+        fillAimColumns(wb, slot, aimX, aimY, aimOppX, aimOppY, aimDist, aimBearing);
         wb.setOurWave(slot, OurWaveColumn.AIM_GF, Double.isNaN(aimGf) ? 0.0 : aimGf);
         wb.setOurWave(slot, OurWaveColumn.IS_REAL, 1.0);
         wb.setOurWave(slot, OurWaveColumn.WAVE_ID, waveId(fireTick, 0));
@@ -117,6 +130,7 @@ public final class WaveTracker implements IInGameFeatures {
             fillFireColumns(wb, vSlot, power, fireX, fireY, fireTick, bearing,
                     bulletSpeed, direction, distance, latVel, advVel, mea,
                     0, oppX, oppY);
+            fillAimColumns(wb, vSlot, aimX, aimY, aimOppX, aimOppY, aimDist, aimBearing);
             wb.setOurWave(vSlot, OurWaveColumn.AIM_GF, virtualGf);
             wb.setOurWave(vSlot, OurWaveColumn.IS_REAL, 0.0);
             wb.setOurWave(vSlot, OurWaveColumn.WAVE_ID, waveId(fireTick, i + 1));
@@ -140,6 +154,12 @@ public final class WaveTracker implements IInGameFeatures {
         wb.setFeature(Feature.OUR_FIRE_OPPONENT_Y, Double.NaN);
         wb.setFeature(Feature.OUR_FIRE_AIM_GF, Double.NaN);
         wb.setFeature(Feature.OUR_FIRE_IS_REAL, Double.NaN);
+        wb.setFeature(Feature.OUR_AIM_X, Double.NaN);
+        wb.setFeature(Feature.OUR_AIM_Y, Double.NaN);
+        wb.setFeature(Feature.OUR_AIM_OPPONENT_X, Double.NaN);
+        wb.setFeature(Feature.OUR_AIM_OPPONENT_Y, Double.NaN);
+        wb.setFeature(Feature.OUR_AIM_DISTANCE, Double.NaN);
+        wb.setFeature(Feature.OUR_AIM_BEARING_ABSOLUTE, Double.NaN);
     }
 
     /**
@@ -170,6 +190,17 @@ public final class WaveTracker implements IInGameFeatures {
         wb.setOurWave(slot, OurWaveColumn.FIRE_BULLET_ID, bulletId);
         wb.setOurWave(slot, OurWaveColumn.FIRE_OPPONENT_X, oppX);
         wb.setOurWave(slot, OurWaveColumn.FIRE_OPPONENT_Y, oppY);
+    }
+
+    private void fillAimColumns(Whiteboard wb, int slot,
+            double aimX, double aimY, double aimOppX, double aimOppY,
+            double aimDistance, double aimBearing) {
+        wb.setOurWave(slot, OurWaveColumn.AIM_X, aimX);
+        wb.setOurWave(slot, OurWaveColumn.AIM_Y, aimY);
+        wb.setOurWave(slot, OurWaveColumn.AIM_OPPONENT_X, aimOppX);
+        wb.setOurWave(slot, OurWaveColumn.AIM_OPPONENT_Y, aimOppY);
+        wb.setOurWave(slot, OurWaveColumn.AIM_DISTANCE, aimDistance);
+        wb.setOurWave(slot, OurWaveColumn.AIM_BEARING_ABSOLUTE, aimBearing);
     }
 
     private void resolveWaves(Whiteboard wb) {

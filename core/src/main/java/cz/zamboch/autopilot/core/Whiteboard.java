@@ -7,7 +7,7 @@ import java.util.Arrays;
  * <p>
  * Storage is structured into per-table arrays:
  * <ul>
- * <li>TickRing (depth=2): current + previous tick features</li>
+ * <li>TickRing (depth=3): current + two previous ticks of features</li>
  * <li>OurWave ring buffer (capacity=64): pre-allocated wave lifecycle
  * storage</li>
  * <li>TheirWave staging: single row for pipeline fire detection</li>
@@ -23,8 +23,13 @@ import java.util.Arrays;
  */
 public final class Whiteboard {
 
-    // --- Tick ring (depth=2: current + previous) ---
-    private final double[][] tickRing = new double[2][TickColumn.COUNT];
+    // --- Tick ring (depth=3: current + two previous ticks) ---
+    // Depth 3 is required so two-ticks-ago values are reachable: incoming-fire
+    // (their-wave) detection happens one tick after the fire tick, and the
+    // aiming decision is one tick before the fire tick — i.e. two ticks before
+    // detection. See getFeatureNTicksAgo.
+    public static final int TICK_RING_DEPTH = 3;
+    private final double[][] tickRing = new double[TICK_RING_DEPTH][TickColumn.COUNT];
     private int tickHead = 0;
     private long lastTick = Long.MIN_VALUE;
 
@@ -94,7 +99,7 @@ public final class Whiteboard {
                 if (f == Feature.TICK && !Double.isNaN(value)) {
                     long newTick = (long) value;
                     if (newTick != lastTick && lastTick != Long.MIN_VALUE) {
-                        tickHead = 1 - tickHead;
+                        tickHead = (tickHead + 1) % TICK_RING_DEPTH;
                         // Clear new slot — will be overwritten this tick
                         Arrays.fill(tickRing[tickHead], Double.NaN);
                     }
@@ -133,16 +138,31 @@ public final class Whiteboard {
 
     /** Get a tick feature's value from the previous tick. */
     public double getPreviousTickFeature(Feature f) {
+        return getFeatureNTicksAgo(f, 1);
+    }
+
+    /**
+     * Get a tick feature's value from {@code n} ticks ago (0 = current tick,
+     * 1 = previous tick, 2 = two ticks ago). {@code n} must be in
+     * {@code [0, TICK_RING_DEPTH - 1]}.
+     */
+    public double getFeatureNTicksAgo(Feature f, int n) {
         if (f.getFileType() != FileType.TICKS) {
             throw new IllegalArgumentException("Not a tick feature: " + f.name());
         }
-        return tickRing[1 - tickHead][f.columnIndex()];
+        if (n < 0 || n >= TICK_RING_DEPTH) {
+            throw new IllegalArgumentException(
+                    "n out of range [0, " + (TICK_RING_DEPTH - 1) + "]: " + n);
+        }
+        int idx = ((tickHead - n) % TICK_RING_DEPTH + TICK_RING_DEPTH) % TICK_RING_DEPTH;
+        return tickRing[idx][f.columnIndex()];
     }
 
     /** Reset all features to NaN. Typically called at round start. */
     public void clearFeatures() {
-        Arrays.fill(tickRing[0], Double.NaN);
-        Arrays.fill(tickRing[1], Double.NaN);
+        for (int i = 0; i < TICK_RING_DEPTH; i++) {
+            Arrays.fill(tickRing[i], Double.NaN);
+        }
         Arrays.fill(ourWaveStaging, Double.NaN);
         Arrays.fill(theirWaveStaging, Double.NaN);
         Arrays.fill(scoreRow, Double.NaN);
@@ -171,8 +191,9 @@ public final class Whiteboard {
      * independent learning model so it never contaminates the robot-side shadow.
      */
     public void copyFrom(Whiteboard other) {
-        System.arraycopy(other.tickRing[0], 0, tickRing[0], 0, TickColumn.COUNT);
-        System.arraycopy(other.tickRing[1], 0, tickRing[1], 0, TickColumn.COUNT);
+        for (int i = 0; i < TICK_RING_DEPTH; i++) {
+            System.arraycopy(other.tickRing[i], 0, tickRing[i], 0, TickColumn.COUNT);
+        }
         this.tickHead = other.tickHead;
         this.lastTick = other.lastTick;
 

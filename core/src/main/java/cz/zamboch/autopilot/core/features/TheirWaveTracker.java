@@ -42,6 +42,12 @@ public final class TheirWaveTracker implements IInGameFeatures {
             Feature.THEIR_FIRE_DISTANCE,
             Feature.THEIR_FIRE_OUR_X,
             Feature.THEIR_FIRE_OUR_Y,
+            Feature.THEIR_AIM_X,
+            Feature.THEIR_AIM_Y,
+            Feature.THEIR_AIM_OUR_X,
+            Feature.THEIR_AIM_OUR_Y,
+            Feature.THEIR_AIM_DISTANCE,
+            Feature.THEIR_AIM_BEARING,
             Feature.THEIR_BREAK_TICK,
             Feature.THEIR_BREAK_OUR_X,
             Feature.THEIR_BREAK_OUR_Y,
@@ -111,6 +117,24 @@ public final class TheirWaveTracker implements IInGameFeatures {
         wb.setTheirWave(slot, TheirWaveColumn.FIRE_OUR_Y, ourY);
         wb.setTheirWaveState(slot, Whiteboard.WAVE_ACTIVE);
 
+        // Aim-time geometry: the opponent aimed reacting to the world state one
+        // tick before its fire tick (T-1 = D-2, two ticks before our detection).
+        // Attribute the aiming decision to that tick.
+        double aimOppX = wb.getFeatureNTicksAgo(Feature.OPPONENT_X, 2);
+        double aimOppY = wb.getFeatureNTicksAgo(Feature.OPPONENT_Y, 2);
+        double aimOurX = wb.getFeatureNTicksAgo(Feature.OUR_X, 2);
+        double aimOurY = wb.getFeatureNTicksAgo(Feature.OUR_Y, 2);
+        double aimDx = aimOurX - aimOppX;
+        double aimDy = aimOurY - aimOppY;
+        double aimDistance = Math.sqrt(aimDx * aimDx + aimDy * aimDy);
+        double aimBearing = Math.atan2(aimDx, aimDy);
+        wb.setTheirWave(slot, TheirWaveColumn.AIM_X, aimOppX);
+        wb.setTheirWave(slot, TheirWaveColumn.AIM_Y, aimOppY);
+        wb.setTheirWave(slot, TheirWaveColumn.AIM_OUR_X, aimOurX);
+        wb.setTheirWave(slot, TheirWaveColumn.AIM_OUR_Y, aimOurY);
+        wb.setTheirWave(slot, TheirWaveColumn.AIM_DISTANCE, aimDistance);
+        wb.setTheirWave(slot, TheirWaveColumn.AIM_BEARING, aimBearing);
+
         // Also write fire-time features to staging for CsvWriter
         wb.setFeature(Feature.THEIR_FIRE_TICK, tick);
         wb.setFeature(Feature.THEIR_FIRE_X, oppX);
@@ -120,6 +144,12 @@ public final class TheirWaveTracker implements IInGameFeatures {
         wb.setFeature(Feature.THEIR_FIRE_DISTANCE, distance);
         wb.setFeature(Feature.THEIR_FIRE_OUR_X, ourX);
         wb.setFeature(Feature.THEIR_FIRE_OUR_Y, ourY);
+        wb.setFeature(Feature.THEIR_AIM_X, aimOppX);
+        wb.setFeature(Feature.THEIR_AIM_Y, aimOppY);
+        wb.setFeature(Feature.THEIR_AIM_OUR_X, aimOurX);
+        wb.setFeature(Feature.THEIR_AIM_OUR_Y, aimOurY);
+        wb.setFeature(Feature.THEIR_AIM_DISTANCE, aimDistance);
+        wb.setFeature(Feature.THEIR_AIM_BEARING, aimBearing);
 
         // Clear fire power staging so we don't re-create next tick
         wb.setFeature(Feature.THEIR_FIRE_POWER, Double.NaN);

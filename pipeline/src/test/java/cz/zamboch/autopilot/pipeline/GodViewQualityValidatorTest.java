@@ -237,6 +237,52 @@ class GodViewQualityValidatorTest {
                 assertTrue(Double.isNaN(validator.getTheirFireAngleMAE(0)));
         }
 
+        // ========== Layer 2 (aim): Aiming-Decision Attribution ==========
+
+        @Test
+        void ourAim_perfectMatch_pairsByBulletId() {
+                validator.recordGodViewOurAim(0, 7, 100.0, 200.0, 250.0, 1.2);
+                validator.recordRobotSideOurAim(0, 7, 100.0, 200.0, 250.0, 1.2);
+
+                assertEquals(1, validator.getOurAimPairedCount(0));
+                assertEquals(0.0, validator.getOurAimPositionMAE(0), 1e-9);
+                assertEquals(0.0, validator.getOurAimDistanceMAE(0), 1e-9);
+                assertEquals(0.0, validator.getOurAimBearingMAE(0), 1e-9);
+        }
+
+        @Test
+        void ourAim_positionDistanceBearingError() {
+                // Self-position is exact; the stale-scan target estimate is off.
+                validator.recordGodViewOurAim(1, 3, 100.0, 200.0, 250.0, 1.0);
+                validator.recordRobotSideOurAim(1, 3, 103.0, 204.0, 240.0, 1.1);
+
+                assertEquals(5.0, validator.getOurAimPositionMAE(1), 1e-6); // sqrt(3^2+4^2)
+                assertEquals(10.0, validator.getOurAimDistanceMAE(1), 1e-6);
+                assertEquals(0.1, validator.getOurAimBearingMAE(1), 1e-6);
+        }
+
+        @Test
+        void theirAim_pairsByFireTickRegardlessOfArrivalOrder() {
+                validator.recordGodViewTheirAim(0, 10, 0.0, 0.0, 200.0, 0.0);
+                validator.recordGodViewTheirAim(0, 20, 50.0, 0.0, 210.0, 0.0);
+                validator.recordRobotSideTheirAim(0, 20, 53.0, 4.0, 210.0, 0.0); // pairs tick 20
+                validator.recordRobotSideTheirAim(0, 10, 0.0, 0.0, 200.0, 0.0); // pairs tick 10
+
+                assertEquals(2, validator.getTheirAimPairedCount(0));
+                // tick10 pos err 0; tick20 pos err sqrt(3^2+4^2)=5 → MAE = 2.5
+                assertEquals(2.5, validator.getTheirAimPositionMAE(0), 1e-9);
+        }
+
+        @Test
+        void aim_NaN_whenNoData() {
+                assertTrue(Double.isNaN(validator.getOurAimPositionMAE(0)));
+                assertTrue(Double.isNaN(validator.getOurAimDistanceMAE(0)));
+                assertTrue(Double.isNaN(validator.getOurAimBearingMAE(0)));
+                assertTrue(Double.isNaN(validator.getTheirAimPositionMAE(0)));
+                assertTrue(Double.isNaN(validator.getTheirAimDistanceMAE(0)));
+                assertTrue(Double.isNaN(validator.getTheirAimBearingMAE(0)));
+        }
+
         // ========== Layer 3: Wave Precision ==========
 
         @Test

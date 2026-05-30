@@ -336,4 +336,61 @@ final class WaveTrackerTest {
         assertFalse(Double.isNaN(wb.getFeature(Feature.OUR_BREAK_GF)));
         assertEquals(20, (long) wb.getFeature(Feature.OUR_BREAK_TICK));
     }
+
+    /**
+     * The OUR_AIM_* staging (captured one tick before fire) must be copied into the
+     * wave's AIM_* columns for both the real and all virtual slots, then cleared.
+     * Falsifies any regression where aim geometry is dropped or read from the wrong
+     * source.
+     */
+    @Test
+    void aimStagingCopiedIntoWaveColumnsAndCleared() {
+        wb.setFeature(Feature.TICK, 10);
+        wb.setFeature(Feature.OUR_X, 400);
+        wb.setFeature(Feature.OUR_Y, 300);
+        wb.setFeature(Feature.OUR_HEADING, 0);
+        wb.setFeature(Feature.BEARING_RADIANS, 0);
+        wb.setFeature(Feature.DISTANCE, 200);
+        wb.setFeature(Feature.OPPONENT_HEADING, 0);
+        wb.setFeature(Feature.OPPONENT_VELOCITY, 0);
+        wb.setFeature(Feature.OPPONENT_ENERGY, 100);
+        wb.setFeature(Feature.LAST_SCAN_TICK, 10);
+
+        wb.setFeature(Feature.OUR_FIRE_POWER, 2.0);
+        wb.setFeature(Feature.OUR_FIRE_X, 400);
+        wb.setFeature(Feature.OUR_FIRE_Y, 300);
+        wb.setFeature(Feature.OUR_FIRE_TICK, 10);
+        wb.setFeature(Feature.OUR_FIRE_BEARING_ABSOLUTE, 0);
+        wb.setFeature(Feature.OUR_FIRE_DISTANCE, 200);
+        wb.setFeature(Feature.OUR_FIRE_LATERAL_VELOCITY, 0);
+        wb.setFeature(Feature.OUR_FIRE_AIM_GF, 0.0);
+        wb.setFeature(Feature.OUR_FIRE_IS_REAL, 1.0);
+
+        // Aim geometry from one tick before fire (deliberately distinct values).
+        wb.setFeature(Feature.OUR_AIM_X, 390);
+        wb.setFeature(Feature.OUR_AIM_Y, 295);
+        wb.setFeature(Feature.OUR_AIM_OPPONENT_X, 390);
+        wb.setFeature(Feature.OUR_AIM_OPPONENT_Y, 505);
+        wb.setFeature(Feature.OUR_AIM_DISTANCE, 210);
+        wb.setFeature(Feature.OUR_AIM_BEARING_ABSOLUTE, 0.05);
+
+        wb.process();
+
+        // Real slot 0 carries the aim geometry.
+        assertEquals(390, wb.getOurWave(0, OurWaveColumn.AIM_X), 1e-9);
+        assertEquals(295, wb.getOurWave(0, OurWaveColumn.AIM_Y), 1e-9);
+        assertEquals(390, wb.getOurWave(0, OurWaveColumn.AIM_OPPONENT_X), 1e-9);
+        assertEquals(505, wb.getOurWave(0, OurWaveColumn.AIM_OPPONENT_Y), 1e-9);
+        assertEquals(210, wb.getOurWave(0, OurWaveColumn.AIM_DISTANCE), 1e-9);
+        assertEquals(0.05, wb.getOurWave(0, OurWaveColumn.AIM_BEARING_ABSOLUTE), 1e-9);
+
+        // Virtual slot 1 shares the same aim geometry (same shooter snapshot).
+        assertEquals(390, wb.getOurWave(1, OurWaveColumn.AIM_X), 1e-9);
+        assertEquals(210, wb.getOurWave(1, OurWaveColumn.AIM_DISTANCE), 1e-9);
+
+        // Staging cleared after processing.
+        assertTrue(Double.isNaN(wb.getFeature(Feature.OUR_AIM_X)));
+        assertTrue(Double.isNaN(wb.getFeature(Feature.OUR_AIM_DISTANCE)));
+        assertTrue(Double.isNaN(wb.getFeature(Feature.OUR_AIM_BEARING_ABSOLUTE)));
+    }
 }

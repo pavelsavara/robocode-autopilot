@@ -296,4 +296,69 @@ final class TheirWaveTrackerTest {
         assertEquals(Whiteboard.WAVE_RESOLVED, wb.getTheirWaveState(slot0));
         assertEquals(Whiteboard.WAVE_RESOLVED, wb.getTheirWaveState(slot1));
     }
+
+    /**
+     * The opponent aimed reacting to the world state one tick before its fire tick,
+     * i.e. two ticks before our energy-drop detection. The THEIR_AIM_* geometry must
+     * therefore come from the tick-(D-2) ring snapshot, not the detection tick.
+     * This test seeds three distinct ticks and falsifies any regression that reads
+     * the wrong tick depth.
+     *
+     * Note: SpatialFeatures recomputes OPPONENT_X/Y from OUR + DISTANCE + BEARING,
+     * so the scan geometry below is self-consistent and the expected opponent aim
+     * position is derived from that same formula.
+     */
+    @Test
+    void aimGeometryComesFromTwoTicksBeforeDetection() {
+        // Tick 4 (aim tick, D-2): we at (100, 180), opponent 160px due east
+        // (bearing +pi/2 from heading 0) → opponent at (260, 180).
+        setBasicState(4, 100, 180, 0, 0);
+        wb.setFeature(Feature.DISTANCE, 160);
+        wb.setFeature(Feature.BEARING_RADIANS, Math.PI / 2);
+        wb.setFeature(Feature.OPPONENT_HEADING, 0);
+        wb.setFeature(Feature.OPPONENT_VELOCITY, 0);
+        wb.process();
+
+        double aimOppX = 100 + 160 * Math.sin(Math.PI / 2); // 260
+        double aimOppY = 180 + 160 * Math.cos(Math.PI / 2); // 180
+
+        // Tick 5 (fire tick, D-1): full energy still, different geometry.
+        setBasicState(5, 200, 200, 0, 0);
+        wb.setFeature(Feature.DISTANCE, 200);
+        wb.setFeature(Feature.BEARING_RADIANS, 0);
+        wb.setFeature(Feature.OPPONENT_HEADING, 0);
+        wb.setFeature(Feature.OPPONENT_VELOCITY, 0);
+        wb.process();
+
+        // Tick 6 (detection, D): opponent drops 2.0 energy → fire detected.
+        setBasicState(6, 230, 230, 0, 0);
+        wb.setFeature(Feature.OPPONENT_ENERGY, 98);
+        wb.setFeature(Feature.DISTANCE, 200);
+        wb.setFeature(Feature.BEARING_RADIANS, 0);
+        wb.setFeature(Feature.OPPONENT_HEADING, 0);
+        wb.setFeature(Feature.OPPONENT_VELOCITY, 0);
+        wb.process();
+
+        assertEquals(1, wb.getActiveTheirWaveCount());
+
+        // Aim geometry resolves to the tick-4 snapshot.
+        double aimOurX = 100;
+        double aimOurY = 180;
+        double aimDx = aimOurX - aimOppX;
+        double aimDy = aimOurY - aimOppY;
+        double expectedDistance = Math.sqrt(aimDx * aimDx + aimDy * aimDy);
+        double expectedBearing = Math.atan2(aimDx, aimDy);
+
+        assertEquals(aimOppX, wb.getTheirWave(0, TheirWaveColumn.AIM_X), 1e-9);
+        assertEquals(aimOppY, wb.getTheirWave(0, TheirWaveColumn.AIM_Y), 1e-9);
+        assertEquals(aimOurX, wb.getTheirWave(0, TheirWaveColumn.AIM_OUR_X), 1e-9);
+        assertEquals(aimOurY, wb.getTheirWave(0, TheirWaveColumn.AIM_OUR_Y), 1e-9);
+        assertEquals(expectedDistance, wb.getTheirWave(0, TheirWaveColumn.AIM_DISTANCE), 1e-9);
+        assertEquals(expectedBearing, wb.getTheirWave(0, TheirWaveColumn.AIM_BEARING), 1e-9);
+
+        // Staging mirrors the ring for the CSV writer.
+        assertEquals(aimOppX, wb.getFeature(Feature.THEIR_AIM_X), 1e-9);
+        assertEquals(expectedDistance, wb.getFeature(Feature.THEIR_AIM_DISTANCE), 1e-9);
+        assertEquals(expectedBearing, wb.getFeature(Feature.THEIR_AIM_BEARING), 1e-9);
+    }
 }

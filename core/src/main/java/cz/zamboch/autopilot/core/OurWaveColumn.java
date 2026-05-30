@@ -27,6 +27,13 @@ public enum OurWaveColumn {
     FIRE_BULLET_ID,
     AIM_GF,
     IS_REAL,
+    // Aim-time geometry (tick before fire, T-1) — see Feature.OUR_AIM_*.
+    AIM_X,
+    AIM_Y,
+    AIM_OPPONENT_X,
+    AIM_OPPONENT_Y,
+    AIM_DISTANCE,
+    AIM_BEARING_ABSOLUTE,
     BREAK_TICK,
     BREAK_GF,
     BREAK_BEARING_OFFSET,

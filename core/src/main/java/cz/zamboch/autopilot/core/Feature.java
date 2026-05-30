@@ -62,6 +62,15 @@ public enum Feature {
     THEIR_FIRE_DISTANCE(FileType.THEIR_WAVES),
     THEIR_FIRE_OUR_X(FileType.THEIR_WAVES),
     THEIR_FIRE_OUR_Y(FileType.THEIR_WAVES),
+    // Aim-time geometry: the tick BEFORE their fire tick (T-1), i.e. two ticks
+    // before we detect the energy drop. That is when the opponent's gun was
+    // actually aimed, so it attributes the aiming decision to the proper tick.
+    THEIR_AIM_X(FileType.THEIR_WAVES),
+    THEIR_AIM_Y(FileType.THEIR_WAVES),
+    THEIR_AIM_OUR_X(FileType.THEIR_WAVES),
+    THEIR_AIM_OUR_Y(FileType.THEIR_WAVES),
+    THEIR_AIM_DISTANCE(FileType.THEIR_WAVES),
+    THEIR_AIM_BEARING(FileType.THEIR_WAVES),
     THEIR_BREAK_TICK(FileType.THEIR_WAVES),
     THEIR_BREAK_OUR_X(FileType.THEIR_WAVES),
     THEIR_BREAK_OUR_Y(FileType.THEIR_WAVES),
@@ -91,6 +100,16 @@ public enum Feature {
     OUR_FIRE_BULLET_ID(FileType.OUR_WAVES),
     OUR_FIRE_AIM_GF(FileType.OUR_WAVES),
     OUR_FIRE_IS_REAL(FileType.OUR_WAVES),
+
+    // --- Our gun waves: aim-time features (the tick BEFORE we fired, T-1) ---
+    // The gun was aimed reacting to the world state one tick before the fire
+    // command executed, so these attribute the aiming decision to that tick.
+    OUR_AIM_X(FileType.OUR_WAVES),
+    OUR_AIM_Y(FileType.OUR_WAVES),
+    OUR_AIM_OPPONENT_X(FileType.OUR_WAVES),
+    OUR_AIM_OPPONENT_Y(FileType.OUR_WAVES),
+    OUR_AIM_DISTANCE(FileType.OUR_WAVES),
+    OUR_AIM_BEARING_ABSOLUTE(FileType.OUR_WAVES),
 
     // --- Our gun waves: break-time features (set at wave resolution) ---
     OUR_BREAK_TICK(FileType.OUR_WAVES),

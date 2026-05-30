@@ -65,6 +65,16 @@ public final class GodViewQualityValidator {
             new WavePrecisionTracker(), new WavePrecisionTracker()
     };
 
+    // --- Layer 2 (aim): aiming-decision attribution at the tick before fire ---
+    // god-view exact aim geometry vs the robot-side inference. OUR aim is paired by
+    // bullet id; THEIR aim is paired by fire tick (no bullet id for incoming fire).
+    private final AimDetectionTracker[] aimTracking = {
+            new AimDetectionTracker(), new AimDetectionTracker()
+    };
+    private final AimDetectionTracker[] theirAimTracking = {
+            new AimDetectionTracker(), new AimDetectionTracker()
+    };
+
     // --- Layer 4: Energy Accounting ---
     private final int[] energyChecks = { 0, 0 };
     private final int[] energyDiscrepancies = { 0, 0 };
@@ -208,6 +218,75 @@ public final class GodViewQualityValidator {
 
         double getAngleMAE() {
             return pairedCount > 0 ? angleErrorSum / pairedCount : Double.NaN;
+        }
+    }
+
+    /**
+     * Aiming-decision attribution tracker. Records the aim-time geometry (one tick
+     * before the fire tick) and compares the god-view exact values against the
+     * robot-side inference. {@code position} is the firer's own body position at aim
+     * time (knowable exactly on both sides); {@code distance} and {@code bearing}
+     * encode the firer→target geometry, where the robot-side error (stale-scan
+     * target position) actually lives. Keyed by an opaque token (bullet id for OUR,
+     * fire tick for THEIR).
+     */
+    private static final class AimRecord {
+        final double x;
+        final double y;
+        final double distance;
+        final double bearing;
+
+        AimRecord(double x, double y, double distance, double bearing) {
+            this.x = x;
+            this.y = y;
+            this.distance = distance;
+            this.bearing = bearing;
+        }
+    }
+
+    private static final class AimDetectionTracker {
+        final Map<Object, AimRecord> pendingGodView = new HashMap<>();
+        final Map<Object, AimRecord> pendingRobotSide = new HashMap<>();
+        double positionErrorSum;
+        double distanceErrorSum;
+        double bearingErrorSum;
+        int pairedCount;
+
+        void pair(AimRecord godView, AimRecord robotSide) {
+            positionErrorSum += Math.hypot(godView.x - robotSide.x, godView.y - robotSide.y);
+            distanceErrorSum += Math.abs(godView.distance - robotSide.distance);
+            bearingErrorSum += Math.abs(RoboMath.normalRelativeAngle(godView.bearing - robotSide.bearing));
+            pairedCount++;
+        }
+
+        void recordGodView(Object key, AimRecord rec) {
+            AimRecord rs = pendingRobotSide.remove(key);
+            if (rs != null) {
+                pair(rec, rs);
+            } else {
+                pendingGodView.put(key, rec);
+            }
+        }
+
+        void recordRobotSide(Object key, AimRecord rec) {
+            AimRecord gv = pendingGodView.remove(key);
+            if (gv != null) {
+                pair(gv, rec);
+            } else {
+                pendingRobotSide.put(key, rec);
+            }
+        }
+
+        double getPositionMAE() {
+            return pairedCount > 0 ? positionErrorSum / pairedCount : Double.NaN;
+        }
+
+        double getDistanceMAE() {
+            return pairedCount > 0 ? distanceErrorSum / pairedCount : Double.NaN;
+        }
+
+        double getBearingMAE() {
+            return pairedCount > 0 ? bearingErrorSum / pairedCount : Double.NaN;
         }
     }
 
@@ -388,6 +467,32 @@ public final class GodViewQualityValidator {
         } else {
             tracker.pendingRobotSide.put(fireTick, robotSide);
         }
+    }
+
+    // ========== Layer 2 (aim): aiming-decision attribution ==========
+
+    /** God-view exact OUR aim geometry (one tick before fire), paired by bullet id. */
+    public void recordGodViewOurAim(int perspIndex, int bulletId, double x, double y,
+            double distance, double bearing) {
+        aimTracking[perspIndex].recordGodView(bulletId, new AimRecord(x, y, distance, bearing));
+    }
+
+    /** Robot-side inferred OUR aim geometry, paired by bullet id. */
+    public void recordRobotSideOurAim(int perspIndex, int bulletId, double x, double y,
+            double distance, double bearing) {
+        aimTracking[perspIndex].recordRobotSide(bulletId, new AimRecord(x, y, distance, bearing));
+    }
+
+    /** God-view exact THEIR aim geometry (one tick before their fire), paired by fire tick. */
+    public void recordGodViewTheirAim(int perspIndex, long fireTick, double x, double y,
+            double distance, double bearing) {
+        theirAimTracking[perspIndex].recordGodView(fireTick, new AimRecord(x, y, distance, bearing));
+    }
+
+    /** Robot-side inferred THEIR aim geometry, paired by fire tick. */
+    public void recordRobotSideTheirAim(int perspIndex, long fireTick, double x, double y,
+            double distance, double bearing) {
+        theirAimTracking[perspIndex].recordRobotSide(fireTick, new AimRecord(x, y, distance, bearing));
     }
 
     // ========== Layer 3: Wave GF Precision ==========
@@ -630,6 +735,38 @@ public final class GodViewQualityValidator {
         return theirFireTracking[perspIndex].getAngleMAE();
     }
 
+    public double getOurAimPositionMAE(int perspIndex) {
+        return aimTracking[perspIndex].getPositionMAE();
+    }
+
+    public double getOurAimDistanceMAE(int perspIndex) {
+        return aimTracking[perspIndex].getDistanceMAE();
+    }
+
+    public double getOurAimBearingMAE(int perspIndex) {
+        return aimTracking[perspIndex].getBearingMAE();
+    }
+
+    public int getOurAimPairedCount(int perspIndex) {
+        return aimTracking[perspIndex].pairedCount;
+    }
+
+    public double getTheirAimPositionMAE(int perspIndex) {
+        return theirAimTracking[perspIndex].getPositionMAE();
+    }
+
+    public double getTheirAimDistanceMAE(int perspIndex) {
+        return theirAimTracking[perspIndex].getDistanceMAE();
+    }
+
+    public double getTheirAimBearingMAE(int perspIndex) {
+        return theirAimTracking[perspIndex].getBearingMAE();
+    }
+
+    public int getTheirAimPairedCount(int perspIndex) {
+        return theirAimTracking[perspIndex].pairedCount;
+    }
+
     public double getGfMeanAbsoluteError(int perspIndex) {
         WavePrecisionTracker t = waveTracking[perspIndex];
         return t.gfComparisonCount > 0 ? t.gfErrorSum / t.gfComparisonCount : Double.NaN;
@@ -720,7 +857,27 @@ public final class GodViewQualityValidator {
         }
         System.out.println();
 
-        // Layer 3
+        // Layer 2 (aim) — aiming-decision attribution at the tick before fire. OUR
+        // aim self-position is exact on both sides; distanceMAE/bearingMAE capture
+        // the robot-side stale-scan target error. THEIR aim mirrors this from the
+        // opponent's perspective.
+        System.out.printf("Layer 2 (aim) — Aiming Attribution (T-1):%n");
+        for (int pi = 0; pi < 2; pi++) {
+            AimDetectionTracker our = aimTracking[pi];
+            AimDetectionTracker their = theirAimTracking[pi];
+            System.out.printf("  Perspective %d (our):   paired=%d, positionMAE=%s, distanceMAE=%s, bearingMAE(rad)=%s%n",
+                    pi, our.pairedCount,
+                    formatMetric(our.getPositionMAE(), "%.4f"),
+                    formatMetric(our.getDistanceMAE(), "%.4f"),
+                    formatMetric(our.getBearingMAE(), "%.4f"));
+            System.out.printf("  Perspective %d (their): paired=%d, positionMAE=%s, distanceMAE=%s, bearingMAE(rad)=%s%n",
+                    pi, their.pairedCount,
+                    formatMetric(their.getPositionMAE(), "%.4f"),
+                    formatMetric(their.getDistanceMAE(), "%.4f"),
+                    formatMetric(their.getBearingMAE(), "%.4f"));
+        }
+        System.out.println();
+
         System.out.printf("Layer 3 — GF Precision:%n");
         for (int pi = 0; pi < 2; pi++) {
             WavePrecisionTracker t = waveTracking[pi];
