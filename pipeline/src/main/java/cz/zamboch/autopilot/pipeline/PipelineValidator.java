@@ -18,8 +18,7 @@ import java.util.List;
  * partial-information estimates and god-view (engine ground-truth) reality.
  * <p>
  * It reads a <b>separate god-view whiteboard</b> (seeded from the observer's
- * robot-side whiteboard each tick, then overlaid by
- * {@link GodViewWaveResolver})
+ * robot-side whiteboard each tick, then overlaid by {@link GodViewWaveResolver})
  * and never mutates the observer's robot-side state. Layer 0 fidelity
  * (in-game robot vs observer) is validated independently by
  * {@link Layer0DebugFidelityValidator}.
@@ -214,6 +213,10 @@ public final class GodViewQualityValidator {
         }
         if (Double.isNaN(actual) || Double.isNaN(expected) || Math.abs(actual - expected) > EPSILON) {
             stats.mismatches++;
+            if (stats.mismatches <= 3) {
+                System.out.printf("AGENT_DEBUG spatial mismatch: %s actual=%.6f expected=%.6f tick=%.0f%n",
+                        feature, actual, expected, wb.getFeature(Feature.TICK));
+            }
         }
     }
 

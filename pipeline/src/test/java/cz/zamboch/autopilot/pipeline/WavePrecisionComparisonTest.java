@@ -74,7 +74,8 @@ final class WavePrecisionComparisonTest {
         boolean[] resolved = godView.processTick(observers, robots, tick1);
 
         // Should not resolve on fire tick — just detects the bullet
-        assertFalse(resolved[0], "Wave should not resolve on fire tick");        assertFalse(resolved[1], "No wave from robot 1");
+        assertFalse(resolved[0], "Wave should not resolve on fire tick");
+        assertFalse(resolved[1], "No wave from robot 1");
     }
 
     @Test

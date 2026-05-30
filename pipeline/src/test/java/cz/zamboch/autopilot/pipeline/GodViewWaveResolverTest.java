@@ -239,10 +239,14 @@ final class GodViewWaveResolverTest {
     }
 
     /**
-     * Engine-grounded: replay a real recorded battle through the god-view resolver and
-     * assert that the number of fires it detects per side equals the number of distinct
-     * bullets the engine actually shows owned by that side. This anchors god-view fire
-     * detection against authoritative engine bullet state rather than a hand-built stub.
+     * Engine-grounded: replay a real recorded battle through the god-view resolver
+     * and
+     * assert that the number of fires it detects per side equals the number of
+     * distinct
+     * bullets the engine actually shows owned by that side. This anchors god-view
+     * fire
+     * detection against authoritative engine bullet state rather than a hand-built
+     * stub.
      */
     @Test
     void recordedReplay_godViewFireDetectionMatchesEngineBullets() {
@@ -256,7 +260,8 @@ final class GodViewWaveResolverTest {
         }
         resolver.resetRound();
 
-        // Engine truth: distinct bullet ids each side fired (first non-inactive sighting).
+        // Engine truth: distinct bullet ids each side fired (first non-inactive
+        // sighting).
         Set<Integer> engineFiresMy = new HashSet<>();
         Set<Integer> engineFiresOpp = new HashSet<>();
         int godFiresMy = 0;

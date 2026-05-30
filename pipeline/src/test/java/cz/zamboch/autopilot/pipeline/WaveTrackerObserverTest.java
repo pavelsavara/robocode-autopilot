@@ -71,7 +71,8 @@ final class WaveTrackerObserverTest {
         }
         godView.processTick(observers, tick1.getRobots(), tick1);
 
-        // Robot 0's god-view whiteboard should have OUR_FIRE_POWER = 2.0 (set by god-view)
+        // Robot 0's god-view whiteboard should have OUR_FIRE_POWER = 2.0 (set by
+        // god-view)
         Whiteboard wb0 = observers[0].godWb();
         double ourFirePower = wb0.getFeature(Feature.OUR_FIRE_POWER);
         assertEquals(2.0, ourFirePower, 0.1, "OUR_FIRE_POWER from god-view bullet detection");
