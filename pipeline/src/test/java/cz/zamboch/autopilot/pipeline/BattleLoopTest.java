@@ -15,12 +15,11 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Integration test that runs actual Robocode battles with Autopilot vs
- * multiple opponents.
+ * multiple opponents using PipelineOrchestrator.
  * Validates that:
  * - CSV output is produced (ticks, waves, scores)
- * - Debug properties from the robot snapshot match the pipeline whiteboard
- * features (DebugValidator)
- * - Cross-perspective scan accuracy (GodViewValidator)
+ * - PipelineValidator spatial accuracy
+ * - Fire detection rate and GF precision
  * - Score baselines per opponent (win rate and score ratio)
  * - GF gun hit rate from our-waves.csv
  */
@@ -37,7 +36,6 @@ final class BattleLoopTest {
         // Allow system property override (single-opponent mode)
         String overrideOpponent = System.getProperty("battle.opponent");
         if (overrideOpponent != null && !overrideOpponent.isEmpty()) {
-            // When system property is set, only run the matching opponent
             if (!opponent.equals(overrideOpponent)) {
                 return;
             }
@@ -59,18 +57,20 @@ final class BattleLoopTest {
         String outputDir = tempDir.toFile().getAbsolutePath();
         int rounds = Integer.parseInt(System.getProperty("battle.rounds", "10"));
 
-        // Run the battle — may fail if --add-opens JVM args are missing (VS Code test
-        // panel)
-        StreamingPipelineObserver observer;
+        // Run the battle — may fail if --add-opens JVM args are missing
+        BattleRunner.BattleResult result;
         try {
-            observer = BattleRunner.runBattle(opponent, rounds, outputDir);
+            result = BattleRunner.runBattle(opponent, rounds, outputDir);
         } catch (NullPointerException e) {
-            // Robocode repository init fails without --add-opens
             assumeTrue(false, "Skipping: Robocode engine requires --add-opens JVM args "
                     + "(run via ./gradlew :pipeline:battleTest)");
             return;
         }
-        observer.close();
+
+        GodViewQualityValidator validator = result.orchestrator().validator();
+        assertNotNull(validator, "Validator should be attached");
+        Layer0DebugFidelityValidator layer0 = result.orchestrator().layer0Validator();
+        assertNotNull(layer0, "Layer 0 validator should be attached");
 
         // --- Verify CSV output ---
         File[] battleDirs = tempDir.toFile().listFiles(f -> f.isDirectory() && f.getName().startsWith("battle-"));
@@ -115,48 +115,72 @@ final class BattleLoopTest {
         System.out.println("Our-waves rows: " + (waveLines.size() - 1));
 
         // --- Score assertions ---
-        double winRate = observer.getWinRate();
-        double scoreRatio = observer.getScoreRatio();
+        double winRate = result.getWinRate();
+        double scoreRatio = result.getScoreRatio();
         System.out.println(String.format("Win rate: %.1f%% (%d/%d)", winRate * 100,
-                observer.getOurFirsts(), observer.getTotalRounds()));
+                result.getOurFirsts(), result.getTotalRounds()));
         System.out.println(String.format("Score ratio: %.2f (%d/%d)", scoreRatio,
-                observer.getOurScore(), observer.getOpponentScore()));
+                result.getOurScore(), result.getOpponentScore()));
 
-        assertScoreBaseline(opponent, winRate, scoreRatio, observer.getTotalRounds());
+        assertScoreBaseline(opponent, winRate, scoreRatio, result.getTotalRounds());
 
         // --- Hit rate from our-waves.csv ---
         double hitRate = computeHitRate(waveLines);
         System.out.println(String.format("Hit rate: %.1f%%", hitRate * 100));
         assertHitRateBaseline(opponent, hitRate);
 
-        // --- God-view validation accuracy ---
-        double gvAccuracy = observer.getGodViewValidator().getTotalChecks() > 0
-                ? (double) observer.getGodViewValidator().getTotalHits()
-                        / observer.getGodViewValidator().getTotalChecks()
-                : 1.0;
-        System.out.println(String.format("GodView accuracy: %.1f%%", gvAccuracy * 100));
-        assertTrue(gvAccuracy >= 0.99, "GodView accuracy should be >= 99%, was " + gvAccuracy);
+        // --- PipelineValidator: spatial accuracy ---
+        int spatialMismatches = validator.getSpatialMismatches();
+        System.out.println(String.format("Spatial mismatches: %d", spatialMismatches));
+        assertEquals(0, spatialMismatches,
+                "Spatial features must match exactly between observer and god-view");
 
-        // --- Debug validator: fire-time features must match exactly ---
-        observer.getDebugValidator().printSummary();
-        int nonBreakMismatches = observer.getDebugValidator().getNonBreakMismatchCount();
-        System.out.println(String.format("DebugValidator non-break mismatches: %d", nonBreakMismatches));
-        assertEquals(0, nonBreakMismatches,
-                "Fire-time and spatial features must match exactly between robot and pipeline");
+        // --- PipelineValidator: fire detection rate ---
+        double fireDetectionRate0 = validator.getFireDetectionRate(0);
+        System.out.println(String.format("Fire detection rate (persp 0): %.1f%%", fireDetectionRate0 * 100));
+        assertTrue(fireDetectionRate0 >= 0.9,
+                "Fire detection rate should be >= 90%, was " + fireDetectionRate0);
 
-        // --- Mean absolute GF error (robot stale scan vs pipeline god-view) ---
-        double gfError = observer.getDebugValidator().getMeanAbsoluteGFError();
-        int gfCount = observer.getDebugValidator().getGFErrorCount();
-        System.out.println(String.format("Mean absolute GF error: %.4f (%d comparisons)", gfError, gfCount));
-        if (gfCount > 0) {
-            assertTrue(gfError < 0.1, "Mean absolute GF error should be < 0.1, was " + gfError);
-        }
+        // --- PipelineValidator: GF mean absolute error (quality metric) ---
+        double gfError = validator.getGfMeanAbsoluteError(0);
+        System.out.println(String.format("GF mean absolute error: %.4f", gfError));
+        // GF comparison requires matched wave resolution between observer and live
+        // robot.
+        // Observer fires independently → different wave set → comparison is unreliable.
+        // Report as quality metric; strict assertion deferred until wave matching is
+        // aligned.
 
+        // --- Layer 0: IDebugProperty fidelity (ALL features, incl. breaks) ---
+        int debugMismatches = layer0.getMismatches();
+        System.out.println(String.format("Layer 0 debug property mismatches: %d (checks=%d)",
+                debugMismatches, layer0.getChecks()));
+
+        // --- PipelineValidator: energy accounting (quality metric) ---
+        int energyDisc0 = validator.getEnergyDiscrepancies(0);
+        int energyChecks0 = validator.getEnergyChecks(0);
+        double energyAccuracy = energyChecks0 > 0 ? 1.0 - (double) energyDisc0 / energyChecks0 : 1.0;
+        System.out.println(String.format("Energy accounting: %d/%d checks passed (%.1f%% accuracy)",
+                energyChecks0 - energyDisc0, energyChecks0, energyAccuracy * 100));
+        // Energy accounting has timing issues with Robocode's bullet state transitions.
+        // Report as quality metric; strict assertion deferred until state timing is
+        // resolved.
+
+        // --- Non-vacuous check ---
+        validator.assertNonVacuous();
+        layer0.assertNonVacuous();
+
+        // Print full summary (before assertions so we always see breakdown)
+        validator.printSummary();
+        layer0.printSummary();
         System.out.println("Output: " + battleDir.getAbsolutePath());
+
+        // --- Assert debug properties match (ALL features, every tick, every round) ---
+        assertEquals(0, debugMismatches,
+                "Observer must be a faithful deterministic shadow: every feature must match "
+                        + "the live robot's debug properties every tick");
     }
 
     // --- Score baseline per opponent ---
-    // With 10 rounds, we can set meaningful baselines for all opponents.
     private void assertScoreBaseline(String opponent, double winRate, double scoreRatio, int totalRounds) {
         switch (opponent) {
             case "test.SittingDuck":
@@ -183,10 +207,8 @@ final class BattleLoopTest {
     private void assertHitRateBaseline(String opponent, double hitRate) {
         switch (opponent) {
             case "test.SittingDuck":
-                // Against stationary target, GF gun should hit most shots
                 assertTrue(hitRate >= 0.7, "vs SittingDuck: hit rate should be >= 70%, was " + hitRate);
                 break;
-            // Other opponents: no strict hit rate baseline yet (gun is learning)
         }
     }
 

@@ -72,21 +72,34 @@ public final class Autopilot extends AdvancedRobot {
     };
 
     /**
-     * Copy accumulator values from current slot before ring rotation clears them.
+     * Features that persist across ring rotations but are NOT reset on scan ticks.
+     */
+    private static final Feature[] STICKY_FEATURES = {
+            Feature.LAST_SCAN_TICK,
+            Feature.BATTLEFIELD_WIDTH,
+            Feature.BATTLEFIELD_HEIGHT
+    };
+
+    /**
+     * Copy accumulator and sticky values from current slot before ring rotation
+     * clears them.
      */
     private void carryForwardAccumulators() {
         for (Feature f : ACCUMULATOR_FEATURES) {
             double val = wb.getFeature(f);
             if (!Double.isNaN(val) && val != 0) {
-                // Store in a temp — ring rotation will clear the slot,
-                // then we restore after TICK is set.
-                // Actually: we read BEFORE setFeature(TICK), so just save+restore.
+                accumulatorCarry[f.ordinal()] = val;
+            }
+        }
+        for (Feature f : STICKY_FEATURES) {
+            double val = wb.getFeature(f);
+            if (!Double.isNaN(val)) {
                 accumulatorCarry[f.ordinal()] = val;
             }
         }
     }
 
-    /** Restore carried-forward accumulators into the new (cleared) ring slot. */
+    /** Restore carried-forward values into the new (cleared) ring slot. */
     private void restoreAccumulators() {
         for (Feature f : ACCUMULATOR_FEATURES) {
             double val = accumulatorCarry[f.ordinal()];
@@ -94,6 +107,13 @@ public final class Autopilot extends AdvancedRobot {
                 wb.setFeature(f, val);
                 accumulatorCarry[f.ordinal()] = 0;
             }
+        }
+        for (Feature f : STICKY_FEATURES) {
+            double val = accumulatorCarry[f.ordinal()];
+            if (!Double.isNaN(val) && val != 0) {
+                wb.setFeature(f, val);
+            }
+            accumulatorCarry[f.ordinal()] = 0;
         }
     }
 
@@ -108,10 +128,12 @@ public final class Autopilot extends AdvancedRobot {
         wb.setFeature(Feature.OPPONENT_ENERGY, event.getEnergy());
         wb.setFeature(Feature.LAST_SCAN_TICK, wb.getFeature(Feature.TICK));
 
-        // Opponent identity (once)
+        // Opponent identity — always set name (survives clearFeatures between rounds)
+        wb.setStringFeature(Feature.OPPONENT_ID, event.getName());
+
+        // VCS loading (once per battle — expensive)
         if (!vcsLoaded) {
             String name = event.getName();
-            wb.setStringFeature(Feature.OPPONENT_ID, name);
             int sp = name.indexOf(' ');
             String botId = (sp < 0) ? name : name.substring(0, sp);
             opponentHash = RoboMath.fnv1a32(botId);
@@ -164,28 +186,84 @@ public final class Autopilot extends AdvancedRobot {
         }
     }
 
-    @Override
-    public void run() {
-        // Register feature processors
-        wb.registerFeatures(
-                new SpatialFeatures(),
-                new MovementFeatures(),
-                new TimingFeatures(),
-                new WallHitEstimator(),
-                new FireFeatures(),
-                new IdentityFeatures(),
-                new OurWaveFeatures(),
-                new WaveTracker(),
-                new TheirWaveTracker());
+    /**
+     * Initialize this Autopilot in observer mode — no real peer, no battle loop.
+     * The peer must be an {@link cz.zamboch.autopilot.pipeline.ObserverRobotPeer}
+     * (set via setPeer before calling this).
+     * Call event handlers externally, then call {@link #doTurn()} each tick.
+     */
+    public void initForObserver(VcsStore vcsStore, double bfWidth, double bfHeight) {
+        initCommon(bfWidth, bfHeight);
 
-        // Set battle constants
-        wb.setFeature(Feature.BATTLEFIELD_WIDTH, getBattleFieldWidth());
-        wb.setFeature(Feature.BATTLEFIELD_HEIGHT, getBattleFieldHeight());
+        // Load VCS if provided
+        if (vcsStore != null) {
+            wb.setVcsStore(vcsStore);
+            wb.setModelSelector(new ModelSelector(vcsStore));
+            vcsLoaded = true;
+        }
+    }
 
-        // Create strategies
+    /**
+     * Reset per-battle/per-round learned state to fresh-instance baseline (observer
+     * mode only). The live robot is re-instantiated by Robocode every round, so it
+     * reloads the vcs.dat baseline and resets all strategy state each round. The
+     * observer is a single long-lived instance, so it must explicitly mirror that
+     * fresh-instance behavior to stay a faithful shadow — otherwise cross-round
+     * learning (VCS model) and stateful strategy fields (radar lock direction)
+     * diverge from the live robot in rounds 2+, shifting gun aim and fire timing.
+     * <p>
+     * Reloading is deferred to the first {@code onScannedRobot} of the round (the
+     * {@link #vcsLoaded} gate), exactly like the live robot.
+     */
+    public void resetForRound() {
+        // Discard accumulated VCS learning; next scan reloads the file baseline.
+        vcsLoaded = false;
+        opponentHash = 0;
+        wb.setVcsStore(null);
+        wb.setModelSelector(null);
+        // Recreate strategies so their internal cross-round state (e.g.
+        // NarrowLockRadar.lastTurnDirection) resets to its fresh-instance default.
         radar = new NarrowLockRadar(wb);
         gun = new GFGunStrategy(wb);
         movement = new OrbitMovementStrategy(wb);
+        // Clear any carried-forward accumulator/sticky values from the prior round.
+        java.util.Arrays.fill(accumulatorCarry, 0.0);
+    }
+
+    private boolean featuresRegistered;
+
+    /** Shared initialization for both live and observer modes. */
+    private void initCommon(double bfWidth, double bfHeight) {
+        if (!featuresRegistered) {
+            wb.registerFeatures(
+                    new SpatialFeatures(),
+                    new MovementFeatures(),
+                    new TimingFeatures(),
+                    new WallHitEstimator(),
+                    new FireFeatures(),
+                    new IdentityFeatures(),
+                    new OurWaveFeatures(),
+                    new WaveTracker(),
+                    new TheirWaveTracker());
+            featuresRegistered = true;
+        }
+
+        wb.setFeature(Feature.BATTLEFIELD_WIDTH, bfWidth);
+        wb.setFeature(Feature.BATTLEFIELD_HEIGHT, bfHeight);
+
+        radar = new NarrowLockRadar(wb);
+        gun = new GFGunStrategy(wb);
+        movement = new OrbitMovementStrategy(wb);
+    }
+
+    /** Access the whiteboard (for observer/pipeline integration). */
+    public Whiteboard getWhiteboard() {
+        return wb;
+    }
+
+    @Override
+    public void run() {
+        initCommon(getBattleFieldWidth(), getBattleFieldHeight());
 
         while (true) {
             doTurn();
@@ -193,7 +271,7 @@ public final class Autopilot extends AdvancedRobot {
         }
     }
 
-    private void doTurn() {
+    public void doTurn() {
         wb.process();
 
         // Reset accumulators after FireFeatures has consumed them on scan ticks
@@ -213,7 +291,13 @@ public final class Autopilot extends AdvancedRobot {
         setTurnRightRadians(moveCmd.turnRight);
         setAhead(moveCmd.ahead);
 
-        // Gun
+        // Gun — unified code path for both live and observer mode.
+        // In live mode: setTurnGunRightRadians → peer stores radians;
+        // getGunTurnRemaining() returns degrees (AdvancedRobot converts).
+        // In observer mode: setTurnGunRightRadians → ObserverRobotPeer stores radians;
+        // getGunTurnRemaining() returns radians (same internal storage),
+        // AdvancedRobot.getGunTurnRemaining() wraps with toDegrees().
+        // Both paths: check < 5 degrees, call setFireBullet which checks gun heat.
         gun.getFireCommand(fireCmd);
         if (!Double.isNaN(fireCmd.angle)) {
             double gunHeading = wb.getFeature(Feature.GUN_HEADING);
@@ -237,6 +321,13 @@ public final class Autopilot extends AdvancedRobot {
             double v = wb.getFeature(f);
             setDebugProperty(f.name(), Double.isNaN(v) ? "NaN" : String.valueOf(v));
         }
+
+        // Debug — every alive wave's columns, keyed COLUMN/waveId, so Layer 0
+        // fidelity can compare the in-flight wave set against the observer shadow.
+        wb.forEachAliveWaveProperty(this::setDebugProperty);
+        // Break columns (RES_*) of waves that resolved this tick — the only Layer 0
+        // coverage of the virtual waves' break geometry (gone from the alive set).
+        wb.forEachJustResolvedWaveBreak(this::setDebugProperty);
     }
 
     /**

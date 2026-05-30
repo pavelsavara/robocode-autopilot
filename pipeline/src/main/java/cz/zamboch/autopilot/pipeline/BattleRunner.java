@@ -1,16 +1,19 @@
 package cz.zamboch.autopilot.pipeline;
 
+import net.sf.robocode.io.Logger;
 import robocode.control.BattleSpecification;
 import robocode.control.BattlefieldSpecification;
 import robocode.control.RobocodeEngine;
 import robocode.control.RobotSpecification;
+import robocode.control.events.BattleAdaptor;
+import robocode.control.events.BattleCompletedEvent;
 
 import java.io.File;
+import java.io.IOException;
 
 /**
- * Headless battle runner with integrated CSV pipeline.
- * Streams turn snapshots directly into Whiteboard → Transformer → CsvWriter
- * without intermediate .br files.
+ * Headless battle runner using PipelineOrchestrator.
+ * Runs Robocode battles and streams turn snapshots through the new pipeline.
  *
  * System properties:
  * -Drobot.jar=path/to/robot.jar
@@ -21,20 +24,138 @@ import java.io.File;
  */
 public final class BattleRunner {
 
+    /** Results from a completed battle. */
+    public static final class BattleResult {
+        private final PipelineOrchestrator orchestrator;
+        private int ourScore;
+        private int opponentScore;
+        private int ourFirsts;
+        private int totalRounds;
+
+        BattleResult(PipelineOrchestrator orchestrator) {
+            this.orchestrator = orchestrator;
+        }
+
+        public PipelineOrchestrator orchestrator() {
+            return orchestrator;
+        }
+
+        public int getOurScore() {
+            return ourScore;
+        }
+
+        public int getOpponentScore() {
+            return opponentScore;
+        }
+
+        public int getOurFirsts() {
+            return ourFirsts;
+        }
+
+        public int getTotalRounds() {
+            return totalRounds;
+        }
+
+        public double getWinRate() {
+            return totalRounds > 0 ? (double) ourFirsts / totalRounds : 0;
+        }
+
+        public double getScoreRatio() {
+            return opponentScore > 0 ? (double) ourScore / opponentScore : ourScore;
+        }
+    }
+
     /**
-     * Run a battle with the given parameters. Reusable from main() and tests.
+     * Run a battle with given parameters.
      *
      * @param opponent  fully-qualified opponent class name
      * @param rounds    number of rounds
      * @param outputDir CSV output directory (null for results-only mode)
-     * @return the StreamingPipelineObserver (caller should call close())
+     * @return BattleResult with orchestrator and scores
      */
-    public static StreamingPipelineObserver runBattle(String opponent, int rounds, String outputDir) {
+    public static BattleResult runBattle(String opponent, int rounds, String outputDir) {
         RobocodeEngine.setLogMessagesEnabled(false);
         RobocodeEngine engine = new RobocodeEngine();
 
-        StreamingPipelineObserver observer = new StreamingPipelineObserver(outputDir, 800, 600);
-        engine.addBattleListener(observer);
+        PipelineOrchestrator orchestrator = new PipelineOrchestrator(800, 600, 0.1);
+        BattleResult result = new BattleResult(orchestrator);
+
+        // Point observers at the staged read-only VCS data so they load the SAME
+        // persisted model the live robot loads (keyed by OPPONENT_ID_HASH, once per
+        // battle, into their own VcsStores). Observers never write here.
+        String battleStage = System.getProperty("battle.stage");
+        if (battleStage != null) {
+            File observerDataDir = new File(battleStage, ".data/cz/zamboch/Autopilot.data");
+            orchestrator.setObserverDataDir(observerDataDir);
+        }
+
+        // Attach validators: Layer 0 (debug-property fidelity) + god-view quality (1-4)
+        Layer0DebugFidelityValidator layer0Validator = new Layer0DebugFidelityValidator();
+        orchestrator.setLayer0Validator(layer0Validator);
+        GodViewQualityValidator validator = new GodViewQualityValidator(800, 600);
+        orchestrator.setValidator(validator);
+
+        // Attach CSV writers if output requested
+        if (outputDir != null) {
+            try {
+                String battleId = "battle-" + System.currentTimeMillis();
+                File battleDir = new File(outputDir, battleId);
+                File perspDir0 = new File(battleDir, "Autopilot");
+                File perspDir1 = new File(battleDir, "Opponent");
+                CsvWriter writer0 = new CsvWriter(perspDir0);
+                CsvWriter writer1 = new CsvWriter(perspDir1);
+                orchestrator.setCsvWriters(writer0, writer1);
+                orchestrator.setBattleId(battleId);
+                writer0.writeHeaders(battleId);
+                writer1.writeHeaders(battleId);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to initialize CSV writers", e);
+            }
+        }
+
+        // Attach IDebugProperty fidelity dump (in-game.csv / observer.csv) when the
+        // debug.csv.dir system property is set. Off by default; OUTSIDE the
+        // outputDir/tempDir block so the files survive in a stable location for
+        // offline diffing across all opponents/rounds (append mode).
+        String debugCsvDir = System.getProperty("debug.csv.dir");
+        if (debugCsvDir != null && !debugCsvDir.isBlank()) {
+            try {
+                orchestrator.setDebugCsv(new DebugPropertyCsvWriter(new File(debugCsvDir), opponent));
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to initialize debug-property CSV writer", e);
+            }
+        }
+
+        // Attach the engine-grounded snapshot fixture recorder when the
+        // record.fixture.dir system property is set. Off by default; used to
+        // regenerate the committed test fixture replayed by EventReconstructorTest.
+        String fixtureDir = System.getProperty("record.fixture.dir");
+        if (fixtureDir != null && !fixtureDir.isBlank()) {
+            try {
+                orchestrator.setSnapshotFixtureWriter(new SnapshotFixtureWriter(new File(fixtureDir), opponent));
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to initialize snapshot fixture writer", e);
+            }
+        }
+
+        // Score-tracking listener
+        engine.addBattleListener(orchestrator);
+        engine.addBattleListener(new BattleAdaptor() {
+            @Override
+            public void onBattleCompleted(BattleCompletedEvent event) {
+                robocode.BattleResults[] results = event.getSortedResults();
+                for (robocode.BattleResults r : results) {
+                    String name = r.getTeamLeaderName();
+                    if (name != null && name.contains("Autopilot")) {
+                        result.ourScore = r.getScore();
+                        result.ourFirsts = r.getFirsts();
+                    } else {
+                        result.opponentScore = r.getScore();
+                    }
+                }
+                result.totalRounds = rounds;
+            }
+        });
 
         try {
             String robotFilter = "cz.zamboch.Autopilot," + opponent;
@@ -65,12 +186,28 @@ public final class BattleRunner {
 
             engine.runBattle(spec, true);
         } catch (Exception e) {
-            observer.close();
+            try {
+                orchestrator.close();
+            } catch (IOException ignored) {
+            }
+            engine.removeBattleListener(orchestrator);
+            Logger.initialized = true;
+            RobocodeEngine.setLogErrorsEnabled(false);
             engine.close();
             throw e;
         }
+
+        engine.removeBattleListener(orchestrator);
+        Logger.initialized = true;
+        RobocodeEngine.setLogErrorsEnabled(false);
         engine.close();
-        return observer;
+
+        try {
+            orchestrator.close();
+        } catch (IOException ignored) {
+        }
+
+        return result;
     }
 
     public static void main(String[] args) {
@@ -79,7 +216,7 @@ public final class BattleRunner {
         String opponent = System.getProperty("battle.opponent", "sample.SittingDuck");
         String outputDir = System.getProperty("battle.output");
 
-        // Find robocode home — check environment, then common paths
+        // Find robocode home
         String roboHome = System.getenv("ROBOCODE_HOME");
         if (roboHome == null) {
             String[] candidates = {
@@ -117,7 +254,14 @@ public final class BattleRunner {
         }
         System.setProperty("NOSECURITY", "true");
 
-        StreamingPipelineObserver observer = runBattle(opponent, rounds, outputDir);
-        observer.close();
+        BattleResult result = runBattle(opponent, rounds, outputDir);
+        System.out.printf("Win rate: %.1f%% (%d/%d)%n",
+                result.getWinRate() * 100, result.getOurFirsts(), result.getTotalRounds());
+        System.out.printf("Score ratio: %.2f (%d/%d)%n",
+                result.getScoreRatio(), result.getOurScore(), result.getOpponentScore());
+
+        if (result.orchestrator().validator() != null) {
+            result.orchestrator().validator().printSummary();
+        }
     }
 }

@@ -21,18 +21,27 @@ import java.util.Set;
 /**
  * Pipeline-side wave resolver using god-view (engine ground truth).
  * <p>
- * Detects when each perspective's robot fires a bullet (via IBulletSnapshot),
- * creates a Wave with fire-time features, and resolves it using the true
- * opponent position from the engine snapshot. Sets OUR_FIRE_* at fire time
- * and OUR_BREAK_* at resolution time.
+ * Adapted from the original {@code WaveResolver} to work with
+ * {@link ObserverContext}
+ * instead of {@code Perspective}. Detects when each perspective's robot fires a
+ * bullet
+ * (via IBulletSnapshot), creates a Wave with fire-time features, and resolves
+ * it using
+ * the true opponent position from the engine snapshot.
+ * <p>
+ * Sets OUR_FIRE_* at fire time and OUR_BREAK_* at resolution time on the
+ * observer's Whiteboard. Also sets THEIR_* features on the peer's Whiteboard.
  * <p>
  * Unlike the robot-side {@code WaveTracker} which relies on stale scan data,
  * this uses exact opponent coordinates every tick for ground-truth resolution.
  */
-final class WaveResolver {
+final class GodViewWaveResolver {
 
     /** Per-perspective wave tracking state. */
     private final PerPerspective[] persp = { new PerPerspective(), new PerPerspective() };
+
+    /** Per-perspective flag: true if a new fire was detected this tick. */
+    private final boolean[] firedThisTick = { false, false };
 
     /** Set of bullet IDs already used to create waves. */
     private final Set<Integer> knownBulletIds = new HashSet<>();
@@ -63,43 +72,53 @@ final class WaveResolver {
     }
 
     /**
+     * Returns true if a new fire was detected for the given perspective during the
+     * last processTick call.
+     */
+    boolean firedThisTick(int perspIndex) {
+        return firedThisTick[perspIndex];
+    }
+
+    /**
      * Main per-tick call. Detects new bullets (fire), resolves existing waves,
      * and sets features on whiteboards.
      *
      * @return for each perspective index, true if a wave was resolved this tick
      */
-    boolean[] processTick(Perspective[] perspectives, IRobotSnapshot[] robots, ITurnSnapshot turn) {
+    boolean[] processTick(ObserverContext[] observers, IRobotSnapshot[] robots, ITurnSnapshot turn) {
         boolean[] resolved = { false, false };
+        firedThisTick[0] = false;
+        firedThisTick[1] = false;
 
-        detectNewBullets(turn, perspectives, robots);
+        detectNewBullets(turn, observers, robots);
         detectHitBullets(turn);
 
-        for (Perspective us : perspectives) {
-            if (us.isDead())
+        for (ObserverContext ctx : observers) {
+            if (ctx.isDead())
                 continue;
-            PerPerspective pp = persp[us.robotIndex()];
+            PerPerspective pp = persp[ctx.perspectiveIndex()];
 
-            // If a fire was detected, set OUR_FIRE_* features on the whiteboard
+            // If a fire was detected, set OUR_FIRE_* features on the god-view whiteboard
             if (pp.pendingFire) {
-                setFireFeatures(us.wb(), pp.lastFiredWave);
+                setFireFeatures(ctx.godWb(), pp.lastFiredWave);
                 pp.pendingFire = false;
             }
 
             // Resolve waves using true opponent position
-            if (!us.peer().isDead()) {
-                double oppX = robots[us.peer().robotIndex()].getX();
-                double oppY = robots[us.peer().robotIndex()].getY();
-                long tick = (long) us.wb().getFeature(Feature.TICK);
+            if (!ctx.peerContext().isDead()) {
+                double oppX = robots[ctx.peerContext().perspectiveIndex()].getX();
+                double oppY = robots[ctx.peerContext().perspectiveIndex()].getY();
+                long tick = (long) ctx.godWb().getFeature(Feature.TICK);
 
-                resolved[us.robotIndex()] = resolveWaves(us.wb(), us.peer().wb(),
-                        pp, us.robotIndex(), oppX, oppY, tick);
+                resolved[ctx.perspectiveIndex()] = resolveWaves(ctx.godWb(), ctx.peerContext().godWb(),
+                        pp, ctx.perspectiveIndex(), oppX, oppY, tick);
             }
         }
 
         return resolved;
     }
 
-    private void detectNewBullets(ITurnSnapshot turn, Perspective[] perspectives,
+    private void detectNewBullets(ITurnSnapshot turn, ObserverContext[] observers,
             IRobotSnapshot[] robots) {
         IBulletSnapshot[] bullets = turn.getBullets();
         if (bullets == null)
@@ -114,9 +133,9 @@ final class WaveResolver {
 
             // New bullet — attribute to the perspective where this is "our" bullet
             int owner = bullet.getOwnerIndex();
-            for (Perspective us : perspectives) {
-                if (owner == us.robotIndex() && !us.peer().isDead()) {
-                    createWave(us, bullet, robots);
+            for (ObserverContext ctx : observers) {
+                if (owner == ctx.perspectiveIndex() && !ctx.peerContext().isDead()) {
+                    createWave(ctx, bullet, robots);
                 }
             }
         }
@@ -134,9 +153,9 @@ final class WaveResolver {
         }
     }
 
-    private void createWave(Perspective us, IBulletSnapshot bullet, IRobotSnapshot[] robots) {
-        IRobotSnapshot self = robots[us.robotIndex()];
-        IRobotSnapshot opponent = robots[us.peer().robotIndex()];
+    private void createWave(ObserverContext ctx, IBulletSnapshot bullet, IRobotSnapshot[] robots) {
+        IRobotSnapshot self = robots[ctx.perspectiveIndex()];
+        IRobotSnapshot opponent = robots[ctx.peerContext().perspectiveIndex()];
 
         double fireX = self.getX();
         double fireY = self.getY();
@@ -158,17 +177,20 @@ final class WaveResolver {
         int distSeg = GuessFactor.distanceSegment(distance);
         int latVelSeg = GuessFactor.lateralVelocitySegment(latVel);
 
-        long fireTick = (long) us.wb().getFeature(Feature.TICK);
+        long fireTick = (long) ctx.godWb().getFeature(Feature.TICK);
 
         Wave wave = new Wave(fireX, fireY, fireTick, absoluteBearing,
                 bulletSpeed, direction, distSeg, latVelSeg);
 
-        PerPerspective pp = persp[us.robotIndex()];
+        double advVel = oppVel * Math.cos(oppHeading - absoluteBearing);
+
+        PerPerspective pp = persp[ctx.perspectiveIndex()];
         pp.activeWaves.add(new TrackedWave(wave, bullet.getBulletId(),
-                distance, latVel, oppVel, power,
+                distance, latVel, advVel, power,
                 opponent.getX(), opponent.getY()));
         pp.lastFiredWave = pp.activeWaves.get(pp.activeWaves.size() - 1);
         pp.pendingFire = true;
+        firedThisTick[ctx.perspectiveIndex()] = true;
     }
 
     private void setFireFeatures(Whiteboard wb, TrackedWave tw) {
@@ -214,23 +236,16 @@ final class WaveResolver {
                 double gf = tw.wave.computeGuessFactor(oppX, oppY);
                 int binIndex = GuessFactor.gfToBinIndex(gf, GuessFactor.NUM_BINS);
 
-                // Update models (ModelSelector or raw VCS)
+                // Update VCS store (common to both paths)
+                VcsStore vcs = wb.getVcsStore();
+                if (vcs != null) {
+                    vcs.increment(tw.wave.distanceSegment, tw.wave.latVelSegment, binIndex);
+                }
+
+                // Update model selector if present
                 ModelSelector selector = wb.getModelSelector();
                 if (selector != null) {
-                    // We need a temporary slot for the model to read features from.
-                    // Use the direct VCS update path since pipeline waves aren't in
-                    // the ring buffer — they use TrackedWave objects.
-                    VcsStore vcs = wb.getVcsStore();
-                    if (vcs != null) {
-                        vcs.increment(tw.wave.distanceSegment, tw.wave.latVelSegment, binIndex);
-                    }
-                    // Record error for regret tracking using wave segments
                     selector.recordPipelineUpdate(tw.wave.distanceSegment, tw.wave.latVelSegment, gf);
-                } else {
-                    VcsStore vcs = wb.getVcsStore();
-                    if (vcs != null) {
-                        vcs.increment(tw.wave.distanceSegment, tw.wave.latVelSegment, binIndex);
-                    }
                 }
 
                 wb.setFeature(Feature.OUR_BREAK_TICK, currentTick);

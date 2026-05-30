@@ -161,6 +161,39 @@ public final class Whiteboard {
         lastTick = Long.MIN_VALUE;
     }
 
+    /**
+     * Deep-copy all per-tick feature state from {@code other} into this whiteboard.
+     * <p>
+     * Copies the tick ring, wave ring buffers + staging, score row, and string
+     * features, plus the ring head/tick bookkeeping. Deliberately does <b>not</b>
+     * touch {@link #vcsStore}, {@link #modelSelector}, or the {@link #transformer}:
+     * a god-view whiteboard seeded from a robot-side whiteboard must keep its own
+     * independent learning model so it never contaminates the robot-side shadow.
+     */
+    public void copyFrom(Whiteboard other) {
+        System.arraycopy(other.tickRing[0], 0, tickRing[0], 0, TickColumn.COUNT);
+        System.arraycopy(other.tickRing[1], 0, tickRing[1], 0, TickColumn.COUNT);
+        this.tickHead = other.tickHead;
+        this.lastTick = other.lastTick;
+
+        for (int i = 0; i < OUR_WAVE_CAPACITY; i++) {
+            System.arraycopy(other.ourWaves[i], 0, ourWaves[i], 0, OurWaveColumn.COUNT);
+            ourWaveState[i] = other.ourWaveState[i];
+        }
+        this.ourWaveHead = other.ourWaveHead;
+        System.arraycopy(other.ourWaveStaging, 0, ourWaveStaging, 0, OurWaveColumn.COUNT);
+
+        for (int i = 0; i < THEIR_WAVE_CAPACITY; i++) {
+            System.arraycopy(other.theirWaves[i], 0, theirWaves[i], 0, TheirWaveColumn.COUNT);
+            theirWaveState[i] = other.theirWaveState[i];
+        }
+        this.theirWaveHead = other.theirWaveHead;
+        System.arraycopy(other.theirWaveStaging, 0, theirWaveStaging, 0, TheirWaveColumn.COUNT);
+
+        System.arraycopy(other.scoreRow, 0, scoreRow, 0, ScoreColumn.COUNT);
+        System.arraycopy(other.stringFeatures, 0, stringFeatures, 0, Feature.COUNT);
+    }
+
     /** Set a string feature value. */
     public void setStringFeature(Feature f, String value) {
         stringFeatures[f.ordinal()] = value;
@@ -261,6 +294,65 @@ public final class Whiteboard {
                 count++;
         }
         return count;
+    }
+
+    /**
+     * Emit every ALIVE (in-flight) our-wave as a set of debug properties. Each
+     * wave column is published under the key {@code COLUMN_NAME/waveId}; the value
+     * is the numeric column value, or {@code "NaN"}. The {@code WAVE_ID} column is
+     * itself omitted (it is encoded in the key). Used by Layer 0 fidelity
+     * validation to compare the full set of in-flight waves between the live robot
+     * and the observer shadow, matched by stable wave id.
+     */
+    public void forEachAliveWaveProperty(java.util.function.BiConsumer<String, String> sink) {
+        for (int i = 0; i < OUR_WAVE_CAPACITY; i++) {
+            if (ourWaveState[i] != WAVE_ACTIVE) {
+                continue;
+            }
+            long waveId = (long) ourWaves[i][OurWaveColumn.WAVE_ID.ordinal()];
+            for (OurWaveColumn c : OurWaveColumn.values()) {
+                if (c == OurWaveColumn.WAVE_ID) {
+                    continue;
+                }
+                double v = ourWaves[i][c.ordinal()];
+                sink.accept(c.name() + "/" + waveId, Double.isNaN(v) ? "NaN" : String.valueOf(v));
+            }
+        }
+    }
+
+    /**
+     * Emit the BREAK_* columns of any wave that RESOLVED on the current tick
+     * (BREAK_TICK == TICK), keyed {@code RES_COLUMN/waveId}. Lets Layer 0 compare the
+     * resolving-tick break geometry between live and observer by stable wave id, which
+     * is invisible to {@link #forEachAliveWaveProperty} because a resolved wave has
+     * already left the alive set when validation runs. This is the only validation of
+     * the virtual waves' break geometry, so it is a permanent part of the fidelity check.
+     */
+    public void forEachJustResolvedWaveBreak(java.util.function.BiConsumer<String, String> sink) {
+        double tick = getFeature(Feature.TICK);
+        if (Double.isNaN(tick)) {
+            return;
+        }
+        OurWaveColumn[] breakCols = {
+                OurWaveColumn.BREAK_TICK, OurWaveColumn.BREAK_GF,
+                OurWaveColumn.BREAK_BEARING_OFFSET, OurWaveColumn.BREAK_OPPONENT_X,
+                OurWaveColumn.BREAK_OPPONENT_Y, OurWaveColumn.BREAK_HIT,
+                OurWaveColumn.IS_REAL
+        };
+        for (int i = 0; i < OUR_WAVE_CAPACITY; i++) {
+            if (ourWaveState[i] != WAVE_RESOLVED) {
+                continue;
+            }
+            double breakTick = ourWaves[i][OurWaveColumn.BREAK_TICK.ordinal()];
+            if (Double.isNaN(breakTick) || Math.abs(breakTick - tick) > 1e-4) {
+                continue;
+            }
+            long waveId = (long) ourWaves[i][OurWaveColumn.WAVE_ID.ordinal()];
+            for (OurWaveColumn c : breakCols) {
+                double v = ourWaves[i][c.ordinal()];
+                sink.accept("RES_" + c.name() + "/" + waveId, Double.isNaN(v) ? "NaN" : String.valueOf(v));
+            }
+        }
     }
 
     // ========== Their Wave Ring Buffer API ==========

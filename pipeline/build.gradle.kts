@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     implementation(project(":core"))
+    implementation(project(":robot"))
     implementation(libs.robocode.battle)
     implementation(libs.robocode.core)
     implementation(libs.robocode.host)
@@ -29,6 +30,10 @@ val checkoutRobots = tasks.register<Exec>("checkoutRobots") {
     outputs.dir(stageDir)
     workingDir = rootProject.projectDir
     commandLine("git", "--work-tree=${stageDir.absolutePath}", "checkout", "robots", "--", ".")
+    environment("GIT_LFS_SKIP_SMUDGE", "1")
+    // Use an isolated index so the checkout does not stage robots-branch files
+    // into the main repo index (which would pollute `git status`).
+    environment("GIT_INDEX_FILE", File(stageDir, ".git-stage-index").absolutePath)
     doFirst { stageDir.mkdirs() }
 }
 
@@ -102,6 +107,9 @@ tasks.register<JavaExec>("runBattle") {
     if (project.hasProperty("output")) {
         systemProperty("battle.output", project.property("output")!!)
     }
+    if (project.hasProperty("recordFixtureDir")) {
+        systemProperty("record.fixture.dir", project.property("recordFixtureDir")!!)
+    }
 }
 
 // --- Battle integration test (runs actual Robocode battle) ---
@@ -139,6 +147,9 @@ tasks.register<Test>("battleTest") {
     if (project.hasProperty("rounds")) {
         systemProperty("battle.rounds", project.property("rounds")!!)
     }
+    if (project.hasProperty("debugCsvDir")) {
+        systemProperty("debug.csv.dir", project.property("debugCsvDir")!!)
+    }
 
     testLogging {
         showStandardStreams = true
@@ -159,4 +170,33 @@ tasks.test {
         "--add-opens", "java.base/java.util=ALL-UNNAMED",
         "--add-opens", "java.base/java.io=ALL-UNNAMED"
     )
+}
+
+// Integration tests that need HiddenAccess.init() but no battle-stage directory.
+// Usage: ./gradlew :pipeline:integrationTest
+tasks.register<Test>("integrationTest") {
+    group = "verification"
+    description = "Run integration tests (tagged 'integration') that need HiddenAccess but not battle-stage"
+
+    useJUnitPlatform {
+        includeTags("integration")
+        excludeTags("battle")
+    }
+
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+
+    jvmArgs(
+        "-Djava.awt.headless=true",
+        "--add-opens", "java.base/sun.net.www.protocol.jar=ALL-UNNAMED",
+        "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED",
+        "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+        "--add-opens", "java.base/java.net=ALL-UNNAMED",
+        "--add-opens", "java.base/java.util=ALL-UNNAMED",
+        "--add-opens", "java.base/java.io=ALL-UNNAMED"
+    )
+
+    testLogging {
+        showStandardStreams = true
+    }
 }
