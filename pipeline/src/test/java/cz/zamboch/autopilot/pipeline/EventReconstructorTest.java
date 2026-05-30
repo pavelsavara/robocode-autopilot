@@ -542,21 +542,45 @@ class EventReconstructorTest {
         }
 
         @Test
-        void hitRobotEvent_noDuplicateWhenBothTransition() {
-                // Both robots get HIT_ROBOT on the same tick → should produce exactly one event
+        void hitRobotEvent_headOnCollision_deliversBothFaultEvents() {
+                // Engine ground truth (RobotPeer.checkRobotCollision): the collision check
+                // runs once per robot in the update loop. In a head-on collision BOTH robots
+                // are at fault, so each robot's check delivers a HitRobotEvent to itself
+                // (atFault=true) and to the other robot (atFault=false). Our robot therefore
+                // receives TWO HitRobotEvents on the same tick: one true, one false.
+                // Both carry bearing = direction-to-opponent relative to our heading and the
+                // opponent's post-collision energy (engine uses otherRobot.energy for our
+                // own-fault event and the at-fault robot's energy for the victim event — in a
+                // symmetric head-on these are the same opponent energy).
                 ITurnSnapshot t0 = turn(0,
                                 robot(400, 300, Math.PI / 2, 4, 100, 0, 0, 0, MY_INDEX, RobotState.ACTIVE, "MyBot"),
                                 robot(436, 300, 3 * Math.PI / 2, -4, 100, 0, 0, 0, OPP_INDEX, RobotState.ACTIVE,
                                                 "Enemy"));
                 recon.reconstruct(t0, MY_INDEX, BF_WIDTH, BF_HEIGHT);
 
+                // Me at (418,300) heading east (π/2); opponent at (436,300). Direction to
+                // opponent: atan2(18, 0) = π/2; bearing = normalRelativeAngle(π/2 - π/2) = 0.
                 ITurnSnapshot t1 = turn(1,
                                 robot(418, 300, Math.PI / 2, 0, 99.4, 0, 0, 0, MY_INDEX, RobotState.HIT_ROBOT, "MyBot"),
                                 robot(436, 300, 3 * Math.PI / 2, 0, 99.4, 0, 0, 0, OPP_INDEX, RobotState.HIT_ROBOT,
                                                 "Enemy"));
                 TickEvents delivered = recon.reconstruct(t1, MY_INDEX, BF_WIDTH, BF_HEIGHT);
-                long count = delivered.events().stream().filter(e -> e instanceof HitRobotEvent).count();
-                assertEquals(1, count, "Should produce exactly one HitRobotEvent per tick");
+                List<HitRobotEvent> rams = delivered.events().stream()
+                                .filter(e -> e instanceof HitRobotEvent)
+                                .map(e -> (HitRobotEvent) e)
+                                .toList();
+                assertEquals(2, rams.size(),
+                                "Head-on collision delivers two HitRobotEvents (one per robot's collision check)");
+                assertEquals(1, rams.stream().filter(HitRobotEvent::isMyFault).count(),
+                                "Exactly one event marks us at fault");
+                assertEquals(1, rams.stream().filter(e -> !e.isMyFault()).count(),
+                                "Exactly one event marks the opponent at fault");
+                for (HitRobotEvent hre : rams) {
+                        assertEquals("Enemy", hre.getName());
+                        assertEquals(0.0, hre.getBearingRadians(), 0.01,
+                                        "Bearing is direction to opponent relative to our heading");
+                        assertEquals(99.4, hre.getEnergy(), 0.01, "Carries opponent's post-collision energy");
+                }
         }
 
         // ==================== Event Ordering Test ====================

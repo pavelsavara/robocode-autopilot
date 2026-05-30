@@ -31,6 +31,9 @@ val checkoutRobots = tasks.register<Exec>("checkoutRobots") {
     workingDir = rootProject.projectDir
     commandLine("git", "--work-tree=${stageDir.absolutePath}", "checkout", "robots", "--", ".")
     environment("GIT_LFS_SKIP_SMUDGE", "1")
+    // Use an isolated index so the checkout does not stage robots-branch files
+    // into the main repo index (which would pollute `git status`).
+    environment("GIT_INDEX_FILE", File(stageDir, ".git-stage-index").absolutePath)
     doFirst { stageDir.mkdirs() }
 }
 
