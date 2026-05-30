@@ -15,3 +15,6 @@
    - Exploit dive/escape sequences
    - Use AI to pre-calculate for which of them makes sense to train ML
    - Use DNN/q-learning to find more
+
+Blotter
+- run all tests and show me drift by layers and features

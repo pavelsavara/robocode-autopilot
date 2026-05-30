@@ -22,8 +22,6 @@ import java.io.IOException;
 public final class PipelineOrchestrator extends BattleAdaptor implements Closeable {
 
     private final ObserverContext[] observers;
-    private final double bfWidth;
-    private final double bfHeight;
     private final GodViewWaveResolver godViewWaveResolver;
     private final WavePrecisionComparator wavePrecisionComparator;
     private GodViewQualityValidator validator; // optional god-view quality validator (layers 1-4)
@@ -39,8 +37,6 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
     private final double[] lastValidatorBreakTick = { Double.NaN, Double.NaN };
 
     public PipelineOrchestrator(double bfWidth, double bfHeight, double gunCoolingRate) {
-        this.bfWidth = bfWidth;
-        this.bfHeight = bfHeight;
         this.observers = ObserverContext.createPair(bfWidth, bfHeight, gunCoolingRate);
         this.godViewWaveResolver = new GodViewWaveResolver();
         this.wavePrecisionComparator = new WavePrecisionComparator();

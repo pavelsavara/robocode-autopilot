@@ -9,11 +9,9 @@ import robocode.control.snapshot.IRobotSnapshot;
 import robocode.control.snapshot.ITurnSnapshot;
 import robocode.control.snapshot.RobotState;
 
-import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -219,7 +217,8 @@ public final class GodViewQualityValidator {
     /**
      * Aiming-decision attribution tracker. Records the aim-time geometry (one tick
      * before the fire tick) and compares the god-view exact values against the
-     * robot-side inference. {@code position} is the firer's own body position at aim
+     * robot-side inference. {@code position} is the firer's own body position at
+     * aim
      * time (knowable exactly on both sides); {@code distance} and {@code bearing}
      * encode the firer→target geometry, where the robot-side error (stale-scan
      * target position) actually lives. Keyed by an opaque token (bullet id for OUR,
@@ -462,7 +461,9 @@ public final class GodViewQualityValidator {
 
     // ========== Layer 2 (aim): aiming-decision attribution ==========
 
-    /** God-view exact OUR aim geometry (one tick before fire), paired by bullet id. */
+    /**
+     * God-view exact OUR aim geometry (one tick before fire), paired by bullet id.
+     */
     public void recordGodViewOurAim(int perspIndex, int bulletId, double x, double y,
             double distance, double bearing) {
         aimTracking[perspIndex].recordGodView(bulletId, new AimRecord(x, y, distance, bearing));
@@ -474,7 +475,10 @@ public final class GodViewQualityValidator {
         aimTracking[perspIndex].recordRobotSide(bulletId, new AimRecord(x, y, distance, bearing));
     }
 
-    /** God-view exact THEIR aim geometry (one tick before their fire), paired by fire tick. */
+    /**
+     * God-view exact THEIR aim geometry (one tick before their fire), paired by
+     * fire tick.
+     */
     public void recordGodViewTheirAim(int perspIndex, long fireTick, double x, double y,
             double distance, double bearing) {
         theirAimTracking[perspIndex].recordGodView(fireTick, new AimRecord(x, y, distance, bearing));
@@ -856,12 +860,14 @@ public final class GodViewQualityValidator {
         for (int pi = 0; pi < 2; pi++) {
             AimDetectionTracker our = aimTracking[pi];
             AimDetectionTracker their = theirAimTracking[pi];
-            System.out.printf("  Perspective %d (our):   paired=%d, positionMAE=%s, distanceMAE=%s, bearingMAE(rad)=%s%n",
+            System.out.printf(
+                    "  Perspective %d (our):   paired=%d, positionMAE=%s, distanceMAE=%s, bearingMAE(rad)=%s%n",
                     pi, our.pairedCount,
                     formatMetric(our.getPositionMAE(), "%.4f"),
                     formatMetric(our.getDistanceMAE(), "%.4f"),
                     formatMetric(our.getBearingMAE(), "%.4f"));
-            System.out.printf("  Perspective %d (their): paired=%d, positionMAE=%s, distanceMAE=%s, bearingMAE(rad)=%s%n",
+            System.out.printf(
+                    "  Perspective %d (their): paired=%d, positionMAE=%s, distanceMAE=%s, bearingMAE(rad)=%s%n",
                     pi, their.pairedCount,
                     formatMetric(their.getPositionMAE(), "%.4f"),
                     formatMetric(their.getDistanceMAE(), "%.4f"),

@@ -28,10 +28,6 @@ public final class EventReconstructor {
 
     // Per-tick state (from my robot's perspective)
     private double prevRadarHeading = Double.NaN;
-    private double prevVelocity = 0;
-    private double prevHeading = 0;
-    private double prevX = 0;
-    private double prevY = 0;
     private RobotState prevState = RobotState.ACTIVE;
     private RobotState prevOpponentState = RobotState.ACTIVE;
 
@@ -44,10 +40,6 @@ public final class EventReconstructor {
     /** Reset all inter-tick state. Call at the beginning of each round. */
     public void resetRound() {
         prevRadarHeading = Double.NaN;
-        prevVelocity = 0;
-        prevHeading = 0;
-        prevX = 0;
-        prevY = 0;
         prevState = RobotState.ACTIVE;
         prevOpponentState = RobotState.ACTIVE;
         knownBulletIds.clear();
@@ -70,10 +62,6 @@ public final class EventReconstructor {
         IRobotSnapshot me = robots[myIndex];
         IRobotSnapshot opponent = robots[1 - myIndex];
         prevRadarHeading = me.getRadarHeading();
-        prevVelocity = me.getVelocity();
-        prevHeading = me.getBodyHeading();
-        prevX = me.getX();
-        prevY = me.getY();
         prevState = me.getState();
         prevOpponentState = opponent.getState();
     }
@@ -125,10 +113,6 @@ public final class EventReconstructor {
 
         // === Update state for next tick ===
         prevRadarHeading = me.getRadarHeading();
-        prevVelocity = me.getVelocity();
-        prevHeading = me.getBodyHeading();
-        prevX = me.getX();
-        prevY = me.getY();
         prevState = me.getState();
         prevOpponentState = opponent.getState();
 

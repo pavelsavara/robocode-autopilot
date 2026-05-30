@@ -1,6 +1,5 @@
 package cz.zamboch.autopilot.pipeline;
 
-import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.Whiteboard;
 import net.sf.robocode.security.HiddenAccess;
 import robocode.control.snapshot.BulletState;

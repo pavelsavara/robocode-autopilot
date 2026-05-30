@@ -27,8 +27,6 @@ import robocode.control.snapshot.RobotState;
  */
 class GodViewQualityValidatorEnergyTest {
 
-    private static final double FIELD = 800.0;
-
     private GodViewQualityValidator newValidator() {
         return new GodViewQualityValidator();
     }

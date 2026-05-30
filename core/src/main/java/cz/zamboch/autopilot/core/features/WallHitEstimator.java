@@ -23,7 +23,9 @@ import cz.zamboch.autopilot.core.Whiteboard;
  */
 public final class WallHitEstimator implements IInGameFeatures {
 
-    /** Distance from edge at which a robot center touches the wall (half body = 18). */
+    /**
+     * Distance from edge at which a robot center touches the wall (half body = 18).
+     */
     private static final double WALL_MARGIN = 18.0;
     /** Tolerance for detecting "at wall" position. */
     private static final double WALL_TOLERANCE = 1.0;
