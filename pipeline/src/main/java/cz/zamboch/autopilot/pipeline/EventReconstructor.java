@@ -254,36 +254,31 @@ public final class EventReconstructor {
     // ==================== Ram (Robot Collision) ====================
 
     private void detectRam(IRobotSnapshot me, IRobotSnapshot opponent, List<Event> events) {
-        boolean myTransition = me.getState() == RobotState.HIT_ROBOT && prevState != RobotState.HIT_ROBOT;
-        boolean oppTransition = opponent.getState() == RobotState.HIT_ROBOT
-                && prevOpponentState != RobotState.HIT_ROBOT;
-
-        if (myTransition || oppTransition) {
-            double dx = opponent.getX() - me.getX();
-            double dy = opponent.getY() - me.getY();
-            double angle = Math.atan2(dx, dy);
-            double bearing = RoboMath.normalRelativeAngle(angle - me.getBodyHeading());
-
-            // At-fault logic matches engine: moving toward the opponent
-            boolean atFault = isAtFault(bearing);
-
-            events.add(new HitRobotEvent(opponent.getShortName(), bearing, opponent.getEnergy(), atFault));
+        // The engine runs checkRobotCollision EVERY tick and, for each robot that
+        // is "at fault" (driving into the other), applies ROBOT_HIT_DAMAGE to BOTH
+        // robots and delivers a HitRobotEvent to each — every tick of sustained
+        // contact, not just on the rising edge. The at-fault robot's snapshot is
+        // marked RobotState.HIT_ROBOT. So we emit one event per at-fault robot,
+        // every tick, mirroring the engine exactly:
+        //   - we are at fault   -> our collision delivers us an atFault=true event
+        //   - opponent at fault -> their collision delivers us an atFault=false event
+        boolean meAtFault = me.getState() == RobotState.HIT_ROBOT;
+        boolean oppAtFault = opponent.getState() == RobotState.HIT_ROBOT;
+        if (!meAtFault && !oppAtFault) {
+            return;
         }
-    }
 
-    /**
-     * Determine if we are at fault in the collision.
-     * Engine formula (RobotPeer.checkRobotCollision):
-     * (velocity > 0 && bearing > -PI/2 && bearing < PI/2)
-     * || (velocity < 0 && (bearing < -PI/2 || bearing > PI/2))
-     * Uses prevVelocity as the best available approximation of pre-collision
-     * velocity.
-     */
-    private boolean isAtFault(double bearing) {
-        if (prevVelocity == 0)
-            return false;
-        return (prevVelocity > 0 && bearing > -Math.PI / 2 && bearing < Math.PI / 2)
-                || (prevVelocity < 0 && (bearing < -Math.PI / 2 || bearing > Math.PI / 2));
+        double dx = opponent.getX() - me.getX();
+        double dy = opponent.getY() - me.getY();
+        double angle = Math.atan2(dx, dy);
+        double bearing = RoboMath.normalRelativeAngle(angle - me.getBodyHeading());
+
+        if (meAtFault) {
+            events.add(new HitRobotEvent(opponent.getShortName(), bearing, opponent.getEnergy(), true));
+        }
+        if (oppAtFault) {
+            events.add(new HitRobotEvent(opponent.getShortName(), bearing, opponent.getEnergy(), false));
+        }
     }
 
     // ==================== Scan ====================

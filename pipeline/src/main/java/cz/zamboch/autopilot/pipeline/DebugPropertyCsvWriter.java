@@ -67,6 +67,7 @@ public final class DebugPropertyCsvWriter implements Closeable {
             for (IDebugProperty p : props) {
                 writeRow(live, round, perspective, tick, p.getKey(), p.getValue());
             }
+            live.flush();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -81,6 +82,7 @@ public final class DebugPropertyCsvWriter implements Closeable {
             for (Map.Entry<String, String> e : props.entrySet()) {
                 writeRow(observer, round, perspective, tick, e.getKey(), e.getValue());
             }
+            observer.flush();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
