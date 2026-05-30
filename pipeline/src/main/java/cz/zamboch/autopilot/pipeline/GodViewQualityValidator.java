@@ -11,7 +11,9 @@ import robocode.control.snapshot.RobotState;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * God-view quality validator — measures the precision gap between the robot's
@@ -57,6 +59,18 @@ public final class GodViewQualityValidator {
     private final int[] energyDiscrepancies = { 0, 0 };
     private final double[] prevEnergy = { Double.NaN, Double.NaN };
     private final double[] prevVelocity = { Double.NaN, Double.NaN };
+    private final RobotState[] prevState = { null, null };
+    // Bullet-id lifecycle tracking: snapshot states linger for several ticks
+    // (explosion animation), so each energy event is applied exactly once per
+    // bullet id. Ids are per-round sequential, hence cleared in resetRound().
+    private final Set<Integer>[] firedBulletIds = newIdSets();
+    private final Set<Integer>[] hitByUsBulletIds = newIdSets();
+    private final Set<Integer>[] hitOnUsBulletIds = newIdSets();
+
+    @SuppressWarnings("unchecked")
+    private static Set<Integer>[] newIdSets() {
+        return new Set[] { new HashSet<Integer>(), new HashSet<Integer>() };
+    }
 
     public GodViewQualityValidator(double bfWidth, double bfHeight) {
         this.bfWidth = bfWidth;
@@ -285,57 +299,78 @@ public final class GodViewQualityValidator {
     /**
      * Track energy changes against engine rules.
      * On first tick per perspective, initializes prevEnergy without checking.
+     * <p>
+     * God-view bullet/robot snapshot states linger for several ticks (the
+     * explosion animation keeps a hit bullet in {@code HIT_VICTIM} state, and a
+     * robot stays in {@code HIT_WALL}/{@code HIT_ROBOT} while pinned). Energy is
+     * charged by the engine only on the transition tick, so each event is applied
+     * exactly once: bullet costs/bonuses are keyed by bullet id, and wall/ram
+     * damage is applied only on the state transition.
      */
     public void accountEnergy(int perspIndex, IRobotSnapshot[] robots,
             IBulletSnapshot[] bullets) {
         IRobotSnapshot self = robots[perspIndex];
         double currentEnergy = self.getEnergy();
+        int opponentIndex = 1 - perspIndex;
 
         if (Double.isNaN(prevEnergy[perspIndex])) {
             prevEnergy[perspIndex] = currentEnergy;
             prevVelocity[perspIndex] = self.getVelocity();
+            prevState[perspIndex] = self.getState();
             return;
         }
 
         double expected = prevEnergy[perspIndex];
 
-        // Subtract fire power (bullets owned by us that are FIRED this tick)
         if (bullets != null) {
             for (IBulletSnapshot b : bullets) {
-                if (b.getOwnerIndex() == perspIndex && b.getState() == BulletState.FIRED) {
+                int id = b.getBulletId();
+                BulletState state = b.getState();
+                int owner = b.getOwnerIndex();
+                int victim = b.getVictimIndex();
+
+                // Fire cost: charged once when our bullet is first observed in a
+                // pre-impact state (FIRED on the firing tick, or MOVING in flight).
+                // A bullet first seen already in a terminal hit state was fired on an
+                // earlier, unobserved tick, so its cost is not (re)charged here.
+                if (owner == perspIndex
+                        && (state == BulletState.FIRED || state == BulletState.MOVING)
+                        && firedBulletIds[perspIndex].add(id)) {
                     expected -= b.getPower();
                 }
-            }
-        }
 
-        // Add hit energy bonus (our bullets that hit victim)
-        if (bullets != null) {
-            for (IBulletSnapshot b : bullets) {
-                if (b.getOwnerIndex() == perspIndex && b.getState() == BulletState.HIT_VICTIM) {
+                // Hit energy bonus: credited once when our bullet first hits.
+                if (owner == perspIndex && state == BulletState.HIT_VICTIM
+                        && hitByUsBulletIds[perspIndex].add(id)) {
                     expected += hitEnergyBonus(b.getPower());
                 }
-            }
-        }
 
-        // Subtract bullet damage received (opponent bullets hitting us)
-        int opponentIndex = 1 - perspIndex;
-        if (bullets != null) {
-            for (IBulletSnapshot b : bullets) {
-                if (b.getOwnerIndex() == opponentIndex && b.getState() == BulletState.HIT_VICTIM
-                        && b.getVictimIndex() == perspIndex) {
+                // Bullet damage received: charged once when an opponent bullet
+                // first hits us.
+                if (owner == opponentIndex && victim == perspIndex
+                        && state == BulletState.HIT_VICTIM
+                        && hitOnUsBulletIds[perspIndex].add(id)) {
                     expected -= bulletDamage(b.getPower());
                 }
             }
         }
 
-        // Wall hit damage (use previous tick velocity — snapshot velocity is
-        // post-impact)
-        if (self.getState() == RobotState.HIT_WALL && !Double.isNaN(prevVelocity[perspIndex])) {
+        // Wall hit damage: applied once on transition into HIT_WALL, using the
+        // previous tick's velocity (the impact-tick snapshot velocity is already
+        // zeroed post-impact). The exact intra-tick impact speed is unobservable
+        // from snapshots — the robot may accelerate (+1), hold, or brake (-2)
+        // during the impact tick — so prevVelocity is used as the neutral prior.
+        if (self.getState() == RobotState.HIT_WALL && prevState[perspIndex] != RobotState.HIT_WALL
+                && !Double.isNaN(prevVelocity[perspIndex])) {
             expected -= wallDamage(prevVelocity[perspIndex]);
         }
 
-        // Ram damage
-        if (self.getState() == RobotState.HIT_ROBOT) {
+        // Ram damage: both robots lose RAM_DAMAGE each tick they are in contact.
+        // A robot pinned against a wall reports HIT_WALL (wall takes priority in the
+        // state enum) even while being rammed, so the collision is detected via
+        // either robot's HIT_ROBOT state rather than self's state alone.
+        if (self.getState() == RobotState.HIT_ROBOT
+                || robots[opponentIndex].getState() == RobotState.HIT_ROBOT) {
             expected -= RAM_DAMAGE;
         }
 
@@ -346,8 +381,8 @@ public final class GodViewQualityValidator {
 
         prevEnergy[perspIndex] = currentEnergy;
         prevVelocity[perspIndex] = self.getVelocity();
+        prevState[perspIndex] = self.getState();
     }
-
     // ========== Round Reset ==========
 
     /** Reset per-round state. Counters are cumulative across rounds. */
@@ -356,6 +391,14 @@ public final class GodViewQualityValidator {
         prevEnergy[1] = Double.NaN;
         prevVelocity[0] = Double.NaN;
         prevVelocity[1] = Double.NaN;
+        prevState[0] = null;
+        prevState[1] = null;
+        // Bullet ids are per-round sequential; clear so next round starts fresh.
+        for (int p = 0; p < 2; p++) {
+            firedBulletIds[p].clear();
+            hitByUsBulletIds[p].clear();
+            hitOnUsBulletIds[p].clear();
+        }
     }
 
     // ========== Non-Vacuous Assertion ==========
