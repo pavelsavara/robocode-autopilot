@@ -203,18 +203,23 @@ public final class Autopilot extends AdvancedRobot {
         }
     }
 
+    private boolean featuresRegistered;
+
     /** Shared initialization for both live and observer modes. */
     private void initCommon(double bfWidth, double bfHeight) {
-        wb.registerFeatures(
-                new SpatialFeatures(),
-                new MovementFeatures(),
-                new TimingFeatures(),
-                new WallHitEstimator(),
-                new FireFeatures(),
-                new IdentityFeatures(),
-                new OurWaveFeatures(),
-                new WaveTracker(),
-                new TheirWaveTracker());
+        if (!featuresRegistered) {
+            wb.registerFeatures(
+                    new SpatialFeatures(),
+                    new MovementFeatures(),
+                    new TimingFeatures(),
+                    new WallHitEstimator(),
+                    new FireFeatures(),
+                    new IdentityFeatures(),
+                    new OurWaveFeatures(),
+                    new WaveTracker(),
+                    new TheirWaveTracker());
+            featuresRegistered = true;
+        }
 
         wb.setFeature(Feature.BATTLEFIELD_WIDTH, bfWidth);
         wb.setFeature(Feature.BATTLEFIELD_HEIGHT, bfHeight);

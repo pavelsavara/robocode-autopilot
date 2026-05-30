@@ -25,6 +25,7 @@ public final class ObserverContext {
     private final double bfHeight;
     private ObserverContext peerContext; // the other perspective
     private boolean dead;
+    private boolean diedThisTick;
 
     public ObserverContext(int perspectiveIndex, double bfWidth, double bfHeight, double gunCoolingRate) {
         this.perspectiveIndex = perspectiveIndex;
@@ -115,7 +116,7 @@ public final class ObserverContext {
             } else if (event instanceof HitRobotEvent hre) {
                 observer.onHitRobot(hre);
             } else if (event instanceof DeathEvent) {
-                dead = true;
+                diedThisTick = true;
             }
             // HitWallEvent, RobotDeathEvent, WinEvent: no handler in Autopilot
         }
@@ -129,11 +130,16 @@ public final class ObserverContext {
         if (dead)
             return;
         observer.doTurn();
+        if (diedThisTick) {
+            dead = true;
+            diedThisTick = false;
+        }
     }
 
     /** Reset state for a new round. */
     public void resetRound() {
         dead = false;
+        diedThisTick = false;
         reconstructor.resetRound();
         peer.resetRound();
         // Clear whiteboard so the observer starts fresh each round (matches live robot

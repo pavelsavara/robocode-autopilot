@@ -46,25 +46,28 @@ final class IdentityFeaturesTest {
         wb.process();
         double hash1 = wb.getFeature(Feature.OPPONENT_ID_HASH);
 
-        // After clearFeatures, hash persists (opponent identity never changes)
+        // After clearFeatures, hash persists (same instance keeps cache)
         wb.clearFeatures();
         wb.process();
         assertEquals(hash1, wb.getFeature(Feature.OPPONENT_ID_HASH));
     }
 
     @Test
-    void differentInstancesProduceDifferentHashes() {
+    void separateInstancesHaveIndependentCache() {
         wb.setStringFeature(Feature.OPPONENT_ID, "Bot1");
         wb.process();
         double hash1 = wb.getFeature(Feature.OPPONENT_ID_HASH);
 
-        // A fresh whiteboard with different name produces different hash
+        // A new IdentityFeatures instance does NOT inherit the hash (instance-level cache)
         Whiteboard wb2 = new Whiteboard();
         wb2.registerFeatures(new IdentityFeatures());
+        wb2.process();
+        assertTrue(Double.isNaN(wb2.getFeature(Feature.OPPONENT_ID_HASH)));
+
+        // But once its own opponent is set, it computes independently
         wb2.setStringFeature(Feature.OPPONENT_ID, "Bot2");
         wb2.process();
         double hash2 = wb2.getFeature(Feature.OPPONENT_ID_HASH);
-
         assertNotEquals(hash1, hash2);
     }
 }

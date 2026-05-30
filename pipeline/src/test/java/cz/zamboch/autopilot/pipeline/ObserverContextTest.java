@@ -134,6 +134,7 @@ final class ObserverContextTest {
                 0, 1, 0, 0, 1, 5);
         TickEvents events = new TickEvents(List.of(new StatusEvent(status), new DeathEvent()));
         ctx.feedEvents(events);
+        ctx.doTurn(); // death is deferred until doTurn completes
         assertTrue(ctx.isDead());
 
         // Reset round

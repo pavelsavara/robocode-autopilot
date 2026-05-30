@@ -17,6 +17,8 @@ public final class IdentityFeatures implements IInGameFeatures {
 
     /**
      * Cached hash — once computed, never changes (opponent identity is constant).
+     * Instance-level: each Autopilot (live robot, observer-0, observer-1) gets its own.
+     * The live robot must reuse the same IdentityFeatures instance across rounds.
      */
     private double cachedHash = Double.NaN;
 
@@ -44,5 +46,10 @@ public final class IdentityFeatures implements IInGameFeatures {
             cachedHash = RoboMath.fnv1a32(botId);
         }
         wb.setFeature(Feature.OPPONENT_ID_HASH, cachedHash);
+    }
+
+    /** Reset cached state — for testing only. */
+    void resetCache() {
+        cachedHash = Double.NaN;
     }
 }

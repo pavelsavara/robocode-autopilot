@@ -113,6 +113,8 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
         // Phase 5: Unified validation (if validator attached)
         if (validator != null) {
             for (ObserverContext ctx : observers) {
+                if (ctx.isDead())
+                    continue;
                 int pi = ctx.perspectiveIndex();
                 int oppIndex = 1 - pi;
                 validator.validateSpatial(pi, ctx.wb(), robots[pi], robots[oppIndex], curr);
