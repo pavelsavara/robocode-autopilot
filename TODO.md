@@ -1,8 +1,11 @@
-- https://robowiki.net/wiki/User:Nat/Free_code#Movement_Predictor
-- https://robowiki.net/wiki/Maximum_Escape_Angle/Precise
 - Layer 0 for top 50 - once
 - Layer 1-4 for BeepBoop vs BeepBoop
 - Layer 1-4 for recordings
+- ML predict fire (T-1)
+- surf their VCS
+- ML gun
+- https://robowiki.net/wiki/User:Nat/Free_code#Movement_Predictor
+- https://robowiki.net/wiki/Maximum_Escape_Angle/Precise
 - Gun - during aiming: consider MEA/center vs bot width, bullet width, wave intersection thickness.
 - Consider left/right MEA
 - Consider max reachable envelope or derived probability bins for sub-arcs
