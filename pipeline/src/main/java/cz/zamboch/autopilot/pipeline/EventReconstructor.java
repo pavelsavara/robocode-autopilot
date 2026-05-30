@@ -324,7 +324,8 @@ public final class EventReconstructor {
         Rectangle2D.Double targetBox = new Rectangle2D.Double(
                 opponent.getX() - half, opponent.getY() - half, ROBOT_SIZE, ROBOT_SIZE);
 
-        if (intersects(scanArc, targetBox)) {
+        boolean hit = intersects(scanArc, targetBox);
+        if (hit) {
             double dx = opponent.getX() - me.getX();
             double dy = opponent.getY() - me.getY();
             double distance = Math.hypot(dx, dy);
