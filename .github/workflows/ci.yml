@@ -3,8 +3,14 @@ name: CI
 on:
   pull_request:
     branches: [ main ]
+    # Avoid re-triggering CI when the workflow promotes learned VCS data.
+    paths-ignore:
+      - 'robot/data/vcs.dat'
   push:
     branches: [ main ]
+
+permissions:
+  contents: write
 
 jobs:
   test:
@@ -13,6 +19,9 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 1
+          # Check out the PR head branch (not the detached merge ref) so the
+          # promoted VCS data can be committed and pushed back to the PR.
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || '' }}
 
       - name: Fetch robots branch
         run: git fetch origin robots:robots
@@ -35,3 +44,22 @@ jobs:
         with:
           name: test-reports
           path: '**/build/reports/tests/'
+
+      # Promote VCS learning to git only when tests pass on a PR from a branch
+      # in this repo (fork PRs use a read-only token and cannot be pushed to).
+      - name: Promote learned VCS data
+        if: success() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: ./gradlew updateVcsData
+
+      - name: Commit promoted VCS data
+        if: success() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          if git diff --quiet -- robot/data/vcs.dat; then
+            echo "No VCS changes to promote."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add robot/data/vcs.dat
+            git commit -m "chore: promote learned VCS data [skip ci]"
+            git push origin HEAD:${{ github.head_ref }}
+          fi

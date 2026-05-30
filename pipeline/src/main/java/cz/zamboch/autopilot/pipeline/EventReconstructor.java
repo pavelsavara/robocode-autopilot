@@ -260,8 +260,8 @@ public final class EventReconstructor {
         // contact, not just on the rising edge. The at-fault robot's snapshot is
         // marked RobotState.HIT_ROBOT. So we emit one event per at-fault robot,
         // every tick, mirroring the engine exactly:
-        //   - we are at fault   -> our collision delivers us an atFault=true event
-        //   - opponent at fault -> their collision delivers us an atFault=false event
+        // - we are at fault -> our collision delivers us an atFault=true event
+        // - opponent at fault -> their collision delivers us an atFault=false event
         boolean meAtFault = me.getState() == RobotState.HIT_ROBOT;
         boolean oppAtFault = opponent.getState() == RobotState.HIT_ROBOT;
         if (!meAtFault && !oppAtFault) {

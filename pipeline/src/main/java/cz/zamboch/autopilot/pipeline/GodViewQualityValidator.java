@@ -18,7 +18,8 @@ import java.util.List;
  * partial-information estimates and god-view (engine ground-truth) reality.
  * <p>
  * It reads a <b>separate god-view whiteboard</b> (seeded from the observer's
- * robot-side whiteboard each tick, then overlaid by {@link GodViewWaveResolver})
+ * robot-side whiteboard each tick, then overlaid by
+ * {@link GodViewWaveResolver})
  * and never mutates the observer's robot-side state. Layer 0 fidelity
  * (in-game robot vs observer) is validated independently by
  * {@link Layer0DebugFidelityValidator}.

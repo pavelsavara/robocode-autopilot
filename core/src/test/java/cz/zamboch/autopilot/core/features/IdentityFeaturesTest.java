@@ -65,7 +65,8 @@ final class IdentityFeaturesTest {
         wb.process();
         double hash1 = wb.getFeature(Feature.OPPONENT_ID_HASH);
 
-        // A new IdentityFeatures instance does NOT inherit the hash (instance-level cache)
+        // A new IdentityFeatures instance does NOT inherit the hash (instance-level
+        // cache)
         Whiteboard wb2 = new Whiteboard();
         wb2.registerFeatures(new IdentityFeatures());
         wb2.process();
