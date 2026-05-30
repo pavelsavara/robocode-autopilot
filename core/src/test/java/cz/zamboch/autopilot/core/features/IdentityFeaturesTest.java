@@ -41,13 +41,20 @@ final class IdentityFeaturesTest {
     }
 
     @Test
-    void hashIsStickyAfterFirstComputation() {
+    void hashIsUnsetAfterRoundClearUntilNameSeenAgain() {
         wb.setStringFeature(Feature.OPPONENT_ID, "Bot1");
         wb.process();
         double hash1 = wb.getFeature(Feature.OPPONENT_ID_HASH);
 
-        // After clearFeatures, hash persists (same instance keeps cache)
+        // After clearFeatures (round start), OPPONENT_ID is null again, so the hash
+        // is left unset (NaN) — mirroring the live robot, which is re-instantiated
+        // each round and has no identity until the first scan.
         wb.clearFeatures();
+        wb.process();
+        assertTrue(Double.isNaN(wb.getFeature(Feature.OPPONENT_ID_HASH)));
+
+        // Once the opponent is scanned again, the hash returns (recomputed/cached).
+        wb.setStringFeature(Feature.OPPONENT_ID, "Bot1");
         wb.process();
         assertEquals(hash1, wb.getFeature(Feature.OPPONENT_ID_HASH));
     }

@@ -85,6 +85,15 @@ public class ObserverRobotPeer implements IAdvancedRobotPeer {
 
     private int bulletIdCounter = 1;
 
+    /**
+     * Read-only data directory for loading VCS data (e.g. vcs.dat).
+     * When set, {@link #getDataFile(String)} returns files from this directory so
+     * the observer loads the SAME persisted model the live robot loads, keyed by
+     * OPPONENT_ID_HASH. The observer never writes here — the pipeline never calls
+     * the observer's onBattleEnded, so no save path is exercised.
+     */
+    private File dataDir;
+
     public ObserverRobotPeer(double battleFieldWidth, double battleFieldHeight, double gunCoolingRate) {
         this.battleFieldWidth = battleFieldWidth;
         this.battleFieldHeight = battleFieldHeight;
@@ -447,14 +456,22 @@ public class ObserverRobotPeer implements IAdvancedRobotPeer {
 
     // --- Data / IO ---
 
+    /**
+     * Point the observer at a read-only data directory for VCS loading.
+     * The observer reads (never writes) from here.
+     */
+    public void setDataDir(File dataDir) {
+        this.dataDir = dataDir;
+    }
+
     @Override
     public File getDataDirectory() {
-        return null;
+        return dataDir;
     }
 
     @Override
     public File getDataFile(String filename) {
-        return null;
+        return dataDir == null ? null : new File(dataDir, filename);
     }
 
     @Override

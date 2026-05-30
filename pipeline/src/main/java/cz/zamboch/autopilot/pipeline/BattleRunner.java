@@ -80,6 +80,15 @@ public final class BattleRunner {
         PipelineOrchestrator orchestrator = new PipelineOrchestrator(800, 600, 0.1);
         BattleResult result = new BattleResult(orchestrator);
 
+        // Point observers at the staged read-only VCS data so they load the SAME
+        // persisted model the live robot loads (keyed by OPPONENT_ID_HASH, once per
+        // battle, into their own VcsStores). Observers never write here.
+        String battleStage = System.getProperty("battle.stage");
+        if (battleStage != null) {
+            File observerDataDir = new File(battleStage, ".data/cz/zamboch/Autopilot.data");
+            orchestrator.setObserverDataDir(observerDataDir);
+        }
+
         // Attach validators: Layer 0 (debug-property fidelity) + god-view quality (1-4)
         Layer0DebugFidelityValidator layer0Validator = new Layer0DebugFidelityValidator();
         orchestrator.setLayer0Validator(layer0Validator);

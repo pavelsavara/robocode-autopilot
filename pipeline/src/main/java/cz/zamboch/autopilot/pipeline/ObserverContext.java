@@ -174,6 +174,15 @@ public final class ObserverContext {
         return perspectiveIndex;
     }
 
+    /**
+     * Point the observer at a read-only data directory so its Autopilot loads the
+     * same persisted VCS model the live robot loads (keyed by OPPONENT_ID_HASH,
+     * once per battle, into its own VcsStore). The observer never writes here.
+     */
+    public void setDataDir(java.io.File dataDir) {
+        peer.setDataDir(dataDir);
+    }
+
     public Whiteboard wb() {
         return observer.getWhiteboard();
     }

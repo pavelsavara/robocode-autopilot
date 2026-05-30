@@ -7,6 +7,7 @@ import robocode.control.snapshot.IRobotSnapshot;
 import robocode.control.snapshot.ITurnSnapshot;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -66,6 +67,17 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
 
     public Layer0DebugFidelityValidator layer0Validator() {
         return layer0Validator;
+    }
+
+    /**
+     * Point both observers at a read-only data directory so their Autopilots load
+     * the same persisted VCS model the live robot loads (keyed by OPPONENT_ID_HASH,
+     * once per battle, into their own VcsStores). Observers never write here.
+     */
+    public void setObserverDataDir(File dataDir) {
+        for (ObserverContext ctx : observers) {
+            ctx.setDataDir(dataDir);
+        }
     }
 
     @Override
