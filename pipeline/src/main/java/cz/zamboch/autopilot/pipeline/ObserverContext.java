@@ -169,6 +169,11 @@ public final class ObserverContext {
         diedThisTick = false;
         reconstructor.resetRound();
         peer.resetRound(perspectiveIndex, round);
+        // Reset the observer Autopilot's per-battle learned state (VCS model, stateful
+        // strategies) to fresh-instance baseline. Robocode re-instantiates the live
+        // robot every round, so the observer must mirror that to stay a faithful
+        // shadow — otherwise cross-round learning diverges in rounds 2+.
+        observer.resetForRound();
         // Clear whiteboard so the observer starts fresh each round (matches live robot
         // behavior).
         // The live robot's ring rotation + carry-forward yields NaN for all features at
@@ -204,6 +209,14 @@ public final class ObserverContext {
 
     public Whiteboard wb() {
         return observer.getWhiteboard();
+    }
+
+    /**
+     * Debug properties the observer Autopilot published this tick (same publish
+     * path the live robot uses). For {@code observer.csv} fidelity dumping.
+     */
+    public java.util.Map<String, String> observerDebugProperties() {
+        return peer.getDebugProperties();
     }
 
     /**

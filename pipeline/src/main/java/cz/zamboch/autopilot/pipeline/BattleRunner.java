@@ -113,6 +113,19 @@ public final class BattleRunner {
             }
         }
 
+        // Attach IDebugProperty fidelity dump (in-game.csv / observer.csv) when the
+        // debug.csv.dir system property is set. Off by default; OUTSIDE the
+        // outputDir/tempDir block so the files survive in a stable location for
+        // offline diffing across all opponents/rounds (append mode).
+        String debugCsvDir = System.getProperty("debug.csv.dir");
+        if (debugCsvDir != null && !debugCsvDir.isBlank()) {
+            try {
+                orchestrator.setDebugCsv(new DebugPropertyCsvWriter(new File(debugCsvDir), opponent));
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to initialize debug-property CSV writer", e);
+            }
+        }
+
         // Score-tracking listener
         engine.addBattleListener(orchestrator);
         engine.addBattleListener(new BattleAdaptor() {

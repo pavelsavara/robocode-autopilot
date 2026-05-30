@@ -71,6 +71,10 @@ public final class Layer0DebugFidelityValidator {
         // can match them against the live robot's published wave set by wave id.
         Map<String, String> observerWaves = new HashMap<>();
         observerWb.forEachAliveWaveProperty(observerWaves::put);
+        // Also snapshot waves the observer resolved this tick (RES_* keys): the only
+        // validation of the virtual waves' break geometry, which is invisible to the
+        // alive-wave path because a resolved wave has already left the alive set.
+        observerWb.forEachJustResolvedWaveBreak(observerWaves::put);
 
         for (IDebugProperty prop : props) {
             String key = prop.getKey();
@@ -78,7 +82,7 @@ public final class Layer0DebugFidelityValidator {
             // Wave properties use a COLUMN/waveId key; validate them separately and
             // consume the matching observer entry.
             if (key.indexOf('/') >= 0) {
-                validateWaveProperty(tick, key, prop.getValue(), observerWaves);
+                validateWaveProperty(key, prop.getValue(), observerWaves);
                 continue;
             }
 
@@ -113,17 +117,11 @@ public final class Layer0DebugFidelityValidator {
 
             if (Double.isNaN(debug) || Double.isNaN(wbValue)) {
                 s.mismatches++;
-                System.out.printf("AGENT_DEBUG Layer0 NaN mismatch tick=%.0f feature=%s debug=%s wb=%s%n",
-                        tick, feature, Double.isNaN(debug) ? "NaN" : String.valueOf(debug),
-                        Double.isNaN(wbValue) ? "NaN" : String.valueOf(wbValue));
                 continue;
             }
 
             if (Math.abs(debug - wbValue) > EPSILON) {
                 s.mismatches++;
-                System.out.printf(
-                        "AGENT_DEBUG Layer0 value mismatch tick=%.0f feature=%s debug=%.6f wb=%.6f diff=%.6f%n",
-                        tick, feature, debug, wbValue, debug - wbValue);
             }
         }
 
@@ -133,8 +131,6 @@ public final class Layer0DebugFidelityValidator {
             FeatureStats s = waveStats.computeIfAbsent(waveColumn(e.getKey()), k -> new FeatureStats());
             s.checks++;
             s.mismatches++;
-            System.out.printf("AGENT_DEBUG Layer0 wave observer-only tick=%.0f key=%s wb=%s%n",
-                    tick, e.getKey(), e.getValue());
         }
     }
 
@@ -143,7 +139,7 @@ public final class Layer0DebugFidelityValidator {
      * observer wave property, consuming it from {@code observerWaves}. A wave id
      * present on only one side is a mismatch (wave lifetime / break-tick drift).
      */
-    private void validateWaveProperty(double tick, String key, String liveValueStr,
+    private void validateWaveProperty(String key, String liveValueStr,
             Map<String, String> observerWaves) {
         FeatureStats s = waveStats.computeIfAbsent(waveColumn(key), k -> new FeatureStats());
         s.checks++;
@@ -151,8 +147,6 @@ public final class Layer0DebugFidelityValidator {
         String obsValueStr = observerWaves.remove(key);
         if (obsValueStr == null) {
             s.mismatches++;
-            System.out.printf("AGENT_DEBUG Layer0 wave live-only tick=%.0f key=%s debug=%s%n",
-                    tick, key, liveValueStr);
             return;
         }
 
@@ -165,16 +159,11 @@ public final class Layer0DebugFidelityValidator {
 
         if (Double.isNaN(debug) || Double.isNaN(wbValue)) {
             s.mismatches++;
-            System.out.printf("AGENT_DEBUG Layer0 wave NaN mismatch tick=%.0f key=%s debug=%s wb=%s%n",
-                    tick, key, liveValueStr, obsValueStr);
             return;
         }
 
         if (Math.abs(debug - wbValue) > EPSILON) {
             s.mismatches++;
-            System.out.printf(
-                    "AGENT_DEBUG Layer0 wave value mismatch tick=%.0f key=%s debug=%.6f wb=%.6f diff=%.6f%n",
-                    tick, key, debug, wbValue, debug - wbValue);
         }
     }
 

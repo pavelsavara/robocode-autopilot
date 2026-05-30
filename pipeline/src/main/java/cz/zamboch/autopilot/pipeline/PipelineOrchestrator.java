@@ -31,6 +31,7 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
     private ITurnSnapshot prevSnapshot;
     private CsvWriter[] csvWriters; // one per observer, nullable
     private String battleId;
+    private DebugPropertyCsvWriter debugCsv; // optional IDebugProperty fidelity dump, nullable
     private int currentRound = -1;
     private final double[] lastValidatorFireTick = { Double.NaN, Double.NaN };
     private final double[] lastValidatorBreakTick = { Double.NaN, Double.NaN };
@@ -52,6 +53,14 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
 
     public void setBattleId(String battleId) {
         this.battleId = battleId;
+    }
+
+    /**
+     * Attach a long-format IDebugProperty fidelity dump writer (in-game.csv /
+     * observer.csv). May be null when the {@code debug.csv.dir} property is unset.
+     */
+    public void setDebugCsv(DebugPropertyCsvWriter debugCsv) {
+        this.debugCsv = debugCsv;
     }
 
     public void setValidator(GodViewQualityValidator validator) {
@@ -169,6 +178,19 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                     continue;
                 int pi = ctx.perspectiveIndex();
                 layer0Validator.validate(robots[pi], ctx.wb());
+            }
+        }
+
+        // IDebugProperty fidelity dump (in-game.csv / observer.csv) for offline
+        // diffing. Both sides come from the identical Autopilot.doTurn publish path.
+        if (debugCsv != null) {
+            for (ObserverContext ctx : observers) {
+                if (ctx.isDead())
+                    continue;
+                int pi = ctx.perspectiveIndex();
+                long tick = (long) ctx.wb().getFeature(Feature.TICK);
+                debugCsv.writeLive(currentRound, pi, tick, robots[pi].getDebugProperties());
+                debugCsv.writeObserver(currentRound, pi, tick, ctx.observerDebugProperties());
             }
         }
 
@@ -300,6 +322,10 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                 if (w != null)
                     w.close();
             }
+        }
+        if (debugCsv != null) {
+            debugCsv.close();
+            debugCsv = null;
         }
     }
 

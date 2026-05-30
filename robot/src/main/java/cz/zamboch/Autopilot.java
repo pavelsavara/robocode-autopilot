@@ -203,6 +203,33 @@ public final class Autopilot extends AdvancedRobot {
         }
     }
 
+    /**
+     * Reset per-battle/per-round learned state to fresh-instance baseline (observer
+     * mode only). The live robot is re-instantiated by Robocode every round, so it
+     * reloads the vcs.dat baseline and resets all strategy state each round. The
+     * observer is a single long-lived instance, so it must explicitly mirror that
+     * fresh-instance behavior to stay a faithful shadow — otherwise cross-round
+     * learning (VCS model) and stateful strategy fields (radar lock direction)
+     * diverge from the live robot in rounds 2+, shifting gun aim and fire timing.
+     * <p>
+     * Reloading is deferred to the first {@code onScannedRobot} of the round (the
+     * {@link #vcsLoaded} gate), exactly like the live robot.
+     */
+    public void resetForRound() {
+        // Discard accumulated VCS learning; next scan reloads the file baseline.
+        vcsLoaded = false;
+        opponentHash = 0;
+        wb.setVcsStore(null);
+        wb.setModelSelector(null);
+        // Recreate strategies so their internal cross-round state (e.g.
+        // NarrowLockRadar.lastTurnDirection) resets to its fresh-instance default.
+        radar = new NarrowLockRadar(wb);
+        gun = new GFGunStrategy(wb);
+        movement = new OrbitMovementStrategy(wb);
+        // Clear any carried-forward accumulator/sticky values from the prior round.
+        java.util.Arrays.fill(accumulatorCarry, 0.0);
+    }
+
     private boolean featuresRegistered;
 
     /** Shared initialization for both live and observer modes. */
@@ -298,6 +325,9 @@ public final class Autopilot extends AdvancedRobot {
         // Debug — every alive wave's columns, keyed COLUMN/waveId, so Layer 0
         // fidelity can compare the in-flight wave set against the observer shadow.
         wb.forEachAliveWaveProperty(this::setDebugProperty);
+        // Break columns (RES_*) of waves that resolved this tick — the only Layer 0
+        // coverage of the virtual waves' break geometry (gone from the alive set).
+        wb.forEachJustResolvedWaveBreak(this::setDebugProperty);
     }
 
     /**

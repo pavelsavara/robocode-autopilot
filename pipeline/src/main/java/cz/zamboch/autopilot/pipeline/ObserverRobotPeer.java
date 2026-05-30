@@ -8,7 +8,9 @@ import robocode.robotinterfaces.peer.IAdvancedRobotPeer;
 
 import java.awt.*;
 import java.io.File;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A faithful re-implementation of the Robocode engine's gun/fire mechanics for
@@ -102,6 +104,17 @@ public class ObserverRobotPeer implements IAdvancedRobotPeer {
      */
     private File dataDir;
 
+    /**
+     * Debug properties published by the observer Autopilot this tick (via
+     * {@link #setDebugProperty(String, String)}). Retained so the pipeline can dump
+     * the observer's published state to {@code observer.csv} for apples-to-apples
+     * diffing against the live robot's {@code in-game.csv} — both come from the
+     * identical {@code Autopilot.doTurn} publish path. Cleared at the start of each
+     * tick in {@link #executeTick()} so stale per-wave keys ({@code COLUMN/waveId})
+     * do not linger after a wave resolves.
+     */
+    private final Map<String, String> debugProperties = new LinkedHashMap<>();
+
     public ObserverRobotPeer(double battleFieldWidth, double battleFieldHeight, double gunCoolingRate) {
         this.battleFieldWidth = battleFieldWidth;
         this.battleFieldHeight = battleFieldHeight;
@@ -135,6 +148,9 @@ public class ObserverRobotPeer implements IAdvancedRobotPeer {
      * Gun heading rotation is NOT simulated — heading comes from snapshots.
      */
     public void executeTick() {
+        // Clear debug properties from the previous tick so per-wave keys
+        // (COLUMN/waveId) for waves that have since resolved do not linger.
+        debugProperties.clear();
         // Engine: updateGunHeat() in performMove
         gunHeat -= gunCoolingRate;
         if (gunHeat < 0) {
@@ -502,6 +518,16 @@ public class ObserverRobotPeer implements IAdvancedRobotPeer {
 
     @Override
     public void setDebugProperty(String key, String value) {
+        debugProperties.put(key, value);
+    }
+
+    /**
+     * The debug properties the observer Autopilot published this tick. Mirrors the
+     * live robot's {@code IRobotSnapshot.getDebugProperties()} (same publish path),
+     * for {@code observer.csv} dumping.
+     */
+    public Map<String, String> getDebugProperties() {
+        return debugProperties;
     }
 
     @Override

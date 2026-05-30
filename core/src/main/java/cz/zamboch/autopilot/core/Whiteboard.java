@@ -320,6 +320,41 @@ public final class Whiteboard {
         }
     }
 
+    /**
+     * Emit the BREAK_* columns of any wave that RESOLVED on the current tick
+     * (BREAK_TICK == TICK), keyed {@code RES_COLUMN/waveId}. Lets Layer 0 compare the
+     * resolving-tick break geometry between live and observer by stable wave id, which
+     * is invisible to {@link #forEachAliveWaveProperty} because a resolved wave has
+     * already left the alive set when validation runs. This is the only validation of
+     * the virtual waves' break geometry, so it is a permanent part of the fidelity check.
+     */
+    public void forEachJustResolvedWaveBreak(java.util.function.BiConsumer<String, String> sink) {
+        double tick = getFeature(Feature.TICK);
+        if (Double.isNaN(tick)) {
+            return;
+        }
+        OurWaveColumn[] breakCols = {
+                OurWaveColumn.BREAK_TICK, OurWaveColumn.BREAK_GF,
+                OurWaveColumn.BREAK_BEARING_OFFSET, OurWaveColumn.BREAK_OPPONENT_X,
+                OurWaveColumn.BREAK_OPPONENT_Y, OurWaveColumn.BREAK_HIT,
+                OurWaveColumn.IS_REAL
+        };
+        for (int i = 0; i < OUR_WAVE_CAPACITY; i++) {
+            if (ourWaveState[i] != WAVE_RESOLVED) {
+                continue;
+            }
+            double breakTick = ourWaves[i][OurWaveColumn.BREAK_TICK.ordinal()];
+            if (Double.isNaN(breakTick) || Math.abs(breakTick - tick) > 1e-4) {
+                continue;
+            }
+            long waveId = (long) ourWaves[i][OurWaveColumn.WAVE_ID.ordinal()];
+            for (OurWaveColumn c : breakCols) {
+                double v = ourWaves[i][c.ordinal()];
+                sink.accept("RES_" + c.name() + "/" + waveId, Double.isNaN(v) ? "NaN" : String.valueOf(v));
+            }
+        }
+    }
+
     // ========== Their Wave Ring Buffer API ==========
 
     /**

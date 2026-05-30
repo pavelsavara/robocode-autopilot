@@ -141,6 +141,9 @@ tasks.register<Test>("battleTest") {
     if (project.hasProperty("rounds")) {
         systemProperty("battle.rounds", project.property("rounds")!!)
     }
+    if (project.hasProperty("debugCsvDir")) {
+        systemProperty("debug.csv.dir", project.property("debugCsvDir")!!)
+    }
 
     testLogging {
         showStandardStreams = true

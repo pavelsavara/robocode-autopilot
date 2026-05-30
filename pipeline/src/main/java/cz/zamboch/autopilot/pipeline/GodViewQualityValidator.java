@@ -213,10 +213,6 @@ public final class GodViewQualityValidator {
         }
         if (Double.isNaN(actual) || Double.isNaN(expected) || Math.abs(actual - expected) > EPSILON) {
             stats.mismatches++;
-            if (stats.mismatches <= 3) {
-                System.out.printf("AGENT_DEBUG spatial mismatch: %s actual=%.6f expected=%.6f tick=%.0f%n",
-                        feature, actual, expected, wb.getFeature(Feature.TICK));
-            }
         }
     }
 
