@@ -24,7 +24,8 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
     private final double bfHeight;
     private final GodViewWaveResolver godViewWaveResolver;
     private final WavePrecisionComparator wavePrecisionComparator;
-    private PipelineValidator validator; // optional unified validator
+    private GodViewQualityValidator validator; // optional god-view quality validator (layers 1-4)
+    private Layer0DebugFidelityValidator layer0Validator; // optional Layer 0 fidelity validator
     private ITurnSnapshot prevSnapshot;
     private CsvWriter[] csvWriters; // one per observer, nullable
     private String battleId;
@@ -51,12 +52,20 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
         this.battleId = battleId;
     }
 
-    public void setValidator(PipelineValidator validator) {
+    public void setValidator(GodViewQualityValidator validator) {
         this.validator = validator;
     }
 
-    public PipelineValidator validator() {
+    public GodViewQualityValidator validator() {
         return validator;
+    }
+
+    public void setLayer0Validator(Layer0DebugFidelityValidator layer0Validator) {
+        this.layer0Validator = layer0Validator;
+    }
+
+    public Layer0DebugFidelityValidator layer0Validator() {
+        return layer0Validator;
     }
 
     @Override
@@ -87,18 +96,21 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
             ctx.processTick(curr);
         }
 
-        // Phase 2: Capture robot-side wave values BEFORE god-view overwrites
+        // Phase 1.5: Seed each god-view whiteboard from the freshly-computed
+        // robot-side whiteboard (tick/wave/score/string state — NOT the model).
+        for (ObserverContext ctx : observers) {
+            ctx.godWb().copyFrom(ctx.wb());
+        }
+
+        // Phase 2: Capture robot-side wave values (god-view writes a separate wb now)
         double[] robotSideGf = new double[2];
-        double[] savedFirePower = new double[2];
         for (ObserverContext ctx : observers) {
             int pi = ctx.perspectiveIndex();
             robotSideGf[pi] = wavePrecisionComparator.captureRobotSideBreak(pi, ctx.wb());
             wavePrecisionComparator.captureRobotSideFire(pi, ctx.wb());
-            // Save robot-side OUR_FIRE_POWER so we can restore after god-view overwrites
-            savedFirePower[pi] = ctx.wb().getFeature(Feature.OUR_FIRE_POWER);
         }
 
-        // Phase 3: God-view wave resolution (overwrites OUR_FIRE_* and OUR_BREAK_*)
+        // Phase 3: God-view wave resolution (writes the god-view whiteboards)
         boolean[] resolved = godViewWaveResolver.processTick(observers, robots, curr);
 
         // Phase 4: Compare robot-side vs god-view, record god-view fires
@@ -107,26 +119,37 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
             if (godViewWaveResolver.firedThisTick(pi)) {
                 wavePrecisionComparator.recordGodViewFire(pi);
             }
-            wavePrecisionComparator.compareTick(pi, ctx.wb(), robotSideGf[pi], resolved[pi]);
+            wavePrecisionComparator.compareTick(pi, ctx.godWb(), robotSideGf[pi], resolved[pi]);
         }
 
-        // Phase 5: Unified validation (if validator attached)
+        // Layer 0: IDebugProperty fidelity — observer's robot-side whiteboard must
+        // match the live robot's published debug properties (ALL features).
+        if (layer0Validator != null) {
+            for (ObserverContext ctx : observers) {
+                if (ctx.isDead())
+                    continue;
+                int pi = ctx.perspectiveIndex();
+                layer0Validator.validate(robots[pi], ctx.wb());
+            }
+        }
+
+        // Phase 5: God-view quality validation (layers 1-4) on the god-view whiteboard
         if (validator != null) {
             for (ObserverContext ctx : observers) {
                 if (ctx.isDead())
                     continue;
                 int pi = ctx.perspectiveIndex();
                 int oppIndex = 1 - pi;
-                validator.validateSpatial(pi, ctx.wb(), robots[pi], robots[oppIndex], curr);
+                validator.validateSpatial(pi, ctx.godWb(), robots[pi], robots[oppIndex], curr);
                 validator.accountEnergy(pi, robots, curr.getBullets());
 
                 // Layer 2: god-view fire (our perspective fired)
                 if (godViewWaveResolver.firedThisTick(pi)) {
-                    double power = ctx.wb().getFeature(Feature.OUR_FIRE_POWER);
-                    double x = ctx.wb().getFeature(Feature.OUR_FIRE_X);
-                    double y = ctx.wb().getFeature(Feature.OUR_FIRE_Y);
-                    double heading = ctx.wb().getFeature(Feature.OUR_FIRE_BEARING_ABSOLUTE);
-                    long tick = (long) ctx.wb().getFeature(Feature.OUR_FIRE_TICK);
+                    double power = ctx.godWb().getFeature(Feature.OUR_FIRE_POWER);
+                    double x = ctx.godWb().getFeature(Feature.OUR_FIRE_X);
+                    double y = ctx.godWb().getFeature(Feature.OUR_FIRE_Y);
+                    double heading = ctx.godWb().getFeature(Feature.OUR_FIRE_BEARING_ABSOLUTE);
+                    long tick = (long) ctx.godWb().getFeature(Feature.OUR_FIRE_TICK);
                     validator.recordGodViewFire(pi, power, x, y, heading, tick);
                 }
 
@@ -149,46 +172,36 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                 }
                 // Layer 3: GF comparison when both sides resolved same tick
                 if (resolved[pi] && !Double.isNaN(robotSideGf[pi])) {
-                    double godViewGf = ctx.wb().getFeature(Feature.OUR_BREAK_GF);
-                    long godViewBreakTick = (long) ctx.wb().getFeature(Feature.OUR_BREAK_TICK);
+                    double godViewGf = ctx.godWb().getFeature(Feature.OUR_BREAK_GF);
+                    long godViewBreakTick = (long) ctx.godWb().getFeature(Feature.OUR_BREAK_TICK);
                     long robotSideBreakTick = godViewBreakTick; // same tick if both resolved
                     validator.compareWaveBreak(pi, godViewGf, robotSideGf[pi],
                             godViewBreakTick, robotSideBreakTick);
                 }
-
-                // Layer 5: debug property cross-check
-                validator.validateDebugProperties(robots[pi], ctx.wb());
             }
         }
 
-        // Write CSV if configured (after god-view has set authoritative features)
+        // Write CSV if configured (god-view whiteboard has authoritative wave features)
         for (ObserverContext ctx : observers) {
             if (!ctx.isDead() && csvWriters != null && csvWriters[ctx.perspectiveIndex()] != null) {
                 try {
                     int pi = ctx.perspectiveIndex();
                     csvWriters[pi].writeTickRow(
-                            ctx.wb(), battleId != null ? battleId : "unknown", round);
+                            ctx.godWb(), battleId != null ? battleId : "unknown", round);
                     // Write wave rows when resolved
                     if (resolved[pi]) {
                         csvWriters[pi].writeOurWaveRow(
-                                ctx.wb(), battleId != null ? battleId : "unknown", round);
+                                ctx.godWb(), battleId != null ? battleId : "unknown", round);
                     }
                     if (resolved[1 - pi]) {
                         csvWriters[pi].writeTheirWaveRow(
-                                ctx.wb(), battleId != null ? battleId : "unknown", round);
+                                ctx.godWb(), battleId != null ? battleId : "unknown", round);
                     }
                 } catch (IOException e) {
                     throw new RuntimeException(
                             "Failed to write CSV for perspective " + ctx.perspectiveIndex(), e);
                 }
             }
-        }
-
-        // Restore robot-side OUR_FIRE_POWER so WaveTracker only sees robot's own fire
-        // signal next tick
-        for (ObserverContext ctx : observers) {
-            int pi = ctx.perspectiveIndex();
-            ctx.wb().setFeature(Feature.OUR_FIRE_POWER, savedFirePower[pi]);
         }
 
         prevSnapshot = curr;
@@ -260,14 +273,14 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                 else if (ourEnergy <= 0 && oppEnergy > 0)
                     result = -1;
             }
-            ctx.wb().setFeature(Feature.ROUND_RESULT, result);
+            ctx.godWb().setFeature(Feature.ROUND_RESULT, result);
 
             // Hit rate from god-view resolver
             double hitRate = godViewWaveResolver.getRoundHitRate(pi);
-            ctx.wb().setFeature(Feature.ROUND_HIT_RATE, Double.isNaN(hitRate) ? 0 : hitRate);
+            ctx.godWb().setFeature(Feature.ROUND_HIT_RATE, Double.isNaN(hitRate) ? 0 : hitRate);
 
             try {
-                csvWriters[pi].writeScoreRow(ctx.wb(),
+                csvWriters[pi].writeScoreRow(ctx.godWb(),
                         battleId != null ? battleId : "unknown", round);
             } catch (IOException e) {
                 throw new RuntimeException("Failed to write score row for perspective " + pi, e);

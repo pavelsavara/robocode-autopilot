@@ -98,9 +98,9 @@ final class GodViewWaveResolver {
                 continue;
             PerPerspective pp = persp[ctx.perspectiveIndex()];
 
-            // If a fire was detected, set OUR_FIRE_* features on the whiteboard
+            // If a fire was detected, set OUR_FIRE_* features on the god-view whiteboard
             if (pp.pendingFire) {
-                setFireFeatures(ctx.wb(), pp.lastFiredWave);
+                setFireFeatures(ctx.godWb(), pp.lastFiredWave);
                 pp.pendingFire = false;
             }
 
@@ -108,9 +108,9 @@ final class GodViewWaveResolver {
             if (!ctx.peerContext().isDead()) {
                 double oppX = robots[ctx.peerContext().perspectiveIndex()].getX();
                 double oppY = robots[ctx.peerContext().perspectiveIndex()].getY();
-                long tick = (long) ctx.wb().getFeature(Feature.TICK);
+                long tick = (long) ctx.godWb().getFeature(Feature.TICK);
 
-                resolved[ctx.perspectiveIndex()] = resolveWaves(ctx.wb(), ctx.peerContext().wb(),
+                resolved[ctx.perspectiveIndex()] = resolveWaves(ctx.godWb(), ctx.peerContext().godWb(),
                         pp, ctx.perspectiveIndex(), oppX, oppY, tick);
             }
         }
@@ -177,7 +177,7 @@ final class GodViewWaveResolver {
         int distSeg = GuessFactor.distanceSegment(distance);
         int latVelSeg = GuessFactor.lateralVelocitySegment(latVel);
 
-        long fireTick = (long) ctx.wb().getFeature(Feature.TICK);
+        long fireTick = (long) ctx.godWb().getFeature(Feature.TICK);
 
         Wave wave = new Wave(fireX, fireY, fireTick, absoluteBearing,
                 bulletSpeed, direction, distSeg, latVelSeg);

@@ -133,7 +133,7 @@ public final class Main {
         csvB.writeHeaders(battleId);
 
         // Attach validator
-        PipelineValidator validator = new PipelineValidator(bfWidth, bfHeight);
+        GodViewQualityValidator validator = new GodViewQualityValidator(bfWidth, bfHeight);
         orchestrator.setValidator(validator);
 
         // Replay all snapshots through the orchestrator

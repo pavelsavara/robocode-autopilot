@@ -67,8 +67,10 @@ final class BattleLoopTest {
             return;
         }
 
-        PipelineValidator validator = result.orchestrator().validator();
+        GodViewQualityValidator validator = result.orchestrator().validator();
         assertNotNull(validator, "Validator should be attached");
+        Layer0DebugFidelityValidator layer0 = result.orchestrator().layer0Validator();
+        assertNotNull(layer0, "Layer 0 validator should be attached");
 
         // --- Verify CSV output ---
         File[] battleDirs = tempDir.toFile().listFiles(f -> f.isDirectory() && f.getName().startsWith("battle-"));
@@ -148,9 +150,10 @@ final class BattleLoopTest {
         // Report as quality metric; strict assertion deferred until wave matching is
         // aligned.
 
-        // --- PipelineValidator: debug property mismatches ---
-        int debugMismatches = validator.getNonBreakDebugPropertyMismatches();
-        System.out.println(String.format("Debug property mismatches: %d", debugMismatches));
+        // --- Layer 0: IDebugProperty fidelity (ALL features, incl. breaks) ---
+        int debugMismatches = layer0.getMismatches();
+        System.out.println(String.format("Layer 0 debug property mismatches: %d (checks=%d)",
+                debugMismatches, layer0.getChecks()));
 
         // --- PipelineValidator: energy accounting (quality metric) ---
         int energyDisc0 = validator.getEnergyDiscrepancies(0);
@@ -164,14 +167,17 @@ final class BattleLoopTest {
 
         // --- Non-vacuous check ---
         validator.assertNonVacuous();
+        layer0.assertNonVacuous();
 
         // Print full summary (before assertions so we always see breakdown)
         validator.printSummary();
+        layer0.printSummary();
         System.out.println("Output: " + battleDir.getAbsolutePath());
 
-        // --- Assert debug properties match ---
+        // --- Assert debug properties match (ALL features, every tick, every round) ---
         assertEquals(0, debugMismatches,
-                "Fire-time and spatial features must match between robot and pipeline");
+                "Observer must be a faithful deterministic shadow: every feature must match "
+                        + "the live robot's debug properties every tick");
     }
 
     // --- Score baseline per opponent ---

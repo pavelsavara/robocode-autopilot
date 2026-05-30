@@ -19,11 +19,11 @@ class PipelineValidatorTest {
         private static final double BF_WIDTH = 800;
         private static final double BF_HEIGHT = 600;
 
-        private PipelineValidator validator;
+        private GodViewQualityValidator validator;
 
         @BeforeEach
         void setUp() {
-                validator = new PipelineValidator(BF_WIDTH, BF_HEIGHT);
+                validator = new GodViewQualityValidator(BF_WIDTH, BF_HEIGHT);
         }
 
         // ========== Layer 1: Spatial ==========
@@ -407,69 +407,6 @@ class PipelineValidatorTest {
 
                 assertEquals(1, validator.getEnergyChecks(0));
                 assertEquals(0, validator.getEnergyDiscrepancies(0));
-        }
-
-        // ========== Layer 5: Debug Properties ==========
-
-        @Test
-        void debugProperties_matchingValues() {
-                Whiteboard wb = new Whiteboard();
-                wb.setFeature(Feature.TICK, 1.0);
-                wb.setFeature(Feature.LAST_SCAN_TICK, 1.0);
-                wb.setFeature(Feature.OUR_X, 150.0);
-                wb.setFeature(Feature.OUR_Y, 250.0);
-
-                IRobotSnapshot robot = TestSnapshots.robotWithDebug(150, 250, 0, "Autopilot",
-                                new robocode.control.snapshot.IDebugProperty[] {
-                                                TestSnapshots.debugProperty("TICK", "1.0"),
-                                                TestSnapshots.debugProperty("OUR_X", "150.0"),
-                                                TestSnapshots.debugProperty("OUR_Y", "250.0")
-                                });
-
-                validator.validateDebugProperties(robot, wb);
-
-                assertEquals(0, validator.getDebugPropertyMismatches());
-                assertTrue(validator.getDebugPropertyChecks() >= 2);
-        }
-
-        @Test
-        void debugProperties_mismatchDetected() {
-                Whiteboard wb = new Whiteboard();
-                wb.setFeature(Feature.TICK, 1.0);
-                wb.setFeature(Feature.LAST_SCAN_TICK, 1.0);
-                wb.setFeature(Feature.OUR_X, 150.0);
-
-                IRobotSnapshot robot = TestSnapshots.robotWithDebug(150, 250, 0, "Autopilot",
-                                new robocode.control.snapshot.IDebugProperty[] {
-                                                TestSnapshots.debugProperty("TICK", "1.0"),
-                                                TestSnapshots.debugProperty("OUR_X", "999.0")
-                                });
-
-                validator.validateDebugProperties(robot, wb);
-
-                assertEquals(1, validator.getDebugPropertyMismatches());
-        }
-
-        @Test
-        void debugProperties_nonBreakMismatches() {
-                Whiteboard wb = new Whiteboard();
-                wb.setFeature(Feature.TICK, 1.0);
-                wb.setFeature(Feature.LAST_SCAN_TICK, 1.0);
-                wb.setFeature(Feature.OUR_X, 100.0);
-                wb.setFeature(Feature.OUR_BREAK_TICK, 50.0);
-
-                IRobotSnapshot robot = TestSnapshots.robotWithDebug(100, 200, 0, "Autopilot",
-                                new robocode.control.snapshot.IDebugProperty[] {
-                                                TestSnapshots.debugProperty("TICK", "1.0"),
-                                                TestSnapshots.debugProperty("OUR_X", "999.0"),
-                                                TestSnapshots.debugProperty("OUR_BREAK_TICK", "999.0")
-                                });
-
-                validator.validateDebugProperties(robot, wb);
-
-                // OUR_BREAK_TICK is OUR_WAVES FileType → excluded by isWaveFeature
-                assertEquals(1, validator.getDebugPropertyMismatches());
-                assertEquals(1, validator.getNonBreakDebugPropertyMismatches());
         }
 
         // ========== assertNonVacuous ==========

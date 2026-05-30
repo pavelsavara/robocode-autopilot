@@ -5,7 +5,6 @@ import cz.zamboch.autopilot.core.RoboMath;
 import cz.zamboch.autopilot.core.Whiteboard;
 import robocode.control.snapshot.BulletState;
 import robocode.control.snapshot.IBulletSnapshot;
-import robocode.control.snapshot.IDebugProperty;
 import robocode.control.snapshot.IRobotSnapshot;
 import robocode.control.snapshot.ITurnSnapshot;
 import robocode.control.snapshot.RobotState;
@@ -15,20 +14,24 @@ import java.util.EnumMap;
 import java.util.List;
 
 /**
- * Unified pipeline validator — replaces DebugValidator + GodViewValidator.
- * Validates all features against engine ground truth and measures the precision
- * gap between robot-side estimates and god-view reality.
+ * God-view quality validator — measures the precision gap between the robot's
+ * partial-information estimates and god-view (engine ground-truth) reality.
+ * <p>
+ * It reads a <b>separate god-view whiteboard</b> (seeded from the observer's
+ * robot-side whiteboard each tick, then overlaid by {@link GodViewWaveResolver})
+ * and never mutates the observer's robot-side state. Layer 0 fidelity
+ * (in-game robot vs observer) is validated independently by
+ * {@link Layer0DebugFidelityValidator}.
  *
- * <h2>5 Validation Layers</h2>
+ * <h2>4 Quality Layers</h2>
  * <ol>
  * <li>Spatial &amp; Kinematic Fidelity (every scan tick)</li>
  * <li>Fire Detection Fidelity</li>
  * <li>Wave Resolution &amp; GF Precision</li>
  * <li>Energy Accounting</li>
- * <li>IDebugProperty Cross-Check (Autopilot only)</li>
  * </ol>
  */
-public final class PipelineValidator {
+public final class GodViewQualityValidator {
 
     private static final double EPSILON = 1e-4;
 
@@ -54,10 +57,7 @@ public final class PipelineValidator {
     private final double[] prevEnergy = { Double.NaN, Double.NaN };
     private final double[] prevVelocity = { Double.NaN, Double.NaN };
 
-    // --- Layer 5: Debug Property Cross-Check (per-feature stats) ---
-    private final EnumMap<Feature, ValidationStats> debugPropertyStats = new EnumMap<>(Feature.class);
-
-    public PipelineValidator(double bfWidth, double bfHeight) {
+    public GodViewQualityValidator(double bfWidth, double bfHeight) {
         this.bfWidth = bfWidth;
         this.bfHeight = bfHeight;
     }
@@ -351,117 +351,6 @@ public final class PipelineValidator {
         prevVelocity[perspIndex] = self.getVelocity();
     }
 
-    // ========== Layer 5: IDebugProperty Cross-Check ==========
-
-    /**
-     * Compare debug properties from live Autopilot against observer whiteboard.
-     * Runs every tick — both sides process the same events so all features
-     * must match regardless of scan state.
-     * Excludes: wave features (validated by Layers 2/3), decision features
-     * (GUN_AIM_*), and score features.
-     */
-    public void validateDebugProperties(IRobotSnapshot liveRobot, Whiteboard observerWb) {
-        double tick = observerWb.getFeature(Feature.TICK);
-        if (Double.isNaN(tick)) {
-            throw new IllegalStateException("TICK must be set before validateDebugProperties is called");
-        }
-
-        IDebugProperty[] props = liveRobot.getDebugProperties();
-        if (props == null)
-            return;
-
-        // Verify debug properties are from the same tick (handles dead-robot
-        // and Robocode timing-offset edge cases).
-        double debugTick = getDebugPropertyValue(props, "TICK");
-        if (Double.isNaN(debugTick) || Math.abs(debugTick - tick) > EPSILON) {
-            return;
-        }
-
-        for (IDebugProperty prop : props) {
-            String key = prop.getKey();
-
-            Feature feature;
-            try {
-                feature = Feature.valueOf(key);
-            } catch (IllegalArgumentException e) {
-                continue; // unknown feature name — skip
-            }
-
-            // Skip features that genuinely diverge:
-            // - Wave features (OUR_WAVES, THEIR_WAVES): validated by Layers 2 and 3
-            // - Decision-state (GUN_AIM_*): observer makes independent decisions
-            // - Scores (ROUND_*): accumulated stats, not per-tick state
-            if (isWaveFeature(feature) || isDecisionFeature(feature) || isScoreFeature(feature)) {
-                continue;
-            }
-
-            double debugValue;
-            try {
-                debugValue = Double.parseDouble(prop.getValue());
-            } catch (NumberFormatException e) {
-                continue; // non-numeric — skip
-            }
-
-            double wbValue = observerWb.getFeature(feature);
-
-            ValidationStats stats = debugPropertyStats.computeIfAbsent(feature, k -> new ValidationStats());
-            stats.checks++;
-
-            // Both NaN = match
-            if (Double.isNaN(debugValue) && Double.isNaN(wbValue)) {
-                continue;
-            }
-
-            // One NaN other not = mismatch
-            if (Double.isNaN(debugValue) || Double.isNaN(wbValue)) {
-                stats.mismatches++;
-                System.out.printf("AGENT_DEBUG Layer5 NaN mismatch tick=%.0f feature=%s debug=%s wb=%s%n",
-                        tick, feature, Double.isNaN(debugValue) ? "NaN" : String.valueOf(debugValue),
-                        Double.isNaN(wbValue) ? "NaN" : String.valueOf(wbValue));
-                continue;
-            }
-
-            if (Math.abs(debugValue - wbValue) > EPSILON) {
-                stats.mismatches++;
-                System.out.printf(
-                        "AGENT_DEBUG Layer5 value mismatch tick=%.0f feature=%s debug=%.6f wb=%.6f diff=%.6f%n",
-                        tick, feature, debugValue, wbValue, debugValue - wbValue);
-            }
-        }
-    }
-
-    private static double getDebugPropertyValue(IDebugProperty[] props, String key) {
-        for (IDebugProperty prop : props) {
-            if (key.equals(prop.getKey())) {
-                try {
-                    return Double.parseDouble(prop.getValue());
-                } catch (NumberFormatException e) {
-                    return Double.NaN;
-                }
-            }
-        }
-        return Double.NaN;
-    }
-
-    private static boolean isWaveFeature(Feature feature) {
-        return feature.getFileType() == cz.zamboch.autopilot.core.FileType.OUR_WAVES
-                || feature.getFileType() == cz.zamboch.autopilot.core.FileType.THEIR_WAVES;
-    }
-
-    private static boolean isDecisionFeature(Feature feature) {
-        return feature == Feature.GUN_AIM_POWER
-                || feature == Feature.GUN_AIM_ANGLE
-                || feature == Feature.GUN_AIM_GF;
-    }
-
-    private static boolean isScoreFeature(Feature feature) {
-        return feature.getFileType() == cz.zamboch.autopilot.core.FileType.SCORES;
-    }
-
-    private static boolean isBreakFeature(Feature feature) {
-        return feature.name().startsWith("OUR_BREAK_") || feature.name().startsWith("THEIR_BREAK_");
-    }
-
     // ========== Round Reset ==========
 
     /** Reset per-round state. Counters are cumulative across rounds. */
@@ -585,34 +474,10 @@ public final class PipelineValidator {
         return energyChecks[perspIndex];
     }
 
-    public int getDebugPropertyMismatches() {
-        int total = 0;
-        for (ValidationStats s : debugPropertyStats.values())
-            total += s.mismatches;
-        return total;
-    }
-
-    public int getNonBreakDebugPropertyMismatches() {
-        int total = 0;
-        for (var entry : debugPropertyStats.entrySet()) {
-            if (!isBreakFeature(entry.getKey())) {
-                total += entry.getValue().mismatches;
-            }
-        }
-        return total;
-    }
-
-    public int getDebugPropertyChecks() {
-        int total = 0;
-        for (ValidationStats s : debugPropertyStats.values())
-            total += s.checks;
-        return total;
-    }
-
     // ========== Summary ==========
 
     public void printSummary() {
-        System.out.println("=== PipelineValidator Summary ===");
+        System.out.println("=== GodViewQualityValidator Summary ===");
         System.out.println();
 
         // Layer 1
@@ -671,16 +536,6 @@ public final class PipelineValidator {
         }
         System.out.println();
 
-        // Layer 5
-        System.out.printf("Layer 5 — Debug Properties:%n");
-        System.out.printf("  Checks: %d, Mismatches: %d (non-break: %d)%n",
-                getDebugPropertyChecks(), getDebugPropertyMismatches(), getNonBreakDebugPropertyMismatches());
-        for (var entry : debugPropertyStats.entrySet()) {
-            if (entry.getValue().mismatches > 0) {
-                System.out.printf("    %s: checks=%d, mismatches=%d%n",
-                        entry.getKey(), entry.getValue().checks, entry.getValue().mismatches);
-            }
-        }
         System.out.println("=================================");
     }
 

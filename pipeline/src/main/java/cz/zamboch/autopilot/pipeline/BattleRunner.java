@@ -80,8 +80,10 @@ public final class BattleRunner {
         PipelineOrchestrator orchestrator = new PipelineOrchestrator(800, 600, 0.1);
         BattleResult result = new BattleResult(orchestrator);
 
-        // Attach validator
-        PipelineValidator validator = new PipelineValidator(800, 600);
+        // Attach validators: Layer 0 (debug-property fidelity) + god-view quality (1-4)
+        Layer0DebugFidelityValidator layer0Validator = new Layer0DebugFidelityValidator();
+        orchestrator.setLayer0Validator(layer0Validator);
+        GodViewQualityValidator validator = new GodViewQualityValidator(800, 600);
         orchestrator.setValidator(validator);
 
         // Attach CSV writers if output requested

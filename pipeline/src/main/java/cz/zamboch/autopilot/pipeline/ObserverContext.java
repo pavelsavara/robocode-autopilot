@@ -2,6 +2,8 @@ package cz.zamboch.autopilot.pipeline;
 
 import cz.zamboch.Autopilot;
 import cz.zamboch.autopilot.core.Feature;
+import cz.zamboch.autopilot.core.ModelSelector;
+import cz.zamboch.autopilot.core.VcsStore;
 import cz.zamboch.autopilot.core.Whiteboard;
 import net.sf.robocode.security.HiddenAccess;
 import robocode.*;
@@ -23,6 +25,13 @@ public final class ObserverContext {
     private final EventReconstructor reconstructor;
     private final double bfWidth;
     private final double bfHeight;
+    /**
+     * Separate whiteboard for the god-view (engine ground-truth) wave resolver.
+     * It owns an INDEPENDENT VcsStore + ModelSelector so that god-view wave
+     * resolution never trains the observer's robot-side model (which must stay a
+     * faithful shadow of the live robot for Layer 0 fidelity).
+     */
+    private final Whiteboard godWb;
     private ObserverContext peerContext; // the other perspective
     private boolean dead;
     private boolean diedThisTick;
@@ -37,6 +46,14 @@ public final class ObserverContext {
 
         observer.setPeer(peer);
         observer.initForObserver(null, bfWidth, bfHeight);
+
+        // God-view whiteboard with its own independent model.
+        this.godWb = new Whiteboard();
+        VcsStore godVcs = new VcsStore();
+        this.godWb.setVcsStore(godVcs);
+        this.godWb.setModelSelector(new ModelSelector(godVcs));
+        this.godWb.setFeature(Feature.BATTLEFIELD_WIDTH, bfWidth);
+        this.godWb.setFeature(Feature.BATTLEFIELD_HEIGHT, bfHeight);
     }
 
     /**
@@ -159,6 +176,14 @@ public final class ObserverContext {
 
     public Whiteboard wb() {
         return observer.getWhiteboard();
+    }
+
+    /**
+     * God-view whiteboard (engine ground-truth wave resolution). Has its own
+     * VcsStore + ModelSelector, independent of the robot-side {@link #wb()}.
+     */
+    public Whiteboard godWb() {
+        return godWb;
     }
 
     public Autopilot observer() {

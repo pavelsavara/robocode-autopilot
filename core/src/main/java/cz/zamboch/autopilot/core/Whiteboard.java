@@ -161,6 +161,39 @@ public final class Whiteboard {
         lastTick = Long.MIN_VALUE;
     }
 
+    /**
+     * Deep-copy all per-tick feature state from {@code other} into this whiteboard.
+     * <p>
+     * Copies the tick ring, wave ring buffers + staging, score row, and string
+     * features, plus the ring head/tick bookkeeping. Deliberately does <b>not</b>
+     * touch {@link #vcsStore}, {@link #modelSelector}, or the {@link #transformer}:
+     * a god-view whiteboard seeded from a robot-side whiteboard must keep its own
+     * independent learning model so it never contaminates the robot-side shadow.
+     */
+    public void copyFrom(Whiteboard other) {
+        System.arraycopy(other.tickRing[0], 0, tickRing[0], 0, TickColumn.COUNT);
+        System.arraycopy(other.tickRing[1], 0, tickRing[1], 0, TickColumn.COUNT);
+        this.tickHead = other.tickHead;
+        this.lastTick = other.lastTick;
+
+        for (int i = 0; i < OUR_WAVE_CAPACITY; i++) {
+            System.arraycopy(other.ourWaves[i], 0, ourWaves[i], 0, OurWaveColumn.COUNT);
+            ourWaveState[i] = other.ourWaveState[i];
+        }
+        this.ourWaveHead = other.ourWaveHead;
+        System.arraycopy(other.ourWaveStaging, 0, ourWaveStaging, 0, OurWaveColumn.COUNT);
+
+        for (int i = 0; i < THEIR_WAVE_CAPACITY; i++) {
+            System.arraycopy(other.theirWaves[i], 0, theirWaves[i], 0, TheirWaveColumn.COUNT);
+            theirWaveState[i] = other.theirWaveState[i];
+        }
+        this.theirWaveHead = other.theirWaveHead;
+        System.arraycopy(other.theirWaveStaging, 0, theirWaveStaging, 0, TheirWaveColumn.COUNT);
+
+        System.arraycopy(other.scoreRow, 0, scoreRow, 0, ScoreColumn.COUNT);
+        System.arraycopy(other.stringFeatures, 0, stringFeatures, 0, Feature.COUNT);
+    }
+
     /** Set a string feature value. */
     public void setStringFeature(Feature f, String value) {
         stringFeatures[f.ordinal()] = value;
