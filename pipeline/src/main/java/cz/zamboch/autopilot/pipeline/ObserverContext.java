@@ -169,10 +169,11 @@ public final class ObserverContext {
         diedThisTick = false;
         reconstructor.resetRound();
         peer.resetRound(perspectiveIndex, round);
-        // Reset the observer Autopilot's per-battle learned state (VCS model, stateful
-        // strategies) to fresh-instance baseline. Robocode re-instantiates the live
-        // robot every round, so the observer must mirror that to stay a faithful
-        // shadow — otherwise cross-round learning diverges in rounds 2+.
+        // Reset the observer Autopilot's per-round strategy state to fresh-instance
+        // baseline (Robocode re-instantiates the live robot every round). The VCS model
+        // intentionally persists across rounds — the live robot keeps its accumulating
+        // store in a per-battle static, so the observer mirrors that to stay a faithful
+        // shadow in rounds 2+.
         observer.resetForRound();
         // Clear whiteboard so the observer starts fresh each round (matches live robot
         // behavior).

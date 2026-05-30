@@ -55,6 +55,8 @@ val seedVcsData = tasks.register<Copy>("seedVcsData") {
 
 // Copy improved VCS data back to source for committing
 tasks.register<Copy>("updateVcsData") {
+    group = "robocode"
+    description = "Promote VCS data learned during battleTest back to robot/data/vcs.dat for committing"
     val vcsStaged = layout.buildDirectory.file("battle-stage/.data/cz/zamboch/Autopilot.data/vcs.dat").get().asFile
     from(vcsStaged)
     into(project(":robot").projectDir.resolve("data"))
@@ -146,6 +148,12 @@ tasks.register<Test>("battleTest") {
     }
     if (project.hasProperty("rounds")) {
         systemProperty("battle.rounds", project.property("rounds")!!)
+    }
+    if (project.hasProperty("seed")) {
+        systemProperty("battle.seed", project.property("seed")!!)
+    }
+    if (project.hasProperty("csvDir")) {
+        systemProperty("battle.csv.dir", project.property("csvDir")!!)
     }
     if (project.hasProperty("debugCsvDir")) {
         systemProperty("debug.csv.dir", project.property("debugCsvDir")!!)

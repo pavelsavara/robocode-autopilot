@@ -23,11 +23,11 @@ import robocode.BulletHitEvent;
 import robocode.HitByBulletEvent;
 import robocode.HitRobotEvent;
 import robocode.RobotStatus;
+import robocode.RoundEndedEvent;
 import robocode.Rules;
 import robocode.ScannedRobotEvent;
 import robocode.StatusEvent;
 
-import java.io.File;
 import java.io.IOException;
 
 /**
@@ -42,8 +42,23 @@ public final class Autopilot extends AdvancedRobot {
     private IMovementStrategy movement;
     private final MovementCommand moveCmd = new MovementCommand();
     private final FireCommand fireCmd = new FireCommand();
+    /** Observer instances must never persist the VCS to disk. */
+    private boolean isObserver;
+    /** Observer-mode opponent identity / load gate (the observer is a single
+     *  long-lived instance, so instance fields naturally survive across rounds). */
     private int opponentHash;
     private boolean vcsLoaded;
+
+    // ---- Live-mode per-battle state ----------------------------------------
+    // Robocode re-instantiates the live robot every round, but the robot class
+    // loader (and therefore these statics) lives for the whole battle and is
+    // discarded at battle end. So these survive between rounds yet reset for a
+    // fresh battle/opponent. This lets the VCS model be loaded once per battle and
+    // keep accumulating across rounds, and lets round 2+ know the opponent (and
+    // attach the learned model) before the first scan.
+    private static int sLiveOpponentHash;
+    private static boolean sLiveVcsLoaded;
+    private static VcsStore sLiveVcsStore;
 
     @Override
     public void onStatus(StatusEvent event) {
@@ -131,26 +146,83 @@ public final class Autopilot extends AdvancedRobot {
         // Opponent identity — always set name (survives clearFeatures between rounds)
         wb.setStringFeature(Feature.OPPONENT_ID, event.getName());
 
-        // VCS loading (once per battle — expensive)
-        if (!vcsLoaded) {
-            String name = event.getName();
-            int sp = name.indexOf(' ');
-            String botId = (sp < 0) ? name : name.substring(0, sp);
-            opponentHash = RoboMath.fnv1a32(botId);
-            File dataFile = getDataFile("vcs.dat");
-            VcsStore store = VcsFile.loadForOpponent(dataFile, opponentHash);
-            wb.setVcsStore(store);
-            wb.setModelSelector(new ModelSelector(store));
-            vcsLoaded = true;
+        // VCS loading — once per battle, keyed by opponent. The hash is recomputed on
+        // every scan (cheap) so a stale per-battle static carried over from a previous
+        // opponent self-heals into a correct (re)load.
+        String name = event.getName();
+        int sp = name.indexOf(' ');
+        String botId = (sp < 0) ? name : name.substring(0, sp);
+        int hash = RoboMath.fnv1a32(botId);
+        if (!isVcsLoaded() || currentOpponentHash() != hash) {
+            VcsStore store = VcsFile.loadForOpponent(getDataFile("vcs.dat"), hash);
+            attachVcsStore(hash, store);
         }
     }
 
     @Override
+    public void onRoundEnded(RoundEndedEvent event) {
+        // Persist accumulated learning at the end of every round so the next round
+        // (and future battles vs the same opponent) build on it.
+        persistVcs();
+    }
+
+    @Override
     public void onBattleEnded(BattleEndedEvent event) {
-        VcsStore store = wb.getVcsStore();
-        if (store != null && vcsLoaded) {
+        persistVcs();
+    }
+
+    /** Whether the VCS model for the current opponent has been loaded. */
+    private boolean isVcsLoaded() {
+        return isObserver ? vcsLoaded : sLiveVcsLoaded;
+    }
+
+    /** Opponent hash the currently-loaded VCS model belongs to. */
+    private int currentOpponentHash() {
+        return isObserver ? opponentHash : sLiveOpponentHash;
+    }
+
+    /**
+     * Attach a VCS store to the whiteboard with a fresh {@link ModelSelector}.
+     * The store accumulates across rounds; the ModelSelector's regret window is
+     * fresh each round (the live robot gets a new ModelSelector per re-instantiation,
+     * the observer recreates one in {@link #resetForRound()}).
+     */
+    private void attachVcsStore(int hash, VcsStore store) {
+        wb.setVcsStore(store);
+        wb.setModelSelector(new ModelSelector(store));
+        if (isObserver) {
+            opponentHash = hash;
+            vcsLoaded = true;
+        } else {
+            sLiveOpponentHash = hash;
+            sLiveVcsStore = store;
+            sLiveVcsLoaded = true;
+        }
+    }
+
+    /**
+     * Live mode only: re-attach the per-battle accumulating VCS store at round start,
+     * before the first scan, so round 2+ targeting benefits from prior-round learning
+     * immediately.
+     */
+    private void attachKnownVcs() {
+        if (isObserver) {
+            return;
+        }
+        if (sLiveVcsLoaded && sLiveVcsStore != null) {
+            wb.setVcsStore(sLiveVcsStore);
+            wb.setModelSelector(new ModelSelector(sLiveVcsStore));
+        }
+    }
+
+    /** Persist the accumulated VCS model (live mode only; observers never write). */
+    private void persistVcs() {
+        if (isObserver) {
+            return;
+        }
+        if (sLiveVcsLoaded && sLiveVcsStore != null) {
             try {
-                VcsFile.saveForOpponent(getDataFile("vcs.dat"), opponentHash, store);
+                VcsFile.saveForOpponent(getDataFile("vcs.dat"), sLiveOpponentHash, sLiveVcsStore);
             } catch (IOException e) {
                 // Best effort persistence
             }
@@ -193,6 +265,7 @@ public final class Autopilot extends AdvancedRobot {
      * Call event handlers externally, then call {@link #doTurn()} each tick.
      */
     public void initForObserver(VcsStore vcsStore, double bfWidth, double bfHeight) {
+        this.isObserver = true;
         initCommon(bfWidth, bfHeight);
 
         // Load VCS if provided
@@ -215,12 +288,23 @@ public final class Autopilot extends AdvancedRobot {
      * Reloading is deferred to the first {@code onScannedRobot} of the round (the
      * {@link #vcsLoaded} gate), exactly like the live robot.
      */
+    /**
+     * Reset per-round strategy state to fresh-instance baseline (observer mode only).
+     * The live robot is re-instantiated by Robocode every round, which resets its
+     * stateful strategy fields (e.g. radar lock direction) AND gives it a fresh
+     * {@link ModelSelector} regret window — while the per-battle VCS counts persist
+     * via a static. The observer is a single long-lived instance, so it must mirror
+     * that: recreate the strategies and the ModelSelector, but KEEP the accumulating
+     * {@link VcsStore} so cross-round learning matches the live robot exactly.
+     */
     public void resetForRound() {
-        // Discard accumulated VCS learning; next scan reloads the file baseline.
-        vcsLoaded = false;
-        opponentHash = 0;
-        wb.setVcsStore(null);
-        wb.setModelSelector(null);
+        // VCS counts accumulate across rounds — do NOT clear the store. Recreate only
+        // the ModelSelector so its regret window starts fresh (mirrors the live
+        // robot's new ModelSelector per re-instantiation).
+        VcsStore store = wb.getVcsStore();
+        if (store != null) {
+            wb.setModelSelector(new ModelSelector(store));
+        }
         // Recreate strategies so their internal cross-round state (e.g.
         // NarrowLockRadar.lastTurnDirection) resets to its fresh-instance default.
         radar = new NarrowLockRadar(wb);
@@ -264,6 +348,10 @@ public final class Autopilot extends AdvancedRobot {
     @Override
     public void run() {
         initCommon(getBattleFieldWidth(), getBattleFieldHeight());
+        // Round 2+ of the same battle: the opponent and its accumulated VCS model are
+        // already known from a prior round via the per-battle static, so attach the
+        // model now — before the first scan — so targeting benefits immediately.
+        attachKnownVcs();
 
         while (true) {
             doTurn();

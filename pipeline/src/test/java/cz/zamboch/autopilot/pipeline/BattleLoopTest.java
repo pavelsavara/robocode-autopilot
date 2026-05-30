@@ -54,8 +54,32 @@ final class BattleLoopTest {
         System.setProperty("NOSECURITY", "true");
         System.setProperty("java.awt.headless", "true");
 
-        String outputDir = tempDir.toFile().getAbsolutePath();
         int rounds = Integer.parseInt(System.getProperty("battle.rounds", "10"));
+        // Deterministic RNG: Robocode reads -DRANDOMSEED at battle start and seeds
+        // java.util.Random for the whole battle. Default to the current timestamp so
+        // every run is reproducible; print it so a failing run can be replayed with
+        // -Dbattle.seed=<printed value>. A per-battle seed (one per opponent) keeps
+        // each parameterized case independently reproducible.
+        long seed;
+        String seedOverride = System.getProperty("battle.seed");
+        if (seedOverride != null && !seedOverride.isEmpty()) {
+            seed = Long.parseLong(seedOverride);
+        } else {
+            seed = System.currentTimeMillis();
+        }
+        System.setProperty("RANDOMSEED", Long.toString(seed));
+        System.out.println(String.format(
+                "=== RANDOM SEED: %d (vs %s) === replay with -Dbattle.seed=%d", seed, opponent, seed));
+
+        // Emit all CSVs into a directory named "<seed>-<timestamp>" so two runs with
+        // the same seed land in distinct, self-describing directories that can be
+        // diffed. Base location is overridable via -Dbattle.csv.dir (default build/).
+        String csvBase = System.getProperty("battle.csv.dir", new File("build").getAbsolutePath());
+        File outputRoot = new File(csvBase, seed + "-" + System.currentTimeMillis());
+        assertTrue(outputRoot.mkdirs() || outputRoot.isDirectory(),
+                "Should be able to create CSV output directory: " + outputRoot);
+        String outputDir = outputRoot.getAbsolutePath();
+        System.out.println("=== CSV OUTPUT DIR: " + outputDir + " ===");
 
         // Run the battle — may fail if --add-opens JVM args are missing
         BattleRunner.BattleResult result;
@@ -73,7 +97,7 @@ final class BattleLoopTest {
         assertNotNull(layer0, "Layer 0 validator should be attached");
 
         // --- Verify CSV output ---
-        File[] battleDirs = tempDir.toFile().listFiles(f -> f.isDirectory() && f.getName().startsWith("battle-"));
+        File[] battleDirs = outputRoot.listFiles(f -> f.isDirectory() && f.getName().startsWith("battle-"));
         assertNotNull(battleDirs);
         assertEquals(1, battleDirs.length, "Should have exactly one battle output directory");
 
