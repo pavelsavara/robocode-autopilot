@@ -44,8 +44,10 @@ public final class Autopilot extends AdvancedRobot {
     private final FireCommand fireCmd = new FireCommand();
     /** Observer instances must never persist the VCS to disk. */
     private boolean isObserver;
-    /** Observer-mode opponent identity / load gate (the observer is a single
-     *  long-lived instance, so instance fields naturally survive across rounds). */
+    /**
+     * Observer-mode opponent identity / load gate (the observer is a single
+     * long-lived instance, so instance fields naturally survive across rounds).
+     */
     private int opponentHash;
     private boolean vcsLoaded;
 
@@ -90,9 +92,7 @@ public final class Autopilot extends AdvancedRobot {
      * Features that persist across ring rotations but are NOT reset on scan ticks.
      */
     private static final Feature[] STICKY_FEATURES = {
-            Feature.LAST_SCAN_TICK,
-            Feature.BATTLEFIELD_WIDTH,
-            Feature.BATTLEFIELD_HEIGHT
+            Feature.LAST_SCAN_TICK
     };
 
     /**
@@ -184,7 +184,8 @@ public final class Autopilot extends AdvancedRobot {
     /**
      * Attach a VCS store to the whiteboard with a fresh {@link ModelSelector}.
      * The store accumulates across rounds; the ModelSelector's regret window is
-     * fresh each round (the live robot gets a new ModelSelector per re-instantiation,
+     * fresh each round (the live robot gets a new ModelSelector per
+     * re-instantiation,
      * the observer recreates one in {@link #resetForRound()}).
      */
     private void attachVcsStore(int hash, VcsStore store) {
@@ -201,8 +202,10 @@ public final class Autopilot extends AdvancedRobot {
     }
 
     /**
-     * Live mode only: re-attach the per-battle accumulating VCS store at round start,
-     * before the first scan, so round 2+ targeting benefits from prior-round learning
+     * Live mode only: re-attach the per-battle accumulating VCS store at round
+     * start,
+     * before the first scan, so round 2+ targeting benefits from prior-round
+     * learning
      * immediately.
      */
     private void attachKnownVcs() {
@@ -215,7 +218,9 @@ public final class Autopilot extends AdvancedRobot {
         }
     }
 
-    /** Persist the accumulated VCS model (live mode only; observers never write). */
+    /**
+     * Persist the accumulated VCS model (live mode only; observers never write).
+     */
     private void persistVcs() {
         if (isObserver) {
             return;
@@ -289,12 +294,14 @@ public final class Autopilot extends AdvancedRobot {
      * {@link #vcsLoaded} gate), exactly like the live robot.
      */
     /**
-     * Reset per-round strategy state to fresh-instance baseline (observer mode only).
+     * Reset per-round strategy state to fresh-instance baseline (observer mode
+     * only).
      * The live robot is re-instantiated by Robocode every round, which resets its
      * stateful strategy fields (e.g. radar lock direction) AND gives it a fresh
      * {@link ModelSelector} regret window — while the per-battle VCS counts persist
      * via a static. The observer is a single long-lived instance, so it must mirror
-     * that: recreate the strategies and the ModelSelector, but KEEP the accumulating
+     * that: recreate the strategies and the ModelSelector, but KEEP the
+     * accumulating
      * {@link VcsStore} so cross-round learning matches the live robot exactly.
      */
     public void resetForRound() {
@@ -323,7 +330,7 @@ public final class Autopilot extends AdvancedRobot {
                     new SpatialFeatures(),
                     new MovementFeatures(),
                     new TimingFeatures(),
-                    new WallHitEstimator(),
+                    new WallHitEstimator(bfWidth, bfHeight),
                     new FireFeatures(),
                     new IdentityFeatures(),
                     new OurWaveFeatures(),
@@ -331,9 +338,6 @@ public final class Autopilot extends AdvancedRobot {
                     new TheirWaveTracker());
             featuresRegistered = true;
         }
-
-        wb.setFeature(Feature.BATTLEFIELD_WIDTH, bfWidth);
-        wb.setFeature(Feature.BATTLEFIELD_HEIGHT, bfHeight);
 
         radar = new NarrowLockRadar(wb);
         gun = new GFGunStrategy(wb);
@@ -439,14 +443,23 @@ public final class Autopilot extends AdvancedRobot {
 
         // Aim-time geometry: the gun was aimed reacting to the previous tick's
         // world state (T-1), one tick before this fire tick (T). Attribute the
-        // aiming decision to that tick by snapshotting the previous-tick features.
-        wb.setFeature(Feature.OUR_AIM_X, wb.getPreviousTickFeature(Feature.OUR_X));
-        wb.setFeature(Feature.OUR_AIM_Y, wb.getPreviousTickFeature(Feature.OUR_Y));
-        wb.setFeature(Feature.OUR_AIM_OPPONENT_X, wb.getPreviousTickFeature(Feature.OPPONENT_X));
-        wb.setFeature(Feature.OUR_AIM_OPPONENT_Y, wb.getPreviousTickFeature(Feature.OPPONENT_Y));
-        wb.setFeature(Feature.OUR_AIM_DISTANCE, wb.getPreviousTickFeature(Feature.DISTANCE));
-        wb.setFeature(Feature.OUR_AIM_BEARING_ABSOLUTE,
-                wb.getPreviousTickFeature(Feature.OPPONENT_BEARING_ABSOLUTE));
+        // aiming decision to that tick. Our own position at T-1 is always known;
+        // the opponent position is the most recently scanned one at or before T-1
+        // (walk the ring back across any radar-lock gap so this is never NaN).
+        // Distance/bearing are derived from those positions so the god-view
+        // resolver — which derives the same way — produces matching values.
+        double aimFirerX = wb.getPreviousTickFeature(Feature.OUR_X);
+        double aimFirerY = wb.getPreviousTickFeature(Feature.OUR_Y);
+        double aimOppX = wb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_X, 1);
+        double aimOppY = wb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_Y, 1);
+        double aimDx = aimOppX - aimFirerX;
+        double aimDy = aimOppY - aimFirerY;
+        wb.setFeature(Feature.OUR_AIM_X, aimFirerX);
+        wb.setFeature(Feature.OUR_AIM_Y, aimFirerY);
+        wb.setFeature(Feature.OUR_AIM_OPPONENT_X, aimOppX);
+        wb.setFeature(Feature.OUR_AIM_OPPONENT_Y, aimOppY);
+        wb.setFeature(Feature.OUR_AIM_DISTANCE, Math.sqrt(aimDx * aimDx + aimDy * aimDy));
+        wb.setFeature(Feature.OUR_AIM_BEARING_ABSOLUTE, Math.atan2(aimDx, aimDy));
     }
 
 }

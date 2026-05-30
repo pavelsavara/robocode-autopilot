@@ -119,9 +119,12 @@ public final class TheirWaveTracker implements IInGameFeatures {
 
         // Aim-time geometry: the opponent aimed reacting to the world state one
         // tick before its fire tick (T-1 = D-2, two ticks before our detection).
-        // Attribute the aiming decision to that tick.
-        double aimOppX = wb.getFeatureNTicksAgo(Feature.OPPONENT_X, 2);
-        double aimOppY = wb.getFeatureNTicksAgo(Feature.OPPONENT_Y, 2);
+        // Attribute the aiming decision to that tick. The opponent (firer) was the
+        // most recently scanned one at or before the aim tick — walk the ring back
+        // across any radar-lock gap so this is never NaN. Our own position at the
+        // aim tick is always known.
+        double aimOppX = wb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_X, 2);
+        double aimOppY = wb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_Y, 2);
         double aimOurX = wb.getFeatureNTicksAgo(Feature.OUR_X, 2);
         double aimOurY = wb.getFeatureNTicksAgo(Feature.OUR_Y, 2);
         double aimDx = aimOurX - aimOppX;

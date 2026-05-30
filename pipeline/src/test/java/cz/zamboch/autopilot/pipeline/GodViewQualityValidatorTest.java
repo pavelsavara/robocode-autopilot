@@ -16,14 +16,11 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag("unit")
 class GodViewQualityValidatorTest {
 
-        private static final double BF_WIDTH = 800;
-        private static final double BF_HEIGHT = 600;
-
         private GodViewQualityValidator validator;
 
         @BeforeEach
         void setUp() {
-                validator = new GodViewQualityValidator(BF_WIDTH, BF_HEIGHT);
+                validator = new GodViewQualityValidator();
         }
 
         // ========== Layer 1: Spatial ==========
@@ -59,8 +56,6 @@ class GodViewQualityValidatorTest {
                                 oppVelocity * Math.sin(oppHeading - absBearing - Math.PI));
                 wb.setFeature(Feature.OPPONENT_ADVANCING_VELOCITY,
                                 oppVelocity * Math.cos(oppHeading - absBearing - Math.PI));
-                wb.setFeature(Feature.BATTLEFIELD_WIDTH, BF_WIDTH);
-                wb.setFeature(Feature.BATTLEFIELD_HEIGHT, BF_HEIGHT);
                 wb.setFeature(Feature.TICK, 42);
                 wb.setFeature(Feature.LAST_SCAN_TICK, 42);
                 wb.setFeature(Feature.TICKS_SINCE_SCAN, 0);
@@ -98,8 +93,6 @@ class GodViewQualityValidatorTest {
                 wb.setFeature(Feature.BEARING_RADIANS, 0);
                 wb.setFeature(Feature.OPPONENT_LATERAL_VELOCITY, 0);
                 wb.setFeature(Feature.OPPONENT_ADVANCING_VELOCITY, 0);
-                wb.setFeature(Feature.BATTLEFIELD_WIDTH, BF_WIDTH);
-                wb.setFeature(Feature.BATTLEFIELD_HEIGHT, BF_HEIGHT);
                 wb.setFeature(Feature.TICK, 10);
                 wb.setFeature(Feature.LAST_SCAN_TICK, 10);
                 wb.setFeature(Feature.TICKS_SINCE_SCAN, 0);
@@ -131,8 +124,6 @@ class GodViewQualityValidatorTest {
                 wb.setFeature(Feature.GUN_HEADING, 0);
                 wb.setFeature(Feature.RADAR_HEADING, 0);
                 wb.setFeature(Feature.GUN_HEAT, 0);
-                wb.setFeature(Feature.BATTLEFIELD_WIDTH, 800);
-                wb.setFeature(Feature.BATTLEFIELD_HEIGHT, 600);
 
                 IRobotSnapshot self = TestSnapshots.robot(100, 200, 0, "A");
                 IRobotSnapshot opp = TestSnapshots.robot(500, 400, 1, "B");
@@ -519,8 +510,6 @@ class GodViewQualityValidatorTest {
                 wb.setFeature(Feature.BEARING_RADIANS, 0);
                 wb.setFeature(Feature.OPPONENT_LATERAL_VELOCITY, 0);
                 wb.setFeature(Feature.OPPONENT_ADVANCING_VELOCITY, 0);
-                wb.setFeature(Feature.BATTLEFIELD_WIDTH, BF_WIDTH);
-                wb.setFeature(Feature.BATTLEFIELD_HEIGHT, BF_HEIGHT);
                 wb.setFeature(Feature.TICK, 1);
                 wb.setFeature(Feature.LAST_SCAN_TICK, 1);
                 wb.setFeature(Feature.TICKS_SINCE_SCAN, 0);
@@ -584,8 +573,6 @@ class GodViewQualityValidatorTest {
                 wb.setFeature(Feature.BEARING_RADIANS, 0);
                 wb.setFeature(Feature.OPPONENT_LATERAL_VELOCITY, 0);
                 wb.setFeature(Feature.OPPONENT_ADVANCING_VELOCITY, 0);
-                wb.setFeature(Feature.BATTLEFIELD_WIDTH, BF_WIDTH);
-                wb.setFeature(Feature.BATTLEFIELD_HEIGHT, BF_HEIGHT);
                 wb.setFeature(Feature.TICKS_SINCE_SCAN, 0);
 
                 IRobotSnapshot self = TestSnapshots.robot(100, 200, 0, 0, 100, 0, 0, 0, 0, RobotState.ACTIVE, "A");
@@ -625,8 +612,6 @@ class GodViewQualityValidatorTest {
                 wb.setFeature(Feature.BEARING_RADIANS, 0);
                 wb.setFeature(Feature.OPPONENT_LATERAL_VELOCITY, 0);
                 wb.setFeature(Feature.OPPONENT_ADVANCING_VELOCITY, 0);
-                wb.setFeature(Feature.BATTLEFIELD_WIDTH, BF_WIDTH);
-                wb.setFeature(Feature.BATTLEFIELD_HEIGHT, BF_HEIGHT);
                 wb.setFeature(Feature.TICKS_SINCE_SCAN, 0);
 
                 IRobotSnapshot self = TestSnapshots.robot(100, 200, 0, 0, 100, 0, 0, 0, 0, RobotState.ACTIVE, "A");

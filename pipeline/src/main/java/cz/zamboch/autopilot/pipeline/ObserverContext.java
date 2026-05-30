@@ -3,8 +3,13 @@ package cz.zamboch.autopilot.pipeline;
 import cz.zamboch.Autopilot;
 import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.ModelSelector;
+import cz.zamboch.autopilot.core.RoboMath;
 import cz.zamboch.autopilot.core.VcsStore;
 import cz.zamboch.autopilot.core.Whiteboard;
+import cz.zamboch.autopilot.core.features.IdentityFeatures;
+import cz.zamboch.autopilot.core.features.MovementFeatures;
+import cz.zamboch.autopilot.core.features.SpatialFeatures;
+import cz.zamboch.autopilot.core.features.TimingFeatures;
 import net.sf.robocode.security.HiddenAccess;
 import robocode.*;
 import robocode.control.snapshot.IRobotSnapshot;
@@ -52,8 +57,18 @@ public final class ObserverContext {
         VcsStore godVcs = new VcsStore();
         this.godWb.setVcsStore(godVcs);
         this.godWb.setModelSelector(new ModelSelector(godVcs));
-        this.godWb.setFeature(Feature.BATTLEFIELD_WIDTH, bfWidth);
-        this.godWb.setFeature(Feature.BATTLEFIELD_HEIGHT, bfHeight);
+        // Register the kinematic ground-truth feature subset on the god-view
+        // whiteboard so it independently reconstructs the per-tick TICKS features
+        // from the engine snapshot (see seedGodView). Deliberately excludes the
+        // wave/fire inference processors (FireFeatures, OurWaveFeatures,
+        // WaveTracker, TheirWaveTracker) — those are robot-side heuristics whose
+        // god-view counterpart is produced authoritatively by GodViewWaveResolver,
+        // and WallHitEstimator, whose accumulator output is robot-side-only.
+        this.godWb.registerFeatures(
+                new SpatialFeatures(),
+                new MovementFeatures(),
+                new TimingFeatures(),
+                new IdentityFeatures());
     }
 
     /**
@@ -109,6 +124,58 @@ public final class ObserverContext {
         // 6. Dispatch events + run strategy
         feedEvents(new TickEvents(allEvents));
         doTurn();
+    }
+
+    /**
+     * Independently reconstruct the god-view whiteboard's per-tick TICKS features
+     * directly from the engine snapshot (ground truth), then run the registered
+     * kinematic feature processors. This replaces the former {@code copyFrom}
+     * approach: the god-view no longer inherits the robot-side reconstruction
+     * (and its scan-gap staleness / NaN), but is built omnisciently from the
+     * engine's true robot states every tick.
+     * <p>
+     * The opponent's position is set EVERY tick (not just scan ticks), so
+     * {@code LAST_SCAN_TICK == TICK} always holds on the god-view and its
+     * opponent geometry is exact ground truth. Must be called after
+     * {@link #processTick(ITurnSnapshot)} and before god-view wave resolution.
+     */
+    public void seedGodView(ITurnSnapshot curr) {
+        if (dead) {
+            return;
+        }
+        IRobotSnapshot[] robots = curr.getRobots();
+        IRobotSnapshot me = robots[perspectiveIndex];
+        IRobotSnapshot opp = robots[1 - perspectiveIndex];
+        long tick = curr.getTurn();
+
+        // Self base inputs (ground truth, every tick). Setting TICK first rotates
+        // the god-view tick ring and clears the new slot.
+        godWb.setFeature(Feature.TICK, tick);
+        godWb.setFeature(Feature.OUR_X, me.getX());
+        godWb.setFeature(Feature.OUR_Y, me.getY());
+        godWb.setFeature(Feature.OUR_HEADING, me.getBodyHeading());
+        godWb.setFeature(Feature.OUR_VELOCITY, me.getVelocity());
+        godWb.setFeature(Feature.OUR_ENERGY, me.getEnergy());
+        godWb.setFeature(Feature.GUN_HEAT, me.getGunHeat());
+        godWb.setFeature(Feature.GUN_HEADING, me.getGunHeading());
+        godWb.setFeature(Feature.RADAR_HEADING, me.getRadarHeading());
+
+        // Omniscient opponent base inputs (ground truth, every tick). Geometry
+        // mirrors GodViewQualityValidator.validateSpatial exactly so SpatialFeatures
+        // reconstructs the opponent position to the engine truth.
+        double dx = opp.getX() - me.getX();
+        double dy = opp.getY() - me.getY();
+        double absBearing = Math.atan2(dx, dy);
+        godWb.setFeature(Feature.DISTANCE, Math.hypot(dx, dy));
+        godWb.setFeature(Feature.BEARING_RADIANS,
+                RoboMath.normalRelativeAngle(absBearing - me.getBodyHeading()));
+        godWb.setFeature(Feature.OPPONENT_HEADING, opp.getBodyHeading());
+        godWb.setFeature(Feature.OPPONENT_VELOCITY, opp.getVelocity());
+        godWb.setFeature(Feature.OPPONENT_ENERGY, opp.getEnergy());
+        godWb.setFeature(Feature.LAST_SCAN_TICK, tick);
+        godWb.setStringFeature(Feature.OPPONENT_ID, opp.getName());
+
+        godWb.process();
     }
 
     /**
@@ -182,8 +249,9 @@ public final class ObserverContext {
         // because carryForward saves NaN (first tick of new round hasn't set anything
         // yet).
         observer.getWhiteboard().clearFeatures();
-        observer.getWhiteboard().setFeature(Feature.BATTLEFIELD_WIDTH, bfWidth);
-        observer.getWhiteboard().setFeature(Feature.BATTLEFIELD_HEIGHT, bfHeight);
+        // Reset the god-view whiteboard too — seedGodView rebuilds its features
+        // from ground truth each tick, but the tick ring must start clean.
+        godWb.clearFeatures();
     }
 
     public int perspectiveIndex() {

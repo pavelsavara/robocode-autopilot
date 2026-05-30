@@ -35,13 +35,6 @@ final class AutopilotObserverTest {
     }
 
     @Test
-    void initSetsObserverBattlefieldDimensions() {
-        Whiteboard wb = autopilot.getWhiteboard();
-        assertEquals(800.0, wb.getFeature(Feature.BATTLEFIELD_WIDTH), 1e-9);
-        assertEquals(600.0, wb.getFeature(Feature.BATTLEFIELD_HEIGHT), 1e-9);
-    }
-
-    @Test
     void doTurnProcessesWithoutThrowingInObserverMode() {
         peer.executeTick();
         feedStatus(100, 400, 300, 0, 0, 0, 0, 0, 0);

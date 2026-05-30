@@ -40,9 +40,6 @@ public final class GodViewQualityValidator {
 
     private static final double EPSILON = 1e-4;
 
-    private final double bfWidth;
-    private final double bfHeight;
-
     // --- Layer 1: Spatial (per-feature stats) ---
     private final EnumMap<Feature, ValidationStats> spatialStats = new EnumMap<>(Feature.class);
 
@@ -93,9 +90,7 @@ public final class GodViewQualityValidator {
         return new Set[] { new HashSet<Integer>(), new HashSet<Integer>() };
     }
 
-    public GodViewQualityValidator(double bfWidth, double bfHeight) {
-        this.bfWidth = bfWidth;
-        this.bfHeight = bfHeight;
+    public GodViewQualityValidator() {
     }
 
     // ========== Inner Types ==========
@@ -340,10 +335,6 @@ public final class GodViewQualityValidator {
         checkSpatialFeature(wb, Feature.GUN_HEADING, self.getGunHeading());
         checkSpatialFeature(wb, Feature.RADAR_HEADING, self.getRadarHeading());
         checkSpatialFeature(wb, Feature.GUN_HEAT, self.getGunHeat());
-
-        // Static features
-        checkSpatialFeature(wb, Feature.BATTLEFIELD_WIDTH, bfWidth);
-        checkSpatialFeature(wb, Feature.BATTLEFIELD_HEIGHT, bfHeight);
 
         // Timing (always available)
         checkSpatialFeature(wb, Feature.TICK, turn.getTurn());

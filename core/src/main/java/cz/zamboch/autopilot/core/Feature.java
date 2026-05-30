@@ -17,8 +17,6 @@ public enum Feature {
     GUN_HEADING(FileType.TICKS),
     RADAR_HEADING(FileType.TICKS),
     TICK(FileType.TICKS),
-    BATTLEFIELD_WIDTH(FileType.TICKS),
-    BATTLEFIELD_HEIGHT(FileType.TICKS),
 
     // --- Input: scan (set by onScannedRobot / pipeline) ---
     DISTANCE(FileType.TICKS),
@@ -29,11 +27,13 @@ public enum Feature {
     LAST_SCAN_TICK(FileType.TICKS),
 
     // --- Input: bullet & ram events (accumulated between scans) ---
-    OUR_BULLET_DAMAGE_TO_OPPONENT(FileType.TICKS),
-    OPPONENT_BULLET_ENERGY_GAIN(FileType.TICKS),
-    RAM_DAMAGE_TO_OPPONENT(FileType.TICKS),
-    OPPONENT_RAM_ENERGY_GAIN(FileType.TICKS),
-    OPPONENT_WALL_HIT_DAMAGE(FileType.TICKS),
+    // FileType.NONE: inter-tick accumulators consumed by FireFeatures; not dataset
+    // features, so they are kept in the whiteboard but never written to CSV.
+    OUR_BULLET_DAMAGE_TO_OPPONENT(FileType.NONE),
+    OPPONENT_BULLET_ENERGY_GAIN(FileType.NONE),
+    RAM_DAMAGE_TO_OPPONENT(FileType.NONE),
+    OPPONENT_RAM_ENERGY_GAIN(FileType.NONE),
+    OPPONENT_WALL_HIT_DAMAGE(FileType.NONE),
 
     // --- Computed: spatial ---
     OPPONENT_BEARING_ABSOLUTE(FileType.TICKS),
@@ -45,9 +45,11 @@ public enum Feature {
     OPPONENT_ADVANCING_VELOCITY(FileType.TICKS),
 
     // --- Computed: gun aim (from GF strategy) ---
-    GUN_AIM_POWER(FileType.TICKS),
-    GUN_AIM_ANGLE(FileType.TICKS),
-    GUN_AIM_GF(FileType.TICKS),
+    // FileType.NONE: robot-side gun decision, not engine ground truth, so excluded
+    // from the dataset (the god-view cannot reproduce it without a gun strategy).
+    GUN_AIM_POWER(FileType.NONE),
+    GUN_AIM_ANGLE(FileType.NONE),
+    GUN_AIM_GF(FileType.NONE),
 
     // --- Computed: timing ---
     TICKS_SINCE_SCAN(FileType.TICKS),
@@ -77,7 +79,8 @@ public enum Feature {
     THEIR_BREAK_GF(FileType.THEIR_WAVES),
     THEIR_BREAK_BEARING_OFFSET(FileType.THEIR_WAVES),
     THEIR_HIT_US(FileType.THEIR_WAVES),
-    PREV_SCAN_OPPONENT_ENERGY(FileType.TICKS),
+    // FileType.NONE: inter-tick state for fire detection; not a dataset feature.
+    PREV_SCAN_OPPONENT_ENERGY(FileType.NONE),
 
     // --- Computed: identity ---
     OPPONENT_ID(FileType.TICKS),

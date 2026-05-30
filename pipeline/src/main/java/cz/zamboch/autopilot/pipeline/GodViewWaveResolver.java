@@ -217,15 +217,18 @@ final class GodViewWaveResolver {
         double advVel = oppVel * Math.cos(oppHeading - absoluteBearing);
 
         // Aim-time positions: two ticks back from the detection tick D (= one tick
-        // before the fire tick D-1). The god-view tick ring holds true positions at
-        // D, D-1, D-2 (seeded from the robot-side ring in Phase 1.5). Captured here
-        // and stored on the TrackedWave so both OUR_AIM_* (firer's wb) and
-        // THEIR_AIM_* (target's wb, written at break) read consistent values.
+        // before the fire tick D-1). The god-view tick ring is seeded from the
+        // robot-side ring in Phase 1.5. The firer's own position at the aim tick is
+        // always known; the target (opponent) position is the most recently scanned
+        // one at or before the aim tick — walk the ring back across any radar-lock
+        // gap so it is never NaN, matching the live robot's last-known lookup.
+        // Captured here and stored on the TrackedWave so both OUR_AIM_* (firer's wb)
+        // and THEIR_AIM_* (target's wb, written at break) read consistent values.
         Whiteboard firerWb = ctx.godWb();
         double aimFirerX = firerWb.getFeatureNTicksAgo(Feature.OUR_X, 2);
         double aimFirerY = firerWb.getFeatureNTicksAgo(Feature.OUR_Y, 2);
-        double aimTargetX = firerWb.getFeatureNTicksAgo(Feature.OPPONENT_X, 2);
-        double aimTargetY = firerWb.getFeatureNTicksAgo(Feature.OPPONENT_Y, 2);
+        double aimTargetX = firerWb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_X, 2);
+        double aimTargetY = firerWb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_Y, 2);
 
         PerPerspective pp = persp[ctx.perspectiveIndex()];
         pp.activeWaves.add(new TrackedWave(wave, bullet.getBulletId(),
@@ -259,7 +262,8 @@ final class GodViewWaveResolver {
         // bullet is detected at the current tick D, fired at D-1, so the gun was
         // aimed reacting to the world state at D-2 — two ticks back in the god-view
         // tick ring (which is seeded from the robot-side ring each tick and holds
-        // true positions at D, D-1, D-2). Captured at createWave (detection tick),
+        // seeded from the robot-side ring each tick). Captured at createWave (detection
+        // tick),
         // stored on the TrackedWave, because setFireFeatures is also re-invoked at
         // break time when the ring no longer holds the fire tick.
         double aimDx = tw.aimTargetX - tw.aimFirerX;

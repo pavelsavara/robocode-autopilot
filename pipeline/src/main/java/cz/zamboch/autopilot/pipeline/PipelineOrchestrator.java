@@ -162,10 +162,13 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
             ctx.processTick(curr);
         }
 
-        // Phase 1.5: Seed each god-view whiteboard from the freshly-computed
-        // robot-side whiteboard (tick/wave/score/string state — NOT the model).
+        // Phase 1.5: Independently rebuild each god-view whiteboard from the engine
+        // snapshot (ground truth). The god-view is omniscient — it knows the true
+        // opponent position every tick, not just on scan ticks — so its kinematic
+        // TICKS features are exact rather than the robot-side belief (which is stale
+        // or NaN between scans). See ObserverContext.seedGodView.
         for (ObserverContext ctx : observers) {
-            ctx.godWb().copyFrom(ctx.wb());
+            ctx.seedGodView(curr);
         }
 
         // Phase 2: Capture robot-side wave values (god-view writes a separate wb now)
@@ -361,7 +364,8 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
      * Reset both observers for a new round.
      *
      * @param round zero-based round number (threaded to observers so their
-     *              bullet-id sequence matches the live engine's per-round numbering)
+     *              bullet-id sequence matches the live engine's per-round
+     *              numbering)
      */
     public void resetRound(int round) {
         for (ObserverContext ctx : observers) {

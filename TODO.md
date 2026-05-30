@@ -1,0 +1,17 @@
+- https://robowiki.net/wiki/User:Nat/Free_code#Movement_Predictor
+- https://robowiki.net/wiki/Maximum_Escape_Angle/Precise
+- Layer 0 for top 50 - once
+- Layer 1-4 for BeepBoop vs BeepBoop
+- Layer 1-4 for recordings
+- Gun - during aiming: consider MEA/center vs bot width, bullet width, wave intersection thickness.
+- Consider left/right MEA
+- Consider max reachable envelope or derived probability bins for sub-arcs
+- Handle scan gaps and skipped turns systematically
+- "Formation", a timed sequence of moves/bullets/energy/location
+   - Recognize opportunity to start "Formation"
+   - Recognize "abort" signal -> switch back to default surfing
+   - Exploit bounding box 45 degree MEA
+   - Exploit walls and corners MEA
+   - Exploit dive/escape sequences
+   - Use AI to pre-calculate for which of them makes sense to train ML
+   - Use DNN/q-learning to find more

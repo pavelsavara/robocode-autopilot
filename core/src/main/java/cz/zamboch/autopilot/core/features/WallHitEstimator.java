@@ -33,12 +33,19 @@ public final class WallHitEstimator implements IInGameFeatures {
     private static final Feature[] DEPS = {
             Feature.TICK, Feature.LAST_SCAN_TICK, Feature.TICKS_SINCE_SCAN,
             Feature.OPPONENT_X, Feature.OPPONENT_Y,
-            Feature.OPPONENT_VELOCITY, Feature.OPPONENT_HEADING,
-            Feature.BATTLEFIELD_WIDTH, Feature.BATTLEFIELD_HEIGHT
+            Feature.OPPONENT_VELOCITY, Feature.OPPONENT_HEADING
     };
     private static final Feature[] OUTPUTS = {
             Feature.OPPONENT_WALL_HIT_DAMAGE
     };
+
+    private final double bfWidth;
+    private final double bfHeight;
+
+    public WallHitEstimator(double bfWidth, double bfHeight) {
+        this.bfWidth = bfWidth;
+        this.bfHeight = bfHeight;
+    }
 
     public Feature[] getDependencies() {
         return DEPS;
@@ -69,11 +76,8 @@ public final class WallHitEstimator implements IInGameFeatures {
 
         double opX = wb.getFeature(Feature.OPPONENT_X);
         double opY = wb.getFeature(Feature.OPPONENT_Y);
-        double bfWidth = wb.getFeature(Feature.BATTLEFIELD_WIDTH);
-        double bfHeight = wb.getFeature(Feature.BATTLEFIELD_HEIGHT);
 
-        if (Double.isNaN(opX) || Double.isNaN(opY) ||
-                Double.isNaN(bfWidth) || Double.isNaN(bfHeight)) {
+        if (Double.isNaN(opX) || Double.isNaN(opY)) {
             return;
         }
 

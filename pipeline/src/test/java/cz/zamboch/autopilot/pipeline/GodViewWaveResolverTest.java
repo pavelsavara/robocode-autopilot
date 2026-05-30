@@ -41,9 +41,9 @@ final class GodViewWaveResolverTest {
      * god-view wave resolver runs. Without this the god-view TICK stays unset and
      * waves never advance.
      */
-    private void syncGodView() {
+    private void syncGodView(ITurnSnapshot curr) {
         for (ObserverContext ctx : observers) {
-            ctx.godWb().copyFrom(ctx.wb());
+            ctx.seedGodView(curr);
         }
     }
 
@@ -95,7 +95,7 @@ final class GodViewWaveResolverTest {
         for (ObserverContext ctx : observers) {
             ctx.processTick(tick1);
         }
-        syncGodView();
+        syncGodView(tick1);
         resolver.processTick(observers, tick1.getRobots(), tick1);
 
         // Fast-forward ticks until wave resolves
@@ -107,7 +107,7 @@ final class GodViewWaveResolverTest {
             for (ObserverContext ctx : observers) {
                 ctx.processTick(tickN);
             }
-            syncGodView();
+            syncGodView(tickN);
             boolean[] result = resolver.processTick(observers, tickN.getRobots(), tickN);
             if (result[0]) {
                 resolved = true;
@@ -138,7 +138,7 @@ final class GodViewWaveResolverTest {
         for (ObserverContext ctx : observers) {
             ctx.processTick(tick1);
         }
-        syncGodView();
+        syncGodView(tick1);
         resolver.processTick(observers, tick1.getRobots(), tick1);
 
         // Advance until resolution. Mark bullet as HIT_VICTIM BEFORE resolution
@@ -153,7 +153,7 @@ final class GodViewWaveResolverTest {
             for (ObserverContext ctx : observers) {
                 ctx.processTick(tickN);
             }
-            syncGodView();
+            syncGodView(tickN);
             boolean[] result = resolver.processTick(observers, tickN.getRobots(), tickN);
             if (result[0]) {
                 resolved = true;
@@ -214,7 +214,7 @@ final class GodViewWaveResolverTest {
         for (ObserverContext ctx : observers) {
             ctx.processTick(tick1);
         }
-        syncGodView();
+        syncGodView(tick1);
         resolver.processTick(observers, tick1.getRobots(), tick1);
 
         // Advance until wave resolves
@@ -224,7 +224,7 @@ final class GodViewWaveResolverTest {
             for (ObserverContext ctx : observers) {
                 ctx.processTick(tickN);
             }
-            syncGodView();
+            syncGodView(tickN);
             boolean[] result = resolver.processTick(observers, tickN.getRobots(), tickN);
             if (result[0]) {
                 // Check peer's (robot 1) god-view whiteboard has THEIR_* features
@@ -281,7 +281,7 @@ final class GodViewWaveResolverTest {
             for (ObserverContext ctx : observers) {
                 ctx.processTick(tick.snapshot());
             }
-            syncGodView();
+            syncGodView(tick.snapshot());
             resolver.processTick(observers, tick.snapshot().getRobots(), tick.snapshot());
             if (resolver.firedThisTick(my)) {
                 godFiresMy++;

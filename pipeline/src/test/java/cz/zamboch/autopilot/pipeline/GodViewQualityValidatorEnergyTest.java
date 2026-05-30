@@ -30,7 +30,7 @@ class GodViewQualityValidatorEnergyTest {
     private static final double FIELD = 800.0;
 
     private GodViewQualityValidator newValidator() {
-        return new GodViewQualityValidator(FIELD, FIELD);
+        return new GodViewQualityValidator();
     }
 
     /** Build the two-robot array (perspective 0 = self, 1 = opponent). */

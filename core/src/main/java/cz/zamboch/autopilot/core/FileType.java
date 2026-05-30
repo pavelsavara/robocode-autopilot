@@ -15,5 +15,13 @@ public enum FileType {
      */
     OUR_WAVES,
     /** One row per round (outcomes + per-battle constants). */
-    SCORES
+    SCORES,
+    /**
+     * Whiteboard-internal state only; never written to any CSV. Used for
+     * robot-side decision outputs (gun aim) and inter-tick accumulators that are
+     * inputs to other features but are not themselves part of the dataset.
+     * Backed by the tick ring (carries the same per-tick / N-ticks-ago
+     * semantics as {@link #TICKS}).
+     */
+    NONE
 }

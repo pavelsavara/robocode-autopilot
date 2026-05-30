@@ -65,9 +65,9 @@ perspective where the live `Autopilot` actually fought.
   that error.
 - **Reported as:** per-feature mismatch count + MAE. Pass target: **0 mismatches**.
 
-**Features covered (22):** `OUR_X`, `OUR_Y`, `OUR_HEADING`, `OUR_VELOCITY`,
-`OUR_ENERGY`, `GUN_HEADING`, `RADAR_HEADING`, `GUN_HEAT`, `BATTLEFIELD_WIDTH`,
-`BATTLEFIELD_HEIGHT`, `TICK`, `OPPONENT_X`, `OPPONENT_Y`, `OPPONENT_HEADING`,
+**Features covered (20):** `OUR_X`, `OUR_Y`, `OUR_HEADING`, `OUR_VELOCITY`,
+`OUR_ENERGY`, `GUN_HEADING`, `RADAR_HEADING`, `GUN_HEAT`,
+`TICK`, `OPPONENT_X`, `OPPONENT_Y`, `OPPONENT_HEADING`,
 `OPPONENT_VELOCITY`, `OPPONENT_ENERGY`, `DISTANCE`, `BEARING_RADIANS`,
 `OPPONENT_LATERAL_VELOCITY`, `OPPONENT_ADVANCING_VELOCITY`, `LAST_SCAN_TICK`,
 `TICKS_SINCE_SCAN`.

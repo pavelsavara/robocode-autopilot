@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Exercises the depth-3 tick ring used to attribute aiming decisions to the
  * correct historical tick (AIM = one tick before fire = two ticks before an
- * energy-drop detection).
+ * energy-drop detection), including the last-known walk across radar-lock gaps.
  */
 final class WhiteboardTickRingTest {
 
@@ -70,6 +70,28 @@ final class WhiteboardTickRingTest {
                 () -> wb.getFeatureNTicksAgo(Feature.OUR_X, 3));
         assertThrows(IllegalArgumentException.class,
                 () -> wb.getFeatureNTicksAgo(Feature.OUR_X, -1));
+    }
+
+    @Test
+    void lastKnownWalksBackAcrossNaNGaps() {
+        // Opponent scanned at tick 2, then a one-tick radar-lock gap, then current.
+        wb.setFeature(Feature.TICK, 2);
+        wb.setFeature(Feature.OPPONENT_X, 100);
+        wb.setFeature(Feature.TICK, 3); // no scan: OPPONENT_X stays NaN this tick
+        wb.setFeature(Feature.TICK, 4);
+        wb.setFeature(Feature.OPPONENT_X, 140);
+
+        // From one tick ago (tick 3, NaN) walk back to the last known value (tick 2).
+        assertEquals(100, wb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_X, 1), 1e-9);
+        // From the current tick the value is the fresh one.
+        assertEquals(140, wb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_X, 0), 1e-9);
+    }
+
+    @Test
+    void lastKnownReturnsNaNWhenNoValueInRange() {
+        wb.setFeature(Feature.TICK, 1);
+        wb.setFeature(Feature.TICK, 2);
+        assertTrue(Double.isNaN(wb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_X, 0)));
     }
 
     @Test
