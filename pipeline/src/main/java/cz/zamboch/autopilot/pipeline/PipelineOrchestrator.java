@@ -2,6 +2,7 @@ package cz.zamboch.autopilot.pipeline;
 
 import cz.zamboch.autopilot.core.Feature;
 import robocode.control.events.BattleAdaptor;
+import robocode.control.events.RoundStartedEvent;
 import robocode.control.events.TurnEndedEvent;
 import robocode.control.snapshot.IRobotSnapshot;
 import robocode.control.snapshot.ITurnSnapshot;
@@ -77,6 +78,32 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
     public void setObserverDataDir(File dataDir) {
         for (ObserverContext ctx : observers) {
             ctx.setDataDir(dataDir);
+        }
+    }
+
+    /**
+     * Live-mode hook: fired before each round's first turn. Resets per-round state
+     * and seeds the event reconstructors from the spawn snapshot so the observer
+     * can reconstruct the round's opening scan on turn 1 (the engine sweeps the
+     * radar from the spawn heading on turn 1; without it the observer misses that
+     * first scan). Sets {@code currentRound} so {@link #processTurn} does not reset
+     * again and wipe the seed.
+     */
+    @Override
+    public void onRoundStarted(RoundStartedEvent event) {
+        int round = event.getRound();
+        if (round != currentRound) {
+            if (currentRound >= 0) {
+                writeRoundScores(currentRound);
+            }
+            resetRound(round);
+            currentRound = round;
+        }
+        ITurnSnapshot start = event.getStartSnapshot();
+        if (start != null) {
+            for (ObserverContext ctx : observers) {
+                ctx.seedRoundStart(start);
+            }
         }
     }
 

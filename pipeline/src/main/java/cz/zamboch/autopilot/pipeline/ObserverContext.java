@@ -185,6 +185,15 @@ public final class ObserverContext {
     }
 
     /**
+     * Seed the event reconstructor from the round-start (spawn) snapshot so the
+     * observer can reconstruct the round's opening scan on turn 1. Must be called
+     * after {@link #resetRound(int)} and before the first {@link #processTick}.
+     */
+    public void seedRoundStart(ITurnSnapshot startSnapshot) {
+        reconstructor.seedRoundStart(startSnapshot, perspectiveIndex);
+    }
+
+    /**
      * Point the observer at a read-only data directory so its Autopilot loads the
      * same persisted VCS model the live robot loads (keyed by OPPONENT_ID_HASH,
      * once per battle, into its own VcsStore). The observer never writes here.

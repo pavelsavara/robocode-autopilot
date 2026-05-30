@@ -54,6 +54,31 @@ public final class EventReconstructor {
     }
 
     /**
+     * Seed inter-tick state from the round-start (spawn) snapshot.
+     * <p>
+     * Robocode places robots at the round start with {@code radar == gun == body}
+     * and zero velocity, then runs turn 1. The engine's first scan on turn 1
+     * sweeps the radar from this spawn heading to its post-turn-1 heading. Without
+     * the spawn heading, {@link #detectScan} cannot reconstruct that first sweep
+     * (it sees {@code prevRadarHeading == NaN} and skips), so the observer misses
+     * the round's opening scan. Feeding the start snapshot here primes
+     * {@code prevRadarHeading} (and the other {@code prev*} fields) so turn 1 is
+     * reconstructed exactly like the engine.
+     */
+    public void seedRoundStart(ITurnSnapshot startSnapshot, int myIndex) {
+        IRobotSnapshot[] robots = startSnapshot.getRobots();
+        IRobotSnapshot me = robots[myIndex];
+        IRobotSnapshot opponent = robots[1 - myIndex];
+        prevRadarHeading = me.getRadarHeading();
+        prevVelocity = me.getVelocity();
+        prevHeading = me.getBodyHeading();
+        prevX = me.getX();
+        prevY = me.getY();
+        prevState = me.getState();
+        prevOpponentState = opponent.getState();
+    }
+
+    /**
      * Reconstruct events for the robot at {@code myIndex} from the given turn
      * snapshot.
      * <p>
