@@ -80,6 +80,17 @@ final class GodViewWaveResolver {
     }
 
     /**
+     * True muzzle heading (radians) of the most recent fire detected for the given
+     * perspective. This is the engine bullet's actual flight direction — the one
+     * piece of fire-time information the blindfolded robot cannot infer from an
+     * energy drop (it must assume a head-on bearing instead).
+     */
+    double getLastFiredTrueHeading(int perspIndex) {
+        TrackedWave tw = persp[perspIndex].lastFiredWave;
+        return tw != null ? tw.trueHeading : Double.NaN;
+    }
+
+    /**
      * Main per-tick call. Detects new bullets (fire), resolves existing waves,
      * and sets features on whiteboards.
      *
@@ -154,13 +165,24 @@ final class GodViewWaveResolver {
     }
 
     private void createWave(ObserverContext ctx, IBulletSnapshot bullet, IRobotSnapshot[] robots) {
-        IRobotSnapshot self = robots[ctx.perspectiveIndex()];
         IRobotSnapshot opponent = robots[ctx.peerContext().perspectiveIndex()];
 
-        double fireX = self.getX();
-        double fireY = self.getY();
         double power = bullet.getPower();
         double bulletSpeed = GuessFactor.bulletSpeed(power);
+
+        // Back-project the bullet to its muzzle (the true fire origin).
+        // A bullet is created at the robot's body position on the tick the fire
+        // command is loaded, then advanced exactly one step (v = 20 - 3*power along
+        // its heading) before it first appears in any snapshot. By that tick the
+        // robot body has already moved a full tick away from where it fired, so
+        // reading self.getX()/getY() here would report the post-fire body position
+        // — overstating the origin by up to one tick of robot movement (the
+        // residual Layer 2 positionMAE). Subtracting the single bullet step from the
+        // bullet's own coordinates recovers the exact muzzle, matching the
+        // robot-side OUR_FIRE_X/Y (which is captured at the fire tick).
+        double bulletHeading = bullet.getHeading();
+        double fireX = bullet.getX() - bulletSpeed * Math.sin(bulletHeading);
+        double fireY = bullet.getY() - bulletSpeed * Math.cos(bulletHeading);
 
         // Absolute bearing from us to opponent at fire time
         double dx = opponent.getX() - fireX;
@@ -177,7 +199,17 @@ final class GodViewWaveResolver {
         int distSeg = GuessFactor.distanceSegment(distance);
         int latVelSeg = GuessFactor.lateralVelocitySegment(latVel);
 
-        long fireTick = (long) ctx.godWb().getFeature(Feature.TICK);
+        // True fire tick. The bullet first appears in a snapshot one tick AFTER the
+        // fire command ran: it is created at loadCommands of the detection tick from
+        // the body position at the end of the previous tick (the muzzle we
+        // back-projected above), then advanced one step before this snapshot. So the
+        // tick the robot actually fired — and the tick the back-projected muzzle
+        // belongs to — is the detection tick minus one. Using the detection tick
+        // would (a) overstate the fire tick by one relative to the robot-side
+        // OUR_FIRE_TICK (captured at the true fire tick) and (b) undercount
+        // distanceTravelled by one bullet step in resolveWaves, resolving every wave
+        // one tick late.
+        long fireTick = (long) ctx.godWb().getFeature(Feature.TICK) - 1L;
 
         Wave wave = new Wave(fireX, fireY, fireTick, absoluteBearing,
                 bulletSpeed, direction, distSeg, latVelSeg);
@@ -187,7 +219,7 @@ final class GodViewWaveResolver {
         PerPerspective pp = persp[ctx.perspectiveIndex()];
         pp.activeWaves.add(new TrackedWave(wave, bullet.getBulletId(),
                 distance, latVel, advVel, power,
-                opponent.getX(), opponent.getY()));
+                opponent.getX(), opponent.getY(), bulletHeading));
         pp.lastFiredWave = pp.activeWaves.get(pp.activeWaves.size() - 1);
         pp.pendingFire = true;
         firedThisTick[ctx.perspectiveIndex()] = true;
@@ -199,6 +231,7 @@ final class GodViewWaveResolver {
         wb.setFeature(Feature.OUR_FIRE_X, w.fireX);
         wb.setFeature(Feature.OUR_FIRE_Y, w.fireY);
         wb.setFeature(Feature.OUR_FIRE_TICK, w.fireTick);
+        wb.setFeature(Feature.OUR_FIRE_BULLET_ID, tw.bulletId);
         wb.setFeature(Feature.OUR_FIRE_BEARING_ABSOLUTE, w.fireBearing);
         wb.setFeature(Feature.OUR_FIRE_DISTANCE, tw.fireDistance);
         wb.setFeature(Feature.OUR_FIRE_LATERAL_VELOCITY, tw.fireLateralVelocity);
@@ -326,9 +359,11 @@ final class GodViewWaveResolver {
         final double power;
         final double fireOpponentX;
         final double fireOpponentY;
+        /** True muzzle heading (radians) from the engine bullet snapshot. */
+        final double trueHeading;
 
         TrackedWave(Wave wave, int bulletId, double distance, double latVel,
-                double advVel, double power, double oppX, double oppY) {
+                double advVel, double power, double oppX, double oppY, double trueHeading) {
             this.wave = wave;
             this.bulletId = bulletId;
             this.fireDistance = distance;
@@ -337,6 +372,7 @@ final class GodViewWaveResolver {
             this.power = power;
             this.fireOpponentX = oppX;
             this.fireOpponentY = oppY;
+            this.trueHeading = trueHeading;
         }
     }
 }

@@ -79,6 +79,46 @@ final class WaveTrackerTest {
         assertTrue(Double.isNaN(wb.getFeature(Feature.OUR_FIRE_POWER)));
     }
 
+    /**
+     * The wave origin must be the staged fire-time position (captured by the robot
+     * at the true fire tick), not the robot's current position at the tick the wave
+     * slot is allocated. Here the current body position differs from the staged fire
+     * position, so this test falsifies any regression that reads OUR_X/OUR_Y instead
+     * of the OUR_FIRE_X/OUR_FIRE_Y staging.
+     */
+    @Test
+    void waveOriginUsesStagedFirePositionNotCurrentPosition() {
+        wb.setFeature(Feature.TICK, 12);
+        // Current body position (post-move) deliberately differs from fire-time.
+        wb.setFeature(Feature.OUR_X, 350);
+        wb.setFeature(Feature.OUR_Y, 260);
+        wb.setFeature(Feature.OUR_HEADING, 0);
+        wb.setFeature(Feature.BEARING_RADIANS, 0);
+        wb.setFeature(Feature.DISTANCE, 200);
+        wb.setFeature(Feature.OPPONENT_HEADING, 0);
+        wb.setFeature(Feature.OPPONENT_VELOCITY, 0);
+        wb.setFeature(Feature.OPPONENT_ENERGY, 100);
+        wb.setFeature(Feature.LAST_SCAN_TICK, 12);
+
+        // Fire staging captured at the true fire tick (10) and muzzle (400, 300).
+        wb.setFeature(Feature.OUR_FIRE_POWER, 2.0);
+        wb.setFeature(Feature.OUR_FIRE_X, 400);
+        wb.setFeature(Feature.OUR_FIRE_Y, 300);
+        wb.setFeature(Feature.OUR_FIRE_TICK, 10);
+        wb.setFeature(Feature.OUR_FIRE_BEARING_ABSOLUTE, 0);
+        wb.setFeature(Feature.OUR_FIRE_DISTANCE, 200);
+        wb.setFeature(Feature.OUR_FIRE_LATERAL_VELOCITY, 0);
+        wb.setFeature(Feature.OUR_FIRE_AIM_GF, 0.0);
+        wb.setFeature(Feature.OUR_FIRE_IS_REAL, 1.0);
+
+        wb.process();
+
+        // Origin and tick come from the staging, not the current (350, 260) / tick 12.
+        assertEquals(400, wb.getOurWave(0, OurWaveColumn.FIRE_X), 1e-9);
+        assertEquals(300, wb.getOurWave(0, OurWaveColumn.FIRE_Y), 1e-9);
+        assertEquals(10, (long) wb.getOurWave(0, OurWaveColumn.FIRE_TICK));
+    }
+
     @Test
     void resolvesWaveWhenItReachesOpponent() {
         // Manually inject a wave into ring buffer

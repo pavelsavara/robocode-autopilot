@@ -73,11 +73,20 @@ public final class TheirWaveTracker implements IInGameFeatures {
             return;
         }
 
-        double oppX = wb.getFeature(Feature.OPPONENT_X);
-        double oppY = wb.getFeature(Feature.OPPONENT_Y);
-        double ourX = wb.getFeature(Feature.OUR_X);
-        double ourY = wb.getFeature(Feature.OUR_Y);
-        double tick = wb.getFeature(Feature.TICK);
+        // FireFeatures detects the opponent's fire from a scan-to-scan energy
+        // drop observed at the CURRENT tick D. By Robocode timing, the opponent's
+        // fire code ran at tick D-1: the bullet is created (and energy deducted)
+        // at loadCommands of tick D from the opponent's position at the end of
+        // D-1, then advances one step before D's status is published. So the true
+        // muzzle is the opponent's position at tick D-1, and the true fire tick is
+        // D-1. Using the current-tick position would mis-place the wave origin by
+        // one tick of opponent movement (~6-8 px). Validated against god-view
+        // ground truth (back-projected IBulletSnapshot muzzle) to an exact match.
+        double oppX = wb.getPreviousTickFeature(Feature.OPPONENT_X);
+        double oppY = wb.getPreviousTickFeature(Feature.OPPONENT_Y);
+        double ourX = wb.getPreviousTickFeature(Feature.OUR_X);
+        double ourY = wb.getPreviousTickFeature(Feature.OUR_Y);
+        double tick = wb.getFeature(Feature.TICK) - 1.0;
 
         if (Double.isNaN(oppX) || Double.isNaN(ourX) || Double.isNaN(tick)) {
             return;

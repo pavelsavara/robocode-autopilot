@@ -65,7 +65,10 @@ final class TheirWaveTrackerTest {
         assertEquals(1, wb.getActiveTheirWaveCount());
         assertEquals(Whiteboard.WAVE_ACTIVE, wb.getTheirWaveState(0));
         assertEquals(2.0, wb.getTheirWave(0, TheirWaveColumn.FIRE_POWER), 1e-9);
-        assertEquals(6, (long) wb.getTheirWave(0, TheirWaveColumn.FIRE_TICK));
+        // Fire detected at tick 6, but the opponent's fire code ran at tick 5
+        // (bullet/energy applied one tick later), so the wave is attributed to
+        // tick 5 and the opponent's tick-5 position.
+        assertEquals(5, (long) wb.getTheirWave(0, TheirWaveColumn.FIRE_TICK));
         assertEquals(200, wb.getTheirWave(0, TheirWaveColumn.FIRE_X), 1e-9);
         assertEquals(400, wb.getTheirWave(0, TheirWaveColumn.FIRE_Y), 1e-9);
         assertEquals(14.0, wb.getTheirWave(0, TheirWaveColumn.BULLET_SPEED), 1e-9);
@@ -73,6 +76,51 @@ final class TheirWaveTrackerTest {
 
         // THEIR_FIRE_POWER should be cleared after consumption
         assertTrue(Double.isNaN(wb.getFeature(Feature.THEIR_FIRE_POWER)));
+    }
+
+    /**
+     * The energy drop that reveals an enemy shot is observed one tick AFTER the
+     * shot was actually fired. The muzzle is therefore the opponent's body position
+     * at the END of the previous tick — not the position at detection time. With a
+     * MOVING opponent (and a moving us) the two differ, so this test falsifies any
+     * regression that records the detection-tick position instead of the
+     * previous-tick (true fire) position.
+     */
+    @Test
+    void attributesFireToPreviousTickPositionWhenMoving() {
+        // Tick 5: scan, opponent at (200, 400) at full energy, we at (200, 200).
+        setBasicState(5, 200, 200, 200, 400);
+        wb.setFeature(Feature.DISTANCE, 200);
+        wb.setFeature(Feature.BEARING_RADIANS, 0);
+        wb.setFeature(Feature.OPPONENT_HEADING, 0);
+        wb.setFeature(Feature.OPPONENT_VELOCITY, 0);
+        wb.process();
+
+        // Tick 6: opponent drops 2.0 energy (fire detected) but has MOVED to
+        // (250, 410), and we have moved to (160, 230). The true muzzle is the
+        // tick-5 opponent position (200, 400), and the true fire tick is 5.
+        wb.setFeature(Feature.TICK, 6);
+        wb.setFeature(Feature.OPPONENT_ENERGY, 98);
+        wb.setFeature(Feature.LAST_SCAN_TICK, 6);
+        wb.setFeature(Feature.DISTANCE, 200);
+        wb.setFeature(Feature.BEARING_RADIANS, 0);
+        wb.setFeature(Feature.OPPONENT_HEADING, 0);
+        wb.setFeature(Feature.OPPONENT_VELOCITY, 0);
+        wb.setFeature(Feature.OUR_X, 160);
+        wb.setFeature(Feature.OUR_Y, 230);
+        wb.setFeature(Feature.OPPONENT_X, 250);
+        wb.setFeature(Feature.OPPONENT_Y, 410);
+        wb.process();
+
+        assertEquals(1, wb.getActiveTheirWaveCount());
+        // Attributed to the true fire tick (5), not the detection tick (6).
+        assertEquals(5, (long) wb.getTheirWave(0, TheirWaveColumn.FIRE_TICK));
+        // Muzzle = opponent position at END of tick 5, not the tick-6 position.
+        assertEquals(200, wb.getTheirWave(0, TheirWaveColumn.FIRE_X), 1e-9);
+        assertEquals(400, wb.getTheirWave(0, TheirWaveColumn.FIRE_Y), 1e-9);
+        // Our reference position is also the tick-5 value, not the tick-6 value.
+        assertEquals(200, wb.getTheirWave(0, TheirWaveColumn.FIRE_OUR_X), 1e-9);
+        assertEquals(200, wb.getTheirWave(0, TheirWaveColumn.FIRE_OUR_Y), 1e-9);
     }
 
     @Test

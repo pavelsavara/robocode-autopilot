@@ -75,19 +75,55 @@ perspective where the live `Autopilot` actually fought.
 ### Layer 2 — Fire Detection Fidelity
 
 - **What vs what:** the fire events the engine actually produced (god-view, from
-  `IBulletSnapshot` FIRED state) vs the fire events the robot **inferred** from an
-  enemy energy drop. The robot cannot see bullets spawn — it deduces "enemy fired"
-  from a sudden energy decrease.
-- **Pairing:** robot-side detections are paired FIFO with the oldest unmatched
-  god-view fire; errors are computed at pairing time.
+  `IBulletSnapshot` FIRED state) vs the fire events the robot **inferred**. Two
+  directions are measured independently per perspective:
+  - **OUR fire** (outgoing): god-view back-projects the muzzle from the first
+    bullet snapshot; the robot stages its own shot in `OUR_FIRE_*` at the true
+    fire tick. Paired by **bullet id** (the robot owns the bullet, so the id is
+    shared and pairing is order-independent).
+  - **THEIR fire** (incoming): god-view ground truth is the opponent's own
+    outgoing fire (the peer's `OUR_FIRE_*` on its god-view whiteboard); the robot
+    infers "enemy fired" from a sudden energy drop. Paired by **fire tick** — the
+    blindfolded robot never sees the incoming bullet, so it has no id for it.
+- **Timing model (engine-validated):** a shot fired by robot code at tick `T`
+  only becomes visible one tick later — the bullet is created at `T+1` from the
+  body position at the **end of `T`**, and the energy drop is likewise observed at
+  `T+1`. So the true fire tick is `T` and the true muzzle is the body position at
+  end of `T`. Both observers are normalised to this `T`: god-view uses
+  `detectionTick − 1`, the robot uses its staged fire tick (OUR) or
+  `energyDropTick − 1` with the **previous-tick** enemy position (THEIR).
+- **Result — OUR fire (outgoing), all opponents:** origin, timing and power match
+  the ground truth **exactly** — `positionMAE = 0`, `powerMAE = 0`, `latency = 0`.
+  The robot owns the bullet, so there is nothing left to infer.
+- **Result — THEIR fire (incoming):** **timing is exact** (`latency = 0`) for every
+  opponent. Origin and power are exact **only in the limit of perfect per-tick
+  tracking** — proven against a cleanly-tracked stationary shooter (`sample.Fire`:
+  `positionMAE = 0`, `powerMAE = 0`, `angleMAE ≈ 0.03 rad`). Against evasive
+  opponents they degrade (e.g. `positionMAE` 2–60 px, `powerMAE` 0–0.08), because
+  the robot must reconstruct the enemy muzzle from its **last radar scan** (stale
+  when the radar isn't locked every tick) and infer power from the **energy drop**
+  (which wall/ram damage can mis-attribute, also inflating the detection count).
+  These are tracking/attribution limits, not the wave model.
+- **The one irreducible unknown:** even with perfect tracking the blindfolded robot
+  cannot recover the **muzzle angle** of an incoming shot — it must assume a
+  head-on bearing, whereas the real bullet carries the enemy's lead. `angleMAE`
+  (radians) isolates exactly this gap; it is the single fire-time fact no amount of
+  energy/position inference can reveal.
 - **Metrics:**
   - `fireDetectionRate = robotSideFires / godViewFires` — did it catch every shot?
-  - `positionMAE` — how far off the assumed muzzle position was (px).
-  - `powerMAE` — how wrong the inferred bullet power was.
-  - detection **latency** — how many ticks late the detection arrived.
-- **Why:** wave targeting/dodging depends on knowing *when* and *with what power*
-  the enemy fired. A missed or mis-powered detection corrupts every wave spawned
-  from it.
+    (Can exceed 1.0 when non-fire energy drops are mis-attributed as enemy fire.)
+  - `positionMAE` — muzzle-origin error (px); 0 for OUR, and for THEIR under clean
+    tracking.
+  - `powerMAE` — inferred bullet-power error; 0 for OUR, and for THEIR under clean
+    tracking.
+  - detection **latency** — ticks late; 0 for both directions.
+  - `angleMAE` (THEIR only) — the irreducible muzzle-angle unknown (head-on
+    assumption vs the bullet's true flight heading). Always non-zero by design.
+- **Why:** wave targeting/dodging depends on knowing *where*, *when* and *with what
+  power* the enemy fired. Timing is exact and, for a well-tracked target, so are
+  origin and power — so the residual modelling uncertainty collapses to the muzzle
+  angle, with radar staleness and energy mis-attribution as the only other
+  (non-model) error sources for incoming fire.
 
 ### Layer 3 — Wave Resolution & GuessFactor Precision
 

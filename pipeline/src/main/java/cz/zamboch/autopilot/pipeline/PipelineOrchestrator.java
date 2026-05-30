@@ -35,6 +35,7 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
     private SnapshotFixtureWriter snapshotFixtureWriter; // optional engine-grounded test fixture recorder, nullable
     private int currentRound = -1;
     private final double[] lastValidatorFireTick = { Double.NaN, Double.NaN };
+    private final double[] lastValidatorTheirFireTick = { Double.NaN, Double.NaN };
     private final double[] lastValidatorBreakTick = { Double.NaN, Double.NaN };
 
     public PipelineOrchestrator(double bfWidth, double bfHeight, double gunCoolingRate) {
@@ -228,7 +229,8 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                     double y = ctx.godWb().getFeature(Feature.OUR_FIRE_Y);
                     double heading = ctx.godWb().getFeature(Feature.OUR_FIRE_BEARING_ABSOLUTE);
                     long tick = (long) ctx.godWb().getFeature(Feature.OUR_FIRE_TICK);
-                    validator.recordGodViewFire(pi, power, x, y, heading, tick);
+                    int bulletId = (int) ctx.godWb().getFeature(Feature.OUR_FIRE_BULLET_ID);
+                    validator.recordGodViewFire(pi, bulletId, power, x, y, heading, tick);
                 }
 
                 // Layer 2: robot-side fire detection (observer detected own fire)
@@ -238,7 +240,40 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                     double rsPower = ctx.wb().getFeature(Feature.OUR_FIRE_POWER);
                     double rsX = ctx.wb().getFeature(Feature.OUR_FIRE_X);
                     double rsY = ctx.wb().getFeature(Feature.OUR_FIRE_Y);
-                    validator.recordRobotSideFire(pi, rsPower, rsX, rsY, (long) fireTick);
+                    int rsBulletId = (int) ctx.wb().getFeature(Feature.OUR_FIRE_BULLET_ID);
+                    validator.recordRobotSideFire(pi, rsBulletId, rsPower, rsX, rsY, (long) fireTick);
+                }
+
+                // Layer 2 (their): god-view incoming fire — the opponent's bullet as
+                // the engine created it (true muzzle origin / fire tick / power /
+                // flight heading). The opponent's own OUR_FIRE_* on its god-view
+                // whiteboard is ground truth for the bullet heading toward us.
+                if (godViewWaveResolver.firedThisTick(oppIndex)) {
+                    ObserverContext oppCtx = observers[oppIndex];
+                    double power = oppCtx.godWb().getFeature(Feature.OUR_FIRE_POWER);
+                    double x = oppCtx.godWb().getFeature(Feature.OUR_FIRE_X);
+                    double y = oppCtx.godWb().getFeature(Feature.OUR_FIRE_Y);
+                    double trueHeading = godViewWaveResolver.getLastFiredTrueHeading(oppIndex);
+                    long tick = (long) oppCtx.godWb().getFeature(Feature.OUR_FIRE_TICK);
+                    validator.recordGodViewTheirFire(pi, power, x, y, trueHeading, tick);
+                }
+
+                // Layer 2 (their): robot-side incoming-fire inference from an enemy
+                // energy drop. Origin/timing/power are recovered exactly; the bearing
+                // is only a head-on assumption (the muzzle-angle unknown).
+                double theirFireTick = ctx.wb().getFeature(Feature.THEIR_FIRE_TICK);
+                if (!Double.isNaN(theirFireTick) && theirFireTick != lastValidatorTheirFireTick[pi]) {
+                    lastValidatorTheirFireTick[pi] = theirFireTick;
+                    // THEIR_FIRE_POWER staging is cleared to NaN right after the wave
+                    // is created (so it isn't re-created next tick), so recover the
+                    // inferred power from the retained bullet speed instead.
+                    double rsSpeed = ctx.wb().getFeature(Feature.THEIR_BULLET_SPEED);
+                    double rsPower = (20.0 - rsSpeed) / 3.0;
+                    double rsX = ctx.wb().getFeature(Feature.THEIR_FIRE_X);
+                    double rsY = ctx.wb().getFeature(Feature.THEIR_FIRE_Y);
+                    double rsBearing = ctx.wb().getFeature(Feature.THEIR_FIRE_BEARING);
+                    validator.recordRobotSideTheirFire(pi, rsPower, rsX, rsY, rsBearing,
+                            (long) theirFireTick);
                 }
 
                 // Layer 3: wave resolution tracking
@@ -307,6 +342,8 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
         }
         lastValidatorFireTick[0] = Double.NaN;
         lastValidatorFireTick[1] = Double.NaN;
+        lastValidatorTheirFireTick[0] = Double.NaN;
+        lastValidatorTheirFireTick[1] = Double.NaN;
         lastValidatorBreakTick[0] = Double.NaN;
         lastValidatorBreakTick[1] = Double.NaN;
     }

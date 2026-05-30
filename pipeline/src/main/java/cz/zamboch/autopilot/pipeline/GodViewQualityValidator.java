@@ -11,8 +11,10 @@ import robocode.control.snapshot.RobotState;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -47,6 +49,15 @@ public final class GodViewQualityValidator {
     // --- Layer 2: Fire Detection ---
     private final FireDetectionTracker[] fireTracking = {
             new FireDetectionTracker(), new FireDetectionTracker()
+    };
+
+    // --- Layer 2 (their side): incoming-fire detection ---
+    // god-view ground truth (the opponent's bullet) vs the robot-side energy-drop
+    // inference. Paired by fire tick because the blindfolded robot has no bullet id
+    // for incoming fire. Origin/timing/power are knowable exactly; the muzzle angle
+    // is not — angleMAE quantifies that single irreducible unknown.
+    private final TheirFireDetectionTracker[] theirFireTracking = {
+            new TheirFireDetectionTracker(), new TheirFireDetectionTracker()
     };
 
     // --- Layer 3: Wave GF Precision ---
@@ -101,17 +112,34 @@ public final class GodViewQualityValidator {
     }
 
     private static final class FireDetectionTracker {
-        final List<FireRecord> godViewFires = new ArrayList<>();
-        final List<FireRecord> robotSideFires = new ArrayList<>();
+        // Counts of fires seen on each side (for the detection rate).
+        int godViewCount;
+        int robotSideCount;
+        // Bullet-id keyed buffers for the side that has not yet seen its partner.
+        // The two sides observe the same physical bullet on slightly different
+        // ticks (god-view on bullet-appear, robot-side on the fire command), so
+        // we pair by bullet id rather than arrival order to avoid index slips.
+        final Map<Integer, FireRecord> pendingGodView = new HashMap<>();
+        final Map<Integer, FireRecord> pendingRobotSide = new HashMap<>();
         double positionErrorSum;
         double powerErrorSum;
         double latencySum;
         int pairedCount;
 
         double getFireDetectionRate() {
-            if (godViewFires.isEmpty())
+            if (godViewCount == 0)
                 return Double.NaN;
-            return (double) robotSideFires.size() / godViewFires.size();
+            return (double) robotSideCount / godViewCount;
+        }
+
+        /** Accumulate the error for one paired (god-view, robot-side) fire. */
+        void pair(FireRecord godView, FireRecord robotSide) {
+            double dx = godView.x - robotSide.x;
+            double dy = godView.y - robotSide.y;
+            positionErrorSum += Math.hypot(dx, dy);
+            powerErrorSum += Math.abs(godView.power - robotSide.power);
+            latencySum += (robotSide.tick - godView.tick);
+            pairedCount++;
         }
 
         double getPositionMAE() {
@@ -124,6 +152,62 @@ public final class GodViewQualityValidator {
 
         double getDetectionLatency() {
             return pairedCount > 0 ? latencySum / pairedCount : Double.NaN;
+        }
+    }
+
+    /**
+     * Incoming-fire ("their wave") detection tracker. The blindfolded robot infers
+     * an enemy shot from an energy drop, so it knows the origin (enemy position one
+     * tick before detection), timing (that same tick) and power (the drop) exactly,
+     * but cannot know the muzzle angle — it must assume a head-on bearing. The two
+     * streams are paired by <b>fire tick</b> (not bullet id: the robot never sees
+     * the incoming bullet, so it has no id for it).
+     */
+    private static final class TheirFireDetectionTracker {
+        int godViewCount;
+        int robotSideCount;
+        final Map<Long, FireRecord> pendingGodView = new HashMap<>();
+        final Map<Long, FireRecord> pendingRobotSide = new HashMap<>();
+        double positionErrorSum;
+        double powerErrorSum;
+        double latencySum;
+        double angleErrorSum;
+        int pairedCount;
+
+        double getFireDetectionRate() {
+            if (godViewCount == 0)
+                return Double.NaN;
+            return (double) robotSideCount / godViewCount;
+        }
+
+        /**
+         * Accumulate errors for one paired (god-view, robot-side) incoming fire.
+         * {@code godView.heading} is the engine bullet's true flight direction;
+         * {@code robotSide.heading} is the robot's head-on assumption. Their gap is
+         * the irreducible muzzle-angle unknown.
+         */
+        void pair(FireRecord godView, FireRecord robotSide) {
+            positionErrorSum += Math.hypot(godView.x - robotSide.x, godView.y - robotSide.y);
+            powerErrorSum += Math.abs(godView.power - robotSide.power);
+            latencySum += (robotSide.tick - godView.tick);
+            angleErrorSum += Math.abs(RoboMath.normalRelativeAngle(godView.heading - robotSide.heading));
+            pairedCount++;
+        }
+
+        double getPositionMAE() {
+            return pairedCount > 0 ? positionErrorSum / pairedCount : Double.NaN;
+        }
+
+        double getPowerMAE() {
+            return pairedCount > 0 ? powerErrorSum / pairedCount : Double.NaN;
+        }
+
+        double getDetectionLatency() {
+            return pairedCount > 0 ? latencySum / pairedCount : Double.NaN;
+        }
+
+        double getAngleMAE() {
+            return pairedCount > 0 ? angleErrorSum / pairedCount : Double.NaN;
         }
     }
 
@@ -234,33 +318,75 @@ public final class GodViewQualityValidator {
     // ========== Layer 2: Fire Detection ==========
 
     /**
-     * Track god-view fire (from IBulletSnapshot FIRED state).
+     * Track a god-view fire (from the {@link IBulletSnapshot} the engine created).
+     * Pairs with the robot-side detection of the same bullet id if already seen,
+     * otherwise buffers until that detection arrives.
      */
-    public void recordGodViewFire(int perspIndex, double power, double x, double y,
+    public void recordGodViewFire(int perspIndex, int bulletId, double power, double x, double y,
             double heading, long tick) {
-        fireTracking[perspIndex].godViewFires.add(new FireRecord(power, x, y, heading, tick));
+        FireDetectionTracker tracker = fireTracking[perspIndex];
+        tracker.godViewCount++;
+        FireRecord godView = new FireRecord(power, x, y, heading, tick);
+        FireRecord robotSide = tracker.pendingRobotSide.remove(bulletId);
+        if (robotSide != null) {
+            tracker.pair(godView, robotSide);
+        } else {
+            tracker.pendingGodView.put(bulletId, godView);
+        }
     }
 
     /**
-     * Track robot-side fire detection (from energy drop).
-     * Pairs with oldest unmatched god-view fire (FIFO) and computes errors
-     * immediately.
+     * Track a robot-side fire detection (from the observer firing its own gun).
+     * Pairs with the god-view fire of the same bullet id by id, never by arrival
+     * order, so a one-tick timing offset or a missed detection cannot misalign the
+     * two streams.
      */
-    public void recordRobotSideFire(int perspIndex, double power, double x, double y, long tick) {
+    public void recordRobotSideFire(int perspIndex, int bulletId, double power, double x, double y,
+            long tick) {
         FireDetectionTracker tracker = fireTracking[perspIndex];
-        FireRecord record = new FireRecord(power, x, y, Double.NaN, tick);
-        tracker.robotSideFires.add(record);
+        tracker.robotSideCount++;
+        FireRecord robotSide = new FireRecord(power, x, y, Double.NaN, tick);
+        FireRecord godView = tracker.pendingGodView.remove(bulletId);
+        if (godView != null) {
+            tracker.pair(godView, robotSide);
+        } else {
+            tracker.pendingRobotSide.put(bulletId, robotSide);
+        }
+    }
 
-        // FIFO pairing: try to pair with next unmatched god-view fire
-        int pairedSoFar = tracker.pairedCount;
-        if (pairedSoFar < tracker.godViewFires.size()) {
-            FireRecord godView = tracker.godViewFires.get(pairedSoFar);
-            double dx = godView.x - x;
-            double dy = godView.y - y;
-            tracker.positionErrorSum += Math.hypot(dx, dy);
-            tracker.powerErrorSum += Math.abs(godView.power - power);
-            tracker.latencySum += (tick - godView.tick);
-            tracker.pairedCount++;
+    /**
+     * Track a god-view incoming fire — the opponent's bullet as the engine created
+     * it (true muzzle origin, true fire tick, true power, true flight heading).
+     * Paired with the robot-side energy-drop inference of the same fire tick.
+     */
+    public void recordGodViewTheirFire(int perspIndex, double power, double x, double y,
+            double heading, long fireTick) {
+        TheirFireDetectionTracker tracker = theirFireTracking[perspIndex];
+        tracker.godViewCount++;
+        FireRecord godView = new FireRecord(power, x, y, heading, fireTick);
+        FireRecord robotSide = tracker.pendingRobotSide.remove(fireTick);
+        if (robotSide != null) {
+            tracker.pair(godView, robotSide);
+        } else {
+            tracker.pendingGodView.put(fireTick, godView);
+        }
+    }
+
+    /**
+     * Track a robot-side incoming-fire detection — inferred from an enemy energy
+     * drop. {@code bearing} is the robot's head-on assumption of the muzzle angle.
+     * Paired with the god-view fire of the same fire tick.
+     */
+    public void recordRobotSideTheirFire(int perspIndex, double power, double x, double y,
+            double bearing, long fireTick) {
+        TheirFireDetectionTracker tracker = theirFireTracking[perspIndex];
+        tracker.robotSideCount++;
+        FireRecord robotSide = new FireRecord(power, x, y, bearing, fireTick);
+        FireRecord godView = tracker.pendingGodView.remove(fireTick);
+        if (godView != null) {
+            tracker.pair(godView, robotSide);
+        } else {
+            tracker.pendingRobotSide.put(fireTick, robotSide);
         }
     }
 
@@ -413,7 +539,7 @@ public final class GodViewQualityValidator {
         if (getSpatialChecks() == 0) {
             throw new IllegalStateException("Layer 1 vacuous: 0 spatial checks performed");
         }
-        int totalGodViewFires = fireTracking[0].godViewFires.size() + fireTracking[1].godViewFires.size();
+        int totalGodViewFires = fireTracking[0].godViewCount + fireTracking[1].godViewCount;
         if (totalGodViewFires == 0) {
             throw new IllegalStateException("Layer 2 vacuous: 0 god-view fires detected");
         }
@@ -457,11 +583,11 @@ public final class GodViewQualityValidator {
     }
 
     public int getGodViewFires(int perspIndex) {
-        return fireTracking[perspIndex].godViewFires.size();
+        return fireTracking[perspIndex].godViewCount;
     }
 
     public int getRobotSideFires(int perspIndex) {
-        return fireTracking[perspIndex].robotSideFires.size();
+        return fireTracking[perspIndex].robotSideCount;
     }
 
     public double getFirePositionMAE(int perspIndex) {
@@ -474,6 +600,34 @@ public final class GodViewQualityValidator {
 
     public double getFireDetectionLatency(int perspIndex) {
         return fireTracking[perspIndex].getDetectionLatency();
+    }
+
+    public double getTheirFireDetectionRate(int perspIndex) {
+        return theirFireTracking[perspIndex].getFireDetectionRate();
+    }
+
+    public int getTheirGodViewFires(int perspIndex) {
+        return theirFireTracking[perspIndex].godViewCount;
+    }
+
+    public int getTheirRobotSideFires(int perspIndex) {
+        return theirFireTracking[perspIndex].robotSideCount;
+    }
+
+    public double getTheirFirePositionMAE(int perspIndex) {
+        return theirFireTracking[perspIndex].getPositionMAE();
+    }
+
+    public double getTheirFirePowerMAE(int perspIndex) {
+        return theirFireTracking[perspIndex].getPowerMAE();
+    }
+
+    public double getTheirFireDetectionLatency(int perspIndex) {
+        return theirFireTracking[perspIndex].getDetectionLatency();
+    }
+
+    public double getTheirFireAngleMAE(int perspIndex) {
+        return theirFireTracking[perspIndex].getAngleMAE();
     }
 
     public double getGfMeanAbsoluteError(int perspIndex) {
@@ -540,12 +694,29 @@ public final class GodViewQualityValidator {
             double powMAE = t.getPowerMAE();
             double latency = t.getDetectionLatency();
             System.out.printf("  Perspective %d: godView=%d, robotSide=%d, rate=%s%n",
-                    pi, t.godViewFires.size(), t.robotSideFires.size(),
+                    pi, t.godViewCount, t.robotSideCount,
                     formatMetric(rate, "%.3f"));
             System.out.printf("    positionMAE=%s, powerMAE=%s, latency=%s%n",
                     formatMetric(posMAE, "%.4f"),
                     formatMetric(powMAE, "%.4f"),
                     formatMetric(latency, "%.2f"));
+        }
+        System.out.println();
+
+        // Layer 2 (their side) — incoming-fire detection. Origin/timing/power are
+        // knowable exactly (expect ~0 MAE); angleMAE is the irreducible muzzle-angle
+        // unknown the blindfolded robot cannot infer.
+        System.out.printf("Layer 2 (their) — Incoming-Fire Detection:%n");
+        for (int pi = 0; pi < 2; pi++) {
+            TheirFireDetectionTracker t = theirFireTracking[pi];
+            System.out.printf("  Perspective %d: godView=%d, robotSide=%d, rate=%s%n",
+                    pi, t.godViewCount, t.robotSideCount,
+                    formatMetric(t.getFireDetectionRate(), "%.3f"));
+            System.out.printf("    positionMAE=%s, powerMAE=%s, latency=%s, angleMAE(rad)=%s%n",
+                    formatMetric(t.getPositionMAE(), "%.4f"),
+                    formatMetric(t.getPowerMAE(), "%.4f"),
+                    formatMetric(t.getDetectionLatency(), "%.2f"),
+                    formatMetric(t.getAngleMAE(), "%.4f"));
         }
         System.out.println();
 
