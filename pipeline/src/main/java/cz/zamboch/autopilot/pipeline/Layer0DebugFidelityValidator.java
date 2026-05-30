@@ -6,6 +6,8 @@ import robocode.control.snapshot.IDebugProperty;
 import robocode.control.snapshot.IRobotSnapshot;
 
 import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Layer 0 — IDebugProperty Fidelity (in-game robot vs observer).
@@ -35,6 +37,13 @@ public final class Layer0DebugFidelityValidator {
     private final EnumMap<Feature, FeatureStats> stats = new EnumMap<>(Feature.class);
 
     /**
+     * Per-wave-column fidelity stats, keyed by the wave column name (the part of
+     * a {@code COLUMN/waveId} debug-property key before the slash). Counts both
+     * value mismatches and waves present on only one side (live-only / observer-only).
+     */
+    private final Map<String, FeatureStats> waveStats = new HashMap<>();
+
+    /**
      * Compare debug properties from the live {@code Autopilot} against the
      * observer's robot-side whiteboard. Runs every tick — both sides process the
      * same reconstructed events, so all features must match regardless of scan
@@ -58,8 +67,20 @@ public final class Layer0DebugFidelityValidator {
             return;
         }
 
+        // Snapshot the observer's in-flight waves as COLUMN/waveId properties so we
+        // can match them against the live robot's published wave set by wave id.
+        Map<String, String> observerWaves = new HashMap<>();
+        observerWb.forEachAliveWaveProperty(observerWaves::put);
+
         for (IDebugProperty prop : props) {
             String key = prop.getKey();
+
+            // Wave properties use a COLUMN/waveId key; validate them separately and
+            // consume the matching observer entry.
+            if (key.indexOf('/') >= 0) {
+                validateWaveProperty(tick, key, prop.getValue(), observerWaves);
+                continue;
+            }
 
             Feature feature;
             try {
@@ -105,6 +126,74 @@ public final class Layer0DebugFidelityValidator {
                         tick, feature, debug, wbValue, debug - wbValue);
             }
         }
+
+        // Any observer wave property left unconsumed = a wave alive on the observer
+        // but not on the live robot (e.g. it broke a tick later on the observer).
+        for (Map.Entry<String, String> e : observerWaves.entrySet()) {
+            FeatureStats s = waveStats.computeIfAbsent(waveColumn(e.getKey()), k -> new FeatureStats());
+            s.checks++;
+            s.mismatches++;
+            System.out.printf("AGENT_DEBUG Layer0 wave observer-only tick=%.0f key=%s wb=%s%n",
+                    tick, e.getKey(), e.getValue());
+        }
+    }
+
+    /**
+     * Compare one live wave property ({@code COLUMN/waveId}) against the matching
+     * observer wave property, consuming it from {@code observerWaves}. A wave id
+     * present on only one side is a mismatch (wave lifetime / break-tick drift).
+     */
+    private void validateWaveProperty(double tick, String key, String liveValueStr,
+            Map<String, String> observerWaves) {
+        FeatureStats s = waveStats.computeIfAbsent(waveColumn(key), k -> new FeatureStats());
+        s.checks++;
+
+        String obsValueStr = observerWaves.remove(key);
+        if (obsValueStr == null) {
+            s.mismatches++;
+            System.out.printf("AGENT_DEBUG Layer0 wave live-only tick=%.0f key=%s debug=%s%n",
+                    tick, key, liveValueStr);
+            return;
+        }
+
+        double debug = parseDebug(liveValueStr);
+        double wbValue = parseDebug(obsValueStr);
+
+        if (Double.isNaN(debug) && Double.isNaN(wbValue)) {
+            return; // both NaN = match
+        }
+
+        if (Double.isNaN(debug) || Double.isNaN(wbValue)) {
+            s.mismatches++;
+            System.out.printf("AGENT_DEBUG Layer0 wave NaN mismatch tick=%.0f key=%s debug=%s wb=%s%n",
+                    tick, key, liveValueStr, obsValueStr);
+            return;
+        }
+
+        if (Math.abs(debug - wbValue) > EPSILON) {
+            s.mismatches++;
+            System.out.printf(
+                    "AGENT_DEBUG Layer0 wave value mismatch tick=%.0f key=%s debug=%.6f wb=%.6f diff=%.6f%n",
+                    tick, key, debug, wbValue, debug - wbValue);
+        }
+    }
+
+    /** Column name portion of a {@code COLUMN/waveId} wave-property key. */
+    private static String waveColumn(String key) {
+        int slash = key.indexOf('/');
+        return slash >= 0 ? key.substring(0, slash) : key;
+    }
+
+    /** Parse a debug-property string value to double, mapping {@code "NaN"} to NaN. */
+    private static double parseDebug(String value) {
+        if (value == null || "NaN".equals(value)) {
+            return Double.NaN;
+        }
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            return Double.NaN;
+        }
     }
 
     private static double debugValue(IDebugProperty[] props, String key) {
@@ -128,6 +217,9 @@ public final class Layer0DebugFidelityValidator {
         for (FeatureStats s : stats.values()) {
             total += s.mismatches;
         }
+        for (FeatureStats s : waveStats.values()) {
+            total += s.mismatches;
+        }
         return total;
     }
 
@@ -135,6 +227,9 @@ public final class Layer0DebugFidelityValidator {
     public int getChecks() {
         int total = 0;
         for (FeatureStats s : stats.values()) {
+            total += s.checks;
+        }
+        for (FeatureStats s : waveStats.values()) {
             total += s.checks;
         }
         return total;
@@ -167,6 +262,12 @@ public final class Layer0DebugFidelityValidator {
         for (var entry : stats.entrySet()) {
             if (entry.getValue().mismatches > 0) {
                 System.out.printf("    %s: checks=%d, mismatches=%d%n",
+                        entry.getKey(), entry.getValue().checks, entry.getValue().mismatches);
+            }
+        }
+        for (var entry : waveStats.entrySet()) {
+            if (entry.getValue().mismatches > 0) {
+                System.out.printf("    wave %s: checks=%d, mismatches=%d%n",
                         entry.getKey(), entry.getValue().checks, entry.getValue().mismatches);
             }
         }

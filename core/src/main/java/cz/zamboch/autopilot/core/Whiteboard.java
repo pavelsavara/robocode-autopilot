@@ -296,6 +296,30 @@ public final class Whiteboard {
         return count;
     }
 
+    /**
+     * Emit every ALIVE (in-flight) our-wave as a set of debug properties. Each
+     * wave column is published under the key {@code COLUMN_NAME/waveId}; the value
+     * is the numeric column value, or {@code "NaN"}. The {@code WAVE_ID} column is
+     * itself omitted (it is encoded in the key). Used by Layer 0 fidelity
+     * validation to compare the full set of in-flight waves between the live robot
+     * and the observer shadow, matched by stable wave id.
+     */
+    public void forEachAliveWaveProperty(java.util.function.BiConsumer<String, String> sink) {
+        for (int i = 0; i < OUR_WAVE_CAPACITY; i++) {
+            if (ourWaveState[i] != WAVE_ACTIVE) {
+                continue;
+            }
+            long waveId = (long) ourWaves[i][OurWaveColumn.WAVE_ID.ordinal()];
+            for (OurWaveColumn c : OurWaveColumn.values()) {
+                if (c == OurWaveColumn.WAVE_ID) {
+                    continue;
+                }
+                double v = ourWaves[i][c.ordinal()];
+                sink.accept(c.name() + "/" + waveId, Double.isNaN(v) ? "NaN" : String.valueOf(v));
+            }
+        }
+    }
+
     // ========== Their Wave Ring Buffer API ==========
 
     /**

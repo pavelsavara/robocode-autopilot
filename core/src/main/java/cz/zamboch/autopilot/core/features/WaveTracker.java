@@ -107,6 +107,7 @@ public final class WaveTracker implements IInGameFeatures {
                 bulletId, oppX, oppY);
         wb.setOurWave(slot, OurWaveColumn.AIM_GF, Double.isNaN(aimGf) ? 0.0 : aimGf);
         wb.setOurWave(slot, OurWaveColumn.IS_REAL, 1.0);
+        wb.setOurWave(slot, OurWaveColumn.WAVE_ID, waveId(fireTick, 0));
         wb.setOurWaveState(slot, Whiteboard.WAVE_ACTIVE);
 
         // Create virtual bullet slots
@@ -118,6 +119,7 @@ public final class WaveTracker implements IInGameFeatures {
                     0, oppX, oppY);
             wb.setOurWave(vSlot, OurWaveColumn.AIM_GF, virtualGf);
             wb.setOurWave(vSlot, OurWaveColumn.IS_REAL, 0.0);
+            wb.setOurWave(vSlot, OurWaveColumn.WAVE_ID, waveId(fireTick, i + 1));
             wb.setOurWaveState(vSlot, Whiteboard.WAVE_ACTIVE);
         }
 
@@ -138,6 +140,15 @@ public final class WaveTracker implements IInGameFeatures {
         wb.setFeature(Feature.OUR_FIRE_OPPONENT_Y, Double.NaN);
         wb.setFeature(Feature.OUR_FIRE_AIM_GF, Double.NaN);
         wb.setFeature(Feature.OUR_FIRE_IS_REAL, Double.NaN);
+    }
+
+    /**
+     * Wave id encoding: {@code fireTick * 1000 + groupIndex}. groupIndex is 0 for
+     * the real bullet and 1..VIRTUAL_BULLET_COUNT for virtual bullets. Stable and
+     * identical across the live robot and observer shadow because fireTick matches.
+     */
+    private static double waveId(double fireTick, int groupIndex) {
+        return (long) fireTick * 1000L + groupIndex;
     }
 
     private void fillFireColumns(Whiteboard wb, int slot,

@@ -294,6 +294,10 @@ public final class Autopilot extends AdvancedRobot {
             double v = wb.getFeature(f);
             setDebugProperty(f.name(), Double.isNaN(v) ? "NaN" : String.valueOf(v));
         }
+
+        // Debug — every alive wave's columns, keyed COLUMN/waveId, so Layer 0
+        // fidelity can compare the in-flight wave set against the observer shadow.
+        wb.forEachAliveWaveProperty(this::setDebugProperty);
     }
 
     /**
