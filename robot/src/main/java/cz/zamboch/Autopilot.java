@@ -84,15 +84,18 @@ public final class Autopilot extends AdvancedRobot {
             Feature.OUR_BULLET_DAMAGE_TO_OPPONENT,
             Feature.OPPONENT_BULLET_ENERGY_GAIN,
             Feature.RAM_DAMAGE_TO_OPPONENT,
-            Feature.OPPONENT_RAM_ENERGY_GAIN,
             Feature.OPPONENT_WALL_HIT_DAMAGE
     };
 
     /**
      * Features that persist across ring rotations but are NOT reset on scan ticks.
+     * PREV_SCAN_OPPONENT_ENERGY is scan-indexed (last seen opponent energy); the
+     * gap between scans is typically several ticks, so without stickying it would
+     * be NaN at the next scan and FireFeatures could never compute an energy drop.
      */
     private static final Feature[] STICKY_FEATURES = {
-            Feature.LAST_SCAN_TICK
+            Feature.LAST_SCAN_TICK,
+            Feature.PREV_SCAN_OPPONENT_ENERGY
     };
 
     /**
@@ -252,15 +255,10 @@ public final class Autopilot extends AdvancedRobot {
 
     @Override
     public void onHitRobot(HitRobotEvent e) {
-        // Both robots always take ROBOT_HIT_DAMAGE
+        // Both robots always take ROBOT_HIT_DAMAGE; ROBOT_HIT_BONUS is a score
+        // bonus only (see RobotStatistics.scoreRammingDamage), not an energy gain.
         double current = wb.getFeature(Feature.RAM_DAMAGE_TO_OPPONENT);
         wb.setFeature(Feature.RAM_DAMAGE_TO_OPPONENT, (Double.isNaN(current) ? 0 : current) + Rules.ROBOT_HIT_DAMAGE);
-
-        // If opponent is "at fault" (they rammed us), they gain ROBOT_HIT_BONUS
-        if (!e.isMyFault()) {
-            double gain = wb.getFeature(Feature.OPPONENT_RAM_ENERGY_GAIN);
-            wb.setFeature(Feature.OPPONENT_RAM_ENERGY_GAIN, (Double.isNaN(gain) ? 0 : gain) + Rules.ROBOT_HIT_BONUS);
-        }
     }
 
     /**

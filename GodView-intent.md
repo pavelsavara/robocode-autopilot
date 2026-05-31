@@ -168,7 +168,7 @@ comparison is meaningful. The following features are validated **only by Layer 0
 |----------|----------|
 | Gun aim / decision | `GUN_AIM_POWER`, `GUN_AIM_ANGLE`, `GUN_AIM_GF` |
 | Derived spatial | `OPPONENT_BEARING_ABSOLUTE` |
-| Energy accumulators (inputs to L4 logic, not validated as features) | `OUR_BULLET_DAMAGE_TO_OPPONENT`, `OPPONENT_BULLET_ENERGY_GAIN`, `RAM_DAMAGE_TO_OPPONENT`, `OPPONENT_RAM_ENERGY_GAIN`, `OPPONENT_WALL_HIT_DAMAGE`, `PREV_SCAN_OPPONENT_ENERGY` |
+| Energy accumulators (inputs to L4 logic, not validated as features) | `OUR_BULLET_DAMAGE_TO_OPPONENT`, `OPPONENT_BULLET_ENERGY_GAIN`, `RAM_DAMAGE_TO_OPPONENT`, `OPPONENT_WALL_HIT_DAMAGE`, `PREV_SCAN_OPPONENT_ENERGY` |
 | Their-wave detail (L2 pairs power + position only) | `THEIR_FIRE_BEARING`, `THEIR_FIRE_DISTANCE`, `THEIR_FIRE_OUR_X`, `THEIR_FIRE_OUR_Y`, `THEIR_BULLET_SPEED`, `THEIR_BREAK_OUR_X`, `THEIR_BREAK_OUR_Y`, `THEIR_BREAK_BEARING_OFFSET`, `THEIR_HIT_US` |
 | Our-wave fire-time (L3 compares GF + break tick only) | all 15 `OUR_FIRE_*` |
 | Our-wave break-time | `OUR_BREAK_BEARING_OFFSET`, `OUR_BREAK_OPPONENT_X`, `OUR_BREAK_OPPONENT_Y`, `OUR_BREAK_HIT` |

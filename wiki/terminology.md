@@ -109,4 +109,4 @@
 | Initial gun heat | 3.0 |
 | Wall collision damage | `max(0, abs(velocity) × 0.5 - 1)` |
 | Ram damage (dealt) | 0.6 per tick of contact |
-| Ram bonus | 1.2 × ram_damage |
+| Ram bonus (score only, not energy) | 1.2 × ram_damage |
