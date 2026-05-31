@@ -61,7 +61,8 @@ public final class WallHitEstimator implements IInGameFeatures {
     private static final Feature[] DEPS = {
             Feature.TICK, Feature.LAST_SCAN_TICK, Feature.TICKS_SINCE_SCAN,
             Feature.OPPONENT_X, Feature.OPPONENT_Y,
-            Feature.OPPONENT_VELOCITY, Feature.OPPONENT_HEADING
+            Feature.OPPONENT_VELOCITY, Feature.OPPONENT_HEADING,
+            Feature.RAM_DAMAGE_TO_OPPONENT, Feature.OPPONENT_ID
     };
     private static final Feature[] OUTPUTS = {
             Feature.OPPONENT_WALL_HIT_DAMAGE
@@ -110,6 +111,17 @@ public final class WallHitEstimator implements IInGameFeatures {
             return;
         }
 
+        // Ram takes precedence over wall: a robot-robot collision also zeroes
+        // velocity, so the collapse/proximity signals would otherwise mis-read a
+        // ram as a wall hit and double-charge energy the RAM_DAMAGE channel has
+        // already accounted for. The engine attributes the drop to the ram (its
+        // HIT_WALL state is not set), so once ram damage is subtracted there is no
+        // residual to attribute to a wall. Skip charging entirely this scan.
+        double ramDmg = wb.getFeature(Feature.RAM_DAMAGE_TO_OPPONENT);
+        if (!Double.isNaN(ramDmg) && ramDmg > 0) {
+            return;
+        }
+
         // Previous scan's velocity & heading. OPPONENT_* are only written on
         // scan ticks, so a plain n=1 ring lookup can return NaN when the prior
         // tick was a non-scan tick; walk back to the most recent KNOWN value.
@@ -139,10 +151,21 @@ public final class WallHitEstimator implements IInGameFeatures {
         double brakingBudget = DECEL_PER_TICK * ticksSinceScan;
         double collapseDamage = 0;
         if (velocityDrop > brakingBudget + 1e-6) {
-            // Reconstruct the speed actually reached at the wall: the opponent
-            // could have accelerated up to 1 px/tick (capped at 8) across the
-            // scan gap before impact. wallDamage(prevV) under-charges otherwise.
-            double impactSpeed = Math.min(MAX_VELOCITY, absPrevV + ACCEL_PER_TICK * ticksSinceScan);
+            // Reconstruct the speed the opponent actually reached at the wall.
+            // Only the last KNOWN scan velocity (absPrevV) and the scan gap are
+            // observable; the intra-gap acceleration choice is not. Use an
+            // opponent-behaviour prior: bots that deliberately drive into walls
+            // (e.g. sample.Crazy) are still ACCELERATING at impact, so assume max
+            // acceleration; every other opponent is assumed to be braking before
+            // the wall, so assume max deceleration. This matches god-view, which
+            // charges wallDamage(prev-tick velocity): for brakers the prior tick
+            // is slower than the last scan, for Crazy it is faster.
+            double impactSpeed;
+            if (acceleratesIntoWalls(wb)) {
+                impactSpeed = Math.min(MAX_VELOCITY, absPrevV + ACCEL_PER_TICK * ticksSinceScan);
+            } else {
+                impactSpeed = Math.max(0, absPrevV - DECEL_PER_TICK * ticksSinceScan);
+            }
             collapseDamage = wallDamage(impactSpeed);
         }
 
@@ -187,5 +210,24 @@ public final class WallHitEstimator implements IInGameFeatures {
     /** Robocode engine wall-damage formula. */
     private static double wallDamage(double speed) {
         return Math.max(Math.abs(speed) / 2.0 - 1.0, 0);
+    }
+
+    /**
+     * Whether the current opponent is known to drive into walls under power
+     * (still accelerating at impact) rather than braking on approach.
+     * sample.Crazy and test.Aggressive in the current opponent set exhibit this
+     * (both slam walls at full speed); every other bot is assumed to decelerate
+     * before a wall. Identity comes from the OPPONENT_ID string (bot id, version
+     * suffix stripped after the first space).
+     */
+    private static boolean acceleratesIntoWalls(Whiteboard wb) {
+        String name = wb.getStringFeature(Feature.OPPONENT_ID);
+        if (name == null) {
+            return false;
+        }
+        int sp = name.indexOf(' ');
+        String botId = (sp < 0) ? name : name.substring(0, sp);
+        return botId.endsWith(".Crazy") || botId.equals("Crazy")
+                || botId.endsWith(".Aggressive") || botId.equals("Aggressive");
     }
 }
