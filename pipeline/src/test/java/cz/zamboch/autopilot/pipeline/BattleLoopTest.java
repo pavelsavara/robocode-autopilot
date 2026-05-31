@@ -201,10 +201,11 @@ final class BattleLoopTest {
         // resolved.
 
         // --- Non-vacuous check ---
-        // SittingDuck never fires, so Layer 3 legitimately has zero god-view
-        // incoming fires; waive that single requirement for it.
-        boolean opponentFires = !"test.SittingDuck".equals(opponent);
-        validator.assertNonVacuous(opponentFires);
+        // A non-firing battle (e.g. SittingDuck, or an opponent killed before its gun
+        // cools) legitimately yields zero god-view incoming fires; waive that single
+        // Layer 3 requirement when the detection rate is undefined (no fires at all).
+        boolean anyFiresDetected = !Double.isNaN(fireDetectionRate0);
+        validator.assertNonVacuous(anyFiresDetected);
         layer0.assertNonVacuous();
 
         // Print full summary (before assertions so we always see breakdown)
@@ -267,6 +268,11 @@ final class BattleLoopTest {
     // death-tick artifacts (no real bullet), so the rate degenerates to 0 — those
     // are skipped rather than asserted.
     private void assertFireDetectionBaseline(String opponent, double rate) {
+        // No god-view fires occurred this battle (opponent never got a shot off, e.g.
+        // killed before its gun cooled). There is nothing to detect, so no baseline.
+        if (Double.isNaN(rate)) {
+            return;
+        }
         switch (opponent) {
             case "test.SittingDuck":
                 // Never fires — every god-view "fire" is a death-tick artifact;

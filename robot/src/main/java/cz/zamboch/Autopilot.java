@@ -352,15 +352,20 @@ public final class Autopilot extends AdvancedRobot {
         // OvershootLockRadar.lastTurnDirection) resets to its fresh-instance default.
         radar = new OvershootLockRadar(wb);
         gun = new GFGunStrategy(wb);
-        movement = new OrbitMovementStrategy(wb);
+        movement = new OrbitMovementStrategy(wb, bfWidth, bfHeight);
         // Clear any carried-forward accumulator/sticky values from the prior round.
         java.util.Arrays.fill(accumulatorCarry, 0.0);
     }
 
     private boolean featuresRegistered;
+    /** Battlefield dimensions, retained so resetForRound can rebuild movement. */
+    private double bfWidth;
+    private double bfHeight;
 
     /** Shared initialization for both live and observer modes. */
     private void initCommon(double bfWidth, double bfHeight) {
+        this.bfWidth = bfWidth;
+        this.bfHeight = bfHeight;
         if (!featuresRegistered) {
             wb.registerFeatures(
                     new SpatialFeatures(),
@@ -377,7 +382,7 @@ public final class Autopilot extends AdvancedRobot {
 
         radar = new OvershootLockRadar(wb);
         gun = new GFGunStrategy(wb);
-        movement = new OrbitMovementStrategy(wb);
+        movement = new OrbitMovementStrategy(wb, bfWidth, bfHeight);
     }
 
     /** Access the whiteboard (for observer/pipeline integration). */
