@@ -85,6 +85,14 @@ public final class GodViewQualityValidator {
     private RobotState prevOppState = null;
     private double prevOppVelocity = Double.NaN;
 
+    // Last per-channel obs accumulator reading. The autopilot's wb accumulators
+    // monotonically grow within a carry window and snap to a smaller value (or
+    // 0) when FireFeatures consumes + resets them on a scan tick. Per-tick obs
+    // delta is therefore: max(0, curr - prev) when curr >= prev (growth), or
+    // curr when curr < prev (reset happened; the new value is this tick's fresh
+    // contribution).
+    private final double[] prevObs = new double[DamageObservationTracker.N];
+
     // Optional per-event trace writer for damage observations (analog of
     // theirFireTrace for Layer 3). Null when -PdamageEventsDir not provided.
     private DamageEventsTraceWriter damageEventsTrace;
@@ -203,9 +211,12 @@ public final class GodViewQualityValidator {
      * observe our own {@code HitByBulletEvent} and credit the opponent)</li>
      * <li>ram damage (we observe via {@code HitRobotEvent}; opponent also
      * pays {@code RAM_DAMAGE} per tick of contact)</li>
-     * <li>opponent wall hits (we can only infer from a scanned
-     * {@code oppState == HIT_WALL}; the intra-tick impact velocity is
-     * unobservable, so this channel has an irreducible lower bound)</li>
+     * <li>opponent wall hits — inferred from a scanned
+     * {@code oppState == HIT_WALL} transition using the opponent's prior-scan
+     * velocity ({@code wallDamage(prevOppVelocity)}). The autopilot has the
+     * same inputs the validator does, so this channel can be observed exactly
+     * on every-tick scans; only the across-scan-gap acceleration uncertainty
+     * (±2 px/s/tick) is residual</li>
      * </ol>
      * For each channel we accumulate the god-view truth, the autopilot's
      * observation, and the absolute drift. The four drifts together upper-bound
@@ -447,8 +458,10 @@ public final class GodViewQualityValidator {
      * <li><b>RAM_DMG</b> &mdash; {@code RAM_DAMAGE} when either robot is in
      * {@code HIT_ROBOT} this tick (opponent loses one unit per contact tick).</li>
      * <li><b>OPP_WALL_DMG</b> &mdash; {@code wallDamage(prevOppVelocity)} when
-     * opponent transitions into {@code HIT_WALL}. Intra-tick velocity is
-     * unobservable, so the observed value typically lags.</li>
+     * opponent transitions into {@code HIT_WALL}. Computed from
+     * {@link IRobotSnapshot#getState()} and the prior-scan velocity, both of
+     * which the autopilot observes via {@code ScannedRobotEvent}; residual
+     * drift is bounded by scan-gap acceleration only.</li>
      * </ul>
      * NaN values from the autopilot whiteboard (no event this tick) are
      * treated as 0.
@@ -500,18 +513,26 @@ public final class GodViewQualityValidator {
         prevOppState = oppSnap.getState();
         prevOppVelocity = oppSnap.getVelocity();
 
-        double[] obs = {
+        // Per-tick obs delta: monotonic growth within a window, snap-down on
+        // FireFeatures consumption. Treat any decrease as a reset, so the new
+        // value IS this tick's contribution.
+        double[] obsCurr = {
                 nanToZero(obsOurBulletDmg), nanToZero(obsOppBulletGain),
                 nanToZero(obsRamDmg), nanToZero(obsOppWallDmg)
         };
-        damageObsTracking.record(gv, obs);
+        double[] obsDelta = new double[DamageObservationTracker.N];
+        for (int i = 0; i < DamageObservationTracker.N; i++) {
+            obsDelta[i] = obsCurr[i] >= prevObs[i] ? obsCurr[i] - prevObs[i] : obsCurr[i];
+            prevObs[i] = obsCurr[i];
+        }
+        damageObsTracking.record(gv, obsDelta);
 
         if (damageEventsTrace != null) {
             final double EPS = 1e-9;
             for (int i = 0; i < DamageObservationTracker.N; i++) {
-                if (Math.abs(gv[i]) > EPS || Math.abs(obs[i]) > EPS) {
+                if (Math.abs(gv[i]) > EPS || Math.abs(obsDelta[i]) > EPS) {
                     damageEventsTrace.write(round, tick, DAMAGE_CHANNEL_NAMES[i],
-                            gv[i], obs[i],
+                            gv[i], obsDelta[i],
                             selfSnap.getEnergy(), oppSnap.getEnergy(),
                             selfSnap.getState() == null ? null : selfSnap.getState().name(),
                             oppSnap.getState() == null ? null : oppSnap.getState().name());
@@ -633,6 +654,9 @@ public final class GodViewQualityValidator {
         obsHitOnUsBulletIds.clear();
         prevOppState = null;
         prevOppVelocity = Double.NaN;
+        for (int i = 0; i < DamageObservationTracker.N; i++) {
+            prevObs[i] = 0;
+        }
     }
 
     // ========== Non-Vacuous Assertion ==========

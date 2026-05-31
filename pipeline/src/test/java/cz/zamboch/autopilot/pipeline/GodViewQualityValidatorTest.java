@@ -436,6 +436,8 @@ class GodViewQualityValidatorTest {
                 // Feed Layer 2
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
+                validator.recordDamageObservation(0, 1, 0, turn.getRobots(), turn.getBullets(),
+                                0, 0, 0, 0);
 
                 assertDoesNotThrow(() -> validator.assertNonVacuous());
         }
@@ -490,6 +492,8 @@ class GodViewQualityValidatorTest {
                 validator.compareWaveBreak(0, 0.5, 0.5, 10, 10);
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
+                validator.recordDamageObservation(0, 1, 0, turn.getRobots(), turn.getBullets(),
+                                0, 0, 0, 0);
 
                 IllegalStateException ex = assertThrows(IllegalStateException.class,
                                 () -> validator.assertNonVacuous());
@@ -529,6 +533,8 @@ class GodViewQualityValidatorTest {
                 // No Layer 4 wave comparisons — not required for non-vacuous
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
+                validator.recordDamageObservation(0, 1, 0, turn.getRobots(), turn.getBullets(),
+                                0, 0, 0, 0);
 
                 // Layer 4 is not required for assertNonVacuous (observer fires independently)
                 assertDoesNotThrow(() -> validator.assertNonVacuous());

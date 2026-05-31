@@ -8,18 +8,28 @@ import cz.zamboch.autopilot.core.Whiteboard;
 /**
  * Estimates opponent wall-hit damage from scan data (for the live robot).
  * <p>
- * The pipeline uses god-view {@code RobotState.HIT_WALL} detection;
- * the robot cannot observe opponent wall hits directly, so it estimates
- * based on position near wall + previous velocity toward it.
+ * Two independent proof signals, charged on scan ticks:
+ * <ol>
+ * <li><b>Velocity collapse</b> — the engine caps voluntary deceleration at
+ * 2 px/tick, so if {@code |prevScanV| - |currScanV| > 2 * ticksSinceScan + eps}
+ * a wall (or robot) collision is the only explanation. Charge
+ * {@code wallDamage(|prevScanV|)}, matching the validator's god-view
+ * attribution of {@code wallDamage(prevTickVelocity)} on the
+ * {@code HIT_WALL} transition.</li>
+ * <li><b>Proximity at wall</b> — opponent center is within
+ * {@code WALL_MARGIN + WALL_TOLERANCE} of an edge and the previous-scan
+ * velocity component pointed at it. Charge {@code wallDamage(prevSpeedTowardWall)}.
+ * This catches the steady-state "pinned to wall" case where the velocity
+ * collapse already happened in an earlier scan window.</li>
+ * </ol>
+ * Both signals charge the un-discounted {@code wallDamage(prevV)} because the
+ * validator does — subtracting "max possible braking in the scan gap" would
+ * systematically under-attribute, leaving residual energy that
+ * {@code FireFeatures} would then misclassify as enemy fire.
  * <p>
- * Heuristic: if opponent is at a wall edge and their previous velocity
- * toward that wall exceeded what they could have braked in the available
- * ticks, they must have hit it. The estimated impact velocity is the
- * previous velocity component toward the wall minus maximum possible braking
- * (2 units/tick × ticksSinceScan).
- * <p>
- * Only sets OPPONENT_WALL_HIT_DAMAGE if it hasn't already been set
- * (i.e., pipeline's exact value takes priority).
+ * Only adds to {@code OPPONENT_WALL_HIT_DAMAGE} when the existing accumulator
+ * is empty for this scan window, so the pipeline's exact god-view value (when
+ * present) wins.
  */
 public final class WallHitEstimator implements IInGameFeatures {
 
@@ -78,14 +88,17 @@ public final class WallHitEstimator implements IInGameFeatures {
 
         double opX = wb.getFeature(Feature.OPPONENT_X);
         double opY = wb.getFeature(Feature.OPPONENT_Y);
+        double currVelocity = wb.getFeature(Feature.OPPONENT_VELOCITY);
 
-        if (Double.isNaN(opX) || Double.isNaN(opY)) {
+        if (Double.isNaN(opX) || Double.isNaN(opY) || Double.isNaN(currVelocity)) {
             return;
         }
 
-        // Get previous scan's velocity and heading
-        double prevVelocity = wb.getPreviousTickFeature(Feature.OPPONENT_VELOCITY);
-        double prevHeading = wb.getPreviousTickFeature(Feature.OPPONENT_HEADING);
+        // Previous scan's velocity & heading. OPPONENT_* are only written on
+        // scan ticks, so a plain n=1 ring lookup can return NaN when the prior
+        // tick was a non-scan tick; walk back to the most recent KNOWN value.
+        double prevVelocity = wb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_VELOCITY, 1);
+        double prevHeading = wb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_HEADING, 1);
 
         if (Double.isNaN(prevVelocity) || Double.isNaN(prevHeading)) {
             return;
@@ -93,60 +106,56 @@ public final class WallHitEstimator implements IInGameFeatures {
 
         double ticksSinceScan = wb.getFeature(Feature.TICKS_SINCE_SCAN);
         if (Double.isNaN(ticksSinceScan) || ticksSinceScan < 1) {
-            return;
+            // ticksSinceScan == 0 means LAST_SCAN_TICK was just stamped, and the
+            // previous scan happened at tick = TICK - (TICK - prev_LAST_SCAN_TICK).
+            // Use 1 as a safe lower bound so the braking budget isn't zero.
+            ticksSinceScan = 1;
         }
 
-        // Compute velocity components (Robocode heading: 0=north, clockwise)
+        double absPrevV = Math.abs(prevVelocity);
+        double absCurrV = Math.abs(currVelocity);
+
+        // ---- Signal 1: velocity collapse beyond max braking budget --------
+        // Engine caps voluntary |Δv| at 2/tick. Any larger collapse proves a
+        // collision; assume wall (ram damage is a separate accumulator and is
+        // additive at FireFeatures consumption).
+        double velocityDrop = absPrevV - absCurrV;
+        double brakingBudget = DECEL_PER_TICK * ticksSinceScan;
+        double collapseDamage = 0;
+        if (velocityDrop > brakingBudget + 1e-6) {
+            collapseDamage = wallDamage(absPrevV);
+        }
+
+        // ---- Signal 2: pinned-at-wall proximity ---------------------------
         // vx = velocity * sin(heading), vy = velocity * cos(heading)
         double vx = prevVelocity * Math.sin(prevHeading);
         double vy = prevVelocity * Math.cos(prevHeading);
-
-        // Check each wall and find maximum estimated damage
-        double maxDamage = 0;
-
-        // Left wall: x ≈ WALL_MARGIN, hit if moving left (vx < 0)
+        double proximityDamage = 0;
         if (opX <= WALL_MARGIN + WALL_TOLERANCE && vx < 0) {
-            maxDamage = Math.max(maxDamage, estimateWallDamage(-vx, ticksSinceScan));
+            proximityDamage = Math.max(proximityDamage, wallDamage(-vx));
         }
-        // Right wall: x ≈ bfWidth - WALL_MARGIN, hit if moving right (vx > 0)
         if (opX >= bfWidth - WALL_MARGIN - WALL_TOLERANCE && vx > 0) {
-            maxDamage = Math.max(maxDamage, estimateWallDamage(vx, ticksSinceScan));
+            proximityDamage = Math.max(proximityDamage, wallDamage(vx));
         }
-        // Bottom wall: y ≈ WALL_MARGIN, hit if moving down (vy < 0)
         if (opY <= WALL_MARGIN + WALL_TOLERANCE && vy < 0) {
-            maxDamage = Math.max(maxDamage, estimateWallDamage(-vy, ticksSinceScan));
+            proximityDamage = Math.max(proximityDamage, wallDamage(-vy));
         }
-        // Top wall: y ≈ bfHeight - WALL_MARGIN, hit if moving up (vy > 0)
         if (opY >= bfHeight - WALL_MARGIN - WALL_TOLERANCE && vy > 0) {
-            maxDamage = Math.max(maxDamage, estimateWallDamage(vy, ticksSinceScan));
+            proximityDamage = Math.max(proximityDamage, wallDamage(vy));
         }
 
-        if (maxDamage > 0) {
+        // Both signals attribute the same physical event; take the max rather
+        // than the sum to avoid double-charging when both fire.
+        double damage = Math.max(collapseDamage, proximityDamage);
+        if (damage > 0) {
             double current = wb.getFeature(Feature.OPPONENT_WALL_HIT_DAMAGE);
             wb.setFeature(Feature.OPPONENT_WALL_HIT_DAMAGE,
-                    (Double.isNaN(current) ? 0 : current) + maxDamage);
+                    (Double.isNaN(current) ? 0 : current) + damage);
         }
     }
 
-    /**
-     * Estimate wall-hit damage given the speed toward a wall and available
-     * braking time.
-     * <p>
-     * Conservative estimate: assumes opponent braked maximally for all
-     * available ticks. Impact velocity = speed - 2*ticks. If they couldn't
-     * fully stop, they hit the wall with the remaining velocity.
-     */
-    private static double estimateWallDamage(double speedTowardWall, double ticksSinceScan) {
-        // Maximum braking over ticksSinceScan ticks
-        double maxBraking = DECEL_PER_TICK * ticksSinceScan;
-        double impactVelocity = speedTowardWall - maxBraking;
-
-        if (impactVelocity <= 0) {
-            // They could have fully stopped — no guaranteed wall hit
-            return 0;
-        }
-
-        // Robocode wall damage formula: max(abs(velocity) * 0.5 - 1, 0)
-        return Math.max(impactVelocity * 0.5 - 1, 0);
+    /** Robocode engine wall-damage formula. */
+    private static double wallDamage(double speed) {
+        return Math.max(Math.abs(speed) / 2.0 - 1.0, 0);
     }
 }

@@ -178,8 +178,10 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
 
         // Phase 1b: Layer 2 damage-observation drift (autopilot perspective only).
         // Read the four accumulators NOW, before doTurn wipes them, and compare
-        // against god-view truth. The values read here are exactly what
-        // FireFeatures.process will subtract from the energy drop in Phase 1c.
+        // per-tick against god-view truth. The wb accumulators carry forward
+        // across non-scan ticks; the validator computes the per-tick observation
+        // delta by tracking the previous reading and treating any decrease as a
+        // FireFeatures-consumption reset.
         if (validator != null && !observers[autopilotPiEarly].isDead()) {
             ObserverContext autoCtx = observers[autopilotPiEarly];
             validator.recordDamageObservation(currentRound, curr.getTurn(),

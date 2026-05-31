@@ -25,10 +25,12 @@ import java.util.Set;
 public final class EventReconstructor {
 
     private static final double ROBOT_SIZE = 36.0;
+    private static final double SCAN_RADIUS = 1200.0;
 
     // Per-tick state (from my robot's perspective)
     private RobotState prevState = RobotState.ACTIVE;
     private RobotState prevOpponentState = RobotState.ACTIVE;
+    private double prevRadarHeading = Double.NaN;
 
     // Bullet deduplication
     private final Set<Integer> knownBulletIds = new HashSet<>();
@@ -37,6 +39,7 @@ public final class EventReconstructor {
     public void resetRound() {
         prevState = RobotState.ACTIVE;
         prevOpponentState = RobotState.ACTIVE;
+        prevRadarHeading = Double.NaN;
         knownBulletIds.clear();
     }
 
@@ -51,6 +54,7 @@ public final class EventReconstructor {
         IRobotSnapshot opponent = robots[1 - myIndex];
         prevState = me.getState();
         prevOpponentState = opponent.getState();
+        prevRadarHeading = me.getRadarHeading();
     }
 
     /**
@@ -101,6 +105,7 @@ public final class EventReconstructor {
         // === Update state for next tick ===
         prevState = me.getState();
         prevOpponentState = opponent.getState();
+        prevRadarHeading = me.getRadarHeading();
 
         return new TickEvents(events);
     }
@@ -260,15 +265,28 @@ public final class EventReconstructor {
         if (opponent.getState() == RobotState.DEAD)
             return;
 
-        // Use the engine's authoritative scan arc (serialized into the snapshot by
-        // RobotPeer.performScan). Reconstructing it from previous/current radar
-        // headings is brittle: it desynchronizes by exactly one tick whenever the
-        // mid-turn scan geometry differs from end-of-turn radar headings (e.g.
-        // when the radar lock changes direction). Trusting the engine's own arc
-        // eliminates that whole class of off-by-one mismatches.
-        Arc2D arc = ((RobotSnapshot) me).getScanArc();
-        if (arc == null)
-            return; // engine did not scan this tick (e.g. radar idle)
+        // Prefer the engine's authoritative scan arc (serialized into the snapshot
+        // by RobotPeer.performScan): when the radar lock changes direction mid-turn,
+        // the end-of-turn radar headings disagree with the actual sweep geometry by
+        // one tick. Fall back to reconstructing the sweep from prev/curr radar
+        // heading for snapshots that don't carry an arc (synthetic test stubs,
+        // older fixtures, or the very first tick before the engine has run scan).
+        Arc2D arc = null;
+        if (me instanceof RobotSnapshot rs) {
+            arc = rs.getScanArc();
+        }
+        if (arc == null) {
+            if (Double.isNaN(prevRadarHeading))
+                return; // first tick — no sweep yet
+            double radarHeading = me.getRadarHeading();
+            double scanRadians = RoboMath.normalRelativeAngle(radarHeading - prevRadarHeading);
+            if (scanRadians == 0)
+                return; // no radar movement
+            double startAngle = RoboMath.normalAbsoluteAngle(prevRadarHeading - Math.PI / 2);
+            double r = SCAN_RADIUS;
+            arc = new Arc2D.Double(me.getX() - r, me.getY() - r, 2 * r, 2 * r,
+                    Math.toDegrees(startAngle), Math.toDegrees(scanRadians), Arc2D.PIE);
+        }
 
         // Target bounding box (36x36 centered on opponent)
         double half = ROBOT_SIZE / 2;
