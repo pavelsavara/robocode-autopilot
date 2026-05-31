@@ -200,7 +200,8 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                     auto.getConsumedAccumulator(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT),
                     auto.getConsumedAccumulator(Feature.OPPONENT_BULLET_ENERGY_GAIN),
                     auto.getConsumedAccumulator(Feature.RAM_DAMAGE_TO_OPPONENT),
-                    auto.getConsumedAccumulator(Feature.OPPONENT_WALL_HIT_DAMAGE));
+                    auto.getConsumedAccumulator(Feature.OPPONENT_WALL_HIT_DAMAGE),
+                    auto.wasAccumulatorResetThisTurn());
         }
 
         // Phase 1.5: Independently rebuild each god-view whiteboard from the engine

@@ -1,11 +1,13 @@
 - Skipped turn handler
+    - I dislike how all accumulators work. Propose larger re-design. Multiple options.
 - Fix energy drop detection
     - bullet shield
     - god-view could use the other perspective to validate energy accounting
-
+- Does layer 4 validate wave-break tick ?
 - Layer 0 for top 50 - once
 - Layer 1-4 for BeepBoop vs BeepBoop
 - Layer 1-4 for recordings
+- Do Layer 1-4 validate all features ?
 - ML predict fire (T-1)
 - surf their VCS
 - ML gun

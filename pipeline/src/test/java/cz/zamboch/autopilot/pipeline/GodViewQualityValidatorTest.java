@@ -437,7 +437,7 @@ class GodViewQualityValidatorTest {
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
                 validator.recordDamageObservation(0, 1, 0, turn.getRobots(), turn.getBullets(),
-                                0, 0, 0, 0);
+                                0, 0, 0, 0, false);
 
                 assertDoesNotThrow(() -> validator.assertNonVacuous());
         }
@@ -493,7 +493,7 @@ class GodViewQualityValidatorTest {
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
                 validator.recordDamageObservation(0, 1, 0, turn.getRobots(), turn.getBullets(),
-                                0, 0, 0, 0);
+                                0, 0, 0, 0, false);
 
                 IllegalStateException ex = assertThrows(IllegalStateException.class,
                                 () -> validator.assertNonVacuous());
@@ -534,7 +534,7 @@ class GodViewQualityValidatorTest {
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
                 validator.recordDamageObservation(0, 1, 0, turn.getRobots(), turn.getBullets(),
-                                0, 0, 0, 0);
+                                0, 0, 0, 0, false);
 
                 // Layer 4 is not required for assertNonVacuous (observer fires independently)
                 assertDoesNotThrow(() -> validator.assertNonVacuous());

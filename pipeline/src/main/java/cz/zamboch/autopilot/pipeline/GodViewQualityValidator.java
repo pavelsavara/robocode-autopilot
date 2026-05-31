@@ -93,6 +93,12 @@ public final class GodViewQualityValidator {
     // contribution).
     private final double[] prevObs = new double[DamageObservationTracker.N];
 
+    // Whether the PREVIOUS recorded tick was a scan tick on which the autopilot
+    // zeroed its damage accumulators. When true, this tick's obs snapshot is a
+    // fresh post-reset per-tick value (taken verbatim) rather than a running
+    // total to snap-down. See recordDamageObservation.
+    private boolean prevTickAccumulatorReset = false;
+
     // Optional per-event trace writer for damage observations (analog of
     // theirFireTrace for Layer 3). Null when -PdamageEventsDir not provided.
     private DamageEventsTraceWriter damageEventsTrace;
@@ -470,7 +476,8 @@ public final class GodViewQualityValidator {
             int autopilotIndex, IRobotSnapshot[] robots,
             IBulletSnapshot[] bullets,
             double obsOurBulletDmg, double obsOppBulletGain,
-            double obsRamDmg, double obsOppWallDmg) {
+            double obsRamDmg, double obsOppWallDmg,
+            boolean accumulatorResetThisTick) {
         int opp = 1 - autopilotIndex;
         IRobotSnapshot oppSnap = robots[opp];
         IRobotSnapshot selfSnap = robots[autopilotIndex];
@@ -515,16 +522,27 @@ public final class GodViewQualityValidator {
 
         // Per-tick obs delta: monotonic growth within a window, snap-down on
         // FireFeatures consumption. Treat any decrease as a reset, so the new
-        // value IS this tick's contribution.
+        // value IS this tick's contribution. Additionally, when the PREVIOUS
+        // tick was a scan tick the autopilot zeroed the accumulators at the end
+        // of that tick's doTurn, so this tick's snapshot is already a fresh
+        // post-reset per-tick value (not a running total) and must be taken
+        // verbatim. Without this, a sustained every-tick-scan clinch (wall-pin)
+        // holds the snapshot at a constant per-tick value and the plain
+        // snap-down delta collapses to 0, under-counting ram damage.
         double[] obsCurr = {
                 nanToZero(obsOurBulletDmg), nanToZero(obsOppBulletGain),
                 nanToZero(obsRamDmg), nanToZero(obsOppWallDmg)
         };
         double[] obsDelta = new double[DamageObservationTracker.N];
         for (int i = 0; i < DamageObservationTracker.N; i++) {
-            obsDelta[i] = obsCurr[i] >= prevObs[i] ? obsCurr[i] - prevObs[i] : obsCurr[i];
+            if (prevTickAccumulatorReset) {
+                obsDelta[i] = obsCurr[i];
+            } else {
+                obsDelta[i] = obsCurr[i] >= prevObs[i] ? obsCurr[i] - prevObs[i] : obsCurr[i];
+            }
             prevObs[i] = obsCurr[i];
         }
+        prevTickAccumulatorReset = accumulatorResetThisTick;
         damageObsTracking.record(gv, obsDelta);
 
         if (damageEventsTrace != null) {
@@ -654,6 +672,7 @@ public final class GodViewQualityValidator {
         obsHitOnUsBulletIds.clear();
         prevOppState = null;
         prevOppVelocity = Double.NaN;
+        prevTickAccumulatorReset = false;
         for (int i = 0; i < DamageObservationTracker.N; i++) {
             prevObs[i] = 0;
         }

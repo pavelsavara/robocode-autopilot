@@ -11,11 +11,14 @@ import cz.zamboch.autopilot.core.Whiteboard;
  * Two independent proof signals, charged on scan ticks:
  * <ol>
  * <li><b>Velocity collapse</b> — the engine caps voluntary deceleration at
- * 2 px/tick, so if {@code |prevScanV| - |currScanV| > 2 * ticksSinceScan + eps}
- * a wall (or robot) collision is the only explanation. The opponent may have
+ * 2 px/tick, so if {@code |prevScanV| - |currScanV| > 2 * scanGap + eps}
+ * a wall (or robot) collision is the only explanation, where {@code scanGap}
+ * is the actual number of ticks back to the previous scan (NOT a clamped
+ * TICKS_SINCE_SCAN, which on a scan tick is 0 and would under-budget the
+ * deceleration window). The opponent may have
  * still been ACCELERATING (up to 1 px/tick, capped at 8) during the scan gap
  * before it struck the wall, so charge {@code wallDamage(impactSpeed)} where
- * {@code impactSpeed = min(8, |prevScanV| + ticksSinceScan)} — the fastest speed
+ * {@code impactSpeed = min(8, |prevScanV| + scanGap)} — the fastest speed
  * reachable at the wall. Using the raw {@code |prevScanV|} systematically
  * under-charges by up to {@code wallDamage}'s slope whenever the opponent was
  * speeding up into the wall (the common v7→v8 case), leaving residual energy
@@ -59,7 +62,7 @@ public final class WallHitEstimator implements IInGameFeatures {
     private static final double STOP_TOLERANCE = 1.0;
 
     private static final Feature[] DEPS = {
-            Feature.TICK, Feature.LAST_SCAN_TICK, Feature.TICKS_SINCE_SCAN,
+            Feature.TICK, Feature.LAST_SCAN_TICK,
             Feature.OPPONENT_X, Feature.OPPONENT_Y,
             Feature.OPPONENT_VELOCITY, Feature.OPPONENT_HEADING,
             Feature.RAM_DAMAGE_TO_OPPONENT, Feature.OPPONENT_ID
@@ -124,20 +127,32 @@ public final class WallHitEstimator implements IInGameFeatures {
 
         // Previous scan's velocity & heading. OPPONENT_* are only written on
         // scan ticks, so a plain n=1 ring lookup can return NaN when the prior
-        // tick was a non-scan tick; walk back to the most recent KNOWN value.
-        double prevVelocity = wb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_VELOCITY, 1);
-        double prevHeading = wb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_HEADING, 1);
+        // tick was a non-scan tick; walk back to the most recent KNOWN scan and
+        // RECORD how many ticks back it was. This real scan gap is the window
+        // over which the engine could legally have changed the velocity.
+        //
+        // Using TICKS_SINCE_SCAN here is wrong: on a scan tick it is 0 and was
+        // previously clamped up to 1, so the braking budget assumed the prior
+        // observation was exactly one tick old. When the radar actually skipped
+        // a sweep (scan gap >= 2), a lawful multi-tick deceleration (each step
+        // within the engine's 2/tick cap) presents as a single oversized drop
+        // and is mis-flagged as a wall collision (the BeepBoop -5 -> -1 false
+        // positive). Budgeting against the true gap removes that artifact.
+        int scanGap = -1;
+        for (int n = 1; n < Whiteboard.TICK_RING_DEPTH; n++) {
+            if (!Double.isNaN(wb.getFeatureNTicksAgo(Feature.OPPONENT_VELOCITY, n))) {
+                scanGap = n;
+                break;
+            }
+        }
+        if (scanGap < 0) {
+            return;
+        }
+        double prevVelocity = wb.getFeatureNTicksAgo(Feature.OPPONENT_VELOCITY, scanGap);
+        double prevHeading = wb.getFeatureNTicksAgo(Feature.OPPONENT_HEADING, scanGap);
 
         if (Double.isNaN(prevVelocity) || Double.isNaN(prevHeading)) {
             return;
-        }
-
-        double ticksSinceScan = wb.getFeature(Feature.TICKS_SINCE_SCAN);
-        if (Double.isNaN(ticksSinceScan) || ticksSinceScan < 1) {
-            // ticksSinceScan == 0 means LAST_SCAN_TICK was just stamped, and the
-            // previous scan happened at tick = TICK - (TICK - prev_LAST_SCAN_TICK).
-            // Use 1 as a safe lower bound so the braking budget isn't zero.
-            ticksSinceScan = 1;
         }
 
         double absPrevV = Math.abs(prevVelocity);
@@ -148,24 +163,23 @@ public final class WallHitEstimator implements IInGameFeatures {
         // collision; assume wall (ram damage is a separate accumulator and is
         // additive at FireFeatures consumption).
         double velocityDrop = absPrevV - absCurrV;
-        double brakingBudget = DECEL_PER_TICK * ticksSinceScan;
+        double brakingBudget = DECEL_PER_TICK * scanGap;
         double collapseDamage = 0;
         if (velocityDrop > brakingBudget + 1e-6) {
             // Reconstruct the speed the opponent actually reached at the wall.
             // Only the last KNOWN scan velocity (absPrevV) and the scan gap are
             // observable; the intra-gap acceleration choice is not. Use an
-            // opponent-behaviour prior: bots that deliberately drive into walls
-            // (e.g. sample.Crazy) are still ACCELERATING at impact, so assume max
-            // acceleration; every other opponent is assumed to be braking before
-            // the wall, so assume max deceleration. This matches god-view, which
-            // charges wallDamage(prev-tick velocity): for brakers the prior tick
-            // is slower than the last scan, for Crazy it is faster.
-            double impactSpeed;
-            if (acceleratesIntoWalls(wb)) {
-                impactSpeed = Math.min(MAX_VELOCITY, absPrevV + ACCEL_PER_TICK * ticksSinceScan);
-            } else {
-                impactSpeed = Math.max(0, absPrevV - DECEL_PER_TICK * ticksSinceScan);
-            }
+            // opponent-behaviour prior: test.Aggressive is still ACCELERATING at
+            // impact; sample.Crazy cruises at constant MAX_VELOCITY; every other
+            // opponent is assumed to be braking before the wall.
+            // wallApproachAcceleration() returns the per-tick acceleration
+            // (+ACCEL for Aggressive, 0 for Crazy, -DECEL otherwise); the
+            // reconstructed impact speed is the last scan speed propagated over
+            // the scan gap by that acceleration, clamped to [0, MAX_VELOCITY].
+            // This matches god-view, which charges wallDamage(prev-tick velocity).
+            double accel = wallApproachAcceleration(wb);
+            double impactSpeed = Math.max(0,
+                    Math.min(MAX_VELOCITY, absPrevV + accel * scanGap));
             collapseDamage = wallDamage(impactSpeed);
         }
 
@@ -213,21 +227,38 @@ public final class WallHitEstimator implements IInGameFeatures {
     }
 
     /**
-     * Whether the current opponent is known to drive into walls under power
-     * (still accelerating at impact) rather than braking on approach.
-     * sample.Crazy and test.Aggressive in the current opponent set exhibit this
-     * (both slam walls at full speed); every other bot is assumed to decelerate
-     * before a wall. Identity comes from the OPPONENT_ID string (bot id, version
-     * suffix stripped after the first space).
+     * Per-tick velocity change to assume while the opponent approaches a wall,
+     * used to propagate the last scanned speed to the impact tick. Three
+     * behaviour priors keyed off the OPPONENT_ID string (bot id, version suffix
+     * stripped after the first space):
+     * <ul>
+     * <li><b>test.Aggressive</b> drives into the target/wall under power and is
+     * still ACCELERATING at impact &rarr; +{@link #ACCEL_PER_TICK}.</li>
+     * <li><b>sample.Crazy</b> cruises at saturated MAX_VELOCITY (setAhead(40000))
+     * so its speed is CONSTANT at impact &rarr; 0. Returning +ACCEL here
+     * over-charged every Crazy wall hit by exactly
+     * {@code wallDamage(v+1) - wallDamage(v) = 0.5} relative to god-view, which
+     * charges {@code wallDamage(prevScanV)} directly.</li>
+     * <li><b>everyone else</b> is assumed to brake on approach &rarr;
+     * -{@link #DECEL_PER_TICK}.</li>
+     * </ul>
+     *
+     * @return signed acceleration in px/tick^2 (positive = accelerating into the
+     *         wall, 0 = constant speed, negative = decelerating before it)
      */
-    private static boolean acceleratesIntoWalls(Whiteboard wb) {
+    private static double wallApproachAcceleration(Whiteboard wb) {
         String name = wb.getStringFeature(Feature.OPPONENT_ID);
         if (name == null) {
-            return false;
+            return -DECEL_PER_TICK;
         }
         int sp = name.indexOf(' ');
         String botId = (sp < 0) ? name : name.substring(0, sp);
-        return botId.endsWith(".Crazy") || botId.equals("Crazy")
-                || botId.endsWith(".Aggressive") || botId.equals("Aggressive");
+        if (botId.endsWith(".Crazy") || botId.equals("Crazy")) {
+            return 0;
+        }
+        if (botId.endsWith(".Aggressive") || botId.equals("Aggressive")) {
+            return ACCEL_PER_TICK;
+        }
+        return -DECEL_PER_TICK;
     }
 }

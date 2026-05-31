@@ -149,11 +149,30 @@ public final class Autopilot extends AdvancedRobot {
     private final double[] consumedAccumulators = new double[Feature.COUNT];
 
     /**
+     * True when {@link #doTurn()} zeroed the damage accumulators at the end of
+     * the most recent turn (i.e. that turn was a scan tick). The validator uses
+     * the PREVIOUS turn's value to decide whether the current snapshot is a
+     * running total (snap-down delta) or a fresh post-reset per-tick value
+     * (taken verbatim). Without it, a sustained every-tick-scan clinch resets
+     * the accumulator every tick so the snapshot is a constant 0.6 and the
+     * snap-down delta collapses to 0, under-counting ram damage.
+     */
+    private boolean accumulatorsResetThisTurn;
+
+    /**
      * Post-process, pre-reset value of a damage accumulator for the tick that
      * just ran through {@link #doTurn()}. See {@link #consumedAccumulators}.
      */
     public double getConsumedAccumulator(Feature f) {
         return consumedAccumulators[f.ordinal()];
+    }
+
+    /**
+     * Whether the damage accumulators were reset at the end of the most recent
+     * {@link #doTurn()} (true on scan ticks). See {@link #accumulatorsResetThisTurn}.
+     */
+    public boolean wasAccumulatorResetThisTurn() {
+        return accumulatorsResetThisTurn;
     }
 
     @Override
@@ -398,11 +417,13 @@ public final class Autopilot extends AdvancedRobot {
         // Reset accumulators after FireFeatures has consumed them on scan ticks
         double tick = wb.getFeature(Feature.TICK);
         double lastScan = wb.getFeature(Feature.LAST_SCAN_TICK);
-        if (!Double.isNaN(tick) && tick == lastScan) {
+        boolean scanTick = !Double.isNaN(tick) && tick == lastScan;
+        if (scanTick) {
             for (Feature f : ACCUMULATOR_FEATURES) {
                 wb.setFeature(f, 0);
             }
         }
+        accumulatorsResetThisTurn = scanTick;
 
         // Radar — independent of body/gun thanks to setAdjustRadarFor*(true).
         setTurnRadarRightRadians(radar.getRadarTurn());
