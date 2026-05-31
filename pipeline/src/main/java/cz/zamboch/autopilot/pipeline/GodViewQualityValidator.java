@@ -461,8 +461,9 @@ public final class GodViewQualityValidator {
      * <li><b>OPP_BULLET_GAIN</b> &mdash; opponent bullets that transitioned to
      * {@code HIT_VICTIM} on us this tick; god-view value is
      * {@code hitEnergyBonus(power)} credited to opponent.</li>
-     * <li><b>RAM_DMG</b> &mdash; {@code RAM_DAMAGE} when either robot is in
-     * {@code HIT_ROBOT} this tick (opponent loses one unit per contact tick).</li>
+     * <li><b>RAM_DMG</b> &mdash; {@code RAM_DAMAGE} per robot in
+     * {@code HIT_ROBOT} this tick (opponent loses one unit per at-fault robot:
+     * 0.6 for a one-sided ram, 1.2 for a mutual head-on collision).</li>
      * <li><b>OPP_WALL_DMG</b> &mdash; {@code wallDamage(prevOppVelocity)} when
      * opponent transitions into {@code HIT_WALL}. Computed from
      * {@link IRobotSnapshot#getState()} and the prior-scan velocity, both of
@@ -502,12 +503,24 @@ public final class GodViewQualityValidator {
             }
         }
 
-        // Ram: opponent loses RAM_DAMAGE per tick of contact. The opponent's
-        // HIT_ROBOT state is the most direct signal; self HIT_ROBOT is also
-        // counted because wall+ram pin reports HIT_WALL on the pinned side.
-        if (selfSnap.getState() == RobotState.HIT_ROBOT
-                || oppSnap.getState() == RobotState.HIT_ROBOT) {
-            gv[DamageObservationTracker.RAM_DMG] += RAM_DAMAGE;
+        // Ram: the engine's checkRobotCollision applies ROBOT_HIT_DAMAGE to BOTH
+        // robots once PER at-fault robot (the one driving into the other, marked
+        // RobotState.HIT_ROBOT). So the opponent's per-tick ram loss is
+        // RAM_DAMAGE * (number of robots at fault): 0.6 when only one side rams,
+        // 1.2 on a mutual head-on collision where both are HIT_ROBOT. Counting
+        // only "either is HIT_ROBOT" (a single 0.6) under-charged the mutual case.
+        // During a wall-pin clinch the pinned side reports HIT_WALL (not
+        // HIT_ROBOT), so only the rammer is counted there — one 0.6, matching the
+        // single HitRobotEvent the observer receives.
+        int ramAtFault = 0;
+        if (selfSnap.getState() == RobotState.HIT_ROBOT) {
+            ramAtFault++;
+        }
+        if (oppSnap.getState() == RobotState.HIT_ROBOT) {
+            ramAtFault++;
+        }
+        if (ramAtFault > 0) {
+            gv[DamageObservationTracker.RAM_DMG] += ramAtFault * RAM_DAMAGE;
         }
 
         // Opponent wall hit: charged once on transition into HIT_WALL, using
@@ -634,14 +647,21 @@ public final class GodViewQualityValidator {
             expected -= wallDamage(prevVelocity[perspIndex]);
         }
 
-        // Ram damage: both robots lose RAM_DAMAGE each tick they are in contact.
-        // A robot pinned against a wall reports HIT_WALL (wall takes priority in the
-        // state enum) even while being rammed, so the collision is detected via
-        // either robot's HIT_ROBOT state rather than self's state alone.
-        if (self.getState() == RobotState.HIT_ROBOT
-                || robots[opponentIndex].getState() == RobotState.HIT_ROBOT) {
-            expected -= RAM_DAMAGE;
+        // Ram damage: the engine applies RAM_DAMAGE to BOTH robots once per
+        // at-fault robot (the rammer, marked HIT_ROBOT). So each robot loses
+        // RAM_DAMAGE * (number of robots at fault) per tick: 0.6 when one side
+        // rams, 1.2 on a mutual head-on collision where both are HIT_ROBOT. A
+        // robot pinned against a wall reports HIT_WALL (wall takes priority in
+        // the state enum) even while being rammed, so the collision is detected
+        // via either robot's HIT_ROBOT state rather than self's state alone.
+        int ramAtFault = 0;
+        if (self.getState() == RobotState.HIT_ROBOT) {
+            ramAtFault++;
         }
+        if (robots[opponentIndex].getState() == RobotState.HIT_ROBOT) {
+            ramAtFault++;
+        }
+        expected -= ramAtFault * RAM_DAMAGE;
 
         energyChecks[perspIndex]++;
         if (Math.abs(expected - currentEnergy) > EPSILON) {
