@@ -311,8 +311,8 @@ public final class Autopilot extends AdvancedRobot {
             wb.setModelSelector(new ModelSelector(store));
         }
         // Recreate strategies so their internal cross-round state (e.g.
-        // NarrowLockRadar.lastTurnDirection) resets to its fresh-instance default.
-        radar = new NarrowLockRadar(wb);
+        // OvershootLockRadar.lastTurnDirection) resets to its fresh-instance default.
+        radar = new OvershootLockRadar(wb);
         gun = new GFGunStrategy(wb);
         movement = new OrbitMovementStrategy(wb);
         // Clear any carried-forward accumulator/sticky values from the prior round.
@@ -337,7 +337,7 @@ public final class Autopilot extends AdvancedRobot {
             featuresRegistered = true;
         }
 
-        radar = new NarrowLockRadar(wb);
+        radar = new OvershootLockRadar(wb);
         gun = new GFGunStrategy(wb);
         movement = new OrbitMovementStrategy(wb);
     }
@@ -350,6 +350,10 @@ public final class Autopilot extends AdvancedRobot {
     @Override
     public void run() {
         initCommon(getBattleFieldWidth(), getBattleFieldHeight());
+        // Decouple radar from body and gun rotation so OvershootLockRadar's command
+        // is the radar's actual angular motion (no carry from body/gun turns).
+        setAdjustRadarForRobotTurn(true);
+        setAdjustRadarForGunTurn(true);
         // Round 2+ of the same battle: the opponent and its accumulated VCS model are
         // already known from a prior round via the per-battle static, so attach the
         // model now — before the first scan — so targeting benefits immediately.
@@ -373,21 +377,11 @@ public final class Autopilot extends AdvancedRobot {
             }
         }
 
-        // Radar
-        // Plan movement and gun first so the radar can subtract the body/gun
-        // carry from its own command and land precisely on the predicted
-        // opponent bearing (see NarrowLockRadar).
-        movement.getCommand(moveCmd);
-        gun.getFireCommand(fireCmd);
-        double bodyTurnPlanned = moveCmd.turnRight;
-        double gunTurnPlanned = 0.0;
-        if (!Double.isNaN(fireCmd.angle)) {
-            double gunHeading = wb.getFeature(Feature.GUN_HEADING);
-            gunTurnPlanned = RoboMath.normalRelativeAngle(fireCmd.angle - gunHeading);
-        }
-        setTurnRadarRightRadians(radar.getRadarTurn(bodyTurnPlanned, gunTurnPlanned));
+        // Radar — independent of body/gun thanks to setAdjustRadarFor*(true).
+        setTurnRadarRightRadians(radar.getRadarTurn());
 
         // Movement
+        movement.getCommand(moveCmd);
         setTurnRightRadians(moveCmd.turnRight);
         setAhead(moveCmd.ahead);
 
@@ -398,8 +392,10 @@ public final class Autopilot extends AdvancedRobot {
         // getGunTurnRemaining() returns radians (same internal storage),
         // AdvancedRobot.getGunTurnRemaining() wraps with toDegrees().
         // Both paths: check < 5 degrees, call setFireBullet which checks gun heat.
+        gun.getFireCommand(fireCmd);
         if (!Double.isNaN(fireCmd.angle)) {
-            setTurnGunRightRadians(gunTurnPlanned);
+            double gunHeading = wb.getFeature(Feature.GUN_HEADING);
+            setTurnGunRightRadians(RoboMath.normalRelativeAngle(fireCmd.angle - gunHeading));
             if (fireCmd.power > 0 && Math.abs(getGunTurnRemaining()) < 5) {
                 Bullet bullet = setFireBullet(fireCmd.power);
                 if (bullet != null) {

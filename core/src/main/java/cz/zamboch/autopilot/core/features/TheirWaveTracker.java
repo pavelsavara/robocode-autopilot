@@ -90,15 +90,15 @@ public final class TheirWaveTracker implements IInGameFeatures {
         // ground truth (back-projected IBulletSnapshot muzzle) to an exact match.
         // Prefer strict T-1 (true muzzle). If T-1 was a no-scan tick, fall back
         // to the CURRENT-tick scan rather than walking the ring back:
-        //   * FireFeatures only sets THEIR_FIRE_POWER when OPPONENT_ENERGY is
-        //     present THIS tick (a scan just landed), so current OPPONENT_X/Y
-        //     is guaranteed populated AND identical between live and observer
-        //     (both decode from the same engine snapshot).
-        //   * Walking the ring back across multiple no-scan ticks would diverge
-        //     between live and observer whenever the reconstructed scan arc
-        //     timing differs by +-1 tick from the live engine -- that asymmetry
-        //     pollutes ~20 wave columns for the wave's entire lifetime
-        //     (Layer 0 regression: 19 -> 11882 mismatches on BeepBoop).
+        // * FireFeatures only sets THEIR_FIRE_POWER when OPPONENT_ENERGY is
+        // present THIS tick (a scan just landed), so current OPPONENT_X/Y
+        // is guaranteed populated AND identical between live and observer
+        // (both decode from the same engine snapshot).
+        // * Walking the ring back across multiple no-scan ticks would diverge
+        // between live and observer whenever the reconstructed scan arc
+        // timing differs by +-1 tick from the live engine -- that asymmetry
+        // pollutes ~20 wave columns for the wave's entire lifetime
+        // (Layer 0 regression: 19 -> 11882 mismatches on BeepBoop).
         // Cost: ~6-8 px muzzle position error on waves where T-1 was missed
         // (one tick of opponent movement at max velocity).
         double oppX = wb.getPreviousTickFeature(Feature.OPPONENT_X);

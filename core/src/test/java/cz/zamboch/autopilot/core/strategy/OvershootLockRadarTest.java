@@ -8,16 +8,16 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-final class NarrowLockRadarTest {
+final class OvershootLockRadarTest {
 
     private Whiteboard wb;
-    private NarrowLockRadar radar;
+    private OvershootLockRadar radar;
 
     @BeforeEach
     void setUp() {
         wb = new Whiteboard();
         wb.registerFeatures(new SpatialFeatures());
-        radar = new NarrowLockRadar(wb);
+        radar = new OvershootLockRadar(wb);
     }
 
     @Test
@@ -39,9 +39,9 @@ final class NarrowLockRadarTest {
         double turn = radar.getRadarTurn();
 
         // Expected: normalRelativeAngle(π/4 - π/6) = π/12 ≈ 0.2618
-        // Plus overshoot of 2° in same direction
+        // Plus overshoot of 22.5° in same direction — see OvershootLockRadar.
         double expectedBase = Math.PI / 4 - Math.PI / 6;
-        double overshoot = Math.toRadians(2);
+        double overshoot = Math.toRadians(22.5);
         assertEquals(expectedBase + overshoot, turn, 1e-9);
     }
 
