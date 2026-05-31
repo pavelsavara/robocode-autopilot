@@ -30,6 +30,7 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
     private CsvWriter[] csvWriters; // one per observer, nullable
     private String battleId;
     private DebugPropertyCsvWriter debugCsv; // optional IDebugProperty fidelity dump, nullable
+    private TheirFireTraceWriter theirFireTrace; // optional per-event their-fire trace, nullable
     private SnapshotFixtureWriter snapshotFixtureWriter; // optional engine-grounded test fixture recorder, nullable
     private int currentRound = -1;
     private final double[] lastValidatorFireTick = { Double.NaN, Double.NaN };
@@ -59,6 +60,11 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
      */
     public void setDebugCsv(DebugPropertyCsvWriter debugCsv) {
         this.debugCsv = debugCsv;
+    }
+
+    /** Attach a per-event their-fire diff trace writer (their-fires.csv). */
+    public void setTheirFireTrace(TheirFireTraceWriter theirFireTrace) {
+        this.theirFireTrace = theirFireTrace;
     }
 
     /**
@@ -269,6 +275,20 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                     double trueHeading = godViewWaveResolver.getLastFiredTrueHeading(oppIndex);
                     long tick = (long) oppCtx.godWb().getFeature(Feature.OUR_FIRE_TICK);
                     validator.recordGodViewTheirFire(pi, power, x, y, trueHeading, tick);
+                    if (theirFireTrace != null) {
+                        long nowTick = (long) ctx.wb().getFeature(Feature.TICK);
+                        long lastScanTick = (long) ctx.wb().getFeature(Feature.LAST_SCAN_TICK);
+                        theirFireTrace.write(currentRound, pi, tick, "GV", -1,
+                                power, x, y, trueHeading,
+                                ctx.wb().getFeature(Feature.OPPONENT_ENERGY),
+                                ctx.wb().getPreviousTickFeature(Feature.PREV_SCAN_OPPONENT_ENERGY),
+                                (int) (nowTick - lastScanTick),
+                                ctx.wb().getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT),
+                                ctx.wb().getFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN),
+                                ctx.wb().getFeature(Feature.RAM_DAMAGE_TO_OPPONENT),
+                                ctx.wb().getFeature(Feature.OPPONENT_WALL_HIT_DAMAGE),
+                                robots[oppIndex].getState().name(), robots[pi].getState().name());
+                    }
 
                     // Layer 2 (aim): god-view exact THEIR aim geometry (tick before
                     // their fire). From the opponent's god-view whiteboard its own
@@ -296,6 +316,20 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                     double rsBearing = ctx.wb().getFeature(Feature.THEIR_FIRE_BEARING);
                     validator.recordRobotSideTheirFire(pi, rsPower, rsX, rsY, rsBearing,
                             (long) theirFireTick);
+                    if (theirFireTrace != null) {
+                        long nowTick = (long) ctx.wb().getFeature(Feature.TICK);
+                        long lastScanTick = (long) ctx.wb().getFeature(Feature.LAST_SCAN_TICK);
+                        theirFireTrace.write(currentRound, pi, (long) theirFireTick, "RS", -1,
+                                rsPower, rsX, rsY, rsBearing,
+                                ctx.wb().getFeature(Feature.OPPONENT_ENERGY),
+                                ctx.wb().getPreviousTickFeature(Feature.PREV_SCAN_OPPONENT_ENERGY),
+                                (int) (nowTick - lastScanTick),
+                                ctx.wb().getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT),
+                                ctx.wb().getFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN),
+                                ctx.wb().getFeature(Feature.RAM_DAMAGE_TO_OPPONENT),
+                                ctx.wb().getFeature(Feature.OPPONENT_WALL_HIT_DAMAGE),
+                                robots[oppIndex].getState().name(), robots[pi].getState().name());
+                    }
 
                     // Layer 2 (aim): robot-side inferred THEIR aim geometry (tick
                     // before their fire), keyed by the same fire tick.
