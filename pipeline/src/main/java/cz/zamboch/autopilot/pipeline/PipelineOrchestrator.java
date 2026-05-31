@@ -66,6 +66,13 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
         this.theirFireTrace = theirFireTrace;
     }
 
+    /** Attach a per-event damage-observation trace writer (damage-events.csv). */
+    public void setDamageEventsTrace(DamageEventsTraceWriter damageEventsTrace) {
+        if (validator != null) {
+            validator.setDamageEventsTrace(damageEventsTrace);
+        }
+    }
+
     /**
      * Attach a snapshot fixture recorder that captures the raw turn-snapshot stream
      * for offline, engine-grounded unit-test replay. May be null when the
@@ -157,10 +164,36 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
         }
 
         IRobotSnapshot[] robots = curr.getRobots();
+        int autopilotPiEarly = autopilotIndex(robots);
 
-        // Phase 1: Reconstruct events, feed to observer, run strategy (robot-side)
+        // Phase 1a: Reconstruct events and dispatch to each observer's handlers.
+        // This populates the per-tick damage accumulators on the observer
+        // whiteboards (OUR_BULLET_DAMAGE_TO_OPPONENT, OPPONENT_BULLET_ENERGY_GAIN,
+        // RAM_DAMAGE_TO_OPPONENT, OPPONENT_WALL_HIT_DAMAGE). Strategy/process is
+        // deferred to Phase 1c because Autopilot.doTurn resets those accumulators
+        // to 0 on every scan tick (after FireFeatures consumes them).
         for (ObserverContext ctx : observers) {
-            ctx.processTick(curr);
+            ctx.processTickEvents(curr);
+        }
+
+        // Phase 1b: Layer 2 damage-observation drift (autopilot perspective only).
+        // Read the four accumulators NOW, before doTurn wipes them, and compare
+        // against god-view truth. The values read here are exactly what
+        // FireFeatures.process will subtract from the energy drop in Phase 1c.
+        if (validator != null && !observers[autopilotPiEarly].isDead()) {
+            ObserverContext autoCtx = observers[autopilotPiEarly];
+            validator.recordDamageObservation(currentRound, curr.getTurn(),
+                    autopilotPiEarly, robots,
+                    curr.getBullets(),
+                    autoCtx.wb().getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT),
+                    autoCtx.wb().getFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN),
+                    autoCtx.wb().getFeature(Feature.RAM_DAMAGE_TO_OPPONENT),
+                    autoCtx.wb().getFeature(Feature.OPPONENT_WALL_HIT_DAMAGE));
+        }
+
+        // Phase 1c: Run each observer's doTurn (process features + run strategy).
+        for (ObserverContext ctx : observers) {
+            ctx.doTurn();
         }
 
         // Phase 1.5: Independently rebuild each god-view whiteboard from the engine
@@ -230,18 +263,9 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                 // Layer 3 runs ONLY for the autopilot perspective — it measures
                 // the autopilot's incoming-fire detection (energy-drop inference)
                 // against the god-view ground truth of the opponent's bullet.
+                // (Layer 2 damage-observation drift was already recorded in
+                // Phase 1b, before doTurn reset the accumulators.)
                 if (pi == autopilotPi) {
-                    // Layer 2 (autopilot view): compare the autopilot's tally of
-                    // opponent-damage events against god-view ground truth. The
-                    // four observed values are exactly what FireFeatures
-                    // subtracts from the energy drop before calling fire-vs-not.
-                    validator.recordDamageObservation(autopilotPi, robots,
-                            curr.getBullets(),
-                            ctx.wb().getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT),
-                            ctx.wb().getFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN),
-                            ctx.wb().getFeature(Feature.RAM_DAMAGE_TO_OPPONENT),
-                            ctx.wb().getFeature(Feature.OPPONENT_WALL_HIT_DAMAGE));
-
                     // Layer 3: god-view incoming fire — opponent's bullet as the
                     // engine created it (true muzzle origin / fire tick / power /
                     // flight heading). The opponent's own OUR_FIRE_* on its

@@ -85,6 +85,18 @@ public final class GodViewQualityValidator {
     private RobotState prevOppState = null;
     private double prevOppVelocity = Double.NaN;
 
+    // Optional per-event trace writer for damage observations (analog of
+    // theirFireTrace for Layer 3). Null when -PdamageEventsDir not provided.
+    private DamageEventsTraceWriter damageEventsTrace;
+
+    public void setDamageEventsTrace(DamageEventsTraceWriter w) {
+        this.damageEventsTrace = w;
+    }
+
+    private static final String[] DAMAGE_CHANNEL_NAMES = {
+            "OUR_BULLET_DMG", "OPP_BULLET_GAIN", "RAM_DMG", "OPP_WALL_DMG"
+    };
+
     @SuppressWarnings("unchecked")
     private static Set<Integer>[] newIdSets() {
         return new Set[] { new HashSet<Integer>(), new HashSet<Integer>() };
@@ -441,7 +453,8 @@ public final class GodViewQualityValidator {
      * NaN values from the autopilot whiteboard (no event this tick) are
      * treated as 0.
      */
-    public void recordDamageObservation(int autopilotIndex, IRobotSnapshot[] robots,
+    public void recordDamageObservation(int round, long tick,
+            int autopilotIndex, IRobotSnapshot[] robots,
             IBulletSnapshot[] bullets,
             double obsOurBulletDmg, double obsOppBulletGain,
             double obsRamDmg, double obsOppWallDmg) {
@@ -492,6 +505,19 @@ public final class GodViewQualityValidator {
                 nanToZero(obsRamDmg), nanToZero(obsOppWallDmg)
         };
         damageObsTracking.record(gv, obs);
+
+        if (damageEventsTrace != null) {
+            final double EPS = 1e-9;
+            for (int i = 0; i < DamageObservationTracker.N; i++) {
+                if (Math.abs(gv[i]) > EPS || Math.abs(obs[i]) > EPS) {
+                    damageEventsTrace.write(round, tick, DAMAGE_CHANNEL_NAMES[i],
+                            gv[i], obs[i],
+                            selfSnap.getEnergy(), oppSnap.getEnergy(),
+                            selfSnap.getState() == null ? null : selfSnap.getState().name(),
+                            oppSnap.getState() == null ? null : oppSnap.getState().name());
+                }
+            }
+        }
     }
 
     private static double nanToZero(double v) {
