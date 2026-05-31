@@ -33,8 +33,7 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
     private TheirFireTraceWriter theirFireTrace; // optional per-event their-fire trace, nullable
     private SnapshotFixtureWriter snapshotFixtureWriter; // optional engine-grounded test fixture recorder, nullable
     private int currentRound = -1;
-    private final double[] lastValidatorFireTick = { Double.NaN, Double.NaN };
-    private final double[] lastValidatorTheirFireTick = { Double.NaN, Double.NaN };
+    private double lastValidatorTheirFireTick = Double.NaN;
     private final double[] lastValidatorBreakTick = { Double.NaN, Double.NaN };
 
     public PipelineOrchestrator(double bfWidth, double bfHeight, double gunCoolingRate) {
@@ -219,6 +218,7 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
 
         // Phase 5: God-view quality validation (layers 1-4) on the god-view whiteboard
         if (validator != null) {
+            int autopilotPi = autopilotIndex(robots);
             for (ObserverContext ctx : observers) {
                 if (ctx.isDead())
                     continue;
@@ -227,118 +227,70 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                 validator.validateSpatial(pi, ctx.godWb(), robots[pi], robots[oppIndex], curr);
                 validator.accountEnergy(pi, robots, curr.getBullets());
 
-                // Layer 3: god-view fire (our perspective fired)
-                if (godViewWaveResolver.firedThisTick(pi)) {
-                    double power = ctx.godWb().getFeature(Feature.OUR_FIRE_POWER);
-                    double x = ctx.godWb().getFeature(Feature.OUR_FIRE_X);
-                    double y = ctx.godWb().getFeature(Feature.OUR_FIRE_Y);
-                    double heading = ctx.godWb().getFeature(Feature.OUR_FIRE_BEARING_ABSOLUTE);
-                    long tick = (long) ctx.godWb().getFeature(Feature.OUR_FIRE_TICK);
-                    int bulletId = (int) ctx.godWb().getFeature(Feature.OUR_FIRE_BULLET_ID);
-                    validator.recordGodViewFire(pi, bulletId, power, x, y, heading, tick);
-
-                    // Layer 3 (aim): god-view exact OUR aim geometry (tick before fire)
-                    double aimX = ctx.godWb().getFeature(Feature.OUR_AIM_X);
-                    double aimY = ctx.godWb().getFeature(Feature.OUR_AIM_Y);
-                    double aimDist = ctx.godWb().getFeature(Feature.OUR_AIM_DISTANCE);
-                    double aimBearing = ctx.godWb().getFeature(Feature.OUR_AIM_BEARING_ABSOLUTE);
-                    validator.recordGodViewOurAim(pi, bulletId, aimX, aimY, aimDist, aimBearing);
-                }
-
-                // Layer 3: robot-side fire detection (observer detected own fire)
-                double fireTick = ctx.wb().getFeature(Feature.OUR_FIRE_TICK);
-                if (!Double.isNaN(fireTick) && fireTick != lastValidatorFireTick[pi]) {
-                    lastValidatorFireTick[pi] = fireTick;
-                    double rsPower = ctx.wb().getFeature(Feature.OUR_FIRE_POWER);
-                    double rsX = ctx.wb().getFeature(Feature.OUR_FIRE_X);
-                    double rsY = ctx.wb().getFeature(Feature.OUR_FIRE_Y);
-                    int rsBulletId = (int) ctx.wb().getFeature(Feature.OUR_FIRE_BULLET_ID);
-                    validator.recordRobotSideFire(pi, rsBulletId, rsPower, rsX, rsY, (long) fireTick);
-
-                    // Layer 3 (aim): robot-side inferred OUR aim geometry
-                    double rsAimX = ctx.wb().getFeature(Feature.OUR_AIM_X);
-                    double rsAimY = ctx.wb().getFeature(Feature.OUR_AIM_Y);
-                    double rsAimDist = ctx.wb().getFeature(Feature.OUR_AIM_DISTANCE);
-                    double rsAimBearing = ctx.wb().getFeature(Feature.OUR_AIM_BEARING_ABSOLUTE);
-                    validator.recordRobotSideOurAim(pi, rsBulletId, rsAimX, rsAimY, rsAimDist, rsAimBearing);
-                }
-
-                // Layer 3 (their): god-view incoming fire — the opponent's bullet as
-                // the engine created it (true muzzle origin / fire tick / power /
-                // flight heading). The opponent's own OUR_FIRE_* on its god-view
-                // whiteboard is ground truth for the bullet heading toward us.
-                if (godViewWaveResolver.firedThisTick(oppIndex)) {
-                    ObserverContext oppCtx = observers[oppIndex];
-                    double power = oppCtx.godWb().getFeature(Feature.OUR_FIRE_POWER);
-                    double x = oppCtx.godWb().getFeature(Feature.OUR_FIRE_X);
-                    double y = oppCtx.godWb().getFeature(Feature.OUR_FIRE_Y);
-                    double trueHeading = godViewWaveResolver.getLastFiredTrueHeading(oppIndex);
-                    long tick = (long) oppCtx.godWb().getFeature(Feature.OUR_FIRE_TICK);
-                    validator.recordGodViewTheirFire(pi, power, x, y, trueHeading, tick);
-                    if (theirFireTrace != null) {
-                        long nowTick = (long) ctx.wb().getFeature(Feature.TICK);
-                        long lastScanTick = (long) ctx.wb().getFeature(Feature.LAST_SCAN_TICK);
-                        theirFireTrace.write(currentRound, pi, tick, "GV", -1,
-                                power, x, y, trueHeading,
-                                ctx.wb().getFeature(Feature.OPPONENT_ENERGY),
-                                ctx.wb().getPreviousTickFeature(Feature.PREV_SCAN_OPPONENT_ENERGY),
-                                (int) (nowTick - lastScanTick),
-                                ctx.wb().getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT),
-                                ctx.wb().getFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN),
-                                ctx.wb().getFeature(Feature.RAM_DAMAGE_TO_OPPONENT),
-                                ctx.wb().getFeature(Feature.OPPONENT_WALL_HIT_DAMAGE),
-                                robots[oppIndex].getState().name(), robots[pi].getState().name());
+                // Layer 3 runs ONLY for the autopilot perspective — it measures
+                // the autopilot's incoming-fire detection (energy-drop inference)
+                // against the god-view ground truth of the opponent's bullet.
+                if (pi == autopilotPi) {
+                    // Layer 3: god-view incoming fire — opponent's bullet as the
+                    // engine created it (true muzzle origin / fire tick / power /
+                    // flight heading). The opponent's own OUR_FIRE_* on its
+                    // god-view whiteboard is ground truth for the bullet heading
+                    // toward us.
+                    if (godViewWaveResolver.firedThisTick(oppIndex)) {
+                        ObserverContext oppCtx = observers[oppIndex];
+                        double power = oppCtx.godWb().getFeature(Feature.OUR_FIRE_POWER);
+                        double x = oppCtx.godWb().getFeature(Feature.OUR_FIRE_X);
+                        double y = oppCtx.godWb().getFeature(Feature.OUR_FIRE_Y);
+                        double trueHeading = godViewWaveResolver.getLastFiredTrueHeading(oppIndex);
+                        long tick = (long) oppCtx.godWb().getFeature(Feature.OUR_FIRE_TICK);
+                        validator.recordGodViewTheirFire(power, x, y, trueHeading, tick);
+                        if (theirFireTrace != null) {
+                            long nowTick = (long) ctx.wb().getFeature(Feature.TICK);
+                            long lastScanTick = (long) ctx.wb().getFeature(Feature.LAST_SCAN_TICK);
+                            theirFireTrace.write(currentRound, pi, tick, "GV", -1,
+                                    power, x, y, trueHeading,
+                                    ctx.wb().getFeature(Feature.OPPONENT_ENERGY),
+                                    ctx.wb().getPreviousTickFeature(Feature.PREV_SCAN_OPPONENT_ENERGY),
+                                    (int) (nowTick - lastScanTick),
+                                    ctx.wb().getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT),
+                                    ctx.wb().getFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN),
+                                    ctx.wb().getFeature(Feature.RAM_DAMAGE_TO_OPPONENT),
+                                    ctx.wb().getFeature(Feature.OPPONENT_WALL_HIT_DAMAGE),
+                                    robots[oppIndex].getState().name(), robots[pi].getState().name());
+                        }
                     }
 
-                    // Layer 3 (aim): god-view exact THEIR aim geometry (tick before
-                    // their fire). From the opponent's god-view whiteboard its own
-                    // OUR_AIM_* is the firer position + firer→target geometry.
-                    double aimX = oppCtx.godWb().getFeature(Feature.OUR_AIM_X);
-                    double aimY = oppCtx.godWb().getFeature(Feature.OUR_AIM_Y);
-                    double aimDist = oppCtx.godWb().getFeature(Feature.OUR_AIM_DISTANCE);
-                    double aimBearing = oppCtx.godWb().getFeature(Feature.OUR_AIM_BEARING_ABSOLUTE);
-                    validator.recordGodViewTheirAim(pi, tick, aimX, aimY, aimDist, aimBearing);
-                }
-
-                // Layer 3 (their): robot-side incoming-fire inference from an enemy
-                // energy drop. Origin/timing/power are recovered exactly; the bearing
-                // is only a head-on assumption (the muzzle-angle unknown).
-                double theirFireTick = ctx.wb().getFeature(Feature.THEIR_FIRE_TICK);
-                if (!Double.isNaN(theirFireTick) && theirFireTick != lastValidatorTheirFireTick[pi]) {
-                    lastValidatorTheirFireTick[pi] = theirFireTick;
-                    // THEIR_FIRE_POWER staging is cleared to NaN right after the wave
-                    // is created (so it isn't re-created next tick), so recover the
-                    // inferred power from the retained bullet speed instead.
-                    double rsSpeed = ctx.wb().getFeature(Feature.THEIR_BULLET_SPEED);
-                    double rsPower = (20.0 - rsSpeed) / 3.0;
-                    double rsX = ctx.wb().getFeature(Feature.THEIR_FIRE_X);
-                    double rsY = ctx.wb().getFeature(Feature.THEIR_FIRE_Y);
-                    double rsBearing = ctx.wb().getFeature(Feature.THEIR_FIRE_BEARING);
-                    validator.recordRobotSideTheirFire(pi, rsPower, rsX, rsY, rsBearing,
-                            (long) theirFireTick);
-                    if (theirFireTrace != null) {
-                        long nowTick = (long) ctx.wb().getFeature(Feature.TICK);
-                        long lastScanTick = (long) ctx.wb().getFeature(Feature.LAST_SCAN_TICK);
-                        theirFireTrace.write(currentRound, pi, (long) theirFireTick, "RS", -1,
-                                rsPower, rsX, rsY, rsBearing,
-                                ctx.wb().getFeature(Feature.OPPONENT_ENERGY),
-                                ctx.wb().getPreviousTickFeature(Feature.PREV_SCAN_OPPONENT_ENERGY),
-                                (int) (nowTick - lastScanTick),
-                                ctx.wb().getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT),
-                                ctx.wb().getFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN),
-                                ctx.wb().getFeature(Feature.RAM_DAMAGE_TO_OPPONENT),
-                                ctx.wb().getFeature(Feature.OPPONENT_WALL_HIT_DAMAGE),
-                                robots[oppIndex].getState().name(), robots[pi].getState().name());
+                    // Layer 3: autopilot-side incoming-fire inference from an enemy
+                    // energy drop. Origin/timing/power are recovered exactly; the
+                    // bearing is only a head-on assumption (muzzle-angle unknown).
+                    double theirFireTick = ctx.wb().getFeature(Feature.THEIR_FIRE_TICK);
+                    if (!Double.isNaN(theirFireTick) && theirFireTick != lastValidatorTheirFireTick) {
+                        lastValidatorTheirFireTick = theirFireTick;
+                        // THEIR_FIRE_POWER staging is cleared to NaN right after the
+                        // wave is created (so it isn't re-created next tick), so
+                        // recover the inferred power from the retained bullet speed.
+                        double rsSpeed = ctx.wb().getFeature(Feature.THEIR_BULLET_SPEED);
+                        double rsPower = (20.0 - rsSpeed) / 3.0;
+                        double rsX = ctx.wb().getFeature(Feature.THEIR_FIRE_X);
+                        double rsY = ctx.wb().getFeature(Feature.THEIR_FIRE_Y);
+                        double rsBearing = ctx.wb().getFeature(Feature.THEIR_FIRE_BEARING);
+                        validator.recordRobotSideTheirFire(rsPower, rsX, rsY, rsBearing,
+                                (long) theirFireTick);
+                        if (theirFireTrace != null) {
+                            long nowTick = (long) ctx.wb().getFeature(Feature.TICK);
+                            long lastScanTick = (long) ctx.wb().getFeature(Feature.LAST_SCAN_TICK);
+                            theirFireTrace.write(currentRound, pi, (long) theirFireTick, "RS", -1,
+                                    rsPower, rsX, rsY, rsBearing,
+                                    ctx.wb().getFeature(Feature.OPPONENT_ENERGY),
+                                    ctx.wb().getPreviousTickFeature(Feature.PREV_SCAN_OPPONENT_ENERGY),
+                                    (int) (nowTick - lastScanTick),
+                                    ctx.wb().getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT),
+                                    ctx.wb().getFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN),
+                                    ctx.wb().getFeature(Feature.RAM_DAMAGE_TO_OPPONENT),
+                                    ctx.wb().getFeature(Feature.OPPONENT_WALL_HIT_DAMAGE),
+                                    robots[oppIndex].getState().name(), robots[pi].getState().name());
+                        }
                     }
-
-                    // Layer 3 (aim): robot-side inferred THEIR aim geometry (tick
-                    // before their fire), keyed by the same fire tick.
-                    double rsAimX = ctx.wb().getFeature(Feature.THEIR_AIM_X);
-                    double rsAimY = ctx.wb().getFeature(Feature.THEIR_AIM_Y);
-                    double rsAimDist = ctx.wb().getFeature(Feature.THEIR_AIM_DISTANCE);
-                    double rsAimBearing = ctx.wb().getFeature(Feature.THEIR_AIM_BEARING);
-                    validator.recordRobotSideTheirAim(pi, (long) theirFireTick,
-                            rsAimX, rsAimY, rsAimDist, rsAimBearing);
                 }
 
                 // Layer 4: wave resolution tracking
@@ -406,10 +358,7 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
         if (validator != null) {
             validator.resetRound();
         }
-        lastValidatorFireTick[0] = Double.NaN;
-        lastValidatorFireTick[1] = Double.NaN;
-        lastValidatorTheirFireTick[0] = Double.NaN;
-        lastValidatorTheirFireTick[1] = Double.NaN;
+        lastValidatorTheirFireTick = Double.NaN;
         lastValidatorBreakTick[0] = Double.NaN;
         lastValidatorBreakTick[1] = Double.NaN;
     }
@@ -451,6 +400,21 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
             snapshotFixtureWriter.close();
             snapshotFixtureWriter = null;
         }
+    }
+
+    /**
+     * Identify which robot is the Autopilot in this battle: the one whose
+     * snapshot exposes non-empty debug properties (which only Autopilot sets via
+     * {@code setDebugProperty}). Returns 0 when no autopilot is detected.
+     */
+    private static int autopilotIndex(IRobotSnapshot[] robots) {
+        for (int i = 0; i < robots.length; i++) {
+            var props = robots[i].getDebugProperties();
+            if (props != null && props.length > 0) {
+                return i;
+            }
+        }
+        return 0;
     }
 
     private void writeRoundScores(int round) {

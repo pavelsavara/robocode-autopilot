@@ -171,11 +171,11 @@ final class BattleLoopTest {
         assertEquals(0, spatialMismatches,
                 "Spatial features must match exactly between observer and god-view");
 
-        // --- PipelineValidator: fire detection rate ---
-        double fireDetectionRate0 = validator.getFireDetectionRate(0);
-        System.out.println(String.format("Fire detection rate (persp 0): %.1f%%", fireDetectionRate0 * 100));
+        // --- PipelineValidator: incoming-fire detection rate (autopilot only) ---
+        double fireDetectionRate0 = validator.getTheirFireDetectionRate();
+        System.out.println(String.format("Incoming-fire detection rate: %.1f%%", fireDetectionRate0 * 100));
         assertTrue(fireDetectionRate0 >= 0.9,
-                "Fire detection rate should be >= 90%, was " + fireDetectionRate0);
+                "Incoming-fire detection rate should be >= 90%, was " + fireDetectionRate0);
 
         // --- PipelineValidator: GF mean absolute error (quality metric) ---
         double gfError = validator.getGfMeanAbsoluteError(0);
