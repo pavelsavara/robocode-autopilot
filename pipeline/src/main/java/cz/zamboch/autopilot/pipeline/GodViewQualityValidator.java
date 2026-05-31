@@ -707,6 +707,16 @@ public final class GodViewQualityValidator {
      * @throws IllegalStateException if any required layer has 0 checks
      */
     public void assertNonVacuous() {
+        assertNonVacuous(true);
+    }
+
+    /**
+     * @param requireTheirFireDetection when false, the Layer 3 god-view fire check
+     *        is skipped. A non-firing opponent (e.g. SittingDuck) legitimately
+     *        produces zero god-view incoming fires, so requiring them would be a
+     *        false failure rather than a vacuous-test guard.
+     */
+    public void assertNonVacuous(boolean requireTheirFireDetection) {
         if (getSpatialChecks() == 0) {
             throw new IllegalStateException("Layer 1 vacuous: 0 spatial checks performed");
         }
@@ -717,7 +727,7 @@ public final class GodViewQualityValidator {
             throw new IllegalStateException(
                     "Layer 2 vacuous: 0 damage-observation ticks recorded");
         }
-        if (theirFireTracking.godViewCount == 0) {
+        if (requireTheirFireDetection && theirFireTracking.godViewCount == 0) {
             throw new IllegalStateException("Layer 3 vacuous: 0 god-view incoming fires detected");
         }
         // Layer 4 GF comparisons require matched wave resolution between observer and

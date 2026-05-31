@@ -201,7 +201,10 @@ final class BattleLoopTest {
         // resolved.
 
         // --- Non-vacuous check ---
-        validator.assertNonVacuous();
+        // SittingDuck never fires, so Layer 3 legitimately has zero god-view
+        // incoming fires; waive that single requirement for it.
+        boolean opponentFires = !"test.SittingDuck".equals(opponent);
+        validator.assertNonVacuous(opponentFires);
         layer0.assertNonVacuous();
 
         // Print full summary (before assertions so we always see breakdown)
