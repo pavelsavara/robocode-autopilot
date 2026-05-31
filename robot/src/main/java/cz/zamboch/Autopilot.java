@@ -137,6 +137,25 @@ public final class Autopilot extends AdvancedRobot {
 
     private final double[] accumulatorCarry = new double[Feature.COUNT];
 
+    /**
+     * Snapshot of the damage accumulators taken in {@link #doTurn()} AFTER
+     * {@code wb.process()} (so WallHitEstimator's wall charge and FireFeatures'
+     * read have happened) but BEFORE the scan-tick reset zeroes them. The live
+     * robot does not read this; it exists so the headless validation pipeline can
+     * observe the exact per-tick values FireFeatures consumed — in particular the
+     * OPPONENT_WALL_HIT_DAMAGE charge, which is produced inside process() and
+     * would otherwise be 0 both before process() and after the reset.
+     */
+    private final double[] consumedAccumulators = new double[Feature.COUNT];
+
+    /**
+     * Post-process, pre-reset value of a damage accumulator for the tick that
+     * just ran through {@link #doTurn()}. See {@link #consumedAccumulators}.
+     */
+    public double getConsumedAccumulator(Feature f) {
+        return consumedAccumulators[f.ordinal()];
+    }
+
     @Override
     public void onScannedRobot(ScannedRobotEvent event) {
         wb.setFeature(Feature.DISTANCE, event.getDistance());
@@ -367,6 +386,14 @@ public final class Autopilot extends AdvancedRobot {
 
     public void doTurn() {
         wb.process();
+
+        // Snapshot the accumulators post-process (WallHitEstimator has charged the
+        // wall channel and FireFeatures has consumed all four) but BEFORE the
+        // scan-tick reset below, so the validation pipeline can read the exact
+        // values FireFeatures saw. Harmless for the live robot.
+        for (Feature f : ACCUMULATOR_FEATURES) {
+            consumedAccumulators[f.ordinal()] = wb.getFeature(f);
+        }
 
         // Reset accumulators after FireFeatures has consumed them on scan ticks
         double tick = wb.getFeature(Feature.TICK);

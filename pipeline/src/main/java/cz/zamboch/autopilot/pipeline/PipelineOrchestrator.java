@@ -1,5 +1,6 @@
 package cz.zamboch.autopilot.pipeline;
 
+import cz.zamboch.Autopilot;
 import cz.zamboch.autopilot.core.Feature;
 import robocode.control.events.BattleAdaptor;
 import robocode.control.events.RoundStartedEvent;
@@ -176,26 +177,30 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
             ctx.processTickEvents(curr);
         }
 
-        // Phase 1b: Layer 2 damage-observation drift (autopilot perspective only).
-        // Read the four accumulators NOW, before doTurn wipes them, and compare
-        // per-tick against god-view truth. The wb accumulators carry forward
-        // across non-scan ticks; the validator computes the per-tick observation
-        // delta by tracking the previous reading and treating any decrease as a
-        // FireFeatures-consumption reset.
-        if (validator != null && !observers[autopilotPiEarly].isDead()) {
-            ObserverContext autoCtx = observers[autopilotPiEarly];
-            validator.recordDamageObservation(currentRound, curr.getTurn(),
-                    autopilotPiEarly, robots,
-                    curr.getBullets(),
-                    autoCtx.wb().getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT),
-                    autoCtx.wb().getFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN),
-                    autoCtx.wb().getFeature(Feature.RAM_DAMAGE_TO_OPPONENT),
-                    autoCtx.wb().getFeature(Feature.OPPONENT_WALL_HIT_DAMAGE));
-        }
+        // Phase 1b/1c: Layer 2 damage-observation drift (autopilot perspective).
+        // The wall-hit accumulator is produced by WallHitEstimator INSIDE doTurn
+        // (Phase 1c) and FireFeatures consumes all four accumulators there; the
+        // scan-tick reset then zeroes them. So the only point where the wall
+        // channel holds its true per-tick value is post-process / pre-reset.
+        // Autopilot snapshots the accumulators at exactly that point; read the
+        // snapshot AFTER doTurn so the wall channel reflects the robot-side
+        // estimate (instead of the structural 0 it read pre-doTurn before).
+        boolean recordObs = validator != null && !observers[autopilotPiEarly].isDead();
 
         // Phase 1c: Run each observer's doTurn (process features + run strategy).
         for (ObserverContext ctx : observers) {
             ctx.doTurn();
+        }
+
+        if (recordObs) {
+            Autopilot auto = observers[autopilotPiEarly].observer();
+            validator.recordDamageObservation(currentRound, curr.getTurn(),
+                    autopilotPiEarly, robots,
+                    curr.getBullets(),
+                    auto.getConsumedAccumulator(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT),
+                    auto.getConsumedAccumulator(Feature.OPPONENT_BULLET_ENERGY_GAIN),
+                    auto.getConsumedAccumulator(Feature.RAM_DAMAGE_TO_OPPONENT),
+                    auto.getConsumedAccumulator(Feature.OPPONENT_WALL_HIT_DAMAGE));
         }
 
         // Phase 1.5: Independently rebuild each god-view whiteboard from the engine
