@@ -6,26 +6,29 @@ import cz.zamboch.autopilot.core.Whiteboard;
 
 /**
  * Orbit movement — circle opponent at ~400px, adjust inward/outward, with a
- * predictive wall reversal: before the orbit tangent would carry us into a wall we
- * flip the orbit sense and circle the opponent the other way. This keeps us moving
- * perpendicular to the opponent (so dodging and lateral motion are preserved, and
- * gun aim is unaffected) while never pinning us against a wall or in a corner — the
- * failure mode where a wall-hugging opponent (e.g. Walls) shepherds us into an edge
- * and we sit there at zero velocity being shot.
+ * wall reversal: when continuing forward along the orbit would drive us into a wall
+ * we drive backward instead, which carries us the other way around the opponent
+ * WITHOUT spinning the body — so the gun stays on target and aim is undisturbed.
+ * This avoids the failure mode where a wall-hugging opponent (e.g. Walls) shepherds
+ * us into an edge and we sit there at zero velocity being shot.
  */
 public final class OrbitMovementStrategy implements IMovementStrategy {
 
     /** Keep the look-ahead point this far from each wall. */
-    private static final double WALL_MARGIN = 50.0;
+    private static final double WALL_MARGIN = 36.0;
     /** Distance ahead we test for an impending wall collision. */
-    private static final double LOOK_AHEAD = 150.0;
+    private static final double LOOK_AHEAD = 120.0;
+    /** Minimum ticks between travel-direction reversals, to avoid jitter near walls. */
+    private static final int FLIP_COOLDOWN = 10;
 
     private final Whiteboard wb;
     private final double bfWidth;
     private final double bfHeight;
 
-    /** Orbit sense: +1 or -1 (which way we circle the opponent). */
-    private int orbitDir = 1;
+    /** Travel sense along the orbit tangent: +1 forward, -1 backward. */
+    private int driveDir = 1;
+    /** Ticks remaining before we are allowed to reverse travel again. */
+    private int flipCooldown = 0;
 
     public OrbitMovementStrategy(Whiteboard wb, double bfWidth, double bfHeight) {
         this.wb = wb;
@@ -44,32 +47,36 @@ public final class OrbitMovementStrategy implements IMovementStrategy {
         double x = wb.getFeature(Feature.OUR_X);
         double y = wb.getFeature(Feature.OUR_Y);
         double heading = wb.getFeature(Feature.OUR_HEADING);
-        double absBearingToOpp = RoboMath.normalAbsoluteAngle(heading + bearingRadians);
 
-        // Predictive wall reversal: if circling in the current sense would drive the
-        // look-ahead point into a wall, flip to the other sense. Only flip if the
-        // other sense is actually safer, so we never thrash in an open field.
-        if (!Double.isNaN(x) && !Double.isNaN(y)) {
-            if (wouldHitWall(x, y, orbitHeading(absBearingToOpp, distance, orbitDir))
-                    && !wouldHitWall(x, y, orbitHeading(absBearingToOpp, distance, -orbitDir))) {
-                orbitDir = -orbitDir;
+        // Perpendicular orbit heading with distance correction (unchanged aim geometry).
+        double turn = bearingRadians + Math.PI / 2;
+        if (distance > 450) {
+            turn -= Math.PI / 6; // cut inward
+        } else if (distance < 350) {
+            turn += Math.PI / 6; // veer outward
+        }
+        turn = RoboMath.normalRelativeAngle(turn);
+
+        // Absolute heading we would face after this turn.
+        double travelHeading = RoboMath.normalAbsoluteAngle(heading + turn);
+
+        if (flipCooldown > 0) {
+            flipCooldown--;
+        }
+        // If driving in the current sense would push the look-ahead point into a wall,
+        // reverse travel (forward<->backward). A cooldown prevents rapid jitter.
+        if (flipCooldown == 0 && !Double.isNaN(x) && !Double.isNaN(y)) {
+            double cur = driveDir > 0 ? travelHeading
+                    : RoboMath.normalAbsoluteAngle(travelHeading + Math.PI);
+            double opp = driveDir > 0 ? RoboMath.normalAbsoluteAngle(travelHeading + Math.PI)
+                    : travelHeading;
+            if (wouldHitWall(x, y, cur) && !wouldHitWall(x, y, opp)) {
+                driveDir = -driveDir;
+                flipCooldown = FLIP_COOLDOWN;
             }
         }
 
-        double desired = orbitHeading(absBearingToOpp, distance, orbitDir);
-        double turn = RoboMath.normalRelativeAngle(desired - heading);
-        out.set(100, turn);
-    }
-
-    /** Absolute travel heading for one orbit sense, including distance correction. */
-    private double orbitHeading(double absBearingToOpp, double distance, int dir) {
-        double h = absBearingToOpp + dir * (Math.PI / 2);
-        if (distance > 450) {
-            h -= dir * (Math.PI / 6); // cut inward
-        } else if (distance < 350) {
-            h += dir * (Math.PI / 6); // veer outward
-        }
-        return RoboMath.normalAbsoluteAngle(h);
+        out.set(100 * driveDir, turn);
     }
 
     /**
