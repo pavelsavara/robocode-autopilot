@@ -227,7 +227,7 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                 validator.validateSpatial(pi, ctx.godWb(), robots[pi], robots[oppIndex], curr);
                 validator.accountEnergy(pi, robots, curr.getBullets());
 
-                // Layer 2: god-view fire (our perspective fired)
+                // Layer 3: god-view fire (our perspective fired)
                 if (godViewWaveResolver.firedThisTick(pi)) {
                     double power = ctx.godWb().getFeature(Feature.OUR_FIRE_POWER);
                     double x = ctx.godWb().getFeature(Feature.OUR_FIRE_X);
@@ -237,7 +237,7 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                     int bulletId = (int) ctx.godWb().getFeature(Feature.OUR_FIRE_BULLET_ID);
                     validator.recordGodViewFire(pi, bulletId, power, x, y, heading, tick);
 
-                    // Layer 2 (aim): god-view exact OUR aim geometry (tick before fire)
+                    // Layer 3 (aim): god-view exact OUR aim geometry (tick before fire)
                     double aimX = ctx.godWb().getFeature(Feature.OUR_AIM_X);
                     double aimY = ctx.godWb().getFeature(Feature.OUR_AIM_Y);
                     double aimDist = ctx.godWb().getFeature(Feature.OUR_AIM_DISTANCE);
@@ -245,7 +245,7 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                     validator.recordGodViewOurAim(pi, bulletId, aimX, aimY, aimDist, aimBearing);
                 }
 
-                // Layer 2: robot-side fire detection (observer detected own fire)
+                // Layer 3: robot-side fire detection (observer detected own fire)
                 double fireTick = ctx.wb().getFeature(Feature.OUR_FIRE_TICK);
                 if (!Double.isNaN(fireTick) && fireTick != lastValidatorFireTick[pi]) {
                     lastValidatorFireTick[pi] = fireTick;
@@ -255,7 +255,7 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                     int rsBulletId = (int) ctx.wb().getFeature(Feature.OUR_FIRE_BULLET_ID);
                     validator.recordRobotSideFire(pi, rsBulletId, rsPower, rsX, rsY, (long) fireTick);
 
-                    // Layer 2 (aim): robot-side inferred OUR aim geometry
+                    // Layer 3 (aim): robot-side inferred OUR aim geometry
                     double rsAimX = ctx.wb().getFeature(Feature.OUR_AIM_X);
                     double rsAimY = ctx.wb().getFeature(Feature.OUR_AIM_Y);
                     double rsAimDist = ctx.wb().getFeature(Feature.OUR_AIM_DISTANCE);
@@ -263,7 +263,7 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                     validator.recordRobotSideOurAim(pi, rsBulletId, rsAimX, rsAimY, rsAimDist, rsAimBearing);
                 }
 
-                // Layer 2 (their): god-view incoming fire — the opponent's bullet as
+                // Layer 3 (their): god-view incoming fire — the opponent's bullet as
                 // the engine created it (true muzzle origin / fire tick / power /
                 // flight heading). The opponent's own OUR_FIRE_* on its god-view
                 // whiteboard is ground truth for the bullet heading toward us.
@@ -290,7 +290,7 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                                 robots[oppIndex].getState().name(), robots[pi].getState().name());
                     }
 
-                    // Layer 2 (aim): god-view exact THEIR aim geometry (tick before
+                    // Layer 3 (aim): god-view exact THEIR aim geometry (tick before
                     // their fire). From the opponent's god-view whiteboard its own
                     // OUR_AIM_* is the firer position + firer→target geometry.
                     double aimX = oppCtx.godWb().getFeature(Feature.OUR_AIM_X);
@@ -300,7 +300,7 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                     validator.recordGodViewTheirAim(pi, tick, aimX, aimY, aimDist, aimBearing);
                 }
 
-                // Layer 2 (their): robot-side incoming-fire inference from an enemy
+                // Layer 3 (their): robot-side incoming-fire inference from an enemy
                 // energy drop. Origin/timing/power are recovered exactly; the bearing
                 // is only a head-on assumption (the muzzle-angle unknown).
                 double theirFireTick = ctx.wb().getFeature(Feature.THEIR_FIRE_TICK);
@@ -331,7 +331,7 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                                 robots[oppIndex].getState().name(), robots[pi].getState().name());
                     }
 
-                    // Layer 2 (aim): robot-side inferred THEIR aim geometry (tick
+                    // Layer 3 (aim): robot-side inferred THEIR aim geometry (tick
                     // before their fire), keyed by the same fire tick.
                     double rsAimX = ctx.wb().getFeature(Feature.THEIR_AIM_X);
                     double rsAimY = ctx.wb().getFeature(Feature.THEIR_AIM_Y);
@@ -341,14 +341,14 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                             rsAimX, rsAimY, rsAimDist, rsAimBearing);
                 }
 
-                // Layer 3: wave resolution tracking
+                // Layer 4: wave resolution tracking
                 if (resolved[pi]) {
                     validator.recordGodViewWaveResolution(pi);
                 }
                 if (!Double.isNaN(robotSideGf[pi])) {
                     validator.recordRobotSideWaveResolution(pi);
                 }
-                // Layer 3: GF comparison when both sides resolved same tick
+                // Layer 4: GF comparison when both sides resolved same tick
                 if (resolved[pi] && !Double.isNaN(robotSideGf[pi])) {
                     double godViewGf = ctx.godWb().getFeature(Feature.OUR_BREAK_GF);
                     long godViewBreakTick = (long) ctx.godWb().getFeature(Feature.OUR_BREAK_TICK);

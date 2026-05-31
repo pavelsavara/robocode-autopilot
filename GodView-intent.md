@@ -72,7 +72,28 @@ perspective where the live `Autopilot` actually fought.
 `OPPONENT_LATERAL_VELOCITY`, `OPPONENT_ADVANCING_VELOCITY`, `LAST_SCAN_TICK`,
 `TICKS_SINCE_SCAN`.
 
-### Layer 2 — Fire Detection Fidelity
+### Layer 2 — Energy Accounting
+
+- **What vs what:** the robot's **predicted** energy after applying Robocode's
+  energy rules, tick by tick, vs the engine's **actual** reported energy.
+- **Rules applied** (static helpers in `GodViewQualityValidator`):
+  - fire cost charged once per bullet id, on first observation in a pre-impact
+    state (`FIRED` or `MOVING`);
+  - hit bonus `3 * power` credited once per bullet id on `HIT_VICTIM`;
+  - bullet damage taken `4*power + max(0, 2*(power-1))` debited once per id;
+  - wall damage `max(|v|/2 - 1, 0)` on the `HIT_WALL` transition;
+  - ram damage `0.6` per tick of contact, bilateral.
+- **Bullet-id lifecycle:** snapshot states **linger** for several ticks (explosion
+  animation, pinned-to-wall), so each energy event is applied **exactly once per
+  bullet id**; ids are per-round sequential and cleared in `resetRound()`.
+- **Why:** energy is the ground-truth ledger that **Layer 3 fire detection** is
+  measured against — the robot infers enemy fire by attributing energy drops, so a
+  wrong ledger mis-attributes wall/ram/bullet hits as "enemy fired."
+- **Reported as:** energy checks vs discrepancies. Residuals are inherent
+  observability limits (intra-tick wall-impact speed is unobservable; `prevVelocity`
+  is the neutral zero-information prior — see §7).
+
+### Layer 3 — Fire Detection Fidelity
 
 - **What vs what:** the fire events the engine actually produced (god-view, from
   `IBulletSnapshot` FIRED state) vs the fire events the robot **inferred**. Two
@@ -125,7 +146,7 @@ perspective where the live `Autopilot` actually fought.
   angle, with radar staleness and energy mis-attribution as the only other
   (non-model) error sources for incoming fire.
 
-### Layer 3 — Wave Resolution & GuessFactor Precision
+### Layer 4 — Wave Resolution & GuessFactor Precision
 
 - **What vs what:** god-view wave outcomes (the geometrically-correct break tick
   and GuessFactor once the wave truly resolves) vs the robot's robot-side
@@ -135,27 +156,6 @@ perspective where the live `Autopilot` actually fought.
 - **Why:** GuessFactor is the heart of statistical targeting/dodging. This layer
   quantifies how much the robot's blindfolded GF prediction diverges from the
   correct answer.
-
-### Layer 4 — Energy Accounting
-
-- **What vs what:** the robot's **predicted** energy after applying Robocode's
-  energy rules, tick by tick, vs the engine's **actual** reported energy.
-- **Rules applied** (static helpers in `GodViewQualityValidator`):
-  - fire cost charged once per bullet id, on first observation in a pre-impact
-    state (`FIRED` or `MOVING`);
-  - hit bonus `3 * power` credited once per bullet id on `HIT_VICTIM`;
-  - bullet damage taken `4*power + max(0, 2*(power-1))` debited once per id;
-  - wall damage `max(|v|/2 - 1, 0)` on the `HIT_WALL` transition;
-  - ram damage `0.6` per tick of contact, bilateral.
-- **Bullet-id lifecycle:** snapshot states **linger** for several ticks (explosion
-  animation, pinned-to-wall), so each energy event is applied **exactly once per
-  bullet id**; ids are per-round sequential and cleared in `resetRound()`.
-- **Why:** energy is the ground-truth ledger that **Layer 2 fire detection** is
-  measured against — the robot infers enemy fire by attributing energy drops, so a
-  wrong ledger mis-attributes wall/ram/bullet hits as "enemy fired."
-- **Reported as:** energy checks vs discrepancies. Residuals are inherent
-  observability limits (intra-tick wall-impact speed is unobservable; `prevVelocity`
-  is the neutral zero-information prior — see §7).
 
 ## 5. Feature coverage — what Layers 1–4 do NOT cover
 
@@ -168,9 +168,9 @@ comparison is meaningful. The following features are validated **only by Layer 0
 |----------|----------|
 | Gun aim / decision | `GUN_AIM_POWER`, `GUN_AIM_ANGLE`, `GUN_AIM_GF` |
 | Derived spatial | `OPPONENT_BEARING_ABSOLUTE` |
-| Energy accumulators (inputs to L4 logic, not validated as features) | `OUR_BULLET_DAMAGE_TO_OPPONENT`, `OPPONENT_BULLET_ENERGY_GAIN`, `RAM_DAMAGE_TO_OPPONENT`, `OPPONENT_WALL_HIT_DAMAGE`, `PREV_SCAN_OPPONENT_ENERGY` |
-| Their-wave detail (L2 pairs power + position only) | `THEIR_FIRE_BEARING`, `THEIR_FIRE_DISTANCE`, `THEIR_FIRE_OUR_X`, `THEIR_FIRE_OUR_Y`, `THEIR_BULLET_SPEED`, `THEIR_BREAK_OUR_X`, `THEIR_BREAK_OUR_Y`, `THEIR_BREAK_BEARING_OFFSET`, `THEIR_HIT_US` |
-| Our-wave fire-time (L3 compares GF + break tick only) | all 15 `OUR_FIRE_*` |
+| Energy accumulators (inputs to L2 logic, not validated as features) | `OUR_BULLET_DAMAGE_TO_OPPONENT`, `OPPONENT_BULLET_ENERGY_GAIN`, `RAM_DAMAGE_TO_OPPONENT`, `OPPONENT_WALL_HIT_DAMAGE`, `PREV_SCAN_OPPONENT_ENERGY` |
+| Their-wave detail (L3 pairs power + position only) | `THEIR_FIRE_BEARING`, `THEIR_FIRE_DISTANCE`, `THEIR_FIRE_OUR_X`, `THEIR_FIRE_OUR_Y`, `THEIR_BULLET_SPEED`, `THEIR_BREAK_OUR_X`, `THEIR_BREAK_OUR_Y`, `THEIR_BREAK_BEARING_OFFSET`, `THEIR_HIT_US` |
+| Our-wave fire-time (L4 compares GF + break tick only) | all 15 `OUR_FIRE_*` |
 | Our-wave break-time | `OUR_BREAK_BEARING_OFFSET`, `OUR_BREAK_OPPONENT_X`, `OUR_BREAK_OPPONENT_Y`, `OUR_BREAK_HIT` |
 | Identity | `OPPONENT_ID`, `OPPONENT_ID_HASH` |
 | Round result | `ROUND_HIT_RATE`, `ROUND_RESULT` |
@@ -195,25 +195,25 @@ metrics in Layers 2–4 — by design, because the robot cannot have god-view.
 
 These gaps are inherent observability limits, documented so they are **not chased**:
 
-- **Layer 4 wall impact:** the intra-tick velocity at the instant of wall contact
+- **Layer 2 wall impact:** the intra-tick velocity at the instant of wall contact
   is unobservable from snapshots. `prevVelocity` is the neutral zero-information
   prior; a heuristic that "corrects" it was tried and reverted because it fixed
   accelerating impacts but broke constant-velocity/braking impacts.
-- **Layer 4 death-tick collisions:** simultaneous collisions on an opponent's
+- **Layer 2 death-tick collisions:** simultaneous collisions on an opponent's
   death tick can leave a single-tick energy residual.
-- **Layer 2/3 boundary waves:** the last wave of a round can be off-by-one between
+- **Layer 3/4 boundary waves:** the last wave of a round can be off-by-one between
   god-view and robot-side resolution timing.
 
 ## 8. Reference results (seed 123456789, 10 rounds/opponent, perspective 0)
 
-| Opponent | L1 Spatial | L2 Fire rate / powerMAE / posMAE | L3 GF MAE / max | L4 Energy |
-|----------|-----------|-----------------------------------|-----------------|-----------|
-| test.SittingDuck | 0 mismatches | 1.000 / 0.05 / 41 px | 0.000 / 0.000 | 100.0% |
-| test.Aggressive | 0 mismatches | 1.000 / 0.21 / 117 px | — | 100.0% |
-| sample.Fire | 0 mismatches | 1.000 / 0.07 / 30 px | — | 100.0% |
-| sample.Walls | 0 mismatches | 1.000 / 0.27 / 35 px | 0.27 / 1.62 | 100.0% |
-| sample.Crazy | 0 mismatches | 1.000 / 0.30 / 47 px | 0.83 / 1.87 | 99.8% |
-| kc.mega.BeepBoop | 0 mismatches | 1.008 / 0.02 / 73 px | 0.56 / 1.98 | 99.7% |
+| Opponent | L1 Spatial | L2 Energy | L3 Fire rate / powerMAE / posMAE | L4 GF MAE / max |
+|----------|-----------|-----------|-----------------------------------|-----------------|
+| test.SittingDuck | 0 mismatches | 100.0% | 1.000 / 0.05 / 41 px | 0.000 / 0.000 |
+| test.Aggressive | 0 mismatches | 100.0% | 1.000 / 0.21 / 117 px | — |
+| sample.Fire | 0 mismatches | 100.0% | 1.000 / 0.07 / 30 px | — |
+| sample.Walls | 0 mismatches | 100.0% | 1.000 / 0.27 / 35 px | 0.27 / 1.62 |
+| sample.Crazy | 0 mismatches | 99.8% | 1.000 / 0.30 / 47 px | 0.83 / 1.87 |
+| kc.mega.BeepBoop | 0 mismatches | 99.7% | 1.008 / 0.02 / 73 px | 0.56 / 1.98 |
 
 Estimation quality degrades predictably with target unpredictability: a
 stationary target (SittingDuck) yields perfect GF; erratic movers (Crazy,

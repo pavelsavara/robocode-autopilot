@@ -2,7 +2,6 @@
 - Fix energy drop detection
     - bullet shield
     - god-view could use the other perspective to validate energy accounting
-- Re-order L4,L2,L3
 
 - Layer 0 for top 50 - once
 - Layer 1-4 for BeepBoop vs BeepBoop

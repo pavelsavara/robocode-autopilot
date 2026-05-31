@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 
 /**
- * Lightweight per-event CSV trace of incoming-fire detection (Layer 2 "their"):
+ * Lightweight per-event CSV trace of incoming-fire detection (Layer 3 "their"):
  * every god-view opponent fire and every robot-side inferred opponent fire is
  * appended as a row so unpaired / spurious events can be diffed offline.
  * <p>

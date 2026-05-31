@@ -29,9 +29,9 @@ import java.util.Set;
  * <h2>4 Quality Layers</h2>
  * <ol>
  * <li>Spatial &amp; Kinematic Fidelity (every scan tick)</li>
- * <li>Fire Detection Fidelity</li>
- * <li>Wave Resolution &amp; GF Precision</li>
- * <li>Energy Accounting</li>
+ * <li>Energy Accounting (ground-truth ledger)</li>
+ * <li>Fire Detection Fidelity (depends on the energy ledger)</li>
+ * <li>Wave Resolution &amp; GF Precision (depends on fire detection)</li>
  * </ol>
  */
 public final class GodViewQualityValidator {
@@ -41,12 +41,12 @@ public final class GodViewQualityValidator {
     // --- Layer 1: Spatial (per-feature stats) ---
     private final EnumMap<Feature, ValidationStats> spatialStats = new EnumMap<>(Feature.class);
 
-    // --- Layer 2: Fire Detection ---
+    // --- Layer 3: Fire Detection ---
     private final FireDetectionTracker[] fireTracking = {
             new FireDetectionTracker(), new FireDetectionTracker()
     };
 
-    // --- Layer 2 (their side): incoming-fire detection ---
+    // --- Layer 3 (their side): incoming-fire detection ---
     // god-view ground truth (the opponent's bullet) vs the robot-side energy-drop
     // inference. Paired by fire tick because the blindfolded robot has no bullet id
     // for incoming fire. Origin/timing/power are knowable exactly; the muzzle angle
@@ -55,12 +55,12 @@ public final class GodViewQualityValidator {
             new TheirFireDetectionTracker(), new TheirFireDetectionTracker()
     };
 
-    // --- Layer 3: Wave GF Precision ---
+    // --- Layer 4: Wave GF Precision ---
     private final WavePrecisionTracker[] waveTracking = {
             new WavePrecisionTracker(), new WavePrecisionTracker()
     };
 
-    // --- Layer 2 (aim): aiming-decision attribution at the tick before fire ---
+    // --- Layer 3 (aim): aiming-decision attribution at the tick before fire ---
     // god-view exact aim geometry vs the robot-side inference. OUR aim is paired by
     // bullet id; THEIR aim is paired by fire tick (no bullet id for incoming fire).
     private final AimDetectionTracker[] aimTracking = {
@@ -70,7 +70,7 @@ public final class GodViewQualityValidator {
             new AimDetectionTracker(), new AimDetectionTracker()
     };
 
-    // --- Layer 4: Energy Accounting ---
+    // --- Layer 2: Energy Accounting ---
     private final int[] energyChecks = { 0, 0 };
     private final int[] energyDiscrepancies = { 0, 0 };
     private final double[] prevEnergy = { Double.NaN, Double.NaN };
@@ -384,7 +384,7 @@ public final class GodViewQualityValidator {
         }
     }
 
-    // ========== Layer 2: Fire Detection ==========
+    // ========== Layer 3: Fire Detection ==========
 
     /**
      * Track a god-view fire (from the {@link IBulletSnapshot} the engine created).
@@ -459,7 +459,7 @@ public final class GodViewQualityValidator {
         }
     }
 
-    // ========== Layer 2 (aim): aiming-decision attribution ==========
+    // ========== Layer 3 (aim): aiming-decision attribution ==========
 
     /**
      * God-view exact OUR aim geometry (one tick before fire), paired by bullet id.
@@ -490,7 +490,7 @@ public final class GodViewQualityValidator {
         theirAimTracking[perspIndex].recordRobotSide(fireTick, new AimRecord(x, y, distance, bearing));
     }
 
-    // ========== Layer 3: Wave GF Precision ==========
+    // ========== Layer 4: Wave GF Precision ==========
 
     /**
      * Compare wave resolutions when both sides resolve.
@@ -520,7 +520,7 @@ public final class GodViewQualityValidator {
         waveTracking[perspIndex].robotSideResolutions++;
     }
 
-    // ========== Layer 4: Energy Accounting ==========
+    // ========== Layer 2: Energy Accounting ==========
 
     /**
      * Track energy changes against engine rules.
@@ -639,17 +639,16 @@ public final class GodViewQualityValidator {
         if (getSpatialChecks() == 0) {
             throw new IllegalStateException("Layer 1 vacuous: 0 spatial checks performed");
         }
+        if (energyChecks[0] + energyChecks[1] == 0) {
+            throw new IllegalStateException("Layer 2 vacuous: 0 energy checks performed");
+        }
         int totalGodViewFires = fireTracking[0].godViewCount + fireTracking[1].godViewCount;
         if (totalGodViewFires == 0) {
-            throw new IllegalStateException("Layer 2 vacuous: 0 god-view fires detected");
+            throw new IllegalStateException("Layer 3 vacuous: 0 god-view fires detected");
         }
-        // Layer 3 GF comparisons require matched wave resolution between observer and
+        // Layer 4 GF comparisons require matched wave resolution between observer and
         // live robot. Since the observer fires independently (different timing),
-        // matched
-        // comparisons may not occur. Not a vacuous-test concern.
-        if (energyChecks[0] + energyChecks[1] == 0) {
-            throw new IllegalStateException("Layer 4 vacuous: 0 energy checks performed");
-        }
+        // matched comparisons may not occur. Not a vacuous-test concern.
     }
 
     // ========== Getters ==========
@@ -817,8 +816,17 @@ public final class GodViewQualityValidator {
         }
         System.out.println();
 
-        // Layer 2
-        System.out.printf("Layer 2 — Fire Detection:%n");
+        // Layer 2 — energy accounting (ground-truth ledger). Fire detection (L3)
+        // is measured against this ledger, so it prints first.
+        System.out.printf("Layer 2 — Energy Accounting:%n");
+        for (int pi = 0; pi < 2; pi++) {
+            System.out.printf("  Perspective %d: checks=%d, discrepancies=%d%n",
+                    pi, energyChecks[pi], energyDiscrepancies[pi]);
+        }
+        System.out.println();
+
+        // Layer 3
+        System.out.printf("Layer 3 — Fire Detection:%n");
         for (int pi = 0; pi < 2; pi++) {
             FireDetectionTracker t = fireTracking[pi];
             double rate = t.getFireDetectionRate();
@@ -835,10 +843,10 @@ public final class GodViewQualityValidator {
         }
         System.out.println();
 
-        // Layer 2 (their side) — incoming-fire detection. Origin/timing/power are
+        // Layer 3 (their side) — incoming-fire detection. Origin/timing/power are
         // knowable exactly (expect ~0 MAE); angleMAE is the irreducible muzzle-angle
         // unknown the blindfolded robot cannot infer.
-        System.out.printf("Layer 2 (their) — Incoming-Fire Detection:%n");
+        System.out.printf("Layer 3 (their) — Incoming-Fire Detection:%n");
         for (int pi = 0; pi < 2; pi++) {
             TheirFireDetectionTracker t = theirFireTracking[pi];
             System.out.printf("  Perspective %d: godView=%d, robotSide=%d, rate=%s%n",
@@ -852,11 +860,11 @@ public final class GodViewQualityValidator {
         }
         System.out.println();
 
-        // Layer 2 (aim) — aiming-decision attribution at the tick before fire. OUR
+        // Layer 3 (aim) — aiming-decision attribution at the tick before fire. OUR
         // aim self-position is exact on both sides; distanceMAE/bearingMAE capture
         // the robot-side stale-scan target error. THEIR aim mirrors this from the
         // opponent's perspective.
-        System.out.printf("Layer 2 (aim) — Aiming Attribution (T-1):%n");
+        System.out.printf("Layer 3 (aim) — Aiming Attribution (T-1):%n");
         for (int pi = 0; pi < 2; pi++) {
             AimDetectionTracker our = aimTracking[pi];
             AimDetectionTracker their = theirAimTracking[pi];
@@ -875,7 +883,8 @@ public final class GodViewQualityValidator {
         }
         System.out.println();
 
-        System.out.printf("Layer 3 — GF Precision:%n");
+        // Layer 4
+        System.out.printf("Layer 4 — GF Precision:%n");
         for (int pi = 0; pi < 2; pi++) {
             WavePrecisionTracker t = waveTracking[pi];
             double mae = getGfMeanAbsoluteError(pi);
@@ -890,14 +899,6 @@ public final class GodViewQualityValidator {
                     formatMetric(matchRate, "%.3f"),
                     t.godViewResolutions, t.robotSideResolutions,
                     formatMetric(btMAE, "%.2f"));
-        }
-        System.out.println();
-
-        // Layer 4
-        System.out.printf("Layer 4 — Energy Accounting:%n");
-        for (int pi = 0; pi < 2; pi++) {
-            System.out.printf("  Perspective %d: checks=%d, discrepancies=%d%n",
-                    pi, energyChecks[pi], energyDiscrepancies[pi]);
         }
         System.out.println();
 

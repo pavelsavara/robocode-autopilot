@@ -177,7 +177,7 @@ final class GodViewWaveResolver {
         // robot body has already moved a full tick away from where it fired, so
         // reading self.getX()/getY() here would report the post-fire body position
         // — overstating the origin by up to one tick of robot movement (the
-        // residual Layer 2 positionMAE). Subtracting the single bullet step from the
+        // residual Layer 3 positionMAE). Subtracting the single bullet step from the
         // bullet's own coordinates recovers the exact muzzle, matching the
         // robot-side OUR_FIRE_X/Y (which is captured at the fire tick).
         double bulletHeading = bullet.getHeading();

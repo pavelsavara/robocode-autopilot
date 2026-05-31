@@ -139,7 +139,7 @@ class GodViewQualityValidatorTest {
                                 "Opponent features should NOT be checked on non-scan ticks");
         }
 
-        // ========== Layer 2: Fire Detection ==========
+        // ========== Layer 3: Fire Detection ==========
 
         @Test
         void fireDetection_perfectMatch() {
@@ -187,7 +187,7 @@ class GodViewQualityValidatorTest {
                 assertTrue(Double.isNaN(validator.getFireDetectionLatency(0)));
         }
 
-        // ========== Layer 2 (their): Incoming-Fire Detection ==========
+        // ========== Layer 3 (their): Incoming-Fire Detection ==========
 
         @Test
         void theirFireDetection_originTimingPowerExact_angleGapMeasured() {
@@ -228,7 +228,7 @@ class GodViewQualityValidatorTest {
                 assertTrue(Double.isNaN(validator.getTheirFireAngleMAE(0)));
         }
 
-        // ========== Layer 2 (aim): Aiming-Decision Attribution ==========
+        // ========== Layer 3 (aim): Aiming-Decision Attribution ==========
 
         @Test
         void ourAim_perfectMatch_pairsByBulletId() {
@@ -274,7 +274,7 @@ class GodViewQualityValidatorTest {
                 assertTrue(Double.isNaN(validator.getTheirAimBearingMAE(0)));
         }
 
-        // ========== Layer 3: Wave Precision ==========
+        // ========== Layer 4: Wave Precision ==========
 
         @Test
         void waveMatchRate_fullMatch() {
@@ -322,7 +322,7 @@ class GodViewQualityValidatorTest {
                 assertTrue(Double.isNaN(validator.getBreakTickMAE(0)));
         }
 
-        // ========== Layer 4: Energy Accounting ==========
+        // ========== Layer 2: Energy Accounting ==========
 
         @Test
         void energyAccounting_noEvent_noDiscrepancy() {
@@ -521,13 +521,13 @@ class GodViewQualityValidatorTest {
                 ITurnSnapshot turn = TestSnapshots.turn(1, self, opp);
                 validator.validateSpatial(0, wb, self, opp, turn);
 
-                // Feed Layer 2
+                // Feed Layer 3
                 validator.recordGodViewFire(0, 0, 1.0, 100, 200, 0, 1);
 
-                // Feed Layer 3
+                // Feed Layer 4
                 validator.compareWaveBreak(0, 0.5, 0.5, 100, 100);
 
-                // Feed Layer 4
+                // Feed Layer 2
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
 
@@ -551,7 +551,7 @@ class GodViewQualityValidatorTest {
         }
 
         @Test
-        void assertNonVacuous_throwsForEmptyLayer2() {
+        void assertNonVacuous_throwsForEmptyLayer3() {
                 // Feed Layer 1
                 Whiteboard wb = new Whiteboard();
                 wb.setFeature(Feature.TICK, 1);
@@ -580,18 +580,18 @@ class GodViewQualityValidatorTest {
                 ITurnSnapshot turn = TestSnapshots.turn(1, self, opp);
                 validator.validateSpatial(0, wb, self, opp, turn);
 
-                // No Layer 2 fires
+                // No Layer 3 fires
                 validator.compareWaveBreak(0, 0.5, 0.5, 10, 10);
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
 
                 IllegalStateException ex = assertThrows(IllegalStateException.class,
                                 () -> validator.assertNonVacuous());
-                assertTrue(ex.getMessage().contains("Layer 2"));
+                assertTrue(ex.getMessage().contains("Layer 3"));
         }
 
         @Test
-        void assertNonVacuous_passesWithEmptyLayer3() {
+        void assertNonVacuous_passesWithEmptyLayer4() {
                 Whiteboard wb = new Whiteboard();
                 wb.setFeature(Feature.TICK, 1);
                 wb.setFeature(Feature.LAST_SCAN_TICK, 1);
@@ -620,11 +620,11 @@ class GodViewQualityValidatorTest {
                 validator.validateSpatial(0, wb, self, opp, turn);
 
                 validator.recordGodViewFire(0, 0, 1.0, 0, 0, 0, 1);
-                // No Layer 3 wave comparisons — not required for non-vacuous
+                // No Layer 4 wave comparisons — not required for non-vacuous
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
 
-                // Layer 3 is not required for assertNonVacuous (observer fires independently)
+                // Layer 4 is not required for assertNonVacuous (observer fires independently)
                 assertDoesNotThrow(() -> validator.assertNonVacuous());
         }
 }

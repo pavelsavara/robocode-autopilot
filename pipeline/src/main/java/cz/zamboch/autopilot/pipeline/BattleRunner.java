@@ -127,7 +127,7 @@ public final class BattleRunner {
         }
 
         // Per-event their-fire diff trace (their-fires.csv). Tiny vs debugCsv; safe
-        // to leave on whenever investigating L2-their detection drift.
+        // to leave on whenever investigating L3-their detection drift.
         String theirFireDir = System.getProperty("their.fires.dir");
         if (theirFireDir != null && !theirFireDir.isBlank()) {
             try {
