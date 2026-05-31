@@ -231,6 +231,17 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                 // the autopilot's incoming-fire detection (energy-drop inference)
                 // against the god-view ground truth of the opponent's bullet.
                 if (pi == autopilotPi) {
+                    // Layer 2 (autopilot view): compare the autopilot's tally of
+                    // opponent-damage events against god-view ground truth. The
+                    // four observed values are exactly what FireFeatures
+                    // subtracts from the energy drop before calling fire-vs-not.
+                    validator.recordDamageObservation(autopilotPi, robots,
+                            curr.getBullets(),
+                            ctx.wb().getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT),
+                            ctx.wb().getFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN),
+                            ctx.wb().getFeature(Feature.RAM_DAMAGE_TO_OPPONENT),
+                            ctx.wb().getFeature(Feature.OPPONENT_WALL_HIT_DAMAGE));
+
                     // Layer 3: god-view incoming fire — opponent's bullet as the
                     // engine created it (true muzzle origin / fire tick / power /
                     // flight heading). The opponent's own OUR_FIRE_* on its

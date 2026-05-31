@@ -53,7 +53,19 @@ public final class GodViewQualityValidator {
             new WavePrecisionTracker(), new WavePrecisionTracker()
     };
 
-    // --- Layer 2: Energy Accounting ---
+    // --- Layer 2: Damage-Observation Drift (autopilot perspective only) ---
+    // Compares the autopilot's running tally of opponent damage events
+    // (subtracted out of the energy delta in FireFeatures.process) against the
+    // god-view ledger of the same components. When all four sub-metrics are
+    // zero, the autopilot has perfectly observed every legal source of
+    // opponent energy change, so anything left over in the scan-to-scan drop
+    // must be an enemy fire — and L3 phantoms collapse to 0.
+    private final DamageObservationTracker damageObsTracking = new DamageObservationTracker();
+
+    // --- Engine-rule self-test (internal sanity check; not headline metric) ---
+    // Reconciles each robot's per-tick energy change against the engine's own
+    // event stream (god-view bullets + collisions). This validates OUR model of
+    // the engine, not the autopilot's observation quality.
     private final int[] energyChecks = { 0, 0 };
     private final int[] energyDiscrepancies = { 0, 0 };
     private final double[] prevEnergy = { Double.NaN, Double.NaN };
@@ -65,6 +77,13 @@ public final class GodViewQualityValidator {
     private final Set<Integer>[] firedBulletIds = newIdSets();
     private final Set<Integer>[] hitByUsBulletIds = newIdSets();
     private final Set<Integer>[] hitOnUsBulletIds = newIdSets();
+
+    // Per-round bullet-id de-dup for damage-observation drift (autopilot view).
+    private final Set<Integer> obsHitByUsBulletIds = new HashSet<>();
+    private final Set<Integer> obsHitOnUsBulletIds = new HashSet<>();
+    // Opponent prev-tick state/velocity for the autopilot's wall-damage truth.
+    private RobotState prevOppState = null;
+    private double prevOppVelocity = Double.NaN;
 
     @SuppressWarnings("unchecked")
     private static Set<Integer>[] newIdSets() {
@@ -158,6 +177,75 @@ public final class GodViewQualityValidator {
 
         double getAngleMAE() {
             return pairedCount > 0 ? angleErrorSum / pairedCount : Double.NaN;
+        }
+    }
+
+    /**
+     * Per-class damage-observation drift tracker (autopilot perspective).
+     * <p>
+     * Four damage channels affect opponent energy each tick:
+     * <ol>
+     * <li>our bullets hitting the opponent (we observe via
+     * {@code BulletHitEvent})</li>
+     * <li>opponent bullets hitting us — opponent gains the hit bonus (we
+     * observe our own {@code HitByBulletEvent} and credit the opponent)</li>
+     * <li>ram damage (we observe via {@code HitRobotEvent}; opponent also
+     * pays {@code RAM_DAMAGE} per tick of contact)</li>
+     * <li>opponent wall hits (we can only infer from a scanned
+     * {@code oppState == HIT_WALL}; the intra-tick impact velocity is
+     * unobservable, so this channel has an irreducible lower bound)</li>
+     * </ol>
+     * For each channel we accumulate the god-view truth, the autopilot's
+     * observation, and the absolute drift. The four drifts together upper-bound
+     * the residual energy the autopilot cannot attribute, which is exactly the
+     * material L3 has to work with when classifying an energy drop as fire.
+     */
+    static final class DamageObservationTracker {
+        static final int OUR_BULLET_DMG = 0;
+        static final int OPP_BULLET_GAIN = 1;
+        static final int RAM_DMG = 2;
+        static final int OPP_WALL_DMG = 3;
+        static final int N = 4;
+        static final String[] LABELS = {
+                "ourBulletDmg(on opp)", "oppBulletGain(from us)",
+                "ramDmg(on opp)", "oppWallDmg"
+        };
+
+        final double[] gvTotal = new double[N];
+        final double[] obsTotal = new double[N];
+        final double[] absDriftTotal = new double[N];
+        final int[] gvEventCount = new int[N];
+        final int[] obsEventCount = new int[N];
+        final int[] driftTickCount = new int[N];
+        long ticks;
+        long mismatchTicks;
+
+        void record(double[] gv, double[] obs) {
+            ticks++;
+            boolean anyDrift = false;
+            for (int i = 0; i < N; i++) {
+                gvTotal[i] += gv[i];
+                obsTotal[i] += obs[i];
+                if (gv[i] > EPSILON)
+                    gvEventCount[i]++;
+                if (obs[i] > EPSILON)
+                    obsEventCount[i]++;
+                double drift = Math.abs(gv[i] - obs[i]);
+                if (drift > EPSILON) {
+                    absDriftTotal[i] += drift;
+                    driftTickCount[i]++;
+                    anyDrift = true;
+                }
+            }
+            if (anyDrift)
+                mismatchTicks++;
+        }
+
+        double totalAbsDrift() {
+            double s = 0;
+            for (double d : absDriftTotal)
+                s += d;
+            return s;
         }
     }
 
@@ -327,6 +415,89 @@ public final class GodViewQualityValidator {
         waveTracking[perspIndex].robotSideResolutions++;
     }
 
+    // ========== Layer 2: Damage-Observation Drift (autopilot-only) ==========
+
+    /**
+     * Per-tick comparison of the autopilot's observed opponent-damage tally vs
+     * god-view truth, for the four channels that legitimately move opponent
+     * energy. The four numbers in {@code obs*} come straight off the autopilot
+     * whiteboard — the exact values {@code FireFeatures.process} subtracts from
+     * the scan-to-scan drop before deciding "fire vs not-fire".
+     * <p>
+     * Channels (autopilot perspective; opponent = {@code 1 - autopilotIndex}):
+     * <ul>
+     * <li><b>OUR_BULLET_DMG</b> &mdash; our bullets that transitioned to
+     * {@code HIT_VICTIM} on opponent this tick; god-view value is
+     * {@code bulletDamage(power)}.</li>
+     * <li><b>OPP_BULLET_GAIN</b> &mdash; opponent bullets that transitioned to
+     * {@code HIT_VICTIM} on us this tick; god-view value is
+     * {@code hitEnergyBonus(power)} credited to opponent.</li>
+     * <li><b>RAM_DMG</b> &mdash; {@code RAM_DAMAGE} when either robot is in
+     * {@code HIT_ROBOT} this tick (opponent loses one unit per contact tick).</li>
+     * <li><b>OPP_WALL_DMG</b> &mdash; {@code wallDamage(prevOppVelocity)} when
+     * opponent transitions into {@code HIT_WALL}. Intra-tick velocity is
+     * unobservable, so the observed value typically lags.</li>
+     * </ul>
+     * NaN values from the autopilot whiteboard (no event this tick) are
+     * treated as 0.
+     */
+    public void recordDamageObservation(int autopilotIndex, IRobotSnapshot[] robots,
+            IBulletSnapshot[] bullets,
+            double obsOurBulletDmg, double obsOppBulletGain,
+            double obsRamDmg, double obsOppWallDmg) {
+        int opp = 1 - autopilotIndex;
+        IRobotSnapshot oppSnap = robots[opp];
+        IRobotSnapshot selfSnap = robots[autopilotIndex];
+
+        double[] gv = new double[DamageObservationTracker.N];
+
+        if (bullets != null) {
+            for (IBulletSnapshot b : bullets) {
+                int id = b.getBulletId();
+                BulletState state = b.getState();
+                int owner = b.getOwnerIndex();
+                int victim = b.getVictimIndex();
+                if (state != BulletState.HIT_VICTIM)
+                    continue;
+                if (owner == autopilotIndex && victim == opp
+                        && obsHitByUsBulletIds.add(id)) {
+                    gv[DamageObservationTracker.OUR_BULLET_DMG] += bulletDamage(b.getPower());
+                } else if (owner == opp && victim == autopilotIndex
+                        && obsHitOnUsBulletIds.add(id)) {
+                    gv[DamageObservationTracker.OPP_BULLET_GAIN] += hitEnergyBonus(b.getPower());
+                }
+            }
+        }
+
+        // Ram: opponent loses RAM_DAMAGE per tick of contact. The opponent's
+        // HIT_ROBOT state is the most direct signal; self HIT_ROBOT is also
+        // counted because wall+ram pin reports HIT_WALL on the pinned side.
+        if (selfSnap.getState() == RobotState.HIT_ROBOT
+                || oppSnap.getState() == RobotState.HIT_ROBOT) {
+            gv[DamageObservationTracker.RAM_DMG] += RAM_DAMAGE;
+        }
+
+        // Opponent wall hit: charged once on transition into HIT_WALL, using
+        // opponent's prev-tick velocity (post-impact velocity is zeroed).
+        if (oppSnap.getState() == RobotState.HIT_WALL
+                && prevOppState != RobotState.HIT_WALL
+                && !Double.isNaN(prevOppVelocity)) {
+            gv[DamageObservationTracker.OPP_WALL_DMG] += wallDamage(prevOppVelocity);
+        }
+        prevOppState = oppSnap.getState();
+        prevOppVelocity = oppSnap.getVelocity();
+
+        double[] obs = {
+                nanToZero(obsOurBulletDmg), nanToZero(obsOppBulletGain),
+                nanToZero(obsRamDmg), nanToZero(obsOppWallDmg)
+        };
+        damageObsTracking.record(gv, obs);
+    }
+
+    private static double nanToZero(double v) {
+        return Double.isNaN(v) ? 0.0 : v;
+    }
+
     // ========== Layer 2: Energy Accounting ==========
 
     /**
@@ -432,6 +603,10 @@ public final class GodViewQualityValidator {
             hitByUsBulletIds[p].clear();
             hitOnUsBulletIds[p].clear();
         }
+        obsHitByUsBulletIds.clear();
+        obsHitOnUsBulletIds.clear();
+        prevOppState = null;
+        prevOppVelocity = Double.NaN;
     }
 
     // ========== Non-Vacuous Assertion ==========
@@ -447,7 +622,11 @@ public final class GodViewQualityValidator {
             throw new IllegalStateException("Layer 1 vacuous: 0 spatial checks performed");
         }
         if (energyChecks[0] + energyChecks[1] == 0) {
-            throw new IllegalStateException("Layer 2 vacuous: 0 energy checks performed");
+            throw new IllegalStateException("Layer 2 self-test vacuous: 0 energy checks performed");
+        }
+        if (damageObsTracking.ticks == 0) {
+            throw new IllegalStateException(
+                    "Layer 2 vacuous: 0 damage-observation ticks recorded");
         }
         if (theirFireTracking.godViewCount == 0) {
             throw new IllegalStateException("Layer 3 vacuous: 0 god-view incoming fires detected");
@@ -566,9 +745,28 @@ public final class GodViewQualityValidator {
         }
         System.out.println();
 
-        // Layer 2 — energy accounting (ground-truth ledger). Fire detection (L3)
-        // is measured against this ledger, so it prints first.
-        System.out.printf("Layer 2 — Energy Accounting:%n");
+        // Layer 2 — autopilot's observation of opponent-damage events vs god-view.
+        // Drift here is what FireFeatures cannot subtract out of the energy delta,
+        // so it directly upper-bounds the L3 phantom rate.
+        System.out.printf("Layer 2 — Damage Observation Drift (autopilot):%n");
+        DamageObservationTracker d2 = damageObsTracking;
+        System.out.printf("  ticks=%d, mismatchTicks=%d, totalAbsDrift=%.4f%n",
+                d2.ticks, d2.mismatchTicks, d2.totalAbsDrift());
+        for (int i = 0; i < DamageObservationTracker.N; i++) {
+            System.out.printf("    %-24s gv=%.4f (events=%d) obs=%.4f (events=%d) "
+                    + "absDrift=%.4f (driftTicks=%d)%n",
+                    DamageObservationTracker.LABELS[i],
+                    d2.gvTotal[i], d2.gvEventCount[i],
+                    d2.obsTotal[i], d2.obsEventCount[i],
+                    d2.absDriftTotal[i], d2.driftTickCount[i]);
+        }
+        System.out.println();
+
+        // Engine-rule self-test (internal sanity check). Reconciles each robot's
+        // per-tick energy change against the engine's own god-view event stream.
+        // Discrepancies here mean OUR model of the engine is wrong; they say
+        // nothing about autopilot observation quality.
+        System.out.printf("Energy Model Self-Test (engine-rule sanity):%n");
         for (int pi = 0; pi < 2; pi++) {
             System.out.printf("  Perspective %d: checks=%d, discrepancies=%d%n",
                     pi, energyChecks[pi], energyDiscrepancies[pi]);
