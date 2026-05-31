@@ -1,6 +1,7 @@
 package cz.zamboch.autopilot.pipeline;
 
 import cz.zamboch.autopilot.core.RoboMath;
+import net.sf.robocode.battle.snapshot.RobotSnapshot;
 import robocode.*;
 import robocode.control.snapshot.*;
 
@@ -23,45 +24,31 @@ import java.util.Set;
  */
 public final class EventReconstructor {
 
-    private static final double SCAN_RADIUS = 1200.0;
     private static final double ROBOT_SIZE = 36.0;
 
     // Per-tick state (from my robot's perspective)
-    private double prevRadarHeading = Double.NaN;
     private RobotState prevState = RobotState.ACTIVE;
     private RobotState prevOpponentState = RobotState.ACTIVE;
 
     // Bullet deduplication
     private final Set<Integer> knownBulletIds = new HashSet<>();
 
-    // Reusable arc for scan detection
-    private final Arc2D.Double scanArc = new Arc2D.Double();
-
     /** Reset all inter-tick state. Call at the beginning of each round. */
     public void resetRound() {
-        prevRadarHeading = Double.NaN;
         prevState = RobotState.ACTIVE;
         prevOpponentState = RobotState.ACTIVE;
         knownBulletIds.clear();
     }
 
     /**
-     * Seed inter-tick state from the round-start (spawn) snapshot.
-     * <p>
-     * Robocode places robots at the round start with {@code radar == gun == body}
-     * and zero velocity, then runs turn 1. The engine's first scan on turn 1
-     * sweeps the radar from this spawn heading to its post-turn-1 heading. Without
-     * the spawn heading, {@link #detectScan} cannot reconstruct that first sweep
-     * (it sees {@code prevRadarHeading == NaN} and skips), so the observer misses
-     * the round's opening scan. Feeding the start snapshot here primes
-     * {@code prevRadarHeading} (and the other {@code prev*} fields) so turn 1 is
-     * reconstructed exactly like the engine.
+     * Seed inter-tick state ({@code prevState}, {@code prevOpponentState}) from
+     * the round-start (spawn) snapshot so death / wall-hit edge detection on
+     * turn 1 sees the correct prior state.
      */
     public void seedRoundStart(ITurnSnapshot startSnapshot, int myIndex) {
         IRobotSnapshot[] robots = startSnapshot.getRobots();
         IRobotSnapshot me = robots[myIndex];
         IRobotSnapshot opponent = robots[1 - myIndex];
-        prevRadarHeading = me.getRadarHeading();
         prevState = me.getState();
         prevOpponentState = opponent.getState();
     }
@@ -112,7 +99,6 @@ public final class EventReconstructor {
         events.sort(EVENT_PRIORITY_ORDER);
 
         // === Update state for next tick ===
-        prevRadarHeading = me.getRadarHeading();
         prevState = me.getState();
         prevOpponentState = opponent.getState();
 
@@ -268,42 +254,28 @@ public final class EventReconstructor {
     // ==================== Scan ====================
 
     private void detectScan(IRobotSnapshot me, IRobotSnapshot opponent, List<Event> events) {
-        double radarHeading = me.getRadarHeading();
-
-        if (Double.isNaN(prevRadarHeading)) {
-            // First tick — no sweep yet
-            return;
-        }
-
         // Engine: performScan returns immediately if dead
         if (me.getState() == RobotState.DEAD)
             return;
-
-        // Skip if opponent is dead
         if (opponent.getState() == RobotState.DEAD)
             return;
 
-        double scanRadians = radarHeading - prevRadarHeading;
-        if (scanRadians < -Math.PI)
-            scanRadians += 2 * Math.PI;
-        else if (scanRadians > Math.PI)
-            scanRadians -= 2 * Math.PI;
-
-        if (scanRadians == 0)
-            return; // No radar movement
-
-        // Build Arc2D.PIE (same geometry as engine)
-        double startAngle = RoboMath.normalAbsoluteAngle(prevRadarHeading - Math.PI / 2);
-        double r = SCAN_RADIUS;
-        scanArc.setArc(me.getX() - r, me.getY() - r, 2 * r, 2 * r,
-                Math.toDegrees(startAngle), Math.toDegrees(scanRadians), Arc2D.PIE);
+        // Use the engine's authoritative scan arc (serialized into the snapshot by
+        // RobotPeer.performScan). Reconstructing it from previous/current radar
+        // headings is brittle: it desynchronizes by exactly one tick whenever the
+        // mid-turn scan geometry differs from end-of-turn radar headings (e.g.
+        // when the radar lock changes direction). Trusting the engine's own arc
+        // eliminates that whole class of off-by-one mismatches.
+        Arc2D arc = ((RobotSnapshot) me).getScanArc();
+        if (arc == null)
+            return; // engine did not scan this tick (e.g. radar idle)
 
         // Target bounding box (36x36 centered on opponent)
         double half = ROBOT_SIZE / 2;
         Rectangle2D.Double targetBox = new Rectangle2D.Double(
                 opponent.getX() - half, opponent.getY() - half, ROBOT_SIZE, ROBOT_SIZE);
 
-        boolean hit = intersects(scanArc, targetBox);
+        boolean hit = intersects(arc, targetBox);
         if (hit) {
             double dx = opponent.getX() - me.getX();
             double dy = opponent.getY() - me.getY();
