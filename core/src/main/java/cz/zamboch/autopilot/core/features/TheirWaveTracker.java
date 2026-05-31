@@ -88,8 +88,11 @@ public final class TheirWaveTracker implements IInGameFeatures {
         // D-1. Using the current-tick position would mis-place the wave origin by
         // one tick of opponent movement (~6-8 px). Validated against god-view
         // ground truth (back-projected IBulletSnapshot muzzle) to an exact match.
-        double oppX = wb.getPreviousTickFeature(Feature.OPPONENT_X);
-        double oppY = wb.getPreviousTickFeature(Feature.OPPONENT_Y);
+        // Walk the ring back across radar-lock gaps so a missed scan at D-1
+        // doesn't drop the wave entirely (preserves Layer 2 coverage at the
+        // cost of a few px of muzzle position error).
+        double oppX = wb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_X, 1);
+        double oppY = wb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_Y, 1);
         double ourX = wb.getPreviousTickFeature(Feature.OUR_X);
         double ourY = wb.getPreviousTickFeature(Feature.OUR_Y);
         double tick = wb.getFeature(Feature.TICK) - 1.0;

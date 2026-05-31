@@ -81,6 +81,18 @@ final class BattleLoopTest {
         String outputDir = outputRoot.getAbsolutePath();
         System.out.println("=== CSV OUTPUT DIR: " + outputDir + " ===");
 
+        // Always emit DebugPropertyCsvWriter (in-game.csv/observer.csv) and
+        // TheirFireTraceWriter (their-fires.csv) into the per-seed dir unless the
+        // caller already pinned them elsewhere via -Ddebug.csv.dir / -Dtheir.fires.dir.
+        boolean setDebugCsv = System.getProperty("debug.csv.dir") == null;
+        boolean setTheirFires = System.getProperty("their.fires.dir") == null;
+        if (setDebugCsv) {
+            System.setProperty("debug.csv.dir", outputDir);
+        }
+        if (setTheirFires) {
+            System.setProperty("their.fires.dir", outputDir);
+        }
+
         // Run the battle — may fail if --add-opens JVM args are missing
         BattleRunner.BattleResult result;
         try {
@@ -197,6 +209,26 @@ final class BattleLoopTest {
         validator.printSummary();
         layer0.printSummary();
         System.out.println("Output: " + battleDir.getAbsolutePath());
+        System.out.println("  ticks.csv (Autopilot):  " + new File(autopilotDir, "ticks.csv").getAbsolutePath());
+        System.out.println("  their-waves.csv (Autopilot): "
+                + new File(autopilotDir, "their-waves.csv").getAbsolutePath());
+        System.out.println("  our-waves.csv (Autopilot):   "
+                + new File(autopilotDir, "our-waves.csv").getAbsolutePath());
+        System.out.println("  scores.csv (Autopilot):      " + new File(autopilotDir, "scores.csv").getAbsolutePath());
+        File opponentDir = new File(battleDir, "Opponent");
+        System.out.println("  ticks.csv (Opponent):   " + new File(opponentDir, "ticks.csv").getAbsolutePath());
+        System.out.println("  their-waves.csv (Opponent):  "
+                + new File(opponentDir, "their-waves.csv").getAbsolutePath());
+        System.out.println("  in-game.csv:  " + new File(outputDir, "in-game.csv").getAbsolutePath());
+        System.out.println("  observer.csv: " + new File(outputDir, "observer.csv").getAbsolutePath());
+        System.out.println("  their-fires.csv: " + new File(outputDir, "their-fires.csv").getAbsolutePath());
+        // Restore system properties to leave the JVM clean for sibling tests
+        if (setDebugCsv) {
+            System.clearProperty("debug.csv.dir");
+        }
+        if (setTheirFires) {
+            System.clearProperty("their.fires.dir");
+        }
 
         // --- Assert debug properties match (ALL features, every tick, every round) ---
         assertEquals(0, debugMismatches,

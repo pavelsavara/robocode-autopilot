@@ -374,10 +374,20 @@ public final class Autopilot extends AdvancedRobot {
         }
 
         // Radar
-        setTurnRadarRightRadians(radar.getRadarTurn());
+        // Plan movement and gun first so the radar can subtract the body/gun
+        // carry from its own command and land precisely on the predicted
+        // opponent bearing (see NarrowLockRadar).
+        movement.getCommand(moveCmd);
+        gun.getFireCommand(fireCmd);
+        double bodyTurnPlanned = moveCmd.turnRight;
+        double gunTurnPlanned = 0.0;
+        if (!Double.isNaN(fireCmd.angle)) {
+            double gunHeading = wb.getFeature(Feature.GUN_HEADING);
+            gunTurnPlanned = RoboMath.normalRelativeAngle(fireCmd.angle - gunHeading);
+        }
+        setTurnRadarRightRadians(radar.getRadarTurn(bodyTurnPlanned, gunTurnPlanned));
 
         // Movement
-        movement.getCommand(moveCmd);
         setTurnRightRadians(moveCmd.turnRight);
         setAhead(moveCmd.ahead);
 
@@ -388,11 +398,8 @@ public final class Autopilot extends AdvancedRobot {
         // getGunTurnRemaining() returns radians (same internal storage),
         // AdvancedRobot.getGunTurnRemaining() wraps with toDegrees().
         // Both paths: check < 5 degrees, call setFireBullet which checks gun heat.
-        gun.getFireCommand(fireCmd);
         if (!Double.isNaN(fireCmd.angle)) {
-            double gunHeading = wb.getFeature(Feature.GUN_HEADING);
-            double gunTurn = fireCmd.angle - gunHeading;
-            setTurnGunRightRadians(RoboMath.normalRelativeAngle(gunTurn));
+            setTurnGunRightRadians(gunTurnPlanned);
             if (fireCmd.power > 0 && Math.abs(getGunTurnRemaining()) < 5) {
                 Bullet bullet = setFireBullet(fireCmd.power);
                 if (bullet != null) {
