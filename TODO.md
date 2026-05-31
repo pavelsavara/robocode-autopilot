@@ -29,7 +29,7 @@
 Blotter
 - run all tests and show me drift by layers and features
 
-run all tests 
+run all tests without fixed random seed
 - show me scores for all robots 
 - show me drift by layers and features and opponents. 
 - Re-create fresh BeepBoop-fired-bullets.md and BeepBoop-energy-events.md

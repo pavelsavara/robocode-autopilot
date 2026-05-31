@@ -279,7 +279,18 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                     // flight heading). The opponent's own OUR_FIRE_* on its
                     // god-view whiteboard is ground truth for the bullet heading
                     // toward us.
-                    if (godViewWaveResolver.firedThisTick(oppIndex)) {
+                    // A god-view fire is real only if setFireFeatures populated valid
+                    // fire data this tick. At a kill / round boundary firedThisTick can
+                    // latch true for a perspective whose firing context was skipped
+                    // (opponent DEAD, self HIT_WALL) before setFireFeatures ran, leaving
+                    // OUR_FIRE_* unset (NaN power, fire tick 0). Such phantom "fires"
+                    // describe a bullet that never existed; recording them inflates the
+                    // Layer 3 god-view denominator and drives the detection rate to a
+                    // spurious 0 (e.g. SittingDuck/Walls). Gate on a finite, positive
+                    // fire power so only genuine opponent bullets enter Layer 3.
+                    double oppFirePower = observers[oppIndex].godWb().getFeature(Feature.OUR_FIRE_POWER);
+                    if (godViewWaveResolver.firedThisTick(oppIndex)
+                            && !Double.isNaN(oppFirePower) && oppFirePower > 0.0) {
                         ObserverContext oppCtx = observers[oppIndex];
                         double power = oppCtx.godWb().getFeature(Feature.OUR_FIRE_POWER);
                         double x = oppCtx.godWb().getFeature(Feature.OUR_FIRE_X);
