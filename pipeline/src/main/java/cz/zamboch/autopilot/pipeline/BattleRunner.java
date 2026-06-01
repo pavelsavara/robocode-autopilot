@@ -126,6 +126,27 @@ public final class BattleRunner {
             }
         }
 
+        // Per-event their-fire diff trace (their-fires.csv). Tiny vs debugCsv; safe
+        // to leave on whenever investigating L3-their detection drift.
+        String theirFireDir = System.getProperty("their.fires.dir");
+        if (theirFireDir != null && !theirFireDir.isBlank()) {
+            try {
+                orchestrator.setTheirFireTrace(new TheirFireTraceWriter(new File(theirFireDir), opponent));
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to initialize their-fire trace writer", e);
+            }
+        }
+
+        // Per-event Layer 2 damage-observation diff trace (damage-events.csv).
+        String damageEventsDir = System.getProperty("damage.events.dir");
+        if (damageEventsDir != null && !damageEventsDir.isBlank()) {
+            try {
+                orchestrator.setDamageEventsTrace(new DamageEventsTraceWriter(new File(damageEventsDir), opponent));
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to initialize damage-events trace writer", e);
+            }
+        }
+
         // Attach the engine-grounded snapshot fixture recorder when the
         // record.fixture.dir system property is set. Off by default; used to
         // regenerate the committed test fixture replayed by EventReconstructorTest.

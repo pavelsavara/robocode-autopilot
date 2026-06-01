@@ -139,142 +139,48 @@ class GodViewQualityValidatorTest {
                                 "Opponent features should NOT be checked on non-scan ticks");
         }
 
-        // ========== Layer 2: Fire Detection ==========
-
-        @Test
-        void fireDetection_perfectMatch() {
-                validator.recordGodViewFire(0, 0, 3.0, 100.0, 200.0, 1.5, 10);
-                validator.recordRobotSideFire(0, 0, 3.0, 100.0, 200.0, 10);
-
-                assertEquals(1, validator.getGodViewFires(0));
-                assertEquals(1, validator.getRobotSideFires(0));
-                assertEquals(0.0, validator.getFirePositionMAE(0), 1e-9);
-                assertEquals(0.0, validator.getFirePowerMAE(0), 1e-9);
-                assertEquals(0.0, validator.getFireDetectionLatency(0), 1e-9);
-        }
-
-        @Test
-        void fireDetection_positionAndPowerError() {
-                validator.recordGodViewFire(1, 0, 2.0, 100.0, 200.0, 0, 5);
-                validator.recordRobotSideFire(1, 0, 2.5, 103.0, 204.0, 6);
-
-                // position error = sqrt(3^2 + 4^2) = 5.0
-                assertEquals(5.0, validator.getFirePositionMAE(1), 1e-6);
-                assertEquals(0.5, validator.getFirePowerMAE(1), 1e-6);
-                assertEquals(1.0, validator.getFireDetectionLatency(1), 1e-6);
-        }
-
-        @Test
-        void fireDetection_multipleFires_idPairing() {
-                // God-view fires (bullet ids 1 and 2)
-                validator.recordGodViewFire(0, 1, 1.0, 0.0, 0.0, 0, 10);
-                validator.recordGodViewFire(0, 2, 2.0, 10.0, 0.0, 0, 20);
-
-                // Robot-side fires arrive in REVERSE order but pair by bullet id
-                validator.recordRobotSideFire(0, 2, 2.0, 10.0, 0.0, 20); // matches god-view id 2
-                validator.recordRobotSideFire(0, 1, 1.0, 0.0, 0.0, 10); // matches god-view id 1
-
-                assertEquals(2, validator.getGodViewFires(0));
-                assertEquals(2, validator.getRobotSideFires(0));
-                assertEquals(0.0, validator.getFirePositionMAE(0), 1e-9);
-                assertEquals(0.0, validator.getFirePowerMAE(0), 1e-9);
-        }
-
-        @Test
-        void fireDetection_NaN_whenNoFires() {
-                assertTrue(Double.isNaN(validator.getFirePositionMAE(0)));
-                assertTrue(Double.isNaN(validator.getFirePowerMAE(0)));
-                assertTrue(Double.isNaN(validator.getFireDetectionLatency(0)));
-        }
-
-        // ========== Layer 2 (their): Incoming-Fire Detection ==========
+        // ========== Layer 3: Incoming-Fire Detection ==========
 
         @Test
         void theirFireDetection_originTimingPowerExact_angleGapMeasured() {
                 // god-view: true muzzle (300,400) at fire tick 8, power 2.0, true
                 // flight heading 1.5 rad. Robot-side recovers origin/timing/power
                 // exactly but only assumes a head-on bearing of 1.4 rad.
-                validator.recordGodViewTheirFire(0, 2.0, 300.0, 400.0, 1.5, 8);
-                validator.recordRobotSideTheirFire(0, 2.0, 300.0, 400.0, 1.4, 8);
+                validator.recordGodViewTheirFire(2.0, 300.0, 400.0, 1.5, 8);
+                validator.recordRobotSideTheirFire(2.0, 300.0, 400.0, 1.4, 8);
 
-                assertEquals(1, validator.getTheirGodViewFires(0));
-                assertEquals(1, validator.getTheirRobotSideFires(0));
-                assertEquals(0.0, validator.getTheirFirePositionMAE(0), 1e-9);
-                assertEquals(0.0, validator.getTheirFirePowerMAE(0), 1e-9);
-                assertEquals(0.0, validator.getTheirFireDetectionLatency(0), 1e-9);
+                assertEquals(1, validator.getTheirGodViewFires());
+                assertEquals(1, validator.getTheirRobotSideFires());
+                assertEquals(0.0, validator.getTheirFirePositionMAE(), 1e-9);
+                assertEquals(0.0, validator.getTheirFirePowerMAE(), 1e-9);
+                assertEquals(0.0, validator.getTheirFireDetectionLatency(), 1e-9);
                 // The muzzle-angle gap (lead angle) is the sole irreducible unknown.
-                assertEquals(0.1, validator.getTheirFireAngleMAE(0), 1e-9);
+                assertEquals(0.1, validator.getTheirFireAngleMAE(), 1e-9);
         }
 
         @Test
         void theirFireDetection_pairsByFireTickRegardlessOfArrivalOrder() {
                 // Two incoming fires at ticks 10 and 20; robot-side arrives reversed.
-                validator.recordGodViewTheirFire(0, 1.0, 0.0, 0.0, 0.0, 10);
-                validator.recordGodViewTheirFire(0, 2.0, 50.0, 0.0, 0.0, 20);
-                validator.recordRobotSideTheirFire(0, 2.0, 53.0, 4.0, 0.0, 20); // pairs tick 20
-                validator.recordRobotSideTheirFire(0, 1.0, 0.0, 0.0, 0.0, 10); // pairs tick 10
+                validator.recordGodViewTheirFire(1.0, 0.0, 0.0, 0.0, 10);
+                validator.recordGodViewTheirFire(2.0, 50.0, 0.0, 0.0, 20);
+                validator.recordRobotSideTheirFire(2.0, 53.0, 4.0, 0.0, 20); // pairs tick 20
+                validator.recordRobotSideTheirFire(1.0, 0.0, 0.0, 0.0, 10); // pairs tick 10
 
-                assertEquals(2, validator.getTheirGodViewFires(0));
-                assertEquals(2, validator.getTheirRobotSideFires(0));
+                assertEquals(2, validator.getTheirGodViewFires());
+                assertEquals(2, validator.getTheirRobotSideFires());
                 // tick10 pos err 0; tick20 pos err sqrt(3^2+4^2)=5 → MAE = 2.5
-                assertEquals(2.5, validator.getTheirFirePositionMAE(0), 1e-9);
+                assertEquals(2.5, validator.getTheirFirePositionMAE(), 1e-9);
         }
 
         @Test
         void theirFireDetection_NaN_whenNoFires() {
-                assertTrue(Double.isNaN(validator.getTheirFirePositionMAE(0)));
-                assertTrue(Double.isNaN(validator.getTheirFirePowerMAE(0)));
-                assertTrue(Double.isNaN(validator.getTheirFireDetectionLatency(0)));
-                assertTrue(Double.isNaN(validator.getTheirFireAngleMAE(0)));
+                assertTrue(Double.isNaN(validator.getTheirFirePositionMAE()));
+                assertTrue(Double.isNaN(validator.getTheirFirePowerMAE()));
+                assertTrue(Double.isNaN(validator.getTheirFireDetectionLatency()));
+                assertTrue(Double.isNaN(validator.getTheirFireAngleMAE()));
         }
 
-        // ========== Layer 2 (aim): Aiming-Decision Attribution ==========
-
-        @Test
-        void ourAim_perfectMatch_pairsByBulletId() {
-                validator.recordGodViewOurAim(0, 7, 100.0, 200.0, 250.0, 1.2);
-                validator.recordRobotSideOurAim(0, 7, 100.0, 200.0, 250.0, 1.2);
-
-                assertEquals(1, validator.getOurAimPairedCount(0));
-                assertEquals(0.0, validator.getOurAimPositionMAE(0), 1e-9);
-                assertEquals(0.0, validator.getOurAimDistanceMAE(0), 1e-9);
-                assertEquals(0.0, validator.getOurAimBearingMAE(0), 1e-9);
-        }
-
-        @Test
-        void ourAim_positionDistanceBearingError() {
-                // Self-position is exact; the stale-scan target estimate is off.
-                validator.recordGodViewOurAim(1, 3, 100.0, 200.0, 250.0, 1.0);
-                validator.recordRobotSideOurAim(1, 3, 103.0, 204.0, 240.0, 1.1);
-
-                assertEquals(5.0, validator.getOurAimPositionMAE(1), 1e-6); // sqrt(3^2+4^2)
-                assertEquals(10.0, validator.getOurAimDistanceMAE(1), 1e-6);
-                assertEquals(0.1, validator.getOurAimBearingMAE(1), 1e-6);
-        }
-
-        @Test
-        void theirAim_pairsByFireTickRegardlessOfArrivalOrder() {
-                validator.recordGodViewTheirAim(0, 10, 0.0, 0.0, 200.0, 0.0);
-                validator.recordGodViewTheirAim(0, 20, 50.0, 0.0, 210.0, 0.0);
-                validator.recordRobotSideTheirAim(0, 20, 53.0, 4.0, 210.0, 0.0); // pairs tick 20
-                validator.recordRobotSideTheirAim(0, 10, 0.0, 0.0, 200.0, 0.0); // pairs tick 10
-
-                assertEquals(2, validator.getTheirAimPairedCount(0));
-                // tick10 pos err 0; tick20 pos err sqrt(3^2+4^2)=5 → MAE = 2.5
-                assertEquals(2.5, validator.getTheirAimPositionMAE(0), 1e-9);
-        }
-
-        @Test
-        void aim_NaN_whenNoData() {
-                assertTrue(Double.isNaN(validator.getOurAimPositionMAE(0)));
-                assertTrue(Double.isNaN(validator.getOurAimDistanceMAE(0)));
-                assertTrue(Double.isNaN(validator.getOurAimBearingMAE(0)));
-                assertTrue(Double.isNaN(validator.getTheirAimPositionMAE(0)));
-                assertTrue(Double.isNaN(validator.getTheirAimDistanceMAE(0)));
-                assertTrue(Double.isNaN(validator.getTheirAimBearingMAE(0)));
-        }
-
-        // ========== Layer 3: Wave Precision ==========
+        // ========== Layer 4: Wave Precision ==========
 
         @Test
         void waveMatchRate_fullMatch() {
@@ -322,7 +228,7 @@ class GodViewQualityValidatorTest {
                 assertTrue(Double.isNaN(validator.getBreakTickMAE(0)));
         }
 
-        // ========== Layer 4: Energy Accounting ==========
+        // ========== Layer 2: Energy Accounting ==========
 
         @Test
         void energyAccounting_noEvent_noDiscrepancy() {
@@ -521,15 +427,17 @@ class GodViewQualityValidatorTest {
                 ITurnSnapshot turn = TestSnapshots.turn(1, self, opp);
                 validator.validateSpatial(0, wb, self, opp, turn);
 
-                // Feed Layer 2
-                validator.recordGodViewFire(0, 0, 1.0, 100, 200, 0, 1);
-
                 // Feed Layer 3
-                validator.compareWaveBreak(0, 0.5, 0.5, 100, 100);
+                validator.recordGodViewTheirFire(1.0, 100, 200, 0, 1);
 
                 // Feed Layer 4
+                validator.compareWaveBreak(0, 0.5, 0.5, 100, 100);
+
+                // Feed Layer 2
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
+                validator.recordDamageObservation(0, 1, 0, turn.getRobots(), turn.getBullets(),
+                                0, 0, 0, 0, false);
 
                 assertDoesNotThrow(() -> validator.assertNonVacuous());
         }
@@ -537,7 +445,7 @@ class GodViewQualityValidatorTest {
         @Test
         void assertNonVacuous_throwsForEmptyLayer1() {
                 // Feed layers 2-4 only
-                validator.recordGodViewFire(0, 0, 1.0, 0, 0, 0, 1);
+                validator.recordGodViewTheirFire(1.0, 0, 0, 0, 1);
                 validator.compareWaveBreak(0, 0.5, 0.5, 10, 10);
                 IRobotSnapshot r = TestSnapshots.robot(0, 0, 0, 0, 100, 0, 0, 0, 0, RobotState.ACTIVE, "A");
                 IRobotSnapshot o = TestSnapshots.robot(0, 0, 0, 0, 100, 0, 0, 0, 1, RobotState.ACTIVE, "B");
@@ -551,7 +459,7 @@ class GodViewQualityValidatorTest {
         }
 
         @Test
-        void assertNonVacuous_throwsForEmptyLayer2() {
+        void assertNonVacuous_throwsForEmptyLayer3() {
                 // Feed Layer 1
                 Whiteboard wb = new Whiteboard();
                 wb.setFeature(Feature.TICK, 1);
@@ -580,18 +488,20 @@ class GodViewQualityValidatorTest {
                 ITurnSnapshot turn = TestSnapshots.turn(1, self, opp);
                 validator.validateSpatial(0, wb, self, opp, turn);
 
-                // No Layer 2 fires
+                // No Layer 3 fires
                 validator.compareWaveBreak(0, 0.5, 0.5, 10, 10);
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
+                validator.recordDamageObservation(0, 1, 0, turn.getRobots(), turn.getBullets(),
+                                0, 0, 0, 0, false);
 
                 IllegalStateException ex = assertThrows(IllegalStateException.class,
                                 () -> validator.assertNonVacuous());
-                assertTrue(ex.getMessage().contains("Layer 2"));
+                assertTrue(ex.getMessage().contains("Layer 3"));
         }
 
         @Test
-        void assertNonVacuous_passesWithEmptyLayer3() {
+        void assertNonVacuous_passesWithEmptyLayer4() {
                 Whiteboard wb = new Whiteboard();
                 wb.setFeature(Feature.TICK, 1);
                 wb.setFeature(Feature.LAST_SCAN_TICK, 1);
@@ -619,12 +529,14 @@ class GodViewQualityValidatorTest {
                 ITurnSnapshot turn = TestSnapshots.turn(1, self, opp);
                 validator.validateSpatial(0, wb, self, opp, turn);
 
-                validator.recordGodViewFire(0, 0, 1.0, 0, 0, 0, 1);
-                // No Layer 3 wave comparisons — not required for non-vacuous
+                validator.recordGodViewTheirFire(1.0, 0, 0, 0, 1);
+                // No Layer 4 wave comparisons — not required for non-vacuous
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
                 validator.accountEnergy(0, turn.getRobots(), turn.getBullets());
+                validator.recordDamageObservation(0, 1, 0, turn.getRobots(), turn.getBullets(),
+                                0, 0, 0, 0, false);
 
-                // Layer 3 is not required for assertNonVacuous (observer fires independently)
+                // Layer 4 is not required for assertNonVacuous (observer fires independently)
                 assertDoesNotThrow(() -> validator.assertNonVacuous());
         }
 }

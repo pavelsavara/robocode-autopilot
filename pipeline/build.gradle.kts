@@ -158,6 +158,12 @@ tasks.register<Test>("battleTest") {
     if (project.hasProperty("debugCsvDir")) {
         systemProperty("debug.csv.dir", project.property("debugCsvDir")!!)
     }
+    if (project.hasProperty("theirFiresDir")) {
+        systemProperty("their.fires.dir", project.property("theirFiresDir")!!)
+    }
+    if (project.hasProperty("damageEventsDir")) {
+        systemProperty("damage.events.dir", project.property("damageEventsDir")!!)
+    }
 
     testLogging {
         showStandardStreams = true

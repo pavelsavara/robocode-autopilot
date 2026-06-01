@@ -84,15 +84,18 @@ public final class Autopilot extends AdvancedRobot {
             Feature.OUR_BULLET_DAMAGE_TO_OPPONENT,
             Feature.OPPONENT_BULLET_ENERGY_GAIN,
             Feature.RAM_DAMAGE_TO_OPPONENT,
-            Feature.OPPONENT_RAM_ENERGY_GAIN,
             Feature.OPPONENT_WALL_HIT_DAMAGE
     };
 
     /**
      * Features that persist across ring rotations but are NOT reset on scan ticks.
+     * PREV_SCAN_OPPONENT_ENERGY is scan-indexed (last seen opponent energy); the
+     * gap between scans is typically several ticks, so without stickying it would
+     * be NaN at the next scan and FireFeatures could never compute an energy drop.
      */
     private static final Feature[] STICKY_FEATURES = {
-            Feature.LAST_SCAN_TICK
+            Feature.LAST_SCAN_TICK,
+            Feature.PREV_SCAN_OPPONENT_ENERGY
     };
 
     /**
@@ -133,6 +136,44 @@ public final class Autopilot extends AdvancedRobot {
     }
 
     private final double[] accumulatorCarry = new double[Feature.COUNT];
+
+    /**
+     * Snapshot of the damage accumulators taken in {@link #doTurn()} AFTER
+     * {@code wb.process()} (so WallHitEstimator's wall charge and FireFeatures'
+     * read have happened) but BEFORE the scan-tick reset zeroes them. The live
+     * robot does not read this; it exists so the headless validation pipeline can
+     * observe the exact per-tick values FireFeatures consumed — in particular the
+     * OPPONENT_WALL_HIT_DAMAGE charge, which is produced inside process() and
+     * would otherwise be 0 both before process() and after the reset.
+     */
+    private final double[] consumedAccumulators = new double[Feature.COUNT];
+
+    /**
+     * True when {@link #doTurn()} zeroed the damage accumulators at the end of
+     * the most recent turn (i.e. that turn was a scan tick). The validator uses
+     * the PREVIOUS turn's value to decide whether the current snapshot is a
+     * running total (snap-down delta) or a fresh post-reset per-tick value
+     * (taken verbatim). Without it, a sustained every-tick-scan clinch resets
+     * the accumulator every tick so the snapshot is a constant 0.6 and the
+     * snap-down delta collapses to 0, under-counting ram damage.
+     */
+    private boolean accumulatorsResetThisTurn;
+
+    /**
+     * Post-process, pre-reset value of a damage accumulator for the tick that
+     * just ran through {@link #doTurn()}. See {@link #consumedAccumulators}.
+     */
+    public double getConsumedAccumulator(Feature f) {
+        return consumedAccumulators[f.ordinal()];
+    }
+
+    /**
+     * Whether the damage accumulators were reset at the end of the most recent
+     * {@link #doTurn()} (true on scan ticks). See {@link #accumulatorsResetThisTurn}.
+     */
+    public boolean wasAccumulatorResetThisTurn() {
+        return accumulatorsResetThisTurn;
+    }
 
     @Override
     public void onScannedRobot(ScannedRobotEvent event) {
@@ -252,15 +293,10 @@ public final class Autopilot extends AdvancedRobot {
 
     @Override
     public void onHitRobot(HitRobotEvent e) {
-        // Both robots always take ROBOT_HIT_DAMAGE
+        // Both robots always take ROBOT_HIT_DAMAGE; ROBOT_HIT_BONUS is a score
+        // bonus only (see RobotStatistics.scoreRammingDamage), not an energy gain.
         double current = wb.getFeature(Feature.RAM_DAMAGE_TO_OPPONENT);
         wb.setFeature(Feature.RAM_DAMAGE_TO_OPPONENT, (Double.isNaN(current) ? 0 : current) + Rules.ROBOT_HIT_DAMAGE);
-
-        // If opponent is "at fault" (they rammed us), they gain ROBOT_HIT_BONUS
-        if (!e.isMyFault()) {
-            double gain = wb.getFeature(Feature.OPPONENT_RAM_ENERGY_GAIN);
-            wb.setFeature(Feature.OPPONENT_RAM_ENERGY_GAIN, (Double.isNaN(gain) ? 0 : gain) + Rules.ROBOT_HIT_BONUS);
-        }
     }
 
     /**
@@ -313,18 +349,23 @@ public final class Autopilot extends AdvancedRobot {
             wb.setModelSelector(new ModelSelector(store));
         }
         // Recreate strategies so their internal cross-round state (e.g.
-        // NarrowLockRadar.lastTurnDirection) resets to its fresh-instance default.
-        radar = new NarrowLockRadar(wb);
+        // OvershootLockRadar.lastTurnDirection) resets to its fresh-instance default.
+        radar = new OvershootLockRadar(wb);
         gun = new GFGunStrategy(wb);
-        movement = new OrbitMovementStrategy(wb);
+        movement = new OrbitMovementStrategy(wb, bfWidth, bfHeight);
         // Clear any carried-forward accumulator/sticky values from the prior round.
         java.util.Arrays.fill(accumulatorCarry, 0.0);
     }
 
     private boolean featuresRegistered;
+    /** Battlefield dimensions, retained so resetForRound can rebuild movement. */
+    private double bfWidth;
+    private double bfHeight;
 
     /** Shared initialization for both live and observer modes. */
     private void initCommon(double bfWidth, double bfHeight) {
+        this.bfWidth = bfWidth;
+        this.bfHeight = bfHeight;
         if (!featuresRegistered) {
             wb.registerFeatures(
                     new SpatialFeatures(),
@@ -339,9 +380,9 @@ public final class Autopilot extends AdvancedRobot {
             featuresRegistered = true;
         }
 
-        radar = new NarrowLockRadar(wb);
+        radar = new OvershootLockRadar(wb);
         gun = new GFGunStrategy(wb);
-        movement = new OrbitMovementStrategy(wb);
+        movement = new OrbitMovementStrategy(wb, bfWidth, bfHeight);
     }
 
     /** Access the whiteboard (for observer/pipeline integration). */
@@ -352,6 +393,10 @@ public final class Autopilot extends AdvancedRobot {
     @Override
     public void run() {
         initCommon(getBattleFieldWidth(), getBattleFieldHeight());
+        // Decouple radar from body and gun rotation so OvershootLockRadar's command
+        // is the radar's actual angular motion (no carry from body/gun turns).
+        setAdjustRadarForRobotTurn(true);
+        setAdjustRadarForGunTurn(true);
         // Round 2+ of the same battle: the opponent and its accumulated VCS model are
         // already known from a prior round via the per-battle static, so attach the
         // model now — before the first scan — so targeting benefits immediately.
@@ -366,16 +411,26 @@ public final class Autopilot extends AdvancedRobot {
     public void doTurn() {
         wb.process();
 
+        // Snapshot the accumulators post-process (WallHitEstimator has charged the
+        // wall channel and FireFeatures has consumed all four) but BEFORE the
+        // scan-tick reset below, so the validation pipeline can read the exact
+        // values FireFeatures saw. Harmless for the live robot.
+        for (Feature f : ACCUMULATOR_FEATURES) {
+            consumedAccumulators[f.ordinal()] = wb.getFeature(f);
+        }
+
         // Reset accumulators after FireFeatures has consumed them on scan ticks
         double tick = wb.getFeature(Feature.TICK);
         double lastScan = wb.getFeature(Feature.LAST_SCAN_TICK);
-        if (!Double.isNaN(tick) && tick == lastScan) {
+        boolean scanTick = !Double.isNaN(tick) && tick == lastScan;
+        if (scanTick) {
             for (Feature f : ACCUMULATOR_FEATURES) {
                 wb.setFeature(f, 0);
             }
         }
+        accumulatorsResetThisTurn = scanTick;
 
-        // Radar
+        // Radar — independent of body/gun thanks to setAdjustRadarFor*(true).
         setTurnRadarRightRadians(radar.getRadarTurn());
 
         // Movement
@@ -393,8 +448,7 @@ public final class Autopilot extends AdvancedRobot {
         gun.getFireCommand(fireCmd);
         if (!Double.isNaN(fireCmd.angle)) {
             double gunHeading = wb.getFeature(Feature.GUN_HEADING);
-            double gunTurn = fireCmd.angle - gunHeading;
-            setTurnGunRightRadians(RoboMath.normalRelativeAngle(gunTurn));
+            setTurnGunRightRadians(RoboMath.normalRelativeAngle(fireCmd.angle - gunHeading));
             if (fireCmd.power > 0 && Math.abs(getGunTurnRemaining()) < 5) {
                 Bullet bullet = setFireBullet(fireCmd.power);
                 if (bullet != null) {

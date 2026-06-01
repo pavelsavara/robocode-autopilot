@@ -29,9 +29,9 @@ import java.util.Set;
  * <h2>4 Quality Layers</h2>
  * <ol>
  * <li>Spatial &amp; Kinematic Fidelity (every scan tick)</li>
- * <li>Fire Detection Fidelity</li>
- * <li>Wave Resolution &amp; GF Precision</li>
- * <li>Energy Accounting</li>
+ * <li>Energy Accounting (ground-truth ledger)</li>
+ * <li>Fire Detection Fidelity (depends on the energy ledger)</li>
+ * <li>Wave Resolution &amp; GF Precision (depends on fire detection)</li>
  * </ol>
  */
 public final class GodViewQualityValidator {
@@ -41,36 +41,31 @@ public final class GodViewQualityValidator {
     // --- Layer 1: Spatial (per-feature stats) ---
     private final EnumMap<Feature, ValidationStats> spatialStats = new EnumMap<>(Feature.class);
 
-    // --- Layer 2: Fire Detection ---
-    private final FireDetectionTracker[] fireTracking = {
-            new FireDetectionTracker(), new FireDetectionTracker()
-    };
+    // --- Layer 3: Incoming-Fire Detection (autopilot side only) ---
+    // god-view ground truth (the opponent's bullet) vs the autopilot's energy-drop
+    // inference. Paired by fire tick because the blindfolded autopilot has no
+    // bullet id for incoming fire. Origin/timing/power are knowable exactly; the
+    // muzzle angle is not — angleMAE quantifies that single irreducible unknown.
+    private final TheirFireDetectionTracker theirFireTracking = new TheirFireDetectionTracker();
 
-    // --- Layer 2 (their side): incoming-fire detection ---
-    // god-view ground truth (the opponent's bullet) vs the robot-side energy-drop
-    // inference. Paired by fire tick because the blindfolded robot has no bullet id
-    // for incoming fire. Origin/timing/power are knowable exactly; the muzzle angle
-    // is not — angleMAE quantifies that single irreducible unknown.
-    private final TheirFireDetectionTracker[] theirFireTracking = {
-            new TheirFireDetectionTracker(), new TheirFireDetectionTracker()
-    };
-
-    // --- Layer 3: Wave GF Precision ---
+    // --- Layer 4: Wave GF Precision ---
     private final WavePrecisionTracker[] waveTracking = {
             new WavePrecisionTracker(), new WavePrecisionTracker()
     };
 
-    // --- Layer 2 (aim): aiming-decision attribution at the tick before fire ---
-    // god-view exact aim geometry vs the robot-side inference. OUR aim is paired by
-    // bullet id; THEIR aim is paired by fire tick (no bullet id for incoming fire).
-    private final AimDetectionTracker[] aimTracking = {
-            new AimDetectionTracker(), new AimDetectionTracker()
-    };
-    private final AimDetectionTracker[] theirAimTracking = {
-            new AimDetectionTracker(), new AimDetectionTracker()
-    };
+    // --- Layer 2: Damage-Observation Drift (autopilot perspective only) ---
+    // Compares the autopilot's running tally of opponent damage events
+    // (subtracted out of the energy delta in FireFeatures.process) against the
+    // god-view ledger of the same components. When all four sub-metrics are
+    // zero, the autopilot has perfectly observed every legal source of
+    // opponent energy change, so anything left over in the scan-to-scan drop
+    // must be an enemy fire — and L3 phantoms collapse to 0.
+    private final DamageObservationTracker damageObsTracking = new DamageObservationTracker();
 
-    // --- Layer 4: Energy Accounting ---
+    // --- Engine-rule self-test (internal sanity check; not headline metric) ---
+    // Reconciles each robot's per-tick energy change against the engine's own
+    // event stream (god-view bullets + collisions). This validates OUR model of
+    // the engine, not the autopilot's observation quality.
     private final int[] energyChecks = { 0, 0 };
     private final int[] energyDiscrepancies = { 0, 0 };
     private final double[] prevEnergy = { Double.NaN, Double.NaN };
@@ -82,6 +77,39 @@ public final class GodViewQualityValidator {
     private final Set<Integer>[] firedBulletIds = newIdSets();
     private final Set<Integer>[] hitByUsBulletIds = newIdSets();
     private final Set<Integer>[] hitOnUsBulletIds = newIdSets();
+
+    // Per-round bullet-id de-dup for damage-observation drift (autopilot view).
+    private final Set<Integer> obsHitByUsBulletIds = new HashSet<>();
+    private final Set<Integer> obsHitOnUsBulletIds = new HashSet<>();
+    // Opponent prev-tick state/velocity for the autopilot's wall-damage truth.
+    private RobotState prevOppState = null;
+    private double prevOppVelocity = Double.NaN;
+
+    // Last per-channel obs accumulator reading. The autopilot's wb accumulators
+    // monotonically grow within a carry window and snap to a smaller value (or
+    // 0) when FireFeatures consumes + resets them on a scan tick. Per-tick obs
+    // delta is therefore: max(0, curr - prev) when curr >= prev (growth), or
+    // curr when curr < prev (reset happened; the new value is this tick's fresh
+    // contribution).
+    private final double[] prevObs = new double[DamageObservationTracker.N];
+
+    // Whether the PREVIOUS recorded tick was a scan tick on which the autopilot
+    // zeroed its damage accumulators. When true, this tick's obs snapshot is a
+    // fresh post-reset per-tick value (taken verbatim) rather than a running
+    // total to snap-down. See recordDamageObservation.
+    private boolean prevTickAccumulatorReset = false;
+
+    // Optional per-event trace writer for damage observations (analog of
+    // theirFireTrace for Layer 3). Null when -PdamageEventsDir not provided.
+    private DamageEventsTraceWriter damageEventsTrace;
+
+    public void setDamageEventsTrace(DamageEventsTraceWriter w) {
+        this.damageEventsTrace = w;
+    }
+
+    private static final String[] DAMAGE_CHANNEL_NAMES = {
+            "OUR_BULLET_DMG", "OPP_BULLET_GAIN", "RAM_DMG", "OPP_WALL_DMG"
+    };
 
     @SuppressWarnings("unchecked")
     private static Set<Integer>[] newIdSets() {
@@ -114,57 +142,21 @@ public final class GodViewQualityValidator {
         }
     }
 
-    private static final class FireDetectionTracker {
-        // Counts of fires seen on each side (for the detection rate).
-        int godViewCount;
-        int robotSideCount;
-        // Bullet-id keyed buffers for the side that has not yet seen its partner.
-        // The two sides observe the same physical bullet on slightly different
-        // ticks (god-view on bullet-appear, robot-side on the fire command), so
-        // we pair by bullet id rather than arrival order to avoid index slips.
-        final Map<Integer, FireRecord> pendingGodView = new HashMap<>();
-        final Map<Integer, FireRecord> pendingRobotSide = new HashMap<>();
-        double positionErrorSum;
-        double powerErrorSum;
-        double latencySum;
-        int pairedCount;
-
-        double getFireDetectionRate() {
-            if (godViewCount == 0)
-                return Double.NaN;
-            return (double) robotSideCount / godViewCount;
-        }
-
-        /** Accumulate the error for one paired (god-view, robot-side) fire. */
-        void pair(FireRecord godView, FireRecord robotSide) {
-            double dx = godView.x - robotSide.x;
-            double dy = godView.y - robotSide.y;
-            positionErrorSum += Math.hypot(dx, dy);
-            powerErrorSum += Math.abs(godView.power - robotSide.power);
-            latencySum += (robotSide.tick - godView.tick);
-            pairedCount++;
-        }
-
-        double getPositionMAE() {
-            return pairedCount > 0 ? positionErrorSum / pairedCount : Double.NaN;
-        }
-
-        double getPowerMAE() {
-            return pairedCount > 0 ? powerErrorSum / pairedCount : Double.NaN;
-        }
-
-        double getDetectionLatency() {
-            return pairedCount > 0 ? latencySum / pairedCount : Double.NaN;
-        }
-    }
-
     /**
-     * Incoming-fire ("their wave") detection tracker. The blindfolded robot infers
-     * an enemy shot from an energy drop, so it knows the origin (enemy position one
-     * tick before detection), timing (that same tick) and power (the drop) exactly,
-     * but cannot know the muzzle angle — it must assume a head-on bearing. The two
-     * streams are paired by <b>fire tick</b> (not bullet id: the robot never sees
-     * the incoming bullet, so it has no id for it).
+     * Incoming-fire ("their wave") detection tracker.
+     * <p>
+     * Only the autopilot perspective is recorded — measuring the autopilot's
+     * own outgoing fire against god-view is omitted (the autopilot owns those
+     * bullets, so it can never disagree with the engine about them).
+     * </p>
+     * <p>
+     * The blindfolded autopilot infers an enemy shot from an energy drop, so it
+     * knows the origin (enemy position one tick before detection), timing (that
+     * same tick) and power (the drop) exactly, but cannot know the muzzle angle —
+     * it must assume a head-on bearing. The two streams are paired by <b>fire
+     * tick</b> (not bullet id: the autopilot never sees the incoming bullet, so it
+     * has no id for it).
+     * </p>
      */
     private static final class TheirFireDetectionTracker {
         int godViewCount;
@@ -215,72 +207,74 @@ public final class GodViewQualityValidator {
     }
 
     /**
-     * Aiming-decision attribution tracker. Records the aim-time geometry (one tick
-     * before the fire tick) and compares the god-view exact values against the
-     * robot-side inference. {@code position} is the firer's own body position at
-     * aim
-     * time (knowable exactly on both sides); {@code distance} and {@code bearing}
-     * encode the firer→target geometry, where the robot-side error (stale-scan
-     * target position) actually lives. Keyed by an opaque token (bullet id for OUR,
-     * fire tick for THEIR).
+     * Per-class damage-observation drift tracker (autopilot perspective).
+     * <p>
+     * Four damage channels affect opponent energy each tick:
+     * <ol>
+     * <li>our bullets hitting the opponent (we observe via
+     * {@code BulletHitEvent})</li>
+     * <li>opponent bullets hitting us — opponent gains the hit bonus (we
+     * observe our own {@code HitByBulletEvent} and credit the opponent)</li>
+     * <li>ram damage (we observe via {@code HitRobotEvent}; opponent also
+     * pays {@code RAM_DAMAGE} per tick of contact)</li>
+     * <li>opponent wall hits — inferred from a scanned
+     * {@code oppState == HIT_WALL} transition using the opponent's prior-scan
+     * velocity ({@code wallDamage(prevOppVelocity)}). The autopilot has the
+     * same inputs the validator does, so this channel can be observed exactly
+     * on every-tick scans; only the across-scan-gap acceleration uncertainty
+     * (±2 px/s/tick) is residual</li>
+     * </ol>
+     * For each channel we accumulate the god-view truth, the autopilot's
+     * observation, and the absolute drift. The four drifts together upper-bound
+     * the residual energy the autopilot cannot attribute, which is exactly the
+     * material L3 has to work with when classifying an energy drop as fire.
      */
-    private static final class AimRecord {
-        final double x;
-        final double y;
-        final double distance;
-        final double bearing;
+    static final class DamageObservationTracker {
+        static final int OUR_BULLET_DMG = 0;
+        static final int OPP_BULLET_GAIN = 1;
+        static final int RAM_DMG = 2;
+        static final int OPP_WALL_DMG = 3;
+        static final int N = 4;
+        static final String[] LABELS = {
+                "ourBulletDmg(on opp)", "oppBulletGain(from us)",
+                "ramDmg(on opp)", "oppWallDmg"
+        };
 
-        AimRecord(double x, double y, double distance, double bearing) {
-            this.x = x;
-            this.y = y;
-            this.distance = distance;
-            this.bearing = bearing;
-        }
-    }
+        final double[] gvTotal = new double[N];
+        final double[] obsTotal = new double[N];
+        final double[] absDriftTotal = new double[N];
+        final int[] gvEventCount = new int[N];
+        final int[] obsEventCount = new int[N];
+        final int[] driftTickCount = new int[N];
+        long ticks;
+        long mismatchTicks;
 
-    private static final class AimDetectionTracker {
-        final Map<Object, AimRecord> pendingGodView = new HashMap<>();
-        final Map<Object, AimRecord> pendingRobotSide = new HashMap<>();
-        double positionErrorSum;
-        double distanceErrorSum;
-        double bearingErrorSum;
-        int pairedCount;
-
-        void pair(AimRecord godView, AimRecord robotSide) {
-            positionErrorSum += Math.hypot(godView.x - robotSide.x, godView.y - robotSide.y);
-            distanceErrorSum += Math.abs(godView.distance - robotSide.distance);
-            bearingErrorSum += Math.abs(RoboMath.normalRelativeAngle(godView.bearing - robotSide.bearing));
-            pairedCount++;
-        }
-
-        void recordGodView(Object key, AimRecord rec) {
-            AimRecord rs = pendingRobotSide.remove(key);
-            if (rs != null) {
-                pair(rec, rs);
-            } else {
-                pendingGodView.put(key, rec);
+        void record(double[] gv, double[] obs) {
+            ticks++;
+            boolean anyDrift = false;
+            for (int i = 0; i < N; i++) {
+                gvTotal[i] += gv[i];
+                obsTotal[i] += obs[i];
+                if (gv[i] > EPSILON)
+                    gvEventCount[i]++;
+                if (obs[i] > EPSILON)
+                    obsEventCount[i]++;
+                double drift = Math.abs(gv[i] - obs[i]);
+                if (drift > EPSILON) {
+                    absDriftTotal[i] += drift;
+                    driftTickCount[i]++;
+                    anyDrift = true;
+                }
             }
+            if (anyDrift)
+                mismatchTicks++;
         }
 
-        void recordRobotSide(Object key, AimRecord rec) {
-            AimRecord gv = pendingGodView.remove(key);
-            if (gv != null) {
-                pair(gv, rec);
-            } else {
-                pendingRobotSide.put(key, rec);
-            }
-        }
-
-        double getPositionMAE() {
-            return pairedCount > 0 ? positionErrorSum / pairedCount : Double.NaN;
-        }
-
-        double getDistanceMAE() {
-            return pairedCount > 0 ? distanceErrorSum / pairedCount : Double.NaN;
-        }
-
-        double getBearingMAE() {
-            return pairedCount > 0 ? bearingErrorSum / pairedCount : Double.NaN;
+        double totalAbsDrift() {
+            double s = 0;
+            for (double d : absDriftTotal)
+                s += d;
+            return s;
         }
     }
 
@@ -384,113 +378,43 @@ public final class GodViewQualityValidator {
         }
     }
 
-    // ========== Layer 2: Fire Detection ==========
-
-    /**
-     * Track a god-view fire (from the {@link IBulletSnapshot} the engine created).
-     * Pairs with the robot-side detection of the same bullet id if already seen,
-     * otherwise buffers until that detection arrives.
-     */
-    public void recordGodViewFire(int perspIndex, int bulletId, double power, double x, double y,
-            double heading, long tick) {
-        FireDetectionTracker tracker = fireTracking[perspIndex];
-        tracker.godViewCount++;
-        FireRecord godView = new FireRecord(power, x, y, heading, tick);
-        FireRecord robotSide = tracker.pendingRobotSide.remove(bulletId);
-        if (robotSide != null) {
-            tracker.pair(godView, robotSide);
-        } else {
-            tracker.pendingGodView.put(bulletId, godView);
-        }
-    }
-
-    /**
-     * Track a robot-side fire detection (from the observer firing its own gun).
-     * Pairs with the god-view fire of the same bullet id by id, never by arrival
-     * order, so a one-tick timing offset or a missed detection cannot misalign the
-     * two streams.
-     */
-    public void recordRobotSideFire(int perspIndex, int bulletId, double power, double x, double y,
-            long tick) {
-        FireDetectionTracker tracker = fireTracking[perspIndex];
-        tracker.robotSideCount++;
-        FireRecord robotSide = new FireRecord(power, x, y, Double.NaN, tick);
-        FireRecord godView = tracker.pendingGodView.remove(bulletId);
-        if (godView != null) {
-            tracker.pair(godView, robotSide);
-        } else {
-            tracker.pendingRobotSide.put(bulletId, robotSide);
-        }
-    }
+    // ========== Layer 3: Incoming-Fire Detection ==========
 
     /**
      * Track a god-view incoming fire — the opponent's bullet as the engine created
      * it (true muzzle origin, true fire tick, true power, true flight heading).
-     * Paired with the robot-side energy-drop inference of the same fire tick.
+     * Paired with the autopilot's energy-drop inference of the same fire tick.
      */
-    public void recordGodViewTheirFire(int perspIndex, double power, double x, double y,
+    public void recordGodViewTheirFire(double power, double x, double y,
             double heading, long fireTick) {
-        TheirFireDetectionTracker tracker = theirFireTracking[perspIndex];
-        tracker.godViewCount++;
+        theirFireTracking.godViewCount++;
         FireRecord godView = new FireRecord(power, x, y, heading, fireTick);
-        FireRecord robotSide = tracker.pendingRobotSide.remove(fireTick);
+        FireRecord robotSide = theirFireTracking.pendingRobotSide.remove(fireTick);
         if (robotSide != null) {
-            tracker.pair(godView, robotSide);
+            theirFireTracking.pair(godView, robotSide);
         } else {
-            tracker.pendingGodView.put(fireTick, godView);
+            theirFireTracking.pendingGodView.put(fireTick, godView);
         }
     }
 
     /**
-     * Track a robot-side incoming-fire detection — inferred from an enemy energy
-     * drop. {@code bearing} is the robot's head-on assumption of the muzzle angle.
+     * Track an autopilot-side incoming-fire detection — inferred from an enemy
+     * energy drop. {@code bearing} is the head-on assumption of the muzzle angle.
      * Paired with the god-view fire of the same fire tick.
      */
-    public void recordRobotSideTheirFire(int perspIndex, double power, double x, double y,
+    public void recordRobotSideTheirFire(double power, double x, double y,
             double bearing, long fireTick) {
-        TheirFireDetectionTracker tracker = theirFireTracking[perspIndex];
-        tracker.robotSideCount++;
+        theirFireTracking.robotSideCount++;
         FireRecord robotSide = new FireRecord(power, x, y, bearing, fireTick);
-        FireRecord godView = tracker.pendingGodView.remove(fireTick);
+        FireRecord godView = theirFireTracking.pendingGodView.remove(fireTick);
         if (godView != null) {
-            tracker.pair(godView, robotSide);
+            theirFireTracking.pair(godView, robotSide);
         } else {
-            tracker.pendingRobotSide.put(fireTick, robotSide);
+            theirFireTracking.pendingRobotSide.put(fireTick, robotSide);
         }
     }
 
-    // ========== Layer 2 (aim): aiming-decision attribution ==========
-
-    /**
-     * God-view exact OUR aim geometry (one tick before fire), paired by bullet id.
-     */
-    public void recordGodViewOurAim(int perspIndex, int bulletId, double x, double y,
-            double distance, double bearing) {
-        aimTracking[perspIndex].recordGodView(bulletId, new AimRecord(x, y, distance, bearing));
-    }
-
-    /** Robot-side inferred OUR aim geometry, paired by bullet id. */
-    public void recordRobotSideOurAim(int perspIndex, int bulletId, double x, double y,
-            double distance, double bearing) {
-        aimTracking[perspIndex].recordRobotSide(bulletId, new AimRecord(x, y, distance, bearing));
-    }
-
-    /**
-     * God-view exact THEIR aim geometry (one tick before their fire), paired by
-     * fire tick.
-     */
-    public void recordGodViewTheirAim(int perspIndex, long fireTick, double x, double y,
-            double distance, double bearing) {
-        theirAimTracking[perspIndex].recordGodView(fireTick, new AimRecord(x, y, distance, bearing));
-    }
-
-    /** Robot-side inferred THEIR aim geometry, paired by fire tick. */
-    public void recordRobotSideTheirAim(int perspIndex, long fireTick, double x, double y,
-            double distance, double bearing) {
-        theirAimTracking[perspIndex].recordRobotSide(fireTick, new AimRecord(x, y, distance, bearing));
-    }
-
-    // ========== Layer 3: Wave GF Precision ==========
+    // ========== Layer 4: Wave GF Precision ==========
 
     /**
      * Compare wave resolutions when both sides resolve.
@@ -520,7 +444,139 @@ public final class GodViewQualityValidator {
         waveTracking[perspIndex].robotSideResolutions++;
     }
 
-    // ========== Layer 4: Energy Accounting ==========
+    // ========== Layer 2: Damage-Observation Drift (autopilot-only) ==========
+
+    /**
+     * Per-tick comparison of the autopilot's observed opponent-damage tally vs
+     * god-view truth, for the four channels that legitimately move opponent
+     * energy. The four numbers in {@code obs*} come straight off the autopilot
+     * whiteboard — the exact values {@code FireFeatures.process} subtracts from
+     * the scan-to-scan drop before deciding "fire vs not-fire".
+     * <p>
+     * Channels (autopilot perspective; opponent = {@code 1 - autopilotIndex}):
+     * <ul>
+     * <li><b>OUR_BULLET_DMG</b> &mdash; our bullets that transitioned to
+     * {@code HIT_VICTIM} on opponent this tick; god-view value is
+     * {@code bulletDamage(power)}.</li>
+     * <li><b>OPP_BULLET_GAIN</b> &mdash; opponent bullets that transitioned to
+     * {@code HIT_VICTIM} on us this tick; god-view value is
+     * {@code hitEnergyBonus(power)} credited to opponent.</li>
+     * <li><b>RAM_DMG</b> &mdash; {@code RAM_DAMAGE} per robot in
+     * {@code HIT_ROBOT} this tick (opponent loses one unit per at-fault robot:
+     * 0.6 for a one-sided ram, 1.2 for a mutual head-on collision).</li>
+     * <li><b>OPP_WALL_DMG</b> &mdash; {@code wallDamage(prevOppVelocity)} when
+     * opponent transitions into {@code HIT_WALL}. Computed from
+     * {@link IRobotSnapshot#getState()} and the prior-scan velocity, both of
+     * which the autopilot observes via {@code ScannedRobotEvent}; residual
+     * drift is bounded by scan-gap acceleration only.</li>
+     * </ul>
+     * NaN values from the autopilot whiteboard (no event this tick) are
+     * treated as 0.
+     */
+    public void recordDamageObservation(int round, long tick,
+            int autopilotIndex, IRobotSnapshot[] robots,
+            IBulletSnapshot[] bullets,
+            double obsOurBulletDmg, double obsOppBulletGain,
+            double obsRamDmg, double obsOppWallDmg,
+            boolean accumulatorResetThisTick) {
+        int opp = 1 - autopilotIndex;
+        IRobotSnapshot oppSnap = robots[opp];
+        IRobotSnapshot selfSnap = robots[autopilotIndex];
+
+        double[] gv = new double[DamageObservationTracker.N];
+
+        if (bullets != null) {
+            for (IBulletSnapshot b : bullets) {
+                int id = b.getBulletId();
+                BulletState state = b.getState();
+                int owner = b.getOwnerIndex();
+                int victim = b.getVictimIndex();
+                if (state != BulletState.HIT_VICTIM)
+                    continue;
+                if (owner == autopilotIndex && victim == opp
+                        && obsHitByUsBulletIds.add(id)) {
+                    gv[DamageObservationTracker.OUR_BULLET_DMG] += bulletDamage(b.getPower());
+                } else if (owner == opp && victim == autopilotIndex
+                        && obsHitOnUsBulletIds.add(id)) {
+                    gv[DamageObservationTracker.OPP_BULLET_GAIN] += hitEnergyBonus(b.getPower());
+                }
+            }
+        }
+
+        // Ram: the engine's checkRobotCollision applies ROBOT_HIT_DAMAGE to BOTH
+        // robots once PER at-fault robot (the one driving into the other, marked
+        // RobotState.HIT_ROBOT). So the opponent's per-tick ram loss is
+        // RAM_DAMAGE * (number of robots at fault): 0.6 when only one side rams,
+        // 1.2 on a mutual head-on collision where both are HIT_ROBOT. Counting
+        // only "either is HIT_ROBOT" (a single 0.6) under-charged the mutual case.
+        // During a wall-pin clinch the pinned side reports HIT_WALL (not
+        // HIT_ROBOT), so only the rammer is counted there — one 0.6, matching the
+        // single HitRobotEvent the observer receives.
+        int ramAtFault = 0;
+        if (selfSnap.getState() == RobotState.HIT_ROBOT) {
+            ramAtFault++;
+        }
+        if (oppSnap.getState() == RobotState.HIT_ROBOT) {
+            ramAtFault++;
+        }
+        if (ramAtFault > 0) {
+            gv[DamageObservationTracker.RAM_DMG] += ramAtFault * RAM_DAMAGE;
+        }
+
+        // Opponent wall hit: charged once on transition into HIT_WALL, using
+        // opponent's prev-tick velocity (post-impact velocity is zeroed).
+        if (oppSnap.getState() == RobotState.HIT_WALL
+                && prevOppState != RobotState.HIT_WALL
+                && !Double.isNaN(prevOppVelocity)) {
+            gv[DamageObservationTracker.OPP_WALL_DMG] += wallDamage(prevOppVelocity);
+        }
+        prevOppState = oppSnap.getState();
+        prevOppVelocity = oppSnap.getVelocity();
+
+        // Per-tick obs delta: monotonic growth within a window, snap-down on
+        // FireFeatures consumption. Treat any decrease as a reset, so the new
+        // value IS this tick's contribution. Additionally, when the PREVIOUS
+        // tick was a scan tick the autopilot zeroed the accumulators at the end
+        // of that tick's doTurn, so this tick's snapshot is already a fresh
+        // post-reset per-tick value (not a running total) and must be taken
+        // verbatim. Without this, a sustained every-tick-scan clinch (wall-pin)
+        // holds the snapshot at a constant per-tick value and the plain
+        // snap-down delta collapses to 0, under-counting ram damage.
+        double[] obsCurr = {
+                nanToZero(obsOurBulletDmg), nanToZero(obsOppBulletGain),
+                nanToZero(obsRamDmg), nanToZero(obsOppWallDmg)
+        };
+        double[] obsDelta = new double[DamageObservationTracker.N];
+        for (int i = 0; i < DamageObservationTracker.N; i++) {
+            if (prevTickAccumulatorReset) {
+                obsDelta[i] = obsCurr[i];
+            } else {
+                obsDelta[i] = obsCurr[i] >= prevObs[i] ? obsCurr[i] - prevObs[i] : obsCurr[i];
+            }
+            prevObs[i] = obsCurr[i];
+        }
+        prevTickAccumulatorReset = accumulatorResetThisTick;
+        damageObsTracking.record(gv, obsDelta);
+
+        if (damageEventsTrace != null) {
+            final double EPS = 1e-9;
+            for (int i = 0; i < DamageObservationTracker.N; i++) {
+                if (Math.abs(gv[i]) > EPS || Math.abs(obsDelta[i]) > EPS) {
+                    damageEventsTrace.write(round, tick, DAMAGE_CHANNEL_NAMES[i],
+                            gv[i], obsDelta[i],
+                            selfSnap.getEnergy(), oppSnap.getEnergy(),
+                            selfSnap.getState() == null ? null : selfSnap.getState().name(),
+                            oppSnap.getState() == null ? null : oppSnap.getState().name());
+                }
+            }
+        }
+    }
+
+    private static double nanToZero(double v) {
+        return Double.isNaN(v) ? 0.0 : v;
+    }
+
+    // ========== Layer 2: Energy Accounting ==========
 
     /**
      * Track energy changes against engine rules.
@@ -591,14 +647,21 @@ public final class GodViewQualityValidator {
             expected -= wallDamage(prevVelocity[perspIndex]);
         }
 
-        // Ram damage: both robots lose RAM_DAMAGE each tick they are in contact.
-        // A robot pinned against a wall reports HIT_WALL (wall takes priority in the
-        // state enum) even while being rammed, so the collision is detected via
-        // either robot's HIT_ROBOT state rather than self's state alone.
-        if (self.getState() == RobotState.HIT_ROBOT
-                || robots[opponentIndex].getState() == RobotState.HIT_ROBOT) {
-            expected -= RAM_DAMAGE;
+        // Ram damage: the engine applies RAM_DAMAGE to BOTH robots once per
+        // at-fault robot (the rammer, marked HIT_ROBOT). So each robot loses
+        // RAM_DAMAGE * (number of robots at fault) per tick: 0.6 when one side
+        // rams, 1.2 on a mutual head-on collision where both are HIT_ROBOT. A
+        // robot pinned against a wall reports HIT_WALL (wall takes priority in
+        // the state enum) even while being rammed, so the collision is detected
+        // via either robot's HIT_ROBOT state rather than self's state alone.
+        int ramAtFault = 0;
+        if (self.getState() == RobotState.HIT_ROBOT) {
+            ramAtFault++;
         }
+        if (robots[opponentIndex].getState() == RobotState.HIT_ROBOT) {
+            ramAtFault++;
+        }
+        expected -= ramAtFault * RAM_DAMAGE;
 
         energyChecks[perspIndex]++;
         if (Math.abs(expected - currentEnergy) > EPSILON) {
@@ -625,6 +688,14 @@ public final class GodViewQualityValidator {
             hitByUsBulletIds[p].clear();
             hitOnUsBulletIds[p].clear();
         }
+        obsHitByUsBulletIds.clear();
+        obsHitOnUsBulletIds.clear();
+        prevOppState = null;
+        prevOppVelocity = Double.NaN;
+        prevTickAccumulatorReset = false;
+        for (int i = 0; i < DamageObservationTracker.N; i++) {
+            prevObs[i] = 0;
+        }
     }
 
     // ========== Non-Vacuous Assertion ==========
@@ -636,20 +707,32 @@ public final class GodViewQualityValidator {
      * @throws IllegalStateException if any required layer has 0 checks
      */
     public void assertNonVacuous() {
+        assertNonVacuous(true);
+    }
+
+    /**
+     * @param requireTheirFireDetection when false, the Layer 3 god-view fire check
+     *        is skipped. A non-firing opponent (e.g. SittingDuck) legitimately
+     *        produces zero god-view incoming fires, so requiring them would be a
+     *        false failure rather than a vacuous-test guard.
+     */
+    public void assertNonVacuous(boolean requireTheirFireDetection) {
         if (getSpatialChecks() == 0) {
             throw new IllegalStateException("Layer 1 vacuous: 0 spatial checks performed");
         }
-        int totalGodViewFires = fireTracking[0].godViewCount + fireTracking[1].godViewCount;
-        if (totalGodViewFires == 0) {
-            throw new IllegalStateException("Layer 2 vacuous: 0 god-view fires detected");
-        }
-        // Layer 3 GF comparisons require matched wave resolution between observer and
-        // live robot. Since the observer fires independently (different timing),
-        // matched
-        // comparisons may not occur. Not a vacuous-test concern.
         if (energyChecks[0] + energyChecks[1] == 0) {
-            throw new IllegalStateException("Layer 4 vacuous: 0 energy checks performed");
+            throw new IllegalStateException("Layer 2 self-test vacuous: 0 energy checks performed");
         }
+        if (damageObsTracking.ticks == 0) {
+            throw new IllegalStateException(
+                    "Layer 2 vacuous: 0 damage-observation ticks recorded");
+        }
+        if (requireTheirFireDetection && theirFireTracking.godViewCount == 0) {
+            throw new IllegalStateException("Layer 3 vacuous: 0 god-view incoming fires detected");
+        }
+        // Layer 4 GF comparisons require matched wave resolution between observer and
+        // live robot. Since the observer fires independently (different timing),
+        // matched comparisons may not occur. Not a vacuous-test concern.
     }
 
     // ========== Getters ==========
@@ -678,88 +761,32 @@ public final class GodViewQualityValidator {
         return s != null ? s.checks : 0;
     }
 
-    public double getFireDetectionRate(int perspIndex) {
-        return fireTracking[perspIndex].getFireDetectionRate();
+    public double getTheirFireDetectionRate() {
+        return theirFireTracking.getFireDetectionRate();
     }
 
-    public int getGodViewFires(int perspIndex) {
-        return fireTracking[perspIndex].godViewCount;
+    public int getTheirGodViewFires() {
+        return theirFireTracking.godViewCount;
     }
 
-    public int getRobotSideFires(int perspIndex) {
-        return fireTracking[perspIndex].robotSideCount;
+    public int getTheirRobotSideFires() {
+        return theirFireTracking.robotSideCount;
     }
 
-    public double getFirePositionMAE(int perspIndex) {
-        return fireTracking[perspIndex].getPositionMAE();
+    public double getTheirFirePositionMAE() {
+        return theirFireTracking.getPositionMAE();
     }
 
-    public double getFirePowerMAE(int perspIndex) {
-        return fireTracking[perspIndex].getPowerMAE();
+    public double getTheirFirePowerMAE() {
+        return theirFireTracking.getPowerMAE();
     }
 
-    public double getFireDetectionLatency(int perspIndex) {
-        return fireTracking[perspIndex].getDetectionLatency();
+    public double getTheirFireDetectionLatency() {
+        return theirFireTracking.getDetectionLatency();
     }
 
-    public double getTheirFireDetectionRate(int perspIndex) {
-        return theirFireTracking[perspIndex].getFireDetectionRate();
-    }
-
-    public int getTheirGodViewFires(int perspIndex) {
-        return theirFireTracking[perspIndex].godViewCount;
-    }
-
-    public int getTheirRobotSideFires(int perspIndex) {
-        return theirFireTracking[perspIndex].robotSideCount;
-    }
-
-    public double getTheirFirePositionMAE(int perspIndex) {
-        return theirFireTracking[perspIndex].getPositionMAE();
-    }
-
-    public double getTheirFirePowerMAE(int perspIndex) {
-        return theirFireTracking[perspIndex].getPowerMAE();
-    }
-
-    public double getTheirFireDetectionLatency(int perspIndex) {
-        return theirFireTracking[perspIndex].getDetectionLatency();
-    }
-
-    public double getTheirFireAngleMAE(int perspIndex) {
-        return theirFireTracking[perspIndex].getAngleMAE();
-    }
-
-    public double getOurAimPositionMAE(int perspIndex) {
-        return aimTracking[perspIndex].getPositionMAE();
-    }
-
-    public double getOurAimDistanceMAE(int perspIndex) {
-        return aimTracking[perspIndex].getDistanceMAE();
-    }
-
-    public double getOurAimBearingMAE(int perspIndex) {
-        return aimTracking[perspIndex].getBearingMAE();
-    }
-
-    public int getOurAimPairedCount(int perspIndex) {
-        return aimTracking[perspIndex].pairedCount;
-    }
-
-    public double getTheirAimPositionMAE(int perspIndex) {
-        return theirAimTracking[perspIndex].getPositionMAE();
-    }
-
-    public double getTheirAimDistanceMAE(int perspIndex) {
-        return theirAimTracking[perspIndex].getDistanceMAE();
-    }
-
-    public double getTheirAimBearingMAE(int perspIndex) {
-        return theirAimTracking[perspIndex].getBearingMAE();
-    }
-
-    public int getTheirAimPairedCount(int perspIndex) {
-        return theirAimTracking[perspIndex].pairedCount;
+    public double getTheirFireAngleMAE() {
+        return theirFireTracking.getAngleMAE();
     }
 
     public double getGfMeanAbsoluteError(int perspIndex) {
@@ -817,65 +844,52 @@ public final class GodViewQualityValidator {
         }
         System.out.println();
 
-        // Layer 2
-        System.out.printf("Layer 2 — Fire Detection:%n");
-        for (int pi = 0; pi < 2; pi++) {
-            FireDetectionTracker t = fireTracking[pi];
-            double rate = t.getFireDetectionRate();
-            double posMAE = t.getPositionMAE();
-            double powMAE = t.getPowerMAE();
-            double latency = t.getDetectionLatency();
-            System.out.printf("  Perspective %d: godView=%d, robotSide=%d, rate=%s%n",
-                    pi, t.godViewCount, t.robotSideCount,
-                    formatMetric(rate, "%.3f"));
-            System.out.printf("    positionMAE=%s, powerMAE=%s, latency=%s%n",
-                    formatMetric(posMAE, "%.4f"),
-                    formatMetric(powMAE, "%.4f"),
-                    formatMetric(latency, "%.2f"));
+        // Layer 2 — autopilot's observation of opponent-damage events vs god-view.
+        // Drift here is what FireFeatures cannot subtract out of the energy delta,
+        // so it directly upper-bounds the L3 phantom rate.
+        System.out.printf("Layer 2 — Damage Observation Drift (autopilot):%n");
+        DamageObservationTracker d2 = damageObsTracking;
+        System.out.printf("  ticks=%d, mismatchTicks=%d, totalAbsDrift=%.4f%n",
+                d2.ticks, d2.mismatchTicks, d2.totalAbsDrift());
+        for (int i = 0; i < DamageObservationTracker.N; i++) {
+            System.out.printf("    %-24s gv=%.4f (events=%d) obs=%.4f (events=%d) "
+                    + "absDrift=%.4f (driftTicks=%d)%n",
+                    DamageObservationTracker.LABELS[i],
+                    d2.gvTotal[i], d2.gvEventCount[i],
+                    d2.obsTotal[i], d2.obsEventCount[i],
+                    d2.absDriftTotal[i], d2.driftTickCount[i]);
         }
         System.out.println();
 
-        // Layer 2 (their side) — incoming-fire detection. Origin/timing/power are
-        // knowable exactly (expect ~0 MAE); angleMAE is the irreducible muzzle-angle
-        // unknown the blindfolded robot cannot infer.
-        System.out.printf("Layer 2 (their) — Incoming-Fire Detection:%n");
+        // Engine-rule self-test (internal sanity check). Reconciles each robot's
+        // per-tick energy change against the engine's own god-view event stream.
+        // Discrepancies here mean OUR model of the engine is wrong; they say
+        // nothing about autopilot observation quality.
+        System.out.printf("Energy Model Self-Test (engine-rule sanity):%n");
         for (int pi = 0; pi < 2; pi++) {
-            TheirFireDetectionTracker t = theirFireTracking[pi];
-            System.out.printf("  Perspective %d: godView=%d, robotSide=%d, rate=%s%n",
-                    pi, t.godViewCount, t.robotSideCount,
-                    formatMetric(t.getFireDetectionRate(), "%.3f"));
-            System.out.printf("    positionMAE=%s, powerMAE=%s, latency=%s, angleMAE(rad)=%s%n",
-                    formatMetric(t.getPositionMAE(), "%.4f"),
-                    formatMetric(t.getPowerMAE(), "%.4f"),
-                    formatMetric(t.getDetectionLatency(), "%.2f"),
-                    formatMetric(t.getAngleMAE(), "%.4f"));
+            System.out.printf("  Perspective %d: checks=%d, discrepancies=%d%n",
+                    pi, energyChecks[pi], energyDiscrepancies[pi]);
         }
         System.out.println();
 
-        // Layer 2 (aim) — aiming-decision attribution at the tick before fire. OUR
-        // aim self-position is exact on both sides; distanceMAE/bearingMAE capture
-        // the robot-side stale-scan target error. THEIR aim mirrors this from the
-        // opponent's perspective.
-        System.out.printf("Layer 2 (aim) — Aiming Attribution (T-1):%n");
-        for (int pi = 0; pi < 2; pi++) {
-            AimDetectionTracker our = aimTracking[pi];
-            AimDetectionTracker their = theirAimTracking[pi];
-            System.out.printf(
-                    "  Perspective %d (our):   paired=%d, positionMAE=%s, distanceMAE=%s, bearingMAE(rad)=%s%n",
-                    pi, our.pairedCount,
-                    formatMetric(our.getPositionMAE(), "%.4f"),
-                    formatMetric(our.getDistanceMAE(), "%.4f"),
-                    formatMetric(our.getBearingMAE(), "%.4f"));
-            System.out.printf(
-                    "  Perspective %d (their): paired=%d, positionMAE=%s, distanceMAE=%s, bearingMAE(rad)=%s%n",
-                    pi, their.pairedCount,
-                    formatMetric(their.getPositionMAE(), "%.4f"),
-                    formatMetric(their.getDistanceMAE(), "%.4f"),
-                    formatMetric(their.getBearingMAE(), "%.4f"));
-        }
+        // Layer 3 — autopilot's detection of incoming fire from its energy-drop
+        // inference. Origin/timing/power are knowable exactly (expect ~0 MAE);
+        // angleMAE is the irreducible muzzle-angle unknown the blindfolded
+        // autopilot cannot infer.
+        System.out.printf("Layer 3 — Incoming-Fire Detection (autopilot):%n");
+        TheirFireDetectionTracker t3 = theirFireTracking;
+        System.out.printf("  godView=%d, robotSide=%d, rate=%s%n",
+                t3.godViewCount, t3.robotSideCount,
+                formatMetric(t3.getFireDetectionRate(), "%.3f"));
+        System.out.printf("    positionMAE=%s, powerMAE=%s, latency=%s, angleMAE(rad)=%s%n",
+                formatMetric(t3.getPositionMAE(), "%.4f"),
+                formatMetric(t3.getPowerMAE(), "%.4f"),
+                formatMetric(t3.getDetectionLatency(), "%.2f"),
+                formatMetric(t3.getAngleMAE(), "%.4f"));
         System.out.println();
 
-        System.out.printf("Layer 3 — GF Precision:%n");
+        // Layer 4
+        System.out.printf("Layer 4 — GF Precision:%n");
         for (int pi = 0; pi < 2; pi++) {
             WavePrecisionTracker t = waveTracking[pi];
             double mae = getGfMeanAbsoluteError(pi);
@@ -890,14 +904,6 @@ public final class GodViewQualityValidator {
                     formatMetric(matchRate, "%.3f"),
                     t.godViewResolutions, t.robotSideResolutions,
                     formatMetric(btMAE, "%.2f"));
-        }
-        System.out.println();
-
-        // Layer 4
-        System.out.printf("Layer 4 — Energy Accounting:%n");
-        for (int pi = 0; pi < 2; pi++) {
-            System.out.printf("  Perspective %d: checks=%d, discrepancies=%d%n",
-                    pi, energyChecks[pi], energyDiscrepancies[pi]);
         }
         System.out.println();
 

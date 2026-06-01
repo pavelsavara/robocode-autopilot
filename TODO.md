@@ -1,6 +1,14 @@
+- Skipped turn handler
+    - I dislike how all accumulators work. Propose larger re-design. Multiple options.
+- Fix energy drop detection
+    - emulate gun heat and do not allow bullet detection when gun is hot
+    - bullet shield
+    - god-view could use the other perspective to validate energy accounting
+- Does layer 4 validate wave-break tick ?
 - Layer 0 for top 50 - once
 - Layer 1-4 for BeepBoop vs BeepBoop
 - Layer 1-4 for recordings
+- Do Layer 1-4 validate all features ?
 - ML predict fire (T-1)
 - surf their VCS
 - ML gun
@@ -21,3 +29,11 @@
 
 Blotter
 - run all tests and show me drift by layers and features
+
+run all tests without fixed random seed
+- show me scores for all robots 
+- show me drift by layers and features and opponents. 
+- Re-create fresh BeepBoop-fired-bullets.md and BeepBoop-energy-events.md
+- Re-create fresh Crazy-fired-bullets.md and Crazy-energy-events.md
+- Re-create fresh Aggressive-fired-bullets.md and Aggressive-energy-events.md
+- categorize reasons for individual drift instances
