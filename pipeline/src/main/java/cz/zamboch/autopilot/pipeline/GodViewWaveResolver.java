@@ -334,8 +334,17 @@ final class GodViewWaveResolver {
                 if (hit)
                     roundHits[perspIndex]++;
 
-                // Also re-set fire features so CSV row has both fire + break
-                setFireFeatures(wb, tw);
+                // Also re-set fire features so CSV row has both fire + break —
+                // UNLESS a new fire was detected for this perspective on the SAME
+                // tick. The fresh fire's OUR_FIRE_* (tick/x/y/power) was just written
+                // at the top of processTick; re-setting them here to the resolving
+                // (older) wave would clobber the new fire, causing the Phase 5 GV
+                // recorder to log the real new fire at the resolving wave's older
+                // tick/position (a duplicate GV fire) while dropping the new fire's
+                // true tick entirely (which then surfaces as a robot-side phantom).
+                if (!firedThisTick[perspIndex]) {
+                    setFireFeatures(wb, tw);
+                }
 
                 // Set THEIR_* features on the peer's whiteboard (their perspective)
                 setTheirWaveFeatures(peerWb, tw, oppX, oppY, currentTick, gf, angleOffset, hit);

@@ -1,6 +1,7 @@
 - Skipped turn handler
     - I dislike how all accumulators work. Propose larger re-design. Multiple options.
 - Fix energy drop detection
+    - emulate gun heat and do not allow bullet detection when gun is hot
     - bullet shield
     - god-view could use the other perspective to validate energy accounting
 - Does layer 4 validate wave-break tick ?
