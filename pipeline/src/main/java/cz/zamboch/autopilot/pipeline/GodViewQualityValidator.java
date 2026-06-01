@@ -761,6 +761,11 @@ public final class GodViewQualityValidator {
         return s != null ? s.checks : 0;
     }
 
+    /** Package-private accessor for the Layer 2 damage-observation tracker (test reporting). */
+    DamageObservationTracker getDamageObsTracking() {
+        return damageObsTracking;
+    }
+
     public double getTheirFireDetectionRate() {
         return theirFireTracking.getFireDetectionRate();
     }

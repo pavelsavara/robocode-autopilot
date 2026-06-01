@@ -25,6 +25,7 @@ opponent = sys.argv[3]
 display = sys.argv[4]
 seed = sys.argv[5]
 out_dir = Path(sys.argv[6])
+rounds_label = sys.argv[7] if len(sys.argv) > 7 else "10"
 
 
 def fnum(s, d=4):
@@ -310,7 +311,7 @@ L = []
 A = L.append
 A(f"# {display} — Fired Bullets Detection Trace (Layer 3)")
 A("")
-A(f"Source: `{fires_csv.as_posix()}` (10-round battle vs `{opponent}`, "
+A(f"Source: `{fires_csv.as_posix()}` ({rounds_label}-round battle vs `{opponent}`, "
   f"autopilot perspective, seed `{seed}`).")
 A("")
 A("Perspective 0 (Autopilot side). Pairing key = `(round, fireTick)`. "
@@ -448,7 +449,7 @@ E = []
 B = E.append
 B(f"# {display} — Damage Observation Drift (Layer 2)")
 B("")
-B(f"Source: `{dmg_csv.as_posix()}` (10-round battle vs `{opponent}`, "
+B(f"Source: `{dmg_csv.as_posix()}` ({rounds_label}-round battle vs `{opponent}`, "
   f"autopilot perspective, seed `{seed}`).")
 B("")
 B(f"Companion to [{display}-fired-bullets.md]({display}-fired-bullets.md). "
