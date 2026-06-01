@@ -248,9 +248,17 @@ public final class GodViewQualityValidator {
         final int[] driftTickCount = new int[N];
         long ticks;
         long mismatchTicks;
+        // Ticks on which the autopilot had a fresh radar scan of the opponent.
+        // The damage-observation channels (and the L3 fire inference that feeds
+        // on them) can only be exact on scan ticks; the across-scan-gap ticks are
+        // where wall/ram acceleration uncertainty and merged energy drops creep
+        // in. missedScanFraction() quantifies that exposure.
+        long scannedTicks;
 
-        void record(double[] gv, double[] obs) {
+        void record(double[] gv, double[] obs, boolean scannedThisTick) {
             ticks++;
+            if (scannedThisTick)
+                scannedTicks++;
             boolean anyDrift = false;
             for (int i = 0; i < N; i++) {
                 gvTotal[i] += gv[i];
@@ -275,6 +283,11 @@ public final class GodViewQualityValidator {
             for (double d : absDriftTotal)
                 s += d;
             return s;
+        }
+
+        /** Fraction of recorded ticks on which the autopilot had no fresh scan. */
+        double missedScanFraction() {
+            return ticks == 0 ? Double.NaN : (double) (ticks - scannedTicks) / ticks;
         }
     }
 
@@ -478,7 +491,7 @@ public final class GodViewQualityValidator {
             IBulletSnapshot[] bullets,
             double obsOurBulletDmg, double obsOppBulletGain,
             double obsRamDmg, double obsOppWallDmg,
-            boolean accumulatorResetThisTick) {
+            boolean accumulatorResetThisTick, boolean scannedThisTick) {
         int opp = 1 - autopilotIndex;
         IRobotSnapshot oppSnap = robots[opp];
         IRobotSnapshot selfSnap = robots[autopilotIndex];
@@ -556,7 +569,7 @@ public final class GodViewQualityValidator {
             prevObs[i] = obsCurr[i];
         }
         prevTickAccumulatorReset = accumulatorResetThisTick;
-        damageObsTracking.record(gv, obsDelta);
+        damageObsTracking.record(gv, obsDelta, scannedThisTick);
 
         if (damageEventsTrace != null) {
             final double EPS = 1e-9;

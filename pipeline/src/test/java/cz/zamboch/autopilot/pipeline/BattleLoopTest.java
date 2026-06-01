@@ -369,15 +369,13 @@ final class BattleLoopTest {
     // Drift report (./BattleLoopTest.md) — by layer and by feature.
     // ======================================================================
 
-    private static final double DRIFT_EPS = 1e-4;
-
     /** A single (name, checks, mismatches) per-feature drift entry. */
     private record FeatureDrift(String name, int checks, int mismatches) {
     }
 
-    /** A single Layer-2 per-channel drift entry. */
-    private record ChannelDrift(String label, double gvTotal, double obsTotal,
-            double absDrift, long driftTicks) {
+    /** A single Layer-2 per-channel entry: event counts, drift incidents and totals. */
+    private record ChannelDrift(String label, long gvEvents, long obsEvents,
+            long driftIncidents, double gvTotal, double obsTotal, double absDrift) {
     }
 
     /** Immutable per-opponent snapshot of all layer/feature drift metrics. */
@@ -405,6 +403,8 @@ final class BattleLoopTest {
         long l2Ticks;
         long l2MismatchTicks;
         double l2TotalAbsDrift;
+        long l2ScannedTicks;
+        double l2MissedScanPct;
         final List<ChannelDrift> l2Channels = new ArrayList<>();
 
         int l3GodView;
@@ -475,11 +475,16 @@ final class BattleLoopTest {
         r.l2Ticks = d2.ticks;
         r.l2MismatchTicks = d2.mismatchTicks;
         r.l2TotalAbsDrift = d2.totalAbsDrift();
+        r.l2ScannedTicks = d2.scannedTicks;
+        r.l2MissedScanPct = d2.missedScanFraction();
         for (int i = 0; i < GodViewQualityValidator.DamageObservationTracker.N; i++) {
-            if (d2.absDriftTotal[i] > DRIFT_EPS) {
+            // Include every channel that saw any activity so the drift incidents
+            // are visible against their denominators (e.g. wall-hit / bullet events).
+            if (d2.gvEventCount[i] > 0 || d2.obsEventCount[i] > 0) {
                 r.l2Channels.add(new ChannelDrift(
                         GodViewQualityValidator.DamageObservationTracker.LABELS[i],
-                        d2.gvTotal[i], d2.obsTotal[i], d2.absDriftTotal[i], d2.driftTickCount[i]));
+                        d2.gvEventCount[i], d2.obsEventCount[i], d2.driftTickCount[i],
+                        d2.gvTotal[i], d2.obsTotal[i], d2.absDriftTotal[i]));
             }
         }
 
@@ -554,25 +559,34 @@ final class BattleLoopTest {
 
         // --- Layer 2 ---
         md.append("## Layer 2 — Damage Observation Drift\n\n");
-        md.append("Autopilot's observed opponent-damage vs god-view, accumulated over the battle.\n\n");
-        md.append("| Opponent | Ticks | Mismatch ticks | Total abs drift |\n");
-        md.append("|---|---:|---:|---:|\n");
+        md.append("Autopilot's observed opponent-damage vs god-view, accumulated over the battle. "
+                + "`Missed scans %` is the fraction of ticks with no fresh radar scan of the "
+                + "opponent — the exposure window where damage channels can drift.\n\n");
+        md.append("| Opponent | Ticks | Scanned ticks | Missed scans % | Mismatch ticks | Total abs drift |\n");
+        md.append("|---|---:|---:|---:|---:|---:|\n");
         for (OppReport r : REPORTS) {
-            md.append(String.format("| %s | %d | %d | %.4f |%n",
-                    r.opponent, r.l2Ticks, r.l2MismatchTicks, r.l2TotalAbsDrift));
+            md.append(String.format("| %s | %d | %d | %s | %d | %.4f |%n",
+                    r.opponent, r.l2Ticks, r.l2ScannedTicks, fmtPct(r.l2MissedScanPct),
+                    r.l2MismatchTicks, r.l2TotalAbsDrift));
         }
         md.append('\n');
-        md.append("### Layer 2 — drift by channel\n\n");
+        md.append("### Layer 2 — channels (events, drift incidents, totals)\n\n");
+        md.append("`Drift incidents` = ticks where the channel's observation disagreed with "
+                + "god-view. `GV events` / `Obs events` are the ticks where that channel was "
+                + "active (bullet hits, ram ticks, or wall hits) — the denominators the incidents "
+                + "are measured against.\n\n");
         boolean anyL2 = REPORTS.stream().anyMatch(r -> !r.l2Channels.isEmpty());
         if (!anyL2) {
-            md.append("No per-channel damage-observation drift across any opponent.\n\n");
+            md.append("No damage-channel activity recorded for any opponent.\n\n");
         } else {
-            md.append("| Opponent | Channel | GV total | Obs total | Abs drift | Drift ticks |\n");
-            md.append("|---|---|---:|---:|---:|---:|\n");
+            md.append("| Opponent | Channel | GV events | Obs events | Drift incidents | "
+                    + "GV total | Obs total | Abs drift |\n");
+            md.append("|---|---|---:|---:|---:|---:|---:|---:|\n");
             for (OppReport r : REPORTS) {
                 for (ChannelDrift c : r.l2Channels) {
-                    md.append(String.format("| %s | %s | %.4f | %.4f | %.4f | %d |%n",
-                            r.opponent, c.label(), c.gvTotal(), c.obsTotal(), c.absDrift(), c.driftTicks()));
+                    md.append(String.format("| %s | %s | %d | %d | %d | %.4f | %.4f | %.4f |%n",
+                            r.opponent, c.label(), c.gvEvents(), c.obsEvents(), c.driftIncidents(),
+                            c.gvTotal(), c.obsTotal(), c.absDrift()));
                 }
             }
             md.append('\n');

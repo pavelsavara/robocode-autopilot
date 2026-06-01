@@ -194,6 +194,12 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
 
         if (recordObs) {
             Autopilot auto = observers[autopilotPiEarly].observer();
+            // A fresh radar scan of the opponent this tick is the precondition for
+            // exact damage observation; the robot-side LAST_SCAN_TICK equals the
+            // current turn only on scan ticks (the god-view sets it every tick).
+            double lastScanTick = observers[autopilotPiEarly].wb().getFeature(Feature.LAST_SCAN_TICK);
+            boolean scannedThisTick = !Double.isNaN(lastScanTick)
+                    && Math.abs(lastScanTick - curr.getTurn()) < 1e-4;
             validator.recordDamageObservation(currentRound, curr.getTurn(),
                     autopilotPiEarly, robots,
                     curr.getBullets(),
@@ -201,7 +207,7 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                     auto.getConsumedAccumulator(Feature.OPPONENT_BULLET_ENERGY_GAIN),
                     auto.getConsumedAccumulator(Feature.RAM_DAMAGE_TO_OPPONENT),
                     auto.getConsumedAccumulator(Feature.OPPONENT_WALL_HIT_DAMAGE),
-                    auto.wasAccumulatorResetThisTurn());
+                    auto.wasAccumulatorResetThisTurn(), scannedThisTick);
         }
 
         // Phase 1.5: Independently rebuild each god-view whiteboard from the engine
