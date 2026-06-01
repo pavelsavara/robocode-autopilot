@@ -31,12 +31,41 @@ public final class OvershootLockRadar implements IRadarStrategy {
 
     @Override
     public double getRadarTurn() {
-        double absoluteBearing = wb.getFeature(Feature.OPPONENT_BEARING_ABSOLUTE);
-        if (Double.isNaN(absoluteBearing)) {
+        double radarHeading = wb.getFeature(Feature.RADAR_HEADING);
+
+        // Collect the two most recent KNOWN absolute bearings from the tick ring.
+        // On a no-scan tick the current slot is NaN; walking the ring lets us keep
+        // a controlled lock through a brief scan gap instead of an open-loop spin.
+        double latestBearing = Double.NaN;
+        double previousBearing = Double.NaN;
+        for (int n = 0; n < Whiteboard.TICK_RING_DEPTH; n++) {
+            double v = wb.getFeatureNTicksAgo(Feature.OPPONENT_BEARING_ABSOLUTE, n);
+            if (!Double.isNaN(v)) {
+                if (Double.isNaN(latestBearing)) {
+                    latestBearing = v;
+                } else {
+                    previousBearing = v;
+                    break;
+                }
+            }
+        }
+
+        // No track within the ring (round start, or opponent lost for several
+        // ticks): fall back to a full sweep to re-acquire.
+        if (Double.isNaN(latestBearing) || Double.isNaN(radarHeading)) {
             return lastTurnDirection * Double.POSITIVE_INFINITY;
         }
-        double radarHeading = wb.getFeature(Feature.RADAR_HEADING);
-        double radarTurn = RoboMath.normalRelativeAngle(absoluteBearing - radarHeading);
+
+        // Lead the lock by the recent angular rate so the swept arc is centred on
+        // where the opponent will be when the sweep passes it, not where it last
+        // was. The lead (a few degrees) is small versus OVERSHOOT, so the 22.5°
+        // straddle is preserved.
+        double predicted = latestBearing;
+        if (!Double.isNaN(previousBearing)) {
+            predicted += RoboMath.normalRelativeAngle(latestBearing - previousBearing);
+        }
+
+        double radarTurn = RoboMath.normalRelativeAngle(predicted - radarHeading);
         double dir = Math.signum(radarTurn);
         if (dir != 0) {
             lastTurnDirection = dir;
