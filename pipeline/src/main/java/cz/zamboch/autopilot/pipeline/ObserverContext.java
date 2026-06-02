@@ -87,9 +87,24 @@ public final class ObserverContext {
     /**
      * Full tick pipeline: reconstruct events from snapshot, feed to observer, run
      * strategy.
-     * This is the primary API for the orchestrator.
+     * This is the primary API for the orchestrator. For callers that need to
+     * observe the whiteboard state AFTER events have been dispatched but BEFORE
+     * {@code doTurn} runs (e.g. to read the bullet/ram/wall damage accumulators
+     * before {@code Autopilot.doTurn} resets them), use
+     * {@link #processTickEvents(ITurnSnapshot)} followed by {@link #doTurn()}.
      */
     public void processTick(ITurnSnapshot curr) {
+        processTickEvents(curr);
+        doTurn();
+    }
+
+    /**
+     * Phase A of {@link #processTick}: advance the peer, build the StatusEvent,
+     * reconstruct combat events, and dispatch them to the observer's handlers.
+     * Does NOT run {@code doTurn} — call {@link #doTurn()} explicitly after this
+     * method (typically after any cross-context whiteboard inspection).
+     */
+    public void processTickEvents(ITurnSnapshot curr) {
         if (dead)
             return;
 
@@ -121,9 +136,8 @@ public final class ObserverContext {
         allEvents.add(new StatusEvent(status));
         allEvents.addAll(combatEvents.events());
 
-        // 6. Dispatch events + run strategy
+        // 6. Dispatch events (but defer doTurn so callers can inspect wb first).
         feedEvents(new TickEvents(allEvents));
-        doTurn();
     }
 
     /**

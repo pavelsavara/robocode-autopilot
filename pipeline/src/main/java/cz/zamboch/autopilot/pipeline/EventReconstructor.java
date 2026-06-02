@@ -1,6 +1,7 @@
 package cz.zamboch.autopilot.pipeline;
 
 import cz.zamboch.autopilot.core.RoboMath;
+import net.sf.robocode.battle.snapshot.RobotSnapshot;
 import robocode.*;
 import robocode.control.snapshot.*;
 
@@ -23,47 +24,43 @@ import java.util.Set;
  */
 public final class EventReconstructor {
 
-    private static final double SCAN_RADIUS = 1200.0;
     private static final double ROBOT_SIZE = 36.0;
+    private static final double SCAN_RADIUS = 1200.0;
 
     // Per-tick state (from my robot's perspective)
-    private double prevRadarHeading = Double.NaN;
     private RobotState prevState = RobotState.ACTIVE;
     private RobotState prevOpponentState = RobotState.ACTIVE;
+    private double prevRadarHeading = Double.NaN;
+    private double prevEnergy = Double.NaN;
+    private double prevOpponentEnergy = Double.NaN;
 
     // Bullet deduplication
     private final Set<Integer> knownBulletIds = new HashSet<>();
 
-    // Reusable arc for scan detection
-    private final Arc2D.Double scanArc = new Arc2D.Double();
-
     /** Reset all inter-tick state. Call at the beginning of each round. */
     public void resetRound() {
-        prevRadarHeading = Double.NaN;
         prevState = RobotState.ACTIVE;
         prevOpponentState = RobotState.ACTIVE;
+        prevRadarHeading = Double.NaN;
+        prevEnergy = Double.NaN;
+        prevOpponentEnergy = Double.NaN;
         knownBulletIds.clear();
     }
 
     /**
-     * Seed inter-tick state from the round-start (spawn) snapshot.
-     * <p>
-     * Robocode places robots at the round start with {@code radar == gun == body}
-     * and zero velocity, then runs turn 1. The engine's first scan on turn 1
-     * sweeps the radar from this spawn heading to its post-turn-1 heading. Without
-     * the spawn heading, {@link #detectScan} cannot reconstruct that first sweep
-     * (it sees {@code prevRadarHeading == NaN} and skips), so the observer misses
-     * the round's opening scan. Feeding the start snapshot here primes
-     * {@code prevRadarHeading} (and the other {@code prev*} fields) so turn 1 is
-     * reconstructed exactly like the engine.
+     * Seed inter-tick state ({@code prevState}, {@code prevOpponentState}) from
+     * the round-start (spawn) snapshot so death / wall-hit edge detection on
+     * turn 1 sees the correct prior state.
      */
     public void seedRoundStart(ITurnSnapshot startSnapshot, int myIndex) {
         IRobotSnapshot[] robots = startSnapshot.getRobots();
         IRobotSnapshot me = robots[myIndex];
         IRobotSnapshot opponent = robots[1 - myIndex];
-        prevRadarHeading = me.getRadarHeading();
         prevState = me.getState();
         prevOpponentState = opponent.getState();
+        prevRadarHeading = me.getRadarHeading();
+        prevEnergy = me.getEnergy();
+        prevOpponentEnergy = opponent.getEnergy();
     }
 
     /**
@@ -91,13 +88,13 @@ public final class EventReconstructor {
         List<Event> events = new ArrayList<>();
 
         // === Bullet events ===
-        detectBulletEvents(turn, myIndex, me, opponent, events);
+        BulletEnergyEffects bulletEnergyEffects = detectBulletEvents(turn, myIndex, me, opponent, events);
 
         // === Wall hit ===
         detectWallHit(me, bfWidth, bfHeight, events);
 
         // === Robot collision (ram) ===
-        detectRam(me, opponent, events);
+        detectRam(me, opponent, bulletEnergyEffects, events);
 
         // === Scan ===
         detectScan(me, opponent, events);
@@ -112,20 +109,25 @@ public final class EventReconstructor {
         events.sort(EVENT_PRIORITY_ORDER);
 
         // === Update state for next tick ===
-        prevRadarHeading = me.getRadarHeading();
         prevState = me.getState();
         prevOpponentState = opponent.getState();
+        prevRadarHeading = me.getRadarHeading();
+        prevEnergy = me.getEnergy();
+        prevOpponentEnergy = opponent.getEnergy();
 
         return new TickEvents(events);
     }
 
     // ==================== Bullet Events ====================
 
-    private void detectBulletEvents(ITurnSnapshot turn, int myIndex,
+    private BulletEnergyEffects detectBulletEvents(ITurnSnapshot turn, int myIndex,
             IRobotSnapshot me, IRobotSnapshot opponent, List<Event> events) {
         IBulletSnapshot[] bullets = turn.getBullets();
         if (bullets == null)
-            return;
+            return BulletEnergyEffects.NONE;
+
+        double incomingDamage = 0.0;
+        double outgoingHitBonus = 0.0;
 
         for (IBulletSnapshot bs : bullets) {
             int bulletId = bs.getBulletId();
@@ -140,11 +142,13 @@ public final class EventReconstructor {
 
                 if (owner == myIndex) {
                     // Our bullet hit the opponent → BulletHitEvent
+                    outgoingHitBonus += Rules.getBulletHitBonus(power);
                     Bullet bullet = new Bullet(bs.getHeading(), bs.getX(), bs.getY(),
                             power, me.getShortName(), opponent.getShortName(), false, bulletId);
                     events.add(new BulletHitEvent(opponent.getShortName(), opponent.getEnergy(), bullet));
                 } else if (victim == myIndex) {
                     // Opponent's bullet hit us → HitByBulletEvent
+                    incomingDamage += Rules.getBulletDamage(power);
                     double bearing = RoboMath.normalRelativeAngle(
                             bs.getHeading() + Math.PI - me.getBodyHeading());
                     Bullet bullet = new Bullet(bs.getHeading(), bs.getX(), bs.getY(),
@@ -169,6 +173,7 @@ public final class EventReconstructor {
                 events.add(new BulletHitBulletEvent(myBullet, otherBullet));
             }
         }
+        return new BulletEnergyEffects(incomingDamage, outgoingHitBonus);
     }
 
     private Bullet findOtherHitBullet(IBulletSnapshot[] bullets, int excludeId,
@@ -237,7 +242,8 @@ public final class EventReconstructor {
 
     // ==================== Ram (Robot Collision) ====================
 
-    private void detectRam(IRobotSnapshot me, IRobotSnapshot opponent, List<Event> events) {
+    private void detectRam(IRobotSnapshot me, IRobotSnapshot opponent,
+            BulletEnergyEffects bulletEnergyEffects, List<Event> events) {
         // The engine runs checkRobotCollision EVERY tick and, for each robot that
         // is "at fault" (driving into the other), applies ROBOT_HIT_DAMAGE to BOTH
         // robots and delivers a HitRobotEvent to each — every tick of sustained
@@ -248,7 +254,13 @@ public final class EventReconstructor {
         // - opponent at fault -> their collision delivers us an atFault=false event
         boolean meAtFault = me.getState() == RobotState.HIT_ROBOT;
         boolean oppAtFault = opponent.getState() == RobotState.HIT_ROBOT;
-        if (!meAtFault && !oppAtFault) {
+        boolean hiddenOpponentAtFault = opponent.getState() == RobotState.DEAD
+                && prevOpponentState != RobotState.DEAD
+                && meAtFault
+                && !oppAtFault
+                && ramOnlyEnergyDrop(me, bulletEnergyEffects) >= 2.0 * Rules.ROBOT_HIT_DAMAGE - 1e-6
+                && prevOpponentEnergy > 0.0;
+        if (!meAtFault && !oppAtFault && !hiddenOpponentAtFault) {
             return;
         }
 
@@ -263,47 +275,70 @@ public final class EventReconstructor {
         if (oppAtFault) {
             events.add(new HitRobotEvent(opponent.getShortName(), bearing, opponent.getEnergy(), false));
         }
+        if (hiddenOpponentAtFault) {
+            events.add(new HitRobotEvent(opponent.getShortName(), bearing, opponent.getEnergy(), false));
+        }
+    }
+
+    private double ramOnlyEnergyDrop(IRobotSnapshot robot, BulletEnergyEffects bulletEnergyEffects) {
+        if (Double.isNaN(prevEnergy)) {
+            return 0.0;
+        }
+        return prevEnergy - robot.getEnergy()
+                - bulletEnergyEffects.incomingDamage
+                + bulletEnergyEffects.outgoingHitBonus;
+    }
+
+    private static final class BulletEnergyEffects {
+        static final BulletEnergyEffects NONE = new BulletEnergyEffects(0.0, 0.0);
+
+        final double incomingDamage;
+        final double outgoingHitBonus;
+
+        BulletEnergyEffects(double incomingDamage, double outgoingHitBonus) {
+            this.incomingDamage = incomingDamage;
+            this.outgoingHitBonus = outgoingHitBonus;
+        }
     }
 
     // ==================== Scan ====================
 
     private void detectScan(IRobotSnapshot me, IRobotSnapshot opponent, List<Event> events) {
-        double radarHeading = me.getRadarHeading();
-
-        if (Double.isNaN(prevRadarHeading)) {
-            // First tick — no sweep yet
-            return;
-        }
-
         // Engine: performScan returns immediately if dead
         if (me.getState() == RobotState.DEAD)
             return;
-
-        // Skip if opponent is dead
         if (opponent.getState() == RobotState.DEAD)
             return;
 
-        double scanRadians = radarHeading - prevRadarHeading;
-        if (scanRadians < -Math.PI)
-            scanRadians += 2 * Math.PI;
-        else if (scanRadians > Math.PI)
-            scanRadians -= 2 * Math.PI;
-
-        if (scanRadians == 0)
-            return; // No radar movement
-
-        // Build Arc2D.PIE (same geometry as engine)
-        double startAngle = RoboMath.normalAbsoluteAngle(prevRadarHeading - Math.PI / 2);
-        double r = SCAN_RADIUS;
-        scanArc.setArc(me.getX() - r, me.getY() - r, 2 * r, 2 * r,
-                Math.toDegrees(startAngle), Math.toDegrees(scanRadians), Arc2D.PIE);
+        // Prefer the engine's authoritative scan arc (serialized into the snapshot
+        // by RobotPeer.performScan): when the radar lock changes direction mid-turn,
+        // the end-of-turn radar headings disagree with the actual sweep geometry by
+        // one tick. Fall back to reconstructing the sweep from prev/curr radar
+        // heading for snapshots that don't carry an arc (synthetic test stubs,
+        // older fixtures, or the very first tick before the engine has run scan).
+        Arc2D arc = null;
+        if (me instanceof RobotSnapshot rs) {
+            arc = rs.getScanArc();
+        }
+        if (arc == null) {
+            if (Double.isNaN(prevRadarHeading))
+                return; // first tick — no sweep yet
+            double radarHeading = me.getRadarHeading();
+            double scanRadians = RoboMath.normalRelativeAngle(radarHeading - prevRadarHeading);
+            if (scanRadians == 0)
+                return; // no radar movement
+            double startAngle = RoboMath.normalAbsoluteAngle(prevRadarHeading - Math.PI / 2);
+            double r = SCAN_RADIUS;
+            arc = new Arc2D.Double(me.getX() - r, me.getY() - r, 2 * r, 2 * r,
+                    Math.toDegrees(startAngle), Math.toDegrees(scanRadians), Arc2D.PIE);
+        }
 
         // Target bounding box (36x36 centered on opponent)
         double half = ROBOT_SIZE / 2;
         Rectangle2D.Double targetBox = new Rectangle2D.Double(
                 opponent.getX() - half, opponent.getY() - half, ROBOT_SIZE, ROBOT_SIZE);
 
-        boolean hit = intersects(scanArc, targetBox);
+        boolean hit = intersects(arc, targetBox);
         if (hit) {
             double dx = opponent.getX() - me.getX();
             double dy = opponent.getY() - me.getY();

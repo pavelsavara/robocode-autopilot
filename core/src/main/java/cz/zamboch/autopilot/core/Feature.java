@@ -32,7 +32,6 @@ public enum Feature {
     OUR_BULLET_DAMAGE_TO_OPPONENT(FileType.NONE),
     OPPONENT_BULLET_ENERGY_GAIN(FileType.NONE),
     RAM_DAMAGE_TO_OPPONENT(FileType.NONE),
-    OPPONENT_RAM_ENERGY_GAIN(FileType.NONE),
     OPPONENT_WALL_HIT_DAMAGE(FileType.NONE),
 
     // --- Computed: spatial ---

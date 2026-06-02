@@ -1,5 +1,6 @@
 package cz.zamboch.autopilot.pipeline;
 
+import cz.zamboch.Autopilot;
 import net.sf.robocode.io.Logger;
 import robocode.control.BattleSpecification;
 import robocode.control.BattlefieldSpecification;
@@ -74,6 +75,7 @@ public final class BattleRunner {
      * @return BattleResult with orchestrator and scores
      */
     public static BattleResult runBattle(String opponent, int rounds, String outputDir) {
+        Autopilot.resetLiveBattleState();
         RobocodeEngine.setLogMessagesEnabled(false);
         RobocodeEngine engine = new RobocodeEngine();
 
@@ -123,6 +125,27 @@ public final class BattleRunner {
                 orchestrator.setDebugCsv(new DebugPropertyCsvWriter(new File(debugCsvDir), opponent));
             } catch (IOException e) {
                 throw new RuntimeException("Failed to initialize debug-property CSV writer", e);
+            }
+        }
+
+        // Per-event their-fire diff trace (their-fires.csv). Tiny vs debugCsv; safe
+        // to leave on whenever investigating L3-their detection drift.
+        String theirFireDir = System.getProperty("their.fires.dir");
+        if (theirFireDir != null && !theirFireDir.isBlank()) {
+            try {
+                orchestrator.setTheirFireTrace(new TheirFireTraceWriter(new File(theirFireDir), opponent));
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to initialize their-fire trace writer", e);
+            }
+        }
+
+        // Per-event Layer 2 damage-observation diff trace (damage-events.csv).
+        String damageEventsDir = System.getProperty("damage.events.dir");
+        if (damageEventsDir != null && !damageEventsDir.isBlank()) {
+            try {
+                orchestrator.setDamageEventsTrace(new DamageEventsTraceWriter(new File(damageEventsDir), opponent));
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to initialize damage-events trace writer", e);
             }
         }
 

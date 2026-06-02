@@ -135,6 +135,13 @@ queued and executed at the start of the tick, before the gun turn.
 **Implication:** Bullet damage scoring rewards aggression. Pure survival
 (running away) scores less than aggressive play even if you survive longer.
 
+**Note on ram bonus / `ROBOT_HIT_BONUS` (= 1.2):** This is a *score* bonus
+awarded to the at-fault rammer (see `RobotStatistics.scoreRammingDamage` in
+the Robocode engine). It is NOT an energy gain. On a robot collision the
+engine only ever applies `-ROBOT_HIT_DAMAGE` (0.6) to both robots' energy;
+no robot ever gains energy from ramming. Code that infers fire events from
+opponent energy drops must not subtract a phantom +1.2 ram bonus.
+
 ## Observation Model
 
 ### What a robot CAN see
