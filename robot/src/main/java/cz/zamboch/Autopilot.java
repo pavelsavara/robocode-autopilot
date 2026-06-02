@@ -349,8 +349,8 @@ public final class Autopilot extends AdvancedRobot {
             wb.setModelSelector(new ModelSelector(store));
         }
         // Recreate strategies so their internal cross-round state (e.g.
-        // OvershootLockRadar.lastTurnDirection) resets to its fresh-instance default.
-        radar = new OvershootLockRadar(wb);
+        // NarrowLockRadar.lastTurnDirection) resets to its fresh-instance default.
+        radar = new NarrowLockRadar(wb);
         gun = new GFGunStrategy(wb);
         movement = new OrbitMovementStrategy(wb, bfWidth, bfHeight);
         // Clear any carried-forward accumulator/sticky values from the prior round.
@@ -380,7 +380,7 @@ public final class Autopilot extends AdvancedRobot {
             featuresRegistered = true;
         }
 
-        radar = new OvershootLockRadar(wb);
+        radar = new NarrowLockRadar(wb);
         gun = new GFGunStrategy(wb);
         movement = new OrbitMovementStrategy(wb, bfWidth, bfHeight);
     }
@@ -393,7 +393,7 @@ public final class Autopilot extends AdvancedRobot {
     @Override
     public void run() {
         initCommon(getBattleFieldWidth(), getBattleFieldHeight());
-        // Decouple radar from body and gun rotation so OvershootLockRadar's command
+        // Decouple radar from body and gun rotation so NarrowLockRadar's command
         // is the radar's actual angular motion (no carry from body/gun turns).
         setAdjustRadarForRobotTurn(true);
         setAdjustRadarForGunTurn(true);

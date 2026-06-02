@@ -173,6 +173,17 @@ class GodViewQualityValidatorTest {
         }
 
         @Test
+        void theirFireDetection_ignoresDuplicateGodViewFireTick() {
+                validator.recordGodViewTheirFire(1.0, 0.0, 0.0, 0.0, 10);
+                validator.recordGodViewTheirFire(1.0, 0.0, 0.0, 0.0, 10);
+                validator.recordRobotSideTheirFire(1.0, 0.0, 0.0, 0.0, 10);
+
+                assertEquals(1, validator.getTheirGodViewFires());
+                assertEquals(1, validator.getTheirRobotSideFires());
+                assertEquals(1.0, validator.getTheirFireDetectionRate(), 1e-9);
+        }
+
+        @Test
         void theirFireDetection_NaN_whenNoFires() {
                 assertTrue(Double.isNaN(validator.getTheirFirePositionMAE()));
                 assertTrue(Double.isNaN(validator.getTheirFirePowerMAE()));

@@ -195,11 +195,12 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
         if (recordObs) {
             Autopilot auto = observers[autopilotPiEarly].observer();
             // A fresh radar scan of the opponent this tick is the precondition for
-            // exact damage observation; the robot-side LAST_SCAN_TICK equals the
-            // current turn only on scan ticks (the god-view sets it every tick).
-            double lastScanTick = observers[autopilotPiEarly].wb().getFeature(Feature.LAST_SCAN_TICK);
-            boolean scannedThisTick = !Double.isNaN(lastScanTick)
-                    && Math.abs(lastScanTick - curr.getTurn()) < 1e-4;
+            // exact damage observation. Use the robot-side derived gap directly;
+            // comparing LAST_SCAN_TICK to the engine turn can drift by one phase in
+            // the observer pipeline even when ticks.csv shows a fresh scan.
+            double ticksSinceScan = observers[autopilotPiEarly].wb().getFeature(Feature.TICKS_SINCE_SCAN);
+            boolean scannedThisTick = !Double.isNaN(ticksSinceScan)
+                    && Math.abs(ticksSinceScan) < 1e-4;
             validator.recordDamageObservation(currentRound, curr.getTurn(),
                     autopilotPiEarly, robots,
                     curr.getBullets(),

@@ -163,6 +163,7 @@ public final class GodViewQualityValidator {
         int robotSideCount;
         final Map<Long, FireRecord> pendingGodView = new HashMap<>();
         final Map<Long, FireRecord> pendingRobotSide = new HashMap<>();
+        final Set<Long> seenGodViewTicks = new HashSet<>();
         double positionErrorSum;
         double powerErrorSum;
         double latencySum;
@@ -400,6 +401,9 @@ public final class GodViewQualityValidator {
      */
     public void recordGodViewTheirFire(double power, double x, double y,
             double heading, long fireTick) {
+        if (!theirFireTracking.seenGodViewTicks.add(fireTick)) {
+            return;
+        }
         theirFireTracking.godViewCount++;
         FireRecord godView = new FireRecord(power, x, y, heading, fireTick);
         FireRecord robotSide = theirFireTracking.pendingRobotSide.remove(fireTick);
@@ -703,6 +707,7 @@ public final class GodViewQualityValidator {
         }
         obsHitByUsBulletIds.clear();
         obsHitOnUsBulletIds.clear();
+        theirFireTracking.seenGodViewTicks.clear();
         prevOppState = null;
         prevOppVelocity = Double.NaN;
         prevTickAccumulatorReset = false;
