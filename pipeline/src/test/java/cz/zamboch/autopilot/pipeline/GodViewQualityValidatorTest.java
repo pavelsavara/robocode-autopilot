@@ -550,4 +550,87 @@ class GodViewQualityValidatorTest {
                 // Layer 4 is not required for assertNonVacuous (observer fires independently)
                 assertDoesNotThrow(() -> validator.assertNonVacuous());
         }
+
+        @Test
+        void damageObservation_lethalMutualRamWhenOpponentDead_countsBothRamCharges() {
+                IRobotSnapshot prevSelf = TestSnapshots.robot(418, 300, Math.PI / 2, 0, 78.745, 0, 0, 0,
+                                0, RobotState.ACTIVE, "A");
+                IRobotSnapshot prevOpp = TestSnapshots.robot(436, 300, 3 * Math.PI / 2, 0, 0.956, 0, 0, 0,
+                                1, RobotState.ACTIVE, "B");
+                ITurnSnapshot prevTurn = TestSnapshots.turn(0, prevSelf, prevOpp);
+                validator.recordDamageObservation(0, 0, 0, prevTurn.getRobots(), prevTurn.getBullets(),
+                                0, 0, 0, 0, false, true);
+
+                IRobotSnapshot self = TestSnapshots.robot(418, 300, Math.PI / 2, 0, 77.545, 0, 0, 0,
+                                0, RobotState.HIT_ROBOT, "A");
+                IRobotSnapshot opp = TestSnapshots.robot(436, 300, 3 * Math.PI / 2, 0, 0.0, 0, 0, 0,
+                                1, RobotState.DEAD, "B");
+                ITurnSnapshot turn = TestSnapshots.turn(1, self, opp);
+                validator.recordDamageObservation(0, 1, 0, turn.getRobots(), turn.getBullets(),
+                                0, 0, 1.2, 0, false, true);
+
+                GodViewQualityValidator.DamageObservationTracker tracker = validator.getDamageObsTracking();
+                assertEquals(1.2,
+                                tracker.gvTotal[GodViewQualityValidator.DamageObservationTracker.RAM_DMG], 1e-9);
+                assertEquals(1.2,
+                                tracker.obsTotal[GodViewQualityValidator.DamageObservationTracker.RAM_DMG], 1e-9);
+                assertEquals(0.0,
+                                tracker.absDriftTotal[GodViewQualityValidator.DamageObservationTracker.RAM_DMG], 1e-9);
+        }
+
+        @Test
+        void damageObservation_lethalMutualRamPlusOurBulletWhenOpponentDead_countsBothRamCharges() {
+                IRobotSnapshot prevSelf = TestSnapshots.robot(418, 300, Math.PI / 2, 0, 78.745, 0, 0, 0,
+                                0, RobotState.ACTIVE, "A");
+                IRobotSnapshot prevOpp = TestSnapshots.robot(436, 300, 3 * Math.PI / 2, 0, 4.6, 0, 0, 0,
+                                1, RobotState.ACTIVE, "B");
+                ITurnSnapshot prevTurn = TestSnapshots.turn(0, prevSelf, prevOpp);
+                validator.recordDamageObservation(0, 0, 0, prevTurn.getRobots(), prevTurn.getBullets(),
+                                0, 0, 0, 0, false, true);
+
+                IRobotSnapshot self = TestSnapshots.robot(418, 300, Math.PI / 2, 0, 80.545, 0, 0, 0,
+                                0, RobotState.HIT_ROBOT, "A");
+                IRobotSnapshot opp = TestSnapshots.robot(436, 300, 3 * Math.PI / 2, 0, 0.0, 0, 0, 0,
+                                1, RobotState.DEAD, "B");
+                ITurnSnapshot turn = TestSnapshots.turn(1, self, opp,
+                                TestSnapshots.bullet(99, 0, 1, 1.0, BulletState.HIT_VICTIM));
+                validator.recordDamageObservation(0, 1, 0, turn.getRobots(), turn.getBullets(),
+                                0, 0, 1.2, 0, false, true);
+
+                GodViewQualityValidator.DamageObservationTracker tracker = validator.getDamageObsTracking();
+                assertEquals(1.2,
+                                tracker.gvTotal[GodViewQualityValidator.DamageObservationTracker.RAM_DMG], 1e-9);
+                assertEquals(1.2,
+                                tracker.obsTotal[GodViewQualityValidator.DamageObservationTracker.RAM_DMG], 1e-9);
+                assertEquals(0.0,
+                                tracker.absDriftTotal[GodViewQualityValidator.DamageObservationTracker.RAM_DMG], 1e-9);
+        }
+
+        @Test
+        void damageObservation_lethalSingleRamPlusIncomingBullet_countsOneRamCharge() {
+                IRobotSnapshot prevSelf = TestSnapshots.robot(418, 300, Math.PI / 2, 0, 100.0, 0, 0, 0,
+                                0, RobotState.ACTIVE, "A");
+                IRobotSnapshot prevOpp = TestSnapshots.robot(436, 300, 3 * Math.PI / 2, 0, 0.6, 0, 0, 0,
+                                1, RobotState.ACTIVE, "B");
+                ITurnSnapshot prevTurn = TestSnapshots.turn(0, prevSelf, prevOpp);
+                validator.recordDamageObservation(0, 0, 0, prevTurn.getRobots(), prevTurn.getBullets(),
+                                0, 0, 0, 0, false, true);
+
+                IRobotSnapshot self = TestSnapshots.robot(418, 300, Math.PI / 2, 0, 95.4, 0, 0, 0,
+                                0, RobotState.HIT_ROBOT, "A");
+                IRobotSnapshot opp = TestSnapshots.robot(436, 300, 3 * Math.PI / 2, 0, 0.0, 0, 0, 0,
+                                1, RobotState.DEAD, "B");
+                ITurnSnapshot turn = TestSnapshots.turn(1, self, opp,
+                                TestSnapshots.bullet(99, 1, 0, 1.0, BulletState.HIT_VICTIM));
+                validator.recordDamageObservation(0, 1, 0, turn.getRobots(), turn.getBullets(),
+                                0, 0, 0.6, 0, false, true);
+
+                GodViewQualityValidator.DamageObservationTracker tracker = validator.getDamageObsTracking();
+                assertEquals(0.6,
+                                tracker.gvTotal[GodViewQualityValidator.DamageObservationTracker.RAM_DMG], 1e-9);
+                assertEquals(0.6,
+                                tracker.obsTotal[GodViewQualityValidator.DamageObservationTracker.RAM_DMG], 1e-9);
+                assertEquals(0.0,
+                                tracker.absDriftTotal[GodViewQualityValidator.DamageObservationTracker.RAM_DMG], 1e-9);
+        }
 }

@@ -31,6 +31,8 @@ public final class EventReconstructor {
     private RobotState prevState = RobotState.ACTIVE;
     private RobotState prevOpponentState = RobotState.ACTIVE;
     private double prevRadarHeading = Double.NaN;
+    private double prevEnergy = Double.NaN;
+    private double prevOpponentEnergy = Double.NaN;
 
     // Bullet deduplication
     private final Set<Integer> knownBulletIds = new HashSet<>();
@@ -40,6 +42,8 @@ public final class EventReconstructor {
         prevState = RobotState.ACTIVE;
         prevOpponentState = RobotState.ACTIVE;
         prevRadarHeading = Double.NaN;
+        prevEnergy = Double.NaN;
+        prevOpponentEnergy = Double.NaN;
         knownBulletIds.clear();
     }
 
@@ -55,6 +59,8 @@ public final class EventReconstructor {
         prevState = me.getState();
         prevOpponentState = opponent.getState();
         prevRadarHeading = me.getRadarHeading();
+        prevEnergy = me.getEnergy();
+        prevOpponentEnergy = opponent.getEnergy();
     }
 
     /**
@@ -82,13 +88,13 @@ public final class EventReconstructor {
         List<Event> events = new ArrayList<>();
 
         // === Bullet events ===
-        detectBulletEvents(turn, myIndex, me, opponent, events);
+        BulletEnergyEffects bulletEnergyEffects = detectBulletEvents(turn, myIndex, me, opponent, events);
 
         // === Wall hit ===
         detectWallHit(me, bfWidth, bfHeight, events);
 
         // === Robot collision (ram) ===
-        detectRam(me, opponent, events);
+        detectRam(me, opponent, bulletEnergyEffects, events);
 
         // === Scan ===
         detectScan(me, opponent, events);
@@ -106,17 +112,22 @@ public final class EventReconstructor {
         prevState = me.getState();
         prevOpponentState = opponent.getState();
         prevRadarHeading = me.getRadarHeading();
+        prevEnergy = me.getEnergy();
+        prevOpponentEnergy = opponent.getEnergy();
 
         return new TickEvents(events);
     }
 
     // ==================== Bullet Events ====================
 
-    private void detectBulletEvents(ITurnSnapshot turn, int myIndex,
+    private BulletEnergyEffects detectBulletEvents(ITurnSnapshot turn, int myIndex,
             IRobotSnapshot me, IRobotSnapshot opponent, List<Event> events) {
         IBulletSnapshot[] bullets = turn.getBullets();
         if (bullets == null)
-            return;
+            return BulletEnergyEffects.NONE;
+
+        double incomingDamage = 0.0;
+        double outgoingHitBonus = 0.0;
 
         for (IBulletSnapshot bs : bullets) {
             int bulletId = bs.getBulletId();
@@ -131,11 +142,13 @@ public final class EventReconstructor {
 
                 if (owner == myIndex) {
                     // Our bullet hit the opponent → BulletHitEvent
+                    outgoingHitBonus += Rules.getBulletHitBonus(power);
                     Bullet bullet = new Bullet(bs.getHeading(), bs.getX(), bs.getY(),
                             power, me.getShortName(), opponent.getShortName(), false, bulletId);
                     events.add(new BulletHitEvent(opponent.getShortName(), opponent.getEnergy(), bullet));
                 } else if (victim == myIndex) {
                     // Opponent's bullet hit us → HitByBulletEvent
+                    incomingDamage += Rules.getBulletDamage(power);
                     double bearing = RoboMath.normalRelativeAngle(
                             bs.getHeading() + Math.PI - me.getBodyHeading());
                     Bullet bullet = new Bullet(bs.getHeading(), bs.getX(), bs.getY(),
@@ -160,6 +173,7 @@ public final class EventReconstructor {
                 events.add(new BulletHitBulletEvent(myBullet, otherBullet));
             }
         }
+        return new BulletEnergyEffects(incomingDamage, outgoingHitBonus);
     }
 
     private Bullet findOtherHitBullet(IBulletSnapshot[] bullets, int excludeId,
@@ -228,7 +242,8 @@ public final class EventReconstructor {
 
     // ==================== Ram (Robot Collision) ====================
 
-    private void detectRam(IRobotSnapshot me, IRobotSnapshot opponent, List<Event> events) {
+    private void detectRam(IRobotSnapshot me, IRobotSnapshot opponent,
+            BulletEnergyEffects bulletEnergyEffects, List<Event> events) {
         // The engine runs checkRobotCollision EVERY tick and, for each robot that
         // is "at fault" (driving into the other), applies ROBOT_HIT_DAMAGE to BOTH
         // robots and delivers a HitRobotEvent to each — every tick of sustained
@@ -239,7 +254,13 @@ public final class EventReconstructor {
         // - opponent at fault -> their collision delivers us an atFault=false event
         boolean meAtFault = me.getState() == RobotState.HIT_ROBOT;
         boolean oppAtFault = opponent.getState() == RobotState.HIT_ROBOT;
-        if (!meAtFault && !oppAtFault) {
+        boolean hiddenOpponentAtFault = opponent.getState() == RobotState.DEAD
+                && prevOpponentState != RobotState.DEAD
+                && meAtFault
+                && !oppAtFault
+                && ramOnlyEnergyDrop(me, bulletEnergyEffects) >= 2.0 * Rules.ROBOT_HIT_DAMAGE - 1e-6
+                && prevOpponentEnergy > 0.0;
+        if (!meAtFault && !oppAtFault && !hiddenOpponentAtFault) {
             return;
         }
 
@@ -253,6 +274,30 @@ public final class EventReconstructor {
         }
         if (oppAtFault) {
             events.add(new HitRobotEvent(opponent.getShortName(), bearing, opponent.getEnergy(), false));
+        }
+        if (hiddenOpponentAtFault) {
+            events.add(new HitRobotEvent(opponent.getShortName(), bearing, opponent.getEnergy(), false));
+        }
+    }
+
+    private double ramOnlyEnergyDrop(IRobotSnapshot robot, BulletEnergyEffects bulletEnergyEffects) {
+        if (Double.isNaN(prevEnergy)) {
+            return 0.0;
+        }
+        return prevEnergy - robot.getEnergy()
+                - bulletEnergyEffects.incomingDamage
+                + bulletEnergyEffects.outgoingHitBonus;
+    }
+
+    private static final class BulletEnergyEffects {
+        static final BulletEnergyEffects NONE = new BulletEnergyEffects(0.0, 0.0);
+
+        final double incomingDamage;
+        final double outgoingHitBonus;
+
+        BulletEnergyEffects(double incomingDamage, double outgoingHitBonus) {
+            this.incomingDamage = incomingDamage;
+            this.outgoingHitBonus = outgoingHitBonus;
         }
     }
 

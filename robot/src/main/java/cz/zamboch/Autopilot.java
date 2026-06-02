@@ -62,6 +62,17 @@ public final class Autopilot extends AdvancedRobot {
     private static boolean sLiveVcsLoaded;
     private static VcsStore sLiveVcsStore;
 
+    /**
+     * Reset live-mode per-battle state before a new Robocode battle starts.
+     * The static store intentionally survives rounds inside one battle, but tests
+     * can run multiple battles in the same JVM/class loader.
+     */
+    public static void resetLiveBattleState() {
+        sLiveOpponentHash = 0;
+        sLiveVcsLoaded = false;
+        sLiveVcsStore = null;
+    }
+
     @Override
     public void onStatus(StatusEvent event) {
         RobotStatus status = event.getStatus();

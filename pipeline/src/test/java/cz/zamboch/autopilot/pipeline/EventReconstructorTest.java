@@ -589,6 +589,88 @@ class EventReconstructorTest {
                 }
         }
 
+        @Test
+        void hitRobotEvent_lethalMutualRamWhenOpponentDead_deliversBothFaultEvents() {
+                // A lethal mutual ram can leave only our final snapshot state as HIT_ROBOT:
+                // the opponent was also at fault during collision processing, but kill()
+                // overwrites its final state with DEAD. The live robot still receives both
+                // HitRobotEvents, so the observer must restore the hidden non-my-fault one.
+                ITurnSnapshot t0 = turn(0,
+                                robot(418, 300, Math.PI / 2, 0, 78.745, 0, 0, 0, MY_INDEX, RobotState.ACTIVE,
+                                                "MyBot"),
+                                robot(436, 300, 3 * Math.PI / 2, 0, 0.956, 0, 0, 0, OPP_INDEX, RobotState.ACTIVE,
+                                                "Enemy"));
+                recon.reconstruct(t0, MY_INDEX, BF_WIDTH, BF_HEIGHT);
+
+                ITurnSnapshot t1 = turn(1,
+                                robot(418, 300, Math.PI / 2, 0, 77.545, 0, 0, 0, MY_INDEX, RobotState.HIT_ROBOT,
+                                                "MyBot"),
+                                robot(436, 300, 3 * Math.PI / 2, 0, 0.0, 0, 0, 0, OPP_INDEX, RobotState.DEAD,
+                                                "Enemy"));
+                TickEvents delivered = recon.reconstruct(t1, MY_INDEX, BF_WIDTH, BF_HEIGHT);
+                List<HitRobotEvent> rams = delivered.events().stream()
+                                .filter(e -> e instanceof HitRobotEvent)
+                                .map(e -> (HitRobotEvent) e)
+                                .toList();
+                assertEquals(2, rams.size(),
+                                "Lethal mutual ram should preserve both live HitRobotEvents despite DEAD state");
+                assertEquals(1, rams.stream().filter(HitRobotEvent::isMyFault).count(),
+                                "Exactly one event marks us at fault");
+                assertEquals(1, rams.stream().filter(e -> !e.isMyFault()).count(),
+                                "Exactly one event restores the opponent-at-fault collision");
+        }
+
+        @Test
+        void hitRobotEvent_lethalMutualRamPlusOurBulletWhenOpponentDead_deliversBothFaultEvents() {
+                ITurnSnapshot t0 = turn(0,
+                                robot(418, 300, Math.PI / 2, 0, 78.745, 0, 0, 0, MY_INDEX, RobotState.ACTIVE,
+                                                "MyBot"),
+                                robot(436, 300, 3 * Math.PI / 2, 0, 4.6, 0, 0, 0, OPP_INDEX, RobotState.ACTIVE,
+                                                "Enemy"));
+                recon.reconstruct(t0, MY_INDEX, BF_WIDTH, BF_HEIGHT);
+
+                ITurnSnapshot t1 = turn(1,
+                                robot(418, 300, Math.PI / 2, 0, 80.545, 0, 0, 0, MY_INDEX, RobotState.HIT_ROBOT,
+                                                "MyBot"),
+                                robot(436, 300, 3 * Math.PI / 2, 0, 0.0, 0, 0, 0, OPP_INDEX, RobotState.DEAD,
+                                                "Enemy"),
+                                bullet(99, MY_INDEX, OPP_INDEX, 1.0, BulletState.HIT_VICTIM));
+                TickEvents delivered = recon.reconstruct(t1, MY_INDEX, BF_WIDTH, BF_HEIGHT);
+                List<HitRobotEvent> rams = delivered.events().stream()
+                                .filter(e -> e instanceof HitRobotEvent)
+                                .map(e -> (HitRobotEvent) e)
+                                .toList();
+                assertEquals(2, rams.size(),
+                                "Same-tick bullet damage can kill the opponent, but our self loss still proves mutual ram");
+                assertEquals(1, rams.stream().filter(HitRobotEvent::isMyFault).count());
+                assertEquals(1, rams.stream().filter(e -> !e.isMyFault()).count());
+        }
+
+        @Test
+        void hitRobotEvent_lethalSingleRamPlusIncomingBullet_doesNotSynthesizeSecondRam() {
+                ITurnSnapshot t0 = turn(0,
+                                robot(418, 300, Math.PI / 2, 0, 100.0, 0, 0, 0, MY_INDEX, RobotState.ACTIVE,
+                                                "MyBot"),
+                                robot(436, 300, 3 * Math.PI / 2, 0, 0.6, 0, 0, 0, OPP_INDEX, RobotState.ACTIVE,
+                                                "Enemy"));
+                recon.reconstruct(t0, MY_INDEX, BF_WIDTH, BF_HEIGHT);
+
+                ITurnSnapshot t1 = turn(1,
+                                robot(418, 300, Math.PI / 2, 0, 95.4, 0, 0, 0, MY_INDEX, RobotState.HIT_ROBOT,
+                                                "MyBot"),
+                                robot(436, 300, 3 * Math.PI / 2, 0, 0.0, 0, 0, 0, OPP_INDEX, RobotState.DEAD,
+                                                "Enemy"),
+                                bullet(99, OPP_INDEX, MY_INDEX, 1.0, BulletState.HIT_VICTIM));
+                TickEvents delivered = recon.reconstruct(t1, MY_INDEX, BF_WIDTH, BF_HEIGHT);
+                List<HitRobotEvent> rams = delivered.events().stream()
+                                .filter(e -> e instanceof HitRobotEvent)
+                                .map(e -> (HitRobotEvent) e)
+                                .toList();
+                assertEquals(1, rams.size(),
+                                "Incoming bullet damage explains the extra energy drop; do not synthesize a second ram");
+                assertTrue(rams.get(0).isMyFault());
+        }
+
         // ==================== Event Ordering Test ====================
 
         @Test

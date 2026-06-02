@@ -1,5 +1,6 @@
 package cz.zamboch.autopilot.pipeline;
 
+import cz.zamboch.Autopilot;
 import net.sf.robocode.io.Logger;
 import robocode.control.BattleSpecification;
 import robocode.control.BattlefieldSpecification;
@@ -74,6 +75,7 @@ public final class BattleRunner {
      * @return BattleResult with orchestrator and scores
      */
     public static BattleResult runBattle(String opponent, int rounds, String outputDir) {
+        Autopilot.resetLiveBattleState();
         RobocodeEngine.setLogMessagesEnabled(false);
         RobocodeEngine engine = new RobocodeEngine();
 

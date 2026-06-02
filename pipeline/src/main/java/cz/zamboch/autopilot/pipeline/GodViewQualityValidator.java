@@ -84,6 +84,8 @@ public final class GodViewQualityValidator {
     // Opponent prev-tick state/velocity for the autopilot's wall-damage truth.
     private RobotState prevOppState = null;
     private double prevOppVelocity = Double.NaN;
+    private double prevDamageObsSelfEnergy = Double.NaN;
+    private double prevDamageObsOppEnergy = Double.NaN;
 
     // Last per-channel obs accumulator reading. The autopilot's wb accumulators
     // monotonically grow within a carry window and snap to a smaller value (or
@@ -249,17 +251,25 @@ public final class GodViewQualityValidator {
         final int[] driftTickCount = new int[N];
         long ticks;
         long mismatchTicks;
-        // Ticks on which the autopilot had a fresh radar scan of the opponent.
-        // The damage-observation channels (and the L3 fire inference that feeds
-        // on them) can only be exact on scan ticks; the across-scan-gap ticks are
+        // Eligible ticks in the meaningful damage-observation window: after the
+        // first opponent scan of a round and before the opponent is dead. The
+        // damage-observation channels (and the L3 fire inference that feeds on
+        // them) can only be exact on scan ticks; the across-scan-gap ticks are
         // where wall/ram acceleration uncertainty and merged energy drops creep
         // in. missedScanFraction() quantifies that exposure.
         long scannedTicks;
+        private boolean seenScanThisRound;
 
-        void record(double[] gv, double[] obs, boolean scannedThisTick) {
-            ticks++;
-            if (scannedThisTick)
-                scannedTicks++;
+        void record(double[] gv, double[] obs, boolean scannedThisTick, boolean opponentAlive) {
+            boolean eligible = opponentAlive && (seenScanThisRound || scannedThisTick);
+            if (scannedThisTick) {
+                seenScanThisRound = true;
+            }
+            if (eligible) {
+                ticks++;
+                if (scannedThisTick)
+                    scannedTicks++;
+            }
             boolean anyDrift = false;
             for (int i = 0; i < N; i++) {
                 gvTotal[i] += gv[i];
@@ -275,8 +285,12 @@ public final class GodViewQualityValidator {
                     anyDrift = true;
                 }
             }
-            if (anyDrift)
+            if (eligible && anyDrift)
                 mismatchTicks++;
+        }
+
+        void resetRound() {
+            seenScanThisRound = false;
         }
 
         double totalAbsDrift() {
@@ -286,7 +300,7 @@ public final class GodViewQualityValidator {
             return s;
         }
 
-        /** Fraction of recorded ticks on which the autopilot had no fresh scan. */
+        /** Fraction of eligible ticks on which the autopilot had no fresh scan. */
         double missedScanFraction() {
             return ticks == 0 ? Double.NaN : (double) (ticks - scannedTicks) / ticks;
         }
@@ -501,6 +515,8 @@ public final class GodViewQualityValidator {
         IRobotSnapshot selfSnap = robots[autopilotIndex];
 
         double[] gv = new double[DamageObservationTracker.N];
+        double incomingBulletDamageThisTick = 0.0;
+        double outgoingBulletHitBonusThisTick = 0.0;
 
         if (bullets != null) {
             for (IBulletSnapshot b : bullets) {
@@ -513,9 +529,11 @@ public final class GodViewQualityValidator {
                 if (owner == autopilotIndex && victim == opp
                         && obsHitByUsBulletIds.add(id)) {
                     gv[DamageObservationTracker.OUR_BULLET_DMG] += bulletDamage(b.getPower());
+                    outgoingBulletHitBonusThisTick += hitEnergyBonus(b.getPower());
                 } else if (owner == opp && victim == autopilotIndex
                         && obsHitOnUsBulletIds.add(id)) {
                     gv[DamageObservationTracker.OPP_BULLET_GAIN] += hitEnergyBonus(b.getPower());
+                    incomingBulletDamageThisTick += bulletDamage(b.getPower());
                 }
             }
         }
@@ -536,6 +554,17 @@ public final class GodViewQualityValidator {
         if (oppSnap.getState() == RobotState.HIT_ROBOT) {
             ramAtFault++;
         }
+        if (oppSnap.getState() == RobotState.DEAD
+                && prevOppState != RobotState.DEAD
+                && selfSnap.getState() == RobotState.HIT_ROBOT
+                && !Double.isNaN(prevDamageObsSelfEnergy)
+                && !Double.isNaN(prevDamageObsOppEnergy)
+                && prevDamageObsSelfEnergy - selfSnap.getEnergy()
+                        - incomingBulletDamageThisTick
+                        + outgoingBulletHitBonusThisTick >= 2.0 * RAM_DAMAGE - EPSILON
+                && prevDamageObsOppEnergy > 0.0) {
+            ramAtFault++;
+        }
         if (ramAtFault > 0) {
             gv[DamageObservationTracker.RAM_DMG] += ramAtFault * RAM_DAMAGE;
         }
@@ -549,6 +578,8 @@ public final class GodViewQualityValidator {
         }
         prevOppState = oppSnap.getState();
         prevOppVelocity = oppSnap.getVelocity();
+        prevDamageObsSelfEnergy = selfSnap.getEnergy();
+        prevDamageObsOppEnergy = oppSnap.getEnergy();
 
         // Per-tick obs delta: monotonic growth within a window, snap-down on
         // FireFeatures consumption. Treat any decrease as a reset, so the new
@@ -573,7 +604,7 @@ public final class GodViewQualityValidator {
             prevObs[i] = obsCurr[i];
         }
         prevTickAccumulatorReset = accumulatorResetThisTick;
-        damageObsTracking.record(gv, obsDelta, scannedThisTick);
+        damageObsTracking.record(gv, obsDelta, scannedThisTick, oppSnap.getState() != RobotState.DEAD);
 
         if (damageEventsTrace != null) {
             final double EPS = 1e-9;
@@ -710,7 +741,10 @@ public final class GodViewQualityValidator {
         theirFireTracking.seenGodViewTicks.clear();
         prevOppState = null;
         prevOppVelocity = Double.NaN;
+        prevDamageObsSelfEnergy = Double.NaN;
+        prevDamageObsOppEnergy = Double.NaN;
         prevTickAccumulatorReset = false;
+        damageObsTracking.resetRound();
         for (int i = 0; i < DamageObservationTracker.N; i++) {
             prevObs[i] = 0;
         }

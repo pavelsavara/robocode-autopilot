@@ -31,9 +31,10 @@ Blotter
 - run all tests and show me drift by layers and features
 
 run all tests without fixed random seed
-- show me scores for all robots 
+- show me scores for all robots with 35 rounds
 - show me drift by layers and features and opponents. 
+- categorize reasons for individual drift instances if any
+
 - Re-create fresh BeepBoop-fired-bullets.md and BeepBoop-energy-events.md
 - Re-create fresh Crazy-fired-bullets.md and Crazy-energy-events.md
 - Re-create fresh Aggressive-fired-bullets.md and Aggressive-energy-events.md
-- categorize reasons for individual drift instances

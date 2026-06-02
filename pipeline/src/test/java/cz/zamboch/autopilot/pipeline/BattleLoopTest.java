@@ -561,7 +561,8 @@ final class BattleLoopTest {
         md.append("## Layer 2 — Damage Observation Drift\n\n");
         md.append("Autopilot's observed opponent-damage vs god-view, accumulated over the battle. "
                 + "`Missed scans %` is the fraction of ticks with no fresh radar scan of the "
-                + "opponent — the exposure window where damage channels can drift.\n\n");
+            + "opponent after the first scan and before the opponent is dead — the exposure "
+            + "window where damage channels can drift.\n\n");
         md.append("| Opponent | Ticks | Scanned ticks | Missed scans % | Mismatch ticks | Total abs drift |\n");
         md.append("|---|---:|---:|---:|---:|---:|\n");
         for (OppReport r : REPORTS) {
