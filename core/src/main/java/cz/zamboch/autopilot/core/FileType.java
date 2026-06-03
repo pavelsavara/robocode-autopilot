@@ -18,10 +18,10 @@ public enum FileType {
     SCORES,
     /**
      * Whiteboard-internal state only; never written to any CSV. Used for
-     * robot-side decision outputs (gun aim) and inter-tick accumulators that are
-     * inputs to other features but are not themselves part of the dataset.
-     * Backed by the tick ring (carries the same per-tick / N-ticks-ago
-     * semantics as {@link #TICKS}).
+     * robot-side decision outputs (gun aim) and scan-window state that are inputs
+     * to other features but are not themselves part of the dataset. Backed by the
+     * tick ring; Whiteboard rotation preserves selected scan-window values and
+     * clears the rest.
      */
     NONE
 }

@@ -33,6 +33,18 @@ public final class Whiteboard {
     private int tickHead = 0;
     private long lastTick = Long.MIN_VALUE;
 
+        private static final Feature[] DAMAGE_ACCUMULATOR_FEATURES = {
+            Feature.OUR_BULLET_DAMAGE_TO_OPPONENT,
+            Feature.OPPONENT_BULLET_ENERGY_GAIN,
+            Feature.RAM_DAMAGE_TO_OPPONENT,
+            Feature.OPPONENT_WALL_HIT_DAMAGE
+        };
+
+        private static final Feature[] CARRIED_SCAN_STATE_FEATURES = {
+            Feature.LAST_SCAN_TICK,
+            Feature.PREV_SCAN_OPPONENT_ENERGY
+        };
+
     // --- None ring (depth=3): whiteboard-internal features (FileType.NONE).
     // Robot-side decision outputs + inter-tick accumulators. Shares the tick
     // ring's head/rotation so it carries the same per-tick / N-ticks-ago
@@ -93,6 +105,20 @@ public final class Whiteboard {
         transformer.process(this);
     }
 
+    /** Copy current damage accumulator values into a Feature-indexed target array. */
+    public void snapshotDamageAccumulators(double[] target) {
+        for (Feature f : DAMAGE_ACCUMULATOR_FEATURES) {
+            target[f.ordinal()] = getFeature(f);
+        }
+    }
+
+    /** Reset the scan-window damage accumulator features after consumers have run. */
+    public void resetDamageAccumulators() {
+        for (Feature f : DAMAGE_ACCUMULATOR_FEATURES) {
+            setFeature(f, 0);
+        }
+    }
+
     /** Set a feature value. Throws if value is infinite. */
     public void setFeature(Feature f, double value) {
         if (Double.isInfinite(value)) {
@@ -105,10 +131,7 @@ public final class Whiteboard {
                 if (f == Feature.TICK && !Double.isNaN(value)) {
                     long newTick = (long) value;
                     if (newTick != lastTick && lastTick != Long.MIN_VALUE) {
-                        tickHead = (tickHead + 1) % TICK_RING_DEPTH;
-                        // Clear new slot — will be overwritten this tick
-                        Arrays.fill(tickRing[tickHead], Double.NaN);
-                        Arrays.fill(noneRing[tickHead], Double.NaN);
+                        rotateTickRing();
                     }
                     lastTick = newTick;
                 }
@@ -126,6 +149,38 @@ public final class Whiteboard {
             case SCORES:
                 scoreRow[col] = value;
                 break;
+        }
+    }
+
+    private void rotateTickRing() {
+        double[] damageAccumulatorValues = captureCarriedValues(DAMAGE_ACCUMULATOR_FEATURES, false);
+        double[] scanStateValues = captureCarriedValues(CARRIED_SCAN_STATE_FEATURES, true);
+
+        tickHead = (tickHead + 1) % TICK_RING_DEPTH;
+        Arrays.fill(tickRing[tickHead], Double.NaN);
+        Arrays.fill(noneRing[tickHead], Double.NaN);
+
+        restoreCarriedValues(DAMAGE_ACCUMULATOR_FEATURES, damageAccumulatorValues);
+        restoreCarriedValues(CARRIED_SCAN_STATE_FEATURES, scanStateValues);
+    }
+
+    private double[] captureCarriedValues(Feature[] features, boolean carryZero) {
+        double[] values = new double[features.length];
+        Arrays.fill(values, Double.NaN);
+        for (int i = 0; i < features.length; i++) {
+            double value = getFeature(features[i]);
+            if (!Double.isNaN(value) && (carryZero || value != 0)) {
+                values[i] = value;
+            }
+        }
+        return values;
+    }
+
+    private void restoreCarriedValues(Feature[] features, double[] values) {
+        for (int i = 0; i < features.length; i++) {
+            if (!Double.isNaN(values[i])) {
+                setFeature(features[i], values[i]);
+            }
         }
     }
 

@@ -95,6 +95,36 @@ final class WhiteboardTickRingTest {
     }
 
     @Test
+    void damageAccumulatorSurvivesTickRotationUntilReset() {
+        wb.setFeature(Feature.TICK, 1);
+        wb.setFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT, 2.5);
+
+        wb.setFeature(Feature.TICK, 2);
+        assertEquals(2.5, wb.getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT), 1e-9);
+
+        wb.resetDamageAccumulators();
+        assertEquals(0, wb.getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT), 1e-9);
+
+        wb.setFeature(Feature.TICK, 3);
+        assertTrue(Double.isNaN(wb.getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT)));
+    }
+
+    @Test
+    void scanStateSurvivesTickRotation() {
+        wb.setFeature(Feature.TICK, 0);
+        wb.setFeature(Feature.LAST_SCAN_TICK, 0);
+        wb.setFeature(Feature.PREV_SCAN_OPPONENT_ENERGY, 100);
+
+        wb.setFeature(Feature.TICK, 1);
+        assertEquals(0, wb.getFeature(Feature.LAST_SCAN_TICK), 1e-9);
+        assertEquals(100, wb.getFeature(Feature.PREV_SCAN_OPPONENT_ENERGY), 1e-9);
+
+        wb.setFeature(Feature.TICK, 2);
+        assertEquals(0, wb.getFeature(Feature.LAST_SCAN_TICK), 1e-9);
+        assertEquals(100, wb.getFeature(Feature.PREV_SCAN_OPPONENT_ENERGY), 1e-9);
+    }
+
+    @Test
     void nonTickFeatureThrows() {
         assertThrows(IllegalArgumentException.class,
                 () -> wb.getFeatureNTicksAgo(Feature.OUR_AIM_X, 1));

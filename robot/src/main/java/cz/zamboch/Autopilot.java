@@ -76,11 +76,7 @@ public final class Autopilot extends AdvancedRobot {
     @Override
     public void onStatus(StatusEvent event) {
         RobotStatus status = event.getStatus();
-        // Save accumulators before ring rotation (setFeature TICK rotates the ring)
-        carryForwardAccumulators();
         wb.setFeature(Feature.TICK, status.getTime());
-        // Restore accumulators into the new (cleared) ring slot
-        restoreAccumulators();
         wb.setFeature(Feature.OUR_X, status.getX());
         wb.setFeature(Feature.OUR_Y, status.getY());
         wb.setFeature(Feature.OUR_HEADING, status.getHeadingRadians());
@@ -90,63 +86,6 @@ public final class Autopilot extends AdvancedRobot {
         wb.setFeature(Feature.GUN_HEADING, status.getGunHeadingRadians());
         wb.setFeature(Feature.RADAR_HEADING, status.getRadarHeadingRadians());
     }
-
-    private static final Feature[] ACCUMULATOR_FEATURES = {
-            Feature.OUR_BULLET_DAMAGE_TO_OPPONENT,
-            Feature.OPPONENT_BULLET_ENERGY_GAIN,
-            Feature.RAM_DAMAGE_TO_OPPONENT,
-            Feature.OPPONENT_WALL_HIT_DAMAGE
-    };
-
-    /**
-     * Features that persist across ring rotations but are NOT reset on scan ticks.
-     * PREV_SCAN_OPPONENT_ENERGY is scan-indexed (last seen opponent energy); the
-     * gap between scans is typically several ticks, so without stickying it would
-     * be NaN at the next scan and FireFeatures could never compute an energy drop.
-     */
-    private static final Feature[] STICKY_FEATURES = {
-            Feature.LAST_SCAN_TICK,
-            Feature.PREV_SCAN_OPPONENT_ENERGY
-    };
-
-    /**
-     * Copy accumulator and sticky values from current slot before ring rotation
-     * clears them.
-     */
-    private void carryForwardAccumulators() {
-        for (Feature f : ACCUMULATOR_FEATURES) {
-            double val = wb.getFeature(f);
-            if (!Double.isNaN(val) && val != 0) {
-                accumulatorCarry[f.ordinal()] = val;
-            }
-        }
-        for (Feature f : STICKY_FEATURES) {
-            double val = wb.getFeature(f);
-            if (!Double.isNaN(val)) {
-                accumulatorCarry[f.ordinal()] = val;
-            }
-        }
-    }
-
-    /** Restore carried-forward values into the new (cleared) ring slot. */
-    private void restoreAccumulators() {
-        for (Feature f : ACCUMULATOR_FEATURES) {
-            double val = accumulatorCarry[f.ordinal()];
-            if (val != 0) {
-                wb.setFeature(f, val);
-                accumulatorCarry[f.ordinal()] = 0;
-            }
-        }
-        for (Feature f : STICKY_FEATURES) {
-            double val = accumulatorCarry[f.ordinal()];
-            if (!Double.isNaN(val) && val != 0) {
-                wb.setFeature(f, val);
-            }
-            accumulatorCarry[f.ordinal()] = 0;
-        }
-    }
-
-    private final double[] accumulatorCarry = new double[Feature.COUNT];
 
     /**
      * Snapshot of the damage accumulators taken in {@link #doTurn()} AFTER
@@ -364,8 +303,6 @@ public final class Autopilot extends AdvancedRobot {
         radar = new NarrowLockRadar(wb);
         gun = new GFGunStrategy(wb);
         movement = new OrbitMovementStrategy(wb, bfWidth, bfHeight);
-        // Clear any carried-forward accumulator/sticky values from the prior round.
-        java.util.Arrays.fill(accumulatorCarry, 0.0);
     }
 
     private boolean featuresRegistered;
@@ -426,18 +363,14 @@ public final class Autopilot extends AdvancedRobot {
         // wall channel and FireFeatures has consumed all four) but BEFORE the
         // scan-tick reset below, so the validation pipeline can read the exact
         // values FireFeatures saw. Harmless for the live robot.
-        for (Feature f : ACCUMULATOR_FEATURES) {
-            consumedAccumulators[f.ordinal()] = wb.getFeature(f);
-        }
+        wb.snapshotDamageAccumulators(consumedAccumulators);
 
         // Reset accumulators after FireFeatures has consumed them on scan ticks
         double tick = wb.getFeature(Feature.TICK);
         double lastScan = wb.getFeature(Feature.LAST_SCAN_TICK);
         boolean scanTick = !Double.isNaN(tick) && tick == lastScan;
         if (scanTick) {
-            for (Feature f : ACCUMULATOR_FEATURES) {
-                wb.setFeature(f, 0);
-            }
+            wb.resetDamageAccumulators();
         }
         accumulatorsResetThisTurn = scanTick;
 

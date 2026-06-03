@@ -5,9 +5,9 @@ package cz.zamboch.autopilot.core;
  * Entries are ordered to match Feature enum's {@link FileType#NONE} features
  * in declaration order.
  * <p>
- * NONE features are robot-side decision outputs and inter-tick accumulators
- * that are kept in the whiteboard (with the same per-tick / N-ticks-ago ring
- * semantics as TICKS features) but are never written to any CSV.
+ * NONE features are robot-side decision outputs and scan-window state that are
+ * kept in the whiteboard but are never written to any CSV. Whiteboard tick
+ * rotation preserves selected scan-window features and clears the rest.
  */
 public enum NoneColumn {
     OUR_BULLET_DAMAGE_TO_OPPONENT,
