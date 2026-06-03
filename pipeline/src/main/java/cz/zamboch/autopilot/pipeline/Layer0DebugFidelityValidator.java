@@ -19,9 +19,11 @@ import java.util.Map;
  * <p>
  * Each tick, every {@link IDebugProperty} the live {@code Autopilot} published
  * (its full internal feature state) is compared against the observer's
- * robot-side {@link Whiteboard} value for the same feature. Because the robot is
- * 100% deterministic, the match must be exact across <b>all</b> features — no
- * exclusions (waves, {@code GUN_AIM_*}, scores, and breaks all included).
+ * robot-side {@link Whiteboard} value for the same feature. Raw mismatches are
+ * always counted and reported across <b>all</b> features (waves,
+ * {@code GUN_AIM_*}, scores, and breaks all included). The assertion-facing
+ * {@link #getUnexpectedMismatches()} only waives a tick when that same tick has
+ * the known snapshot-pure scan timing ambiguity and no unrelated or wave drift.
  * <p>
  * This layer is independent of any god-view computation. It reads only the
  * observer's robot-side whiteboard, never a god-view-mutated one.
@@ -50,12 +52,34 @@ public final class Layer0DebugFidelityValidator {
             Feature.GUN_AIM_GF,
             Feature.TICKS_SINCE_SCAN);
 
+    private static final EnumSet<Feature> SCAN_TIMING_DERIVED_FEATURES = EnumSet.of(
+            Feature.OUR_AIM_X,
+            Feature.OUR_AIM_Y,
+            Feature.OUR_AIM_DISTANCE,
+            Feature.OUR_AIM_BEARING_ABSOLUTE,
+            Feature.THEIR_AIM_OUR_X,
+            Feature.THEIR_AIM_OUR_Y,
+            Feature.THEIR_AIM_DISTANCE,
+            Feature.THEIR_AIM_BEARING,
+            Feature.OUR_BREAK_TICK,
+            Feature.OUR_BREAK_OPPONENT_X,
+            Feature.OUR_BREAK_OPPONENT_Y,
+            Feature.OUR_BREAK_GF,
+            Feature.OUR_BREAK_BEARING_OFFSET,
+            Feature.THEIR_BREAK_TICK,
+            Feature.THEIR_BREAK_OUR_X,
+            Feature.THEIR_BREAK_OUR_Y,
+            Feature.THEIR_BREAK_GF,
+            Feature.THEIR_BREAK_BEARING_OFFSET);
+
     private static final class FeatureStats {
         int checks;
         int mismatches;
     }
 
     private final EnumMap<Feature, FeatureStats> stats = new EnumMap<>(Feature.class);
+    private int unexpectedMismatches;
+    private int waivedMismatches;
 
     /**
      * Per-wave-column fidelity stats, keyed by the wave column name (the part of
@@ -97,13 +121,20 @@ public final class Layer0DebugFidelityValidator {
         // alive-wave path because a resolved wave has already left the alive set.
         observerWb.forEachJustResolvedWaveBreak(observerWaves::put);
 
+        int tickFeatureMismatches = 0;
+        int tickScanFeatureMismatches = 0;
+        int tickScanTimingDerivedMismatches = 0;
+        int tickUnexpectedFeatureMismatches = 0;
+        int tickWaveMismatches = 0;
+        boolean tickHasScanTimingSignal = false;
+
         for (IDebugProperty prop : props) {
             String key = prop.getKey();
 
             // Wave properties use a COLUMN/waveId key; validate them separately and
             // consume the matching observer entry.
             if (key.indexOf('/') >= 0) {
-                validateWaveProperty(key, prop.getValue(), observerWaves);
+                tickWaveMismatches += validateWaveProperty(key, prop.getValue(), observerWaves);
                 continue;
             }
 
@@ -132,17 +163,17 @@ public final class Layer0DebugFidelityValidator {
             FeatureStats s = stats.computeIfAbsent(feature, k -> new FeatureStats());
             s.checks++;
 
-            if (Double.isNaN(debug) && Double.isNaN(wbValue)) {
-                continue; // both NaN = match
-            }
-
-            if (Double.isNaN(debug) || Double.isNaN(wbValue)) {
+            if (valuesMismatch(debug, wbValue)) {
                 s.mismatches++;
-                continue;
-            }
-
-            if (Math.abs(debug - wbValue) > EPSILON) {
-                s.mismatches++;
+                tickFeatureMismatches++;
+                if (SCAN_UNCERTAIN_FEATURES.contains(feature)) {
+                    tickScanFeatureMismatches++;
+                    tickHasScanTimingSignal |= feature == Feature.SCAN_TICK || feature == Feature.TICKS_SINCE_SCAN;
+                } else if (SCAN_TIMING_DERIVED_FEATURES.contains(feature)) {
+                    tickScanTimingDerivedMismatches++;
+                } else {
+                    tickUnexpectedFeatureMismatches++;
+                }
             }
         }
 
@@ -152,6 +183,23 @@ public final class Layer0DebugFidelityValidator {
             FeatureStats s = waveStats.computeIfAbsent(waveColumn(e.getKey()), k -> new FeatureStats());
             s.checks++;
             s.mismatches++;
+            tickWaveMismatches++;
+        }
+
+        int tickMismatches = tickFeatureMismatches + tickWaveMismatches;
+        if (tickMismatches == 0) {
+            return;
+        }
+
+        boolean scanTimingOnly = tickWaveMismatches == 0
+                && tickUnexpectedFeatureMismatches == 0
+                && tickScanFeatureMismatches > 0
+                && tickHasScanTimingSignal
+                && tickScanFeatureMismatches + tickScanTimingDerivedMismatches == tickFeatureMismatches;
+        if (scanTimingOnly) {
+            waivedMismatches += tickMismatches;
+        } else {
+            unexpectedMismatches += tickMismatches;
         }
     }
 
@@ -160,7 +208,7 @@ public final class Layer0DebugFidelityValidator {
      * observer wave property, consuming it from {@code observerWaves}. A wave id
      * present on only one side is a mismatch (wave lifetime / break-tick drift).
      */
-    private void validateWaveProperty(String key, String liveValueStr,
+    private int validateWaveProperty(String key, String liveValueStr,
             Map<String, String> observerWaves) {
         FeatureStats s = waveStats.computeIfAbsent(waveColumn(key), k -> new FeatureStats());
         s.checks++;
@@ -168,24 +216,29 @@ public final class Layer0DebugFidelityValidator {
         String obsValueStr = observerWaves.remove(key);
         if (obsValueStr == null) {
             s.mismatches++;
-            return;
+            return 1;
         }
 
         double debug = parseDebug(liveValueStr);
         double wbValue = parseDebug(obsValueStr);
 
+        if (valuesMismatch(debug, wbValue)) {
+            s.mismatches++;
+            return 1;
+        }
+        return 0;
+    }
+
+    private static boolean valuesMismatch(double debug, double wbValue) {
         if (Double.isNaN(debug) && Double.isNaN(wbValue)) {
-            return; // both NaN = match
+            return false;
         }
 
         if (Double.isNaN(debug) || Double.isNaN(wbValue)) {
-            s.mismatches++;
-            return;
+            return true;
         }
 
-        if (Math.abs(debug - wbValue) > EPSILON) {
-            s.mismatches++;
-        }
+        return Math.abs(debug - wbValue) > EPSILON;
     }
 
     /** Column name portion of a {@code COLUMN/waveId} wave-property key. */
@@ -234,39 +287,17 @@ public final class Layer0DebugFidelityValidator {
     }
 
     /**
-     * Mismatches that should fail Layer 0 after removing the one known
-     * snapshot-pure ambiguity: a zero-width radar sweep where DeJavu marks scan
-     * presence as uncertain. The scan fields are exact, but whether Robocode
-     * delivered that scan is not recoverable from snapshots alone.
+    * Mismatches that should fail Layer 0 after removing only the known
+    * snapshot-pure ambiguity where scan delivery timing is not recoverable from
+    * snapshots. Waivers are classified per validation tick, not by aggregate
+    * feature totals.
      */
     public int getUnexpectedMismatches() {
-        int raw = getMismatches();
-        if (raw == 0 || hasWaveMismatches()) {
-            return raw;
-        }
-
-        int scanFeatureMismatches = 0;
-        for (Map.Entry<Feature, FeatureStats> entry : stats.entrySet()) {
-            int mismatches = entry.getValue().mismatches;
-            if (mismatches == 0) {
-                continue;
-            }
-            if (!SCAN_UNCERTAIN_FEATURES.contains(entry.getKey()) || mismatches > 1) {
-                return raw;
-            }
-            scanFeatureMismatches += mismatches;
-        }
-
-        return scanFeatureMismatches == raw ? 0 : raw;
+        return unexpectedMismatches;
     }
 
-    private boolean hasWaveMismatches() {
-        for (FeatureStats s : waveStats.values()) {
-            if (s.mismatches > 0) {
-                return true;
-            }
-        }
-        return false;
+    public int getWaivedMismatches() {
+        return waivedMismatches;
     }
 
     /** Total comparisons performed across all features. */
@@ -305,6 +336,10 @@ public final class Layer0DebugFidelityValidator {
     public void printSummary() {
         System.out.println("=== Layer 0 — IDebugProperty Fidelity ===");
         System.out.printf("  Checks: %d, Mismatches: %d%n", getChecks(), getMismatches());
+        if (unexpectedMismatches > 0 || waivedMismatches > 0) {
+            System.out.printf("  Unexpected mismatches: %d, waived scan-timing mismatches: %d%n",
+                unexpectedMismatches, waivedMismatches);
+        }
         for (var entry : stats.entrySet()) {
             if (entry.getValue().mismatches > 0) {
                 System.out.printf("    %s: checks=%d, mismatches=%d%n",

@@ -25,7 +25,7 @@ import cz.zamboch.autopilot.core.Whiteboard;
  * that {@code FireFeatures} then misclassifies as enemy fire.</li>
  * <li><b>Proximity at wall</b> — opponent center is within
  * {@code WALL_MARGIN + WALL_TOLERANCE} of an edge and the previous-scan
- * velocity component pointed at it. Charge {@code wallDamage(prevSpeedTowardWall)}.
+ * velocity component pointed at it. Charge {@code wallDamage(absPrevV)}.
  * This catches the steady-state "pinned to wall" case where the velocity
  * collapse already happened in an earlier scan window.</li>
  * </ol>
@@ -190,16 +190,16 @@ public final class WallHitEstimator implements IInGameFeatures {
         double proximityDamage = 0;
         if (absCurrV < STOP_TOLERANCE) {
             if (opX <= WALL_MARGIN + WALL_TOLERANCE && vx < 0) {
-                proximityDamage = Math.max(proximityDamage, wallDamage(-vx));
+                proximityDamage = Math.max(proximityDamage, wallDamage(absPrevV));
             }
             if (opX >= bfWidth - WALL_MARGIN - WALL_TOLERANCE && vx > 0) {
-                proximityDamage = Math.max(proximityDamage, wallDamage(vx));
+                proximityDamage = Math.max(proximityDamage, wallDamage(absPrevV));
             }
             if (opY <= WALL_MARGIN + WALL_TOLERANCE && vy < 0) {
-                proximityDamage = Math.max(proximityDamage, wallDamage(-vy));
+                proximityDamage = Math.max(proximityDamage, wallDamage(absPrevV));
             }
             if (opY >= bfHeight - WALL_MARGIN - WALL_TOLERANCE && vy > 0) {
-                proximityDamage = Math.max(proximityDamage, wallDamage(vy));
+                proximityDamage = Math.max(proximityDamage, wallDamage(absPrevV));
             }
         }
 

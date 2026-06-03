@@ -109,18 +109,5 @@ public enum Provenance {
      * engine-visible value &mdash; this flag merely records that the remap
      * occurred. Tick-level.
      */
-    DUPLICATE_ID,
-
-    /**
-     * The ground-truth realized-turn / move oracle (the per-tick decrement of the
-     * captured {@code IExecCommands} {@code get*TurnRemaining()} /
-     * {@code getDistanceRemaining()} counters) could not be used to corroborate the
-     * reconstructed command on this tick, because the counter was reset by a fresh
-     * actuator command issued the same tick (or the turn completed within a single
-     * tick), so the {@code prev - cur} remaining delta no longer equals the realized
-     * rotation/move. The reconstructed command is still cross-checked against the
-     * snapshot-realized physical effect on these ticks; this flag records that the
-     * stronger independent oracle was unavailable. Tick-level.
-     */
-    COMMAND_ORACLE_UNCERTAIN
+    DUPLICATE_ID
 }

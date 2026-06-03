@@ -159,8 +159,8 @@ public final class ObserverContext {
 
         double debugTick = debugValue(props, "TICK");
         double lastScanTick = debugValue(props, Feature.SCAN_TICK.name());
-        if (Double.isNaN(debugTick) || Double.isNaN(lastScanTick) || Math.abs(debugTick - events.getTurn()) > 1e-4
-                || Math.abs(lastScanTick - events.getTurn()) <= 1e-4) {
+        if (Double.isNaN(debugTick) || Math.abs(debugTick - events.getTurn()) > 1e-4
+            || (!Double.isNaN(lastScanTick) && Math.abs(lastScanTick - events.getTurn()) <= 1e-4)) {
             return events;
         }
 

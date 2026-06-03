@@ -223,8 +223,9 @@ final class BattleLoopTest {
 
         // --- Layer 0: IDebugProperty fidelity (ALL features, incl. breaks) ---
         int debugMismatches = layer0.getMismatches();
-        System.out.println(String.format("Layer 0 debug property mismatches: %d (checks=%d)",
-                debugMismatches, layer0.getChecks()));
+        System.out.println(String.format(
+            "Layer 0 debug property mismatches: %d (unexpected=%d, waivedScanTiming=%d, checks=%d)",
+            debugMismatches, layer0.getUnexpectedMismatches(), layer0.getWaivedMismatches(), layer0.getChecks()));
 
         // --- PipelineValidator: energy accounting (quality metric) ---
         int energyDisc0 = validator.getEnergyDiscrepancies(0);
@@ -415,6 +416,8 @@ final class BattleLoopTest {
 
         int l0Checks;
         int l0Mismatches;
+        int l0UnexpectedMismatches;
+        int l0WaivedMismatches;
         int l0WaveOther; // mismatches not attributed to an enum feature (wave-column drift)
         final List<FeatureDrift> l0Features = new ArrayList<>();
 
@@ -463,6 +466,8 @@ final class BattleLoopTest {
         // Layer 0 — IDebugProperty fidelity, per feature.
         r.l0Checks = layer0.getChecks();
         r.l0Mismatches = layer0.getMismatches();
+        r.l0UnexpectedMismatches = layer0.getUnexpectedMismatches();
+        r.l0WaivedMismatches = layer0.getWaivedMismatches();
         int l0FeatureMismatchSum = 0;
         for (Feature f : Feature.values()) {
             int checks = layer0.getChecks(f);
@@ -557,11 +562,12 @@ final class BattleLoopTest {
         // --- Layer 0 ---
         md.append("## Layer 0 — IDebugProperty Fidelity\n\n");
         md.append("Observer-vs-live debug-property match, every feature, every tick.\n\n");
-        md.append("| Opponent | Checks | Mismatches | Match rate |\n");
-        md.append("|---|---:|---:|---:|\n");
+        md.append("| Opponent | Checks | Mismatches | Unexpected | Waived scan-timing | Match rate |\n");
+        md.append("|---|---:|---:|---:|---:|---:|\n");
         for (OppReport r : REPORTS) {
-            md.append(String.format("| %s | %d | %d | %s |%n",
-                    r.opponent, r.l0Checks, r.l0Mismatches, matchRate(r.l0Checks, r.l0Mismatches)));
+            md.append(String.format("| %s | %d | %d | %d | %d | %s |%n",
+                r.opponent, r.l0Checks, r.l0Mismatches, r.l0UnexpectedMismatches,
+                r.l0WaivedMismatches, matchRate(r.l0Checks, r.l0Mismatches)));
         }
         md.append('\n');
         md.append("### Layer 0 — drift by feature\n\n");
