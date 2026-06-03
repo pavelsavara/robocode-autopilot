@@ -320,11 +320,6 @@ final class BattleLoopTest {
                 assertTrue(rate >= 0.8,
                         "vs Aggressive: incoming-fire detection rate should be >= 80%, was " + rate);
                 break;
-            case "xander.cat.XanderCat":
-                // XanderCat frequently overlaps bullet fire with movement/energy noise;
-                // keep reporting the rate, but do not make this reconstruction fidelity
-                // test fail on the detector quality metric.
-                break;
             default:
                 assertTrue(rate >= 0.9,
                         "Incoming-fire detection rate should be >= 90%, was " + rate);

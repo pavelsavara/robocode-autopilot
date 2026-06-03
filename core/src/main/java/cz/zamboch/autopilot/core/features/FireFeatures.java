@@ -23,6 +23,10 @@ import cz.zamboch.autopilot.core.Whiteboard;
  * symmetric −0.6 collision loss alone correctly rejects pure-ram scenarios.
  */
 public final class FireFeatures implements IInGameFeatures {
+    private static final double MIN_FIRE_POWER = 0.1;
+    private static final double MAX_FIRE_POWER = 3.0;
+    private static final double FIRE_POWER_EPSILON = 1e-9;
+
     private double lastProcessedTick = Double.NaN;
 
     private static final Feature[] DEPS = {
@@ -80,8 +84,10 @@ public final class FireFeatures implements IInGameFeatures {
 
             double adjustedDrop = drop - bulletDmg - ramDmg - wallDmg + bulletGain;
 
-            if (adjustedDrop >= 0.1 && adjustedDrop <= 3.0) {
-                wb.setFeature(Feature.THEIR_FIRE_POWER, adjustedDrop);
+            if (adjustedDrop >= MIN_FIRE_POWER - FIRE_POWER_EPSILON
+                    && adjustedDrop <= MAX_FIRE_POWER + FIRE_POWER_EPSILON) {
+                double firePower = Math.max(MIN_FIRE_POWER, Math.min(MAX_FIRE_POWER, adjustedDrop));
+                wb.setFeature(Feature.THEIR_FIRE_POWER, firePower);
             } else {
                 wb.setFeature(Feature.THEIR_FIRE_POWER, Double.NaN);
             }

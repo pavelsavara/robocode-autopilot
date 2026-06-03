@@ -226,16 +226,14 @@ final class FireFeaturesTest {
         wb.setFeature(Feature.OPPONENT_ENERGY, 100.0);
         wb.process();
 
-        // Minimum fire power = 0.1 — use subtraction that avoids FP rounding
+        // Minimum fire power = 0.1, represented just below the threshold after
+        // binary floating-point subtraction.
         wb.setFeature(Feature.TICK, 3);
         wb.setFeature(Feature.SCAN_TICK, 3);
-        wb.setFeature(Feature.OPPONENT_ENERGY, 100.0 - 0.1); // exact 99.9 literal
+        wb.setFeature(Feature.OPPONENT_ENERGY, 99.9);
         wb.process();
 
-        // 100.0 - 99.9 has FP rounding (~0.0999...) which is < 0.1
-        // This reveals that the detector can miss minimum-power fires due to FP
-        // Just below threshold → no detection
-        assertTrue(Double.isNaN(wb.getFeature(Feature.THEIR_FIRE_POWER)));
+        assertEquals(0.1, wb.getFeature(Feature.THEIR_FIRE_POWER), 1e-9);
     }
 
     @Test
