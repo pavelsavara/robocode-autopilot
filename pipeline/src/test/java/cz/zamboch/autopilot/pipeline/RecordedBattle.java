@@ -19,14 +19,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Loads a recorded battle fixture (produced by {@link SnapshotFixtureWriter})
- * from the test classpath and exposes it for offline replay.
+ * Loads a recorded battle fixture from the test classpath and exposes it for
+ * offline replay.
  * <p>
  * Each tick carries both the engine's authoritative {@link ITurnSnapshot}
  * (positions, kinematics, bullet states) and the live {@code Autopilot}'s
  * published debug properties for that turn. Because the live robot derived
  * those properties from the <i>real</i> Robocode events it received, replaying
- * the snapshots through {@link EventReconstructor} and comparing the result
+ * the snapshots through the observer pipeline and comparing the result
  * against the live properties grounds the assertions in engine behavior rather
  * than in the production code's own re-stated formulas.
  */

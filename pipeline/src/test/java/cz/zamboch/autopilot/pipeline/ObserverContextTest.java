@@ -3,11 +3,14 @@ package cz.zamboch.autopilot.pipeline;
 import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.Whiteboard;
 import net.sf.robocode.security.HiddenAccess;
+import net.sf.robocode.dejavu.model.Provenance;
+import net.sf.robocode.dejavu.model.TickEvents;
 import robocode.*;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import java.util.EnumSet;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -40,7 +43,7 @@ final class ObserverContextTest {
                 95, 400, 300, 0.5, 0.3, 0.2, 4.0,
                 0, 0, 0, 0,
                 1.5, 1, 0, 0, 1, 5);
-        TickEvents events = new TickEvents(List.of(new StatusEvent(status)));
+        TickEvents events = tickEvents(5, List.of(new StatusEvent(status)));
         ctx.feedEvents(events);
         ctx.doTurn();
 
@@ -63,7 +66,7 @@ final class ObserverContextTest {
         ScannedRobotEvent scan = new ScannedRobotEvent(
                 "enemy.Bot", 80.0, Math.toRadians(30), 200.0, Math.toRadians(90), 5.0, false);
 
-        TickEvents events = new TickEvents(List.of(new StatusEvent(status), scan));
+        TickEvents events = tickEvents(1, List.of(new StatusEvent(status), scan));
         ctx.feedEvents(events);
         ctx.doTurn();
 
@@ -81,7 +84,7 @@ final class ObserverContextTest {
                 100, 400, 300, Math.toRadians(45), 0, 0, 6.0,
                 0, 0, 0, 0,
                 0, 1, 0, 0, 1, 1);
-        TickEvents events = new TickEvents(List.of(new StatusEvent(status)));
+        TickEvents events = tickEvents(1, List.of(new StatusEvent(status)));
         ctx.feedEvents(events);
         ctx.doTurn();
 
@@ -102,7 +105,7 @@ final class ObserverContextTest {
                 0, 0, 0, 0,
                 0, 1, 0, 0, 1, 5);
         DeathEvent death = new DeathEvent();
-        TickEvents events = new TickEvents(List.of(new StatusEvent(status), death));
+        TickEvents events = tickEvents(5, List.of(new StatusEvent(status), death));
         ctx.feedEvents(events);
         ctx.doTurn();
 
@@ -113,7 +116,7 @@ final class ObserverContextTest {
                 0, 400, 300, 0, 0, 0, 0,
                 0, 0, 0, 0,
                 0, 1, 0, 0, 1, 6);
-        TickEvents events2 = new TickEvents(List.of(new StatusEvent(status2)));
+        TickEvents events2 = tickEvents(6, List.of(new StatusEvent(status2)));
         ctx.feedEvents(events2);
         ctx.doTurn();
 
@@ -130,7 +133,7 @@ final class ObserverContextTest {
                 0, 400, 300, 0, 0, 0, 0,
                 0, 0, 0, 0,
                 0, 1, 0, 0, 1, 5);
-        TickEvents events = new TickEvents(List.of(new StatusEvent(status), new DeathEvent()));
+        TickEvents events = tickEvents(5, List.of(new StatusEvent(status), new DeathEvent()));
         ctx.feedEvents(events);
         ctx.doTurn(); // death is deferred until doTurn completes
         assertTrue(ctx.isDead());
@@ -138,5 +141,9 @@ final class ObserverContextTest {
         // Reset round
         ctx.resetRound();
         assertFalse(ctx.isDead());
+    }
+
+    private static TickEvents tickEvents(long turn, List<Event> events) {
+        return new TickEvents(turn, events, EnumSet.noneOf(Provenance.class));
     }
 }

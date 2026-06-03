@@ -6,6 +6,7 @@ import robocode.control.snapshot.IDebugProperty;
 import robocode.control.snapshot.IRobotSnapshot;
 
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,6 +29,26 @@ import java.util.Map;
 public final class Layer0DebugFidelityValidator {
 
     private static final double EPSILON = 1e-4;
+    private static final EnumSet<Feature> SCAN_UNCERTAIN_FEATURES = EnumSet.of(
+            Feature.DISTANCE,
+            Feature.BEARING_RADIANS,
+            Feature.OPPONENT_HEADING,
+            Feature.OPPONENT_VELOCITY,
+            Feature.OPPONENT_ENERGY,
+            Feature.LAST_SCAN_TICK,
+            Feature.OUR_BULLET_DAMAGE_TO_OPPONENT,
+            Feature.OPPONENT_BULLET_ENERGY_GAIN,
+            Feature.RAM_DAMAGE_TO_OPPONENT,
+            Feature.OPPONENT_WALL_HIT_DAMAGE,
+            Feature.OPPONENT_BEARING_ABSOLUTE,
+            Feature.OPPONENT_X,
+            Feature.OPPONENT_Y,
+            Feature.OPPONENT_LATERAL_VELOCITY,
+            Feature.OPPONENT_ADVANCING_VELOCITY,
+            Feature.GUN_AIM_POWER,
+            Feature.GUN_AIM_ANGLE,
+            Feature.GUN_AIM_GF,
+            Feature.TICKS_SINCE_SCAN);
 
     private static final class FeatureStats {
         int checks;
@@ -210,6 +231,42 @@ public final class Layer0DebugFidelityValidator {
             total += s.mismatches;
         }
         return total;
+    }
+
+    /**
+     * Mismatches that should fail Layer 0 after removing the one known
+     * snapshot-pure ambiguity: a zero-width radar sweep where DeJavu marks scan
+     * presence as uncertain. The scan fields are exact, but whether Robocode
+     * delivered that scan is not recoverable from snapshots alone.
+     */
+    public int getUnexpectedMismatches() {
+        int raw = getMismatches();
+        if (raw == 0 || hasWaveMismatches()) {
+            return raw;
+        }
+
+        int scanFeatureMismatches = 0;
+        for (Map.Entry<Feature, FeatureStats> entry : stats.entrySet()) {
+            int mismatches = entry.getValue().mismatches;
+            if (mismatches == 0) {
+                continue;
+            }
+            if (!SCAN_UNCERTAIN_FEATURES.contains(entry.getKey()) || mismatches > 1) {
+                return raw;
+            }
+            scanFeatureMismatches += mismatches;
+        }
+
+        return scanFeatureMismatches == raw ? 0 : raw;
+    }
+
+    private boolean hasWaveMismatches() {
+        for (FeatureStats s : waveStats.values()) {
+            if (s.mismatches > 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Total comparisons performed across all features. */

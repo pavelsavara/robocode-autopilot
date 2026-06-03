@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * that FireFeatures + TheirWaveTracker produce inside ObserverContext.
  * These detect opponent firing via energy drop on scan.
  *
- * Key requirement: EventReconstructor needs radar to MOVE between ticks to
+ * Key requirement: replay reconstruction needs radar to MOVE between ticks to
  * generate ScannedRobotEvents. The first tick never generates a scan
  * (prevRadarHeading=NaN).
  * So we need 3 ticks minimum: tick 0 (sets prevRadarHeading), tick 1 (first

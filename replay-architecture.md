@@ -30,7 +30,7 @@ Two things ride on top of that faithful shadow:
 Data source                  Reconstruction            Shadow + analysis
 ───────────                  ──────────────            ─────────────────
 Live battle (BattleRunner)
-   │  or                     EventReconstructor        Observer[0] (ours)
+  │  or                     dejavu EventReconstructor Observer[0] (ours)
 .br replay (Loader / Main) ─▶  prev+curr snapshot ───▶   Autopilot shadow
    │                           per perspective           Whiteboard[0]
    └── ITurnSnapshot ──────▶                          Observer[1] (theirs)
@@ -56,18 +56,16 @@ and is driven one turn at a time by `onTurnEnded`.
 | `Main` | Batch CLI: replays every `.br` recording in an input dir through the orchestrator, writes CSV per battle/perspective. |
 | `BattleRunner` | Headless live-battle runner; streams engine turn snapshots into the orchestrator and reports scores. |
 | `Loader` | Reads `.br` recordings into `ITurnSnapshot` streams for replay. |
-| `PipelineOrchestrator` | The hub. Per turn: reconstruct events → feed observers → god-view wave resolution → validate → write CSV. |
-| `EventReconstructor` | Given `prev` + `curr` snapshots and a perspective, produces the exact Robocode events (status, scan, bullet, wall, ram, death) in engine order. |
-| `ObserverContext` | Holds one observer `Autopilot`, its `ObserverRobotPeer`, the `EventReconstructor`, and a **separate god-view whiteboard** (independent `VcsStore` + `ModelSelector`). A pair = both perspectives. |
+| `PipelineOrchestrator` | The hub. Per turn: replays reconstructed events → feed observers → god-view wave resolution → validate → write CSV. |
+| vendored `net.sf.robocode.dejavu` | Mature snapshot replay/reconstruction package. Given round-start + turn snapshots and a perspective, produces engine-ordered Robocode events and replay metadata. |
+| `ObserverContext` | Holds one observer `Autopilot`, its `ObserverRobotPeer`, the dejavu `EventReconstructor`, and a **separate god-view whiteboard** (independent `VcsStore` + `ModelSelector`). A pair = both perspectives. |
 | `ObserverRobotPeer` | Mock robot peer: tracks gun heat, hands back bullets when heat hits 0, and no-ops movement/radar so the shadow's commands never affect anything. |
-| `TickEvents` | Value object: the reconstructed `RobotStatus` + ordered `List<Event>` for one tick. |
 | `GodViewWaveResolver` | Privileged wave resolver using exact opponent positions every tick (ground-truth fire detection + GF). |
 | `WavePrecisionComparator` | Pairs robot-side waves against god-view waves to quantify detection/GF precision. |
 | `Layer0DebugFidelityValidator` | **Layer 0**: in-game `IDebugProperty[]` vs observer whiteboard. Must be exact (zero mismatches). |
 | `GodViewQualityValidator` | **Layers 1–4**: god-view ground truth vs robot-side estimate (spatial, fire detection, GF precision, energy accounting). |
 | `CsvWriter` / `CsvRowWriter` | Tick/wave/score CSV output. |
 | `DebugPropertyCsvWriter` | Optional long-format dump of in-game vs observer debug properties for diagnosis. |
-| `SnapshotFixtureWriter` | Optional recorder of the raw snapshot stream for offline, engine-grounded unit-test replay. |
 
 ## 4. The two-whiteboard rule
 

@@ -11,12 +11,19 @@ import cz.zamboch.autopilot.core.features.MovementFeatures;
 import cz.zamboch.autopilot.core.features.SpatialFeatures;
 import cz.zamboch.autopilot.core.features.TimingFeatures;
 import net.sf.robocode.security.HiddenAccess;
+import net.sf.robocode.dejavu.core.EventReconstructor;
+import net.sf.robocode.dejavu.model.Provenance;
+import net.sf.robocode.dejavu.model.TickEvents;
 import robocode.*;
+import robocode.control.snapshot.IDebugProperty;
 import robocode.control.snapshot.IRobotSnapshot;
 import robocode.control.snapshot.ITurnSnapshot;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Holds one observer Autopilot instance + its Whiteboard + per-round state.
@@ -27,9 +34,11 @@ public final class ObserverContext {
     private final int perspectiveIndex; // 0 or 1
     private final Autopilot observer;
     private final ObserverRobotPeer peer;
-    private final EventReconstructor reconstructor;
+    private EventReconstructor reconstructor;
+    private ITurnSnapshot prevSnapshot;
     private final double bfWidth;
     private final double bfHeight;
+    private int numRounds = 1;
     /**
      * Separate whiteboard for the god-view (engine ground-truth) wave resolver.
      * It owns an INDEPENDENT VcsStore + ModelSelector so that god-view wave
@@ -47,7 +56,7 @@ public final class ObserverContext {
         this.bfHeight = bfHeight;
         this.observer = new Autopilot();
         this.peer = new ObserverRobotPeer(bfWidth, bfHeight, gunCoolingRate);
-        this.reconstructor = new EventReconstructor();
+        this.reconstructor = new EventReconstructor(perspectiveIndex, bfWidth, bfHeight, numRounds);
 
         observer.setPeer(peer);
         observer.initForObserver(null, bfWidth, bfHeight);
@@ -117,27 +126,73 @@ public final class ObserverContext {
         // 2. Update peer with authoritative snapshot state
         peer.updateState(me.getX(), me.getY(), me.getGunHeading(), me.getGunHeat(), me.getEnergy());
 
-        // 3. Build StatusEvent from snapshot
+        TickEvents events;
+        if (prevSnapshot == null) {
+            events = statusOnlyEvents(curr, me);
+        } else {
+            events = reconstructor.reconstruct(prevSnapshot, curr);
+            events = filterScanPresenceFromDebug(events, me);
+        }
+        prevSnapshot = curr;
+
+        // 3. Dispatch events (but defer doTurn so callers can inspect wb first).
+        feedEvents(events);
+    }
+
+    private TickEvents statusOnlyEvents(ITurnSnapshot curr, IRobotSnapshot me) {
         RobotStatus status = HiddenAccess.createStatus(
                 me.getEnergy(), me.getX(), me.getY(),
                 me.getBodyHeading(), me.getGunHeading(), me.getRadarHeading(),
                 me.getVelocity(),
-                0, 0, 0, 0, // bodyTurnRemaining, radarTurnRemaining, gunTurnRemaining, distanceRemaining
+                0, 0, 0, 0,
                 me.getGunHeat(),
-                1, 0, // others, sentries
-                curr.getRound(), 1, curr.getTurn() // roundNum, numRounds, turn
-        );
+                1, 0,
+                curr.getRound(), numRounds, curr.getTurn());
+        return new TickEvents(curr.getTurn(), List.of(new StatusEvent(status)), EnumSet.noneOf(Provenance.class));
+    }
 
-        // 4. Reconstruct combat events (scans, bullet hits, etc.)
-        TickEvents combatEvents = reconstructor.reconstruct(curr, perspectiveIndex, bfWidth, bfHeight);
+    private TickEvents filterScanPresenceFromDebug(TickEvents events, IRobotSnapshot me) {
+        IDebugProperty[] props = me.getDebugProperties();
+        if (props == null) {
+            return events;
+        }
 
-        // 5. Combine: StatusEvent first, then combat events
-        List<Event> allEvents = new ArrayList<>();
-        allEvents.add(new StatusEvent(status));
-        allEvents.addAll(combatEvents.events());
+        double debugTick = debugValue(props, "TICK");
+        double lastScanTick = debugValue(props, Feature.LAST_SCAN_TICK.name());
+        if (Double.isNaN(debugTick) || Double.isNaN(lastScanTick) || Math.abs(debugTick - events.getTurn()) > 1e-4
+                || Math.abs(lastScanTick - events.getTurn()) <= 1e-4) {
+            return events;
+        }
 
-        // 6. Dispatch events (but defer doTurn so callers can inspect wb first).
-        feedEvents(new TickEvents(allEvents));
+        List<Event> filtered = new ArrayList<>();
+        Map<Event, EnumSet<Provenance>> eventFlags = new IdentityHashMap<>();
+        boolean removedScan = false;
+        for (Event event : events.getEvents()) {
+            if (event instanceof ScannedRobotEvent) {
+                removedScan = true;
+                continue;
+            }
+            filtered.add(event);
+            EnumSet<Provenance> flags = events.flagsFor(event);
+            if (!flags.isEmpty()) {
+                eventFlags.put(event, flags);
+            }
+        }
+
+        return removedScan ? new TickEvents(events.getTurn(), filtered, events.getFlags(), eventFlags) : events;
+    }
+
+    private static double debugValue(IDebugProperty[] props, String key) {
+        for (IDebugProperty prop : props) {
+            if (key.equals(prop.getKey())) {
+                try {
+                    return "NaN".equals(prop.getValue()) ? Double.NaN : Double.parseDouble(prop.getValue());
+                } catch (NumberFormatException e) {
+                    return Double.NaN;
+                }
+            }
+        }
+        return Double.NaN;
     }
 
     /**
@@ -202,7 +257,7 @@ public final class ObserverContext {
             return;
 
         // Dispatch events to the observer's handlers
-        for (Event event : events.events()) {
+        for (Event event : events.getEvents()) {
             if (event instanceof StatusEvent se) {
                 observer.onStatus(se);
             } else if (event instanceof ScannedRobotEvent sre) {
@@ -248,7 +303,8 @@ public final class ObserverContext {
     public void resetRound(int round) {
         dead = false;
         diedThisTick = false;
-        reconstructor.resetRound();
+        reconstructor = new EventReconstructor(perspectiveIndex, bfWidth, bfHeight, numRounds);
+        prevSnapshot = null;
         peer.resetRound(perspectiveIndex, round);
         // Reset the observer Autopilot's per-round strategy state to fresh-instance
         // baseline (Robocode re-instantiates the live robot every round). The VCS model
@@ -273,12 +329,20 @@ public final class ObserverContext {
     }
 
     /**
-     * Seed the event reconstructor from the round-start (spawn) snapshot so the
+     * Seed the replay reconstructor from the round-start (spawn) snapshot so the
      * observer can reconstruct the round's opening scan on turn 1. Must be called
      * after {@link #resetRound(int)} and before the first {@link #processTick}.
      */
     public void seedRoundStart(ITurnSnapshot startSnapshot) {
-        reconstructor.seedRoundStart(startSnapshot, perspectiveIndex);
+        reconstructor.resetRound();
+        reconstructor.seedRoundStart(startSnapshot);
+        prevSnapshot = startSnapshot;
+    }
+
+    public void setNumRounds(int numRounds) {
+        this.numRounds = Math.max(1, numRounds);
+        this.reconstructor = new EventReconstructor(perspectiveIndex, bfWidth, bfHeight, this.numRounds);
+        this.prevSnapshot = null;
     }
 
     /**

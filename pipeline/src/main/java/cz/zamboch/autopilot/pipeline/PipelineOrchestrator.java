@@ -3,6 +3,7 @@ package cz.zamboch.autopilot.pipeline;
 import cz.zamboch.Autopilot;
 import cz.zamboch.autopilot.core.Feature;
 import robocode.control.events.BattleAdaptor;
+import robocode.control.events.BattleStartedEvent;
 import robocode.control.events.RoundStartedEvent;
 import robocode.control.events.TurnEndedEvent;
 import robocode.control.snapshot.IRobotSnapshot;
@@ -13,7 +14,7 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * Wires EventReconstructor → Observers → CSV.
+ * Wires snapshot replay → Observers → CSV.
  * <p>
  * Implements the observer pipeline: for each turn, reconstructs events from
  * both
@@ -32,7 +33,6 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
     private String battleId;
     private DebugPropertyCsvWriter debugCsv; // optional IDebugProperty fidelity dump, nullable
     private TheirFireTraceWriter theirFireTrace; // optional per-event their-fire trace, nullable
-    private SnapshotFixtureWriter snapshotFixtureWriter; // optional engine-grounded test fixture recorder, nullable
     private int currentRound = -1;
     private double lastValidatorTheirFireTick = Double.NaN;
     private final double[] lastValidatorBreakTick = { Double.NaN, Double.NaN };
@@ -74,15 +74,6 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
         }
     }
 
-    /**
-     * Attach a snapshot fixture recorder that captures the raw turn-snapshot stream
-     * for offline, engine-grounded unit-test replay. May be null when the
-     * {@code record.fixture.dir} property is unset (the default).
-     */
-    public void setSnapshotFixtureWriter(SnapshotFixtureWriter snapshotFixtureWriter) {
-        this.snapshotFixtureWriter = snapshotFixtureWriter;
-    }
-
     public void setValidator(GodViewQualityValidator validator) {
         this.validator = validator;
     }
@@ -110,9 +101,17 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
         }
     }
 
+    @Override
+    public void onBattleStarted(BattleStartedEvent event) {
+        int rounds = event.getBattleRules() != null ? event.getBattleRules().getNumRounds() : 1;
+        for (ObserverContext ctx : observers) {
+            ctx.setNumRounds(rounds);
+        }
+    }
+
     /**
      * Live-mode hook: fired before each round's first turn. Resets per-round state
-     * and seeds the event reconstructors from the spawn snapshot so the observer
+    * and seeds the replay reconstructors from the spawn snapshot so the observer
      * can reconstruct the round's opening scan on turn 1 (the engine sweeps the
      * radar from the spawn heading on turn 1; without it the observer misses that
      * first scan). Sets {@code currentRound} so {@link #processTurn} does not reset
@@ -132,9 +131,6 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
         if (start != null) {
             for (ObserverContext ctx : observers) {
                 ctx.seedRoundStart(start);
-            }
-            if (snapshotFixtureWriter != null) {
-                snapshotFixtureWriter.writeSpawn(start);
             }
         }
     }
@@ -158,10 +154,6 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
             }
             resetRound(round);
             currentRound = round;
-        }
-
-        if (snapshotFixtureWriter != null) {
-            snapshotFixtureWriter.writeTurn(curr);
         }
 
         IRobotSnapshot[] robots = curr.getRobots();
@@ -456,10 +448,6 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
         if (debugCsv != null) {
             debugCsv.close();
             debugCsv = null;
-        }
-        if (snapshotFixtureWriter != null) {
-            snapshotFixtureWriter.close();
-            snapshotFixtureWriter = null;
         }
     }
 
