@@ -41,7 +41,20 @@ final class BattleLoopTest {
 
     @ParameterizedTest(name = "vs {0}")
     @ValueSource(strings = { "test.SittingDuck", "test.Aggressive", "sample.Fire",
-            "sample.Walls", "sample.Crazy", "kc.mega.BeepBoop" })
+            "sample.Walls", "sample.Crazy", "kc.mega.BeepBoop",
+            "aaa.r.ScalarR", "jk.mega.DrussGT", "voidious.Diamond",
+            "rsalesc.mega.Knight", "rsalesc.roborio.Roborio", "lxx.Tomcat", "cb.fire.Firestarter",
+            "xander.cat.XanderCat", "oog.mega.saguaro.Saguaro", "dsekercioglu.mega.Raven",
+            "kc.serpent.WaveSerpent", "voidious.Dookious", "darkcanuck.Pris", "abc.Shadow",
+            "dsekercioglu.mega.WhiteFang", "mn.Combat", "gh.GresSuffurd", "cs.Nene",
+            "jk.melee.Neuromancer", "tjk.deBroglie", "mue.Ascendant", "davidalves.Phoenix",
+            "zyx.mega.YersiniaPestis", "darkcanuck.Holden", "Krabb.sliNk.Garm", "pez.rumble.CassiusClay",
+            "jk.precise.Wintermute", "fromHell.BlackBox", "axeBots.SilverSurfer", "florent.XSeries.X2",
+            "ar.horizon.Horizon", "florent.test.Toad", "pulsar.PulsarMax", "sheldor.mini.Foilist",
+            "cjm.chalk.Chalk", "cb.Domogled", "cs.s2.Seraphim", "ags.Midboss",
+            "dft.Cardigan", "kc.serpent.Hydra", "pez.rumble.Ali", "davidalves.Firebird",
+            "wcsv.Engineer.Engineer", "wcsv.PowerHouse.PowerHouse", "fromHell.CHCl3", "dft.Cyanide",
+            "jk.mini.CunobelinDC", "ags.rougedc.RougeDC" })
     void battleProducesCsvAndValidatesDebugProperties(String opponent) {
         // Allow system property override (single-opponent mode)
         String overrideOpponent = System.getProperty("battle.opponent");
