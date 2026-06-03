@@ -163,20 +163,18 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
         // This populates the per-tick damage accumulators on the observer
         // whiteboards (OUR_BULLET_DAMAGE_TO_OPPONENT, OPPONENT_BULLET_ENERGY_GAIN,
         // RAM_DAMAGE_TO_OPPONENT, OPPONENT_WALL_HIT_DAMAGE). Strategy/process is
-        // deferred to Phase 1c because Autopilot.doTurn resets those accumulators
-        // to 0 on every scan tick (after FireFeatures consumes them).
+        // deferred to Phase 1c because AccumulatorFeatures resets those
+        // accumulators on every scan tick after FireFeatures consumes them.
         for (ObserverContext ctx : observers) {
             ctx.processTickEvents(curr);
         }
 
         // Phase 1b/1c: Layer 2 damage-observation drift (autopilot perspective).
         // The wall-hit accumulator is produced by WallHitEstimator INSIDE doTurn
-        // (Phase 1c) and FireFeatures consumes all four accumulators there; the
-        // scan-tick reset then zeroes them. So the only point where the wall
-        // channel holds its true per-tick value is post-process / pre-reset.
-        // Autopilot snapshots the accumulators at exactly that point; read the
-        // snapshot AFTER doTurn so the wall channel reflects the robot-side
-        // estimate (instead of the structural 0 it read pre-doTurn before).
+        // (Phase 1c), FireFeatures consumes all four accumulators there, and
+        // AccumulatorFeatures copies them into the current SCAN row before reset.
+        // Read Autopilot's post-doTurn snapshot so the wall channel reflects the
+        // robot-side estimate instead of the structural 0 it had before doTurn.
         boolean recordObs = validator != null && !observers[autopilotPiEarly].isDead();
 
         // Phase 1c: Run each observer's doTurn (process features + run strategy).
@@ -188,11 +186,9 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
             Autopilot auto = observers[autopilotPiEarly].observer();
             // A fresh radar scan of the opponent this tick is the precondition for
             // exact damage observation. Use the robot-side derived gap directly;
-            // comparing LAST_SCAN_TICK to the engine turn can drift by one phase in
+            // comparing the latest SCAN_TICK to the engine turn can drift by one phase in
             // the observer pipeline even when ticks.csv shows a fresh scan.
-            double ticksSinceScan = observers[autopilotPiEarly].wb().getFeature(Feature.TICKS_SINCE_SCAN);
-            boolean scannedThisTick = !Double.isNaN(ticksSinceScan)
-                    && Math.abs(ticksSinceScan) < 1e-4;
+            boolean scannedThisTick = observers[autopilotPiEarly].wb().hasCurrentScan();
             validator.recordDamageObservation(currentRound, curr.getTurn(),
                     autopilotPiEarly, robots,
                     curr.getBullets(),
@@ -299,11 +295,11 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                         validator.recordGodViewTheirFire(power, x, y, trueHeading, tick);
                         if (theirFireTrace != null) {
                             long nowTick = (long) ctx.wb().getFeature(Feature.TICK);
-                            long lastScanTick = (long) ctx.wb().getFeature(Feature.LAST_SCAN_TICK);
+                                long lastScanTick = (long) ctx.wb().getFeature(Feature.SCAN_TICK);
                             theirFireTrace.write(currentRound, pi, tick, "GV", -1,
                                     power, x, y, trueHeading,
                                     ctx.wb().getFeature(Feature.OPPONENT_ENERGY),
-                                    ctx.wb().getPreviousTickFeature(Feature.PREV_SCAN_OPPONENT_ENERGY),
+                                    ctx.wb().getFeature(Feature.PREV_SCAN_OPPONENT_ENERGY),
                                     (int) (nowTick - lastScanTick),
                                     ctx.wb().getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT),
                                     ctx.wb().getFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN),
@@ -331,11 +327,11 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                                 (long) theirFireTick);
                         if (theirFireTrace != null) {
                             long nowTick = (long) ctx.wb().getFeature(Feature.TICK);
-                            long lastScanTick = (long) ctx.wb().getFeature(Feature.LAST_SCAN_TICK);
+                                long lastScanTick = (long) ctx.wb().getFeature(Feature.SCAN_TICK);
                             theirFireTrace.write(currentRound, pi, (long) theirFireTick, "RS", -1,
                                     rsPower, rsX, rsY, rsBearing,
                                     ctx.wb().getFeature(Feature.OPPONENT_ENERGY),
-                                    ctx.wb().getPreviousTickFeature(Feature.PREV_SCAN_OPPONENT_ENERGY),
+                                    ctx.wb().getFeature(Feature.PREV_SCAN_OPPONENT_ENERGY),
                                     (int) (nowTick - lastScanTick),
                                     ctx.wb().getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT),
                                     ctx.wb().getFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN),
@@ -371,6 +367,10 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                     int pi = ctx.perspectiveIndex();
                     csvWriters[pi].writeTickRow(
                             ctx.godWb(), battleId != null ? battleId : "unknown", round);
+                        if (ctx.godWb().hasCurrentScan()) {
+                        csvWriters[pi].writeScanRow(
+                            ctx.godWb(), battleId != null ? battleId : "unknown", round);
+                        }
                     // Write wave rows when resolved
                     if (resolved[pi]) {
                         csvWriters[pi].writeOurWaveRow(

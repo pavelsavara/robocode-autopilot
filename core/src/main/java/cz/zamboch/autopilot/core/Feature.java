@@ -18,40 +18,33 @@ public enum Feature {
     RADAR_HEADING(FileType.TICKS),
     TICK(FileType.TICKS),
 
-    // --- Input: scan (set by onScannedRobot / pipeline) ---
-    DISTANCE(FileType.TICKS),
-    BEARING_RADIANS(FileType.TICKS),
-    OPPONENT_HEADING(FileType.TICKS),
-    OPPONENT_VELOCITY(FileType.TICKS),
-    OPPONENT_ENERGY(FileType.TICKS),
-    LAST_SCAN_TICK(FileType.TICKS),
-
-    // --- Input: bullet & ram events (accumulated between scans) ---
-    // FileType.NONE: inter-tick accumulators consumed by FireFeatures; not dataset
-    // features, so they are kept in the whiteboard but never written to CSV.
-    OUR_BULLET_DAMAGE_TO_OPPONENT(FileType.NONE),
-    OPPONENT_BULLET_ENERGY_GAIN(FileType.NONE),
-    RAM_DAMAGE_TO_OPPONENT(FileType.NONE),
-    OPPONENT_WALL_HIT_DAMAGE(FileType.NONE),
-
-    // --- Computed: spatial ---
-    OPPONENT_BEARING_ABSOLUTE(FileType.TICKS),
-    OPPONENT_X(FileType.TICKS),
-    OPPONENT_Y(FileType.TICKS),
-
-    // --- Computed: movement ---
-    OPPONENT_LATERAL_VELOCITY(FileType.TICKS),
-    OPPONENT_ADVANCING_VELOCITY(FileType.TICKS),
+    // --- Scan rows: raw scan, derived scan geometry, and consumed energy ledger ---
+    SCAN_TICK(FileType.SCAN),
+    DISTANCE(FileType.SCAN),
+    BEARING_RADIANS(FileType.SCAN),
+    OPPONENT_HEADING(FileType.SCAN),
+    OPPONENT_VELOCITY(FileType.SCAN),
+    OPPONENT_ENERGY(FileType.SCAN),
+    OPPONENT_ID(FileType.SCAN),
+    OPPONENT_ID_HASH(FileType.SCAN),
+    OPPONENT_BEARING_ABSOLUTE(FileType.SCAN),
+    OPPONENT_X(FileType.SCAN),
+    OPPONENT_Y(FileType.SCAN),
+    OPPONENT_LATERAL_VELOCITY(FileType.SCAN),
+    OPPONENT_ADVANCING_VELOCITY(FileType.SCAN),
+    TICKS_SINCE_SCAN(FileType.SCAN),
+    PREV_SCAN_OPPONENT_ENERGY(FileType.SCAN),
+    OUR_BULLET_DAMAGE_TO_OPPONENT(FileType.SCAN),
+    OPPONENT_BULLET_ENERGY_GAIN(FileType.SCAN),
+    RAM_DAMAGE_TO_OPPONENT(FileType.SCAN),
+    OPPONENT_WALL_HIT_DAMAGE(FileType.SCAN),
 
     // --- Computed: gun aim (from GF strategy) ---
-    // FileType.NONE: robot-side gun decision, not engine ground truth, so excluded
+    // FileType.DECISIONS: robot-side gun decision, not engine ground truth, so excluded
     // from the dataset (the god-view cannot reproduce it without a gun strategy).
-    GUN_AIM_POWER(FileType.NONE),
-    GUN_AIM_ANGLE(FileType.NONE),
-    GUN_AIM_GF(FileType.NONE),
-
-    // --- Computed: timing ---
-    TICKS_SINCE_SCAN(FileType.TICKS),
+    GUN_AIM_POWER(FileType.DECISIONS),
+    GUN_AIM_ANGLE(FileType.DECISIONS),
+    GUN_AIM_GF(FileType.DECISIONS),
 
     // --- Computed: fire detection ---
     THEIR_FIRE_POWER(FileType.THEIR_WAVES),
@@ -78,13 +71,6 @@ public enum Feature {
     THEIR_BREAK_GF(FileType.THEIR_WAVES),
     THEIR_BREAK_BEARING_OFFSET(FileType.THEIR_WAVES),
     THEIR_HIT_US(FileType.THEIR_WAVES),
-    // FileType.NONE: inter-tick state for fire detection; not a dataset feature.
-    PREV_SCAN_OPPONENT_ENERGY(FileType.NONE),
-
-    // --- Computed: identity ---
-    OPPONENT_ID(FileType.TICKS),
-    OPPONENT_ID_HASH(FileType.TICKS),
-
     // --- Our gun waves: fire-time features (set when we fire) ---
     OUR_FIRE_DISTANCE(FileType.OUR_WAVES),
     OUR_FIRE_LATERAL_VELOCITY(FileType.OUR_WAVES),

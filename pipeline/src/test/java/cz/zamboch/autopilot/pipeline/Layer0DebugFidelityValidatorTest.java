@@ -29,7 +29,7 @@ class Layer0DebugFidelityValidatorTest {
     void matchingValues_noMismatches() {
         Whiteboard wb = new Whiteboard();
         wb.setFeature(Feature.TICK, 1.0);
-        wb.setFeature(Feature.LAST_SCAN_TICK, 1.0);
+        wb.setFeature(Feature.SCAN_TICK, 1.0);
         wb.setFeature(Feature.OUR_X, 150.0);
         wb.setFeature(Feature.OUR_Y, 250.0);
 
@@ -50,7 +50,7 @@ class Layer0DebugFidelityValidatorTest {
     void mismatchDetected() {
         Whiteboard wb = new Whiteboard();
         wb.setFeature(Feature.TICK, 1.0);
-        wb.setFeature(Feature.LAST_SCAN_TICK, 1.0);
+        wb.setFeature(Feature.SCAN_TICK, 1.0);
         wb.setFeature(Feature.OUR_X, 150.0);
 
         IRobotSnapshot robot = TestSnapshots.robotWithDebug(150, 250, 0, "Autopilot",
@@ -68,7 +68,7 @@ class Layer0DebugFidelityValidatorTest {
     void breakFeaturesAreIncluded() {
         Whiteboard wb = new Whiteboard();
         wb.setFeature(Feature.TICK, 1.0);
-        wb.setFeature(Feature.LAST_SCAN_TICK, 1.0);
+        wb.setFeature(Feature.SCAN_TICK, 1.0);
         wb.setFeature(Feature.OUR_X, 100.0);
         wb.setFeature(Feature.OUR_BREAK_TICK, 50.0);
 

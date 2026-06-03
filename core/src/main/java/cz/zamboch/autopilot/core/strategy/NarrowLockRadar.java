@@ -46,15 +46,13 @@ public final class NarrowLockRadar implements IRadarStrategy {
     }
 
     private double latestKnownBearing() {
-        for (int n = 0; n < Whiteboard.TICK_RING_DEPTH; n++) {
-            double opponentX = wb.getFeatureNTicksAgo(Feature.OPPONENT_X, n);
-            double opponentY = wb.getFeatureNTicksAgo(Feature.OPPONENT_Y, n);
-            double ourX = wb.getFeature(Feature.OUR_X);
-            double ourY = wb.getFeature(Feature.OUR_Y);
-            if (!Double.isNaN(opponentX) && !Double.isNaN(opponentY)
-                    && !Double.isNaN(ourX) && !Double.isNaN(ourY)) {
-                return Math.atan2(opponentX - ourX, opponentY - ourY);
-            }
+        double opponentX = wb.getLatestScanFeature(Feature.OPPONENT_X);
+        double opponentY = wb.getLatestScanFeature(Feature.OPPONENT_Y);
+        double ourX = wb.getFeature(Feature.OUR_X);
+        double ourY = wb.getFeature(Feature.OUR_Y);
+        if (!Double.isNaN(opponentX) && !Double.isNaN(opponentY)
+                && !Double.isNaN(ourX) && !Double.isNaN(ourY)) {
+            return Math.atan2(opponentX - ourX, opponentY - ourY);
         }
         return Double.NaN;
     }

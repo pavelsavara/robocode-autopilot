@@ -62,7 +62,7 @@ public final class WallHitEstimator implements IInGameFeatures {
     private static final double STOP_TOLERANCE = 1.0;
 
     private static final Feature[] DEPS = {
-            Feature.TICK, Feature.LAST_SCAN_TICK,
+            Feature.SCAN_TICK,
             Feature.OPPONENT_X, Feature.OPPONENT_Y,
             Feature.OPPONENT_VELOCITY, Feature.OPPONENT_HEADING,
             Feature.RAM_DAMAGE_TO_OPPONENT, Feature.OPPONENT_ID
@@ -88,15 +88,11 @@ public final class WallHitEstimator implements IInGameFeatures {
     }
 
     public FileType getFileType() {
-        return FileType.TICKS;
+        return FileType.SCAN;
     }
 
     public void process(Whiteboard wb) {
-        double tick = wb.getFeature(Feature.TICK);
-        double lastScanTick = wb.getFeature(Feature.LAST_SCAN_TICK);
-
-        // Only compute on scan ticks
-        if (Double.isNaN(tick) || Double.isNaN(lastScanTick) || tick != lastScanTick) {
+        if (!wb.hasCurrentScan()) {
             return;
         }
 
@@ -138,18 +134,14 @@ public final class WallHitEstimator implements IInGameFeatures {
         // within the engine's 2/tick cap) presents as a single oversized drop
         // and is mis-flagged as a wall collision (the BeepBoop -5 -> -1 false
         // positive). Budgeting against the true gap removes that artifact.
-        int scanGap = -1;
-        for (int n = 1; n < Whiteboard.TICK_RING_DEPTH; n++) {
-            if (!Double.isNaN(wb.getFeatureNTicksAgo(Feature.OPPONENT_VELOCITY, n))) {
-                scanGap = n;
-                break;
-            }
-        }
-        if (scanGap < 0) {
+        double currentScanTick = wb.getFeature(Feature.SCAN_TICK);
+        double previousScanTick = wb.getPreviousScanFeature(Feature.SCAN_TICK);
+        if (Double.isNaN(currentScanTick) || Double.isNaN(previousScanTick)) {
             return;
         }
-        double prevVelocity = wb.getFeatureNTicksAgo(Feature.OPPONENT_VELOCITY, scanGap);
-        double prevHeading = wb.getFeatureNTicksAgo(Feature.OPPONENT_HEADING, scanGap);
+        int scanGap = Math.max(1, (int) Math.round(currentScanTick - previousScanTick));
+        double prevVelocity = wb.getPreviousScanFeature(Feature.OPPONENT_VELOCITY);
+        double prevHeading = wb.getPreviousScanFeature(Feature.OPPONENT_HEADING);
 
         if (Double.isNaN(prevVelocity) || Double.isNaN(prevHeading)) {
             return;
@@ -215,9 +207,7 @@ public final class WallHitEstimator implements IInGameFeatures {
         // than the sum to avoid double-charging when both fire.
         double damage = Math.max(collapseDamage, proximityDamage);
         if (damage > 0) {
-            double current = wb.getFeature(Feature.OPPONENT_WALL_HIT_DAMAGE);
-            wb.setFeature(Feature.OPPONENT_WALL_HIT_DAMAGE,
-                    (Double.isNaN(current) ? 0 : current) + damage);
+            wb.setFeature(Feature.OPPONENT_WALL_HIT_DAMAGE, damage);
         }
     }
 

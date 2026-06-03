@@ -35,7 +35,7 @@ public final class Layer0DebugFidelityValidator {
             Feature.OPPONENT_HEADING,
             Feature.OPPONENT_VELOCITY,
             Feature.OPPONENT_ENERGY,
-            Feature.LAST_SCAN_TICK,
+            Feature.SCAN_TICK,
             Feature.OUR_BULLET_DAMAGE_TO_OPPONENT,
             Feature.OPPONENT_BULLET_ENERGY_GAIN,
             Feature.RAM_DAMAGE_TO_OPPONENT,

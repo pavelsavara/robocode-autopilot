@@ -200,11 +200,11 @@ final class WaveTrackerObserverTest {
             Whiteboard wb = observers[my].wb();
             // 1e-9: these features flow from the same authoritative snapshot geometry
             // the live robot saw, so they should be bit-for-bit equivalent.
-            assertEquals(tick.liveValue("DISTANCE"), wb.getFeature(Feature.DISTANCE), 1e-9,
+                assertEquals(tick.liveValue("DISTANCE"), wb.getFeature(Feature.DISTANCE), 1e-9,
                     "DISTANCE at turn " + tick.turn());
-            assertEquals(tick.liveValue("OPPONENT_VELOCITY"), wb.getFeature(Feature.OPPONENT_VELOCITY), 1e-9,
+                assertEquals(tick.liveValue("OPPONENT_VELOCITY"), wb.getFeature(Feature.OPPONENT_VELOCITY), 1e-9,
                     "OPPONENT_VELOCITY at turn " + tick.turn());
-            assertEquals(tick.liveValue("OPPONENT_ENERGY"), wb.getFeature(Feature.OPPONENT_ENERGY), 1e-9,
+                assertEquals(tick.liveValue("OPPONENT_ENERGY"), wb.getFeature(Feature.OPPONENT_ENERGY), 1e-9,
                     "OPPONENT_ENERGY at turn " + tick.turn());
             checked++;
         }

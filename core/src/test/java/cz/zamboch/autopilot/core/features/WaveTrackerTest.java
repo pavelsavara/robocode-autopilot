@@ -38,7 +38,7 @@ final class WaveTrackerTest {
         wb.setFeature(Feature.OPPONENT_HEADING, 0);
         wb.setFeature(Feature.OPPONENT_VELOCITY, 0);
         wb.setFeature(Feature.OPPONENT_ENERGY, 100);
-        wb.setFeature(Feature.LAST_SCAN_TICK, tick);
+        wb.setFeature(Feature.SCAN_TICK, tick);
     }
 
     @Test
@@ -52,7 +52,7 @@ final class WaveTrackerTest {
         wb.setFeature(Feature.OPPONENT_HEADING, 0);
         wb.setFeature(Feature.OPPONENT_VELOCITY, 0);
         wb.setFeature(Feature.OPPONENT_ENERGY, 100);
-        wb.setFeature(Feature.LAST_SCAN_TICK, 10);
+        wb.setFeature(Feature.SCAN_TICK, 10);
 
         wb.setFeature(Feature.OUR_FIRE_POWER, 2.0);
         wb.setFeature(Feature.OUR_FIRE_X, 400);
@@ -98,7 +98,7 @@ final class WaveTrackerTest {
         wb.setFeature(Feature.OPPONENT_HEADING, 0);
         wb.setFeature(Feature.OPPONENT_VELOCITY, 0);
         wb.setFeature(Feature.OPPONENT_ENERGY, 100);
-        wb.setFeature(Feature.LAST_SCAN_TICK, 12);
+        wb.setFeature(Feature.SCAN_TICK, 12);
 
         // Fire staging captured at the true fire tick (10) and muzzle (400, 300).
         wb.setFeature(Feature.OUR_FIRE_POWER, 2.0);
@@ -192,7 +192,7 @@ final class WaveTrackerTest {
         wb.setFeature(Feature.OPPONENT_HEADING, 0);
         wb.setFeature(Feature.OPPONENT_VELOCITY, 0);
         wb.setFeature(Feature.OPPONENT_ENERGY, 100);
-        wb.setFeature(Feature.LAST_SCAN_TICK, 10);
+        wb.setFeature(Feature.SCAN_TICK, 10);
 
         wb.setFeature(Feature.OUR_FIRE_POWER, 2.0);
         wb.setFeature(Feature.OUR_FIRE_X, 400);
@@ -354,7 +354,7 @@ final class WaveTrackerTest {
         wb.setFeature(Feature.OPPONENT_HEADING, 0);
         wb.setFeature(Feature.OPPONENT_VELOCITY, 0);
         wb.setFeature(Feature.OPPONENT_ENERGY, 100);
-        wb.setFeature(Feature.LAST_SCAN_TICK, 10);
+        wb.setFeature(Feature.SCAN_TICK, 10);
 
         wb.setFeature(Feature.OUR_FIRE_POWER, 2.0);
         wb.setFeature(Feature.OUR_FIRE_X, 400);

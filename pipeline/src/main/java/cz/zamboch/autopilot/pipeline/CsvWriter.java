@@ -15,15 +15,17 @@ import java.util.List;
  * Routes features to the correct CSV file based on their FileType.
  * <p>
  * Output structure:
- * {@code <outputDir>/<battleId>/<robotName>/ticks.csv|their-waves.csv|our-waves.csv|scores.csv}
+ * {@code <outputDir>/<battleId>/<robotName>/ticks.csv|scan.csv|their-waves.csv|our-waves.csv|scores.csv}
  */
 public final class CsvWriter implements Closeable {
     private final CsvRowWriter ticksWriter;
+     private final CsvRowWriter scanWriter;
     private final CsvRowWriter theirWavesWriter;
     private final CsvRowWriter ourWavesWriter;
     private final CsvRowWriter scoresWriter;
 
     private final List<Feature> ticksFeatures = new ArrayList<Feature>();
+    private final List<Feature> scanFeatures = new ArrayList<Feature>();
     private final List<Feature> theirWavesFeatures = new ArrayList<Feature>();
     private final List<Feature> ourWavesFeatures = new ArrayList<Feature>();
     private final List<Feature> scoresFeatures = new ArrayList<Feature>();
@@ -32,6 +34,7 @@ public final class CsvWriter implements Closeable {
         outputDir.mkdirs();
 
         ticksWriter = new CsvRowWriter(new FileOutputStream(new File(outputDir, "ticks.csv")));
+        scanWriter = new CsvRowWriter(new FileOutputStream(new File(outputDir, "scan.csv")));
         theirWavesWriter = new CsvRowWriter(new FileOutputStream(new File(outputDir, "their-waves.csv")));
         ourWavesWriter = new CsvRowWriter(new FileOutputStream(new File(outputDir, "our-waves.csv")));
         scoresWriter = new CsvRowWriter(new FileOutputStream(new File(outputDir, "scores.csv")));
@@ -41,6 +44,9 @@ public final class CsvWriter implements Closeable {
             switch (f.getFileType()) {
                 case TICKS:
                     ticksFeatures.add(f);
+                    break;
+                case SCAN:
+                    scanFeatures.add(f);
                     break;
                 case THEIR_WAVES:
                     theirWavesFeatures.add(f);
@@ -53,7 +59,7 @@ public final class CsvWriter implements Closeable {
                         scoresFeatures.add(f);
                     }
                     break;
-                case NONE:
+                case DECISIONS:
                     // intentionally excluded from CSV output
                     break;
             }
@@ -69,6 +75,14 @@ public final class CsvWriter implements Closeable {
             ticksWriter.writeHeader(f.name().toLowerCase());
         }
         ticksWriter.endRow();
+
+        // scan.csv: battle_id, round, tick, then all SCAN features
+        scanWriter.beginRow();
+        scanWriter.writeHeaders("battle_id", "round", "tick");
+        for (Feature f : scanFeatures) {
+            scanWriter.writeHeader(scanHeader(f));
+        }
+        scanWriter.endRow();
 
         // their-waves.csv: battle_id, round, tick, then all THEIR_WAVES features
         theirWavesWriter.beginRow();
@@ -105,6 +119,22 @@ public final class CsvWriter implements Closeable {
             ticksWriter.writeDouble(wb, f);
         }
         ticksWriter.endRow();
+    }
+
+    /** Write one row to scan.csv (called when a scan row exists for this tick). */
+    public void writeScanRow(Whiteboard wb, String battleId, int round) throws IOException {
+        scanWriter.beginRow();
+        scanWriter.writeRaw(battleId);
+        scanWriter.writeInt(round);
+        scanWriter.writeLong((long) wb.getFeature(Feature.TICK));
+        for (Feature f : scanFeatures) {
+            if (f == Feature.OPPONENT_ID) {
+                scanWriter.writeString(wb.getStringFeature(f));
+            } else {
+                scanWriter.writeRaw(format(wb.getFeature(f)));
+            }
+        }
+        scanWriter.endRow();
     }
 
     /** Write one row to their-waves.csv (called when their wave resolves). */
@@ -145,9 +175,31 @@ public final class CsvWriter implements Closeable {
 
     @Override
     public void close() throws IOException {
-        ticksWriter.close();
-        theirWavesWriter.close();
-        ourWavesWriter.close();
-        scoresWriter.close();
+        try {
+            ticksWriter.close();
+        } finally {
+            try {
+                scanWriter.close();
+            } finally {
+                try {
+                    theirWavesWriter.close();
+                } finally {
+                    try {
+                        ourWavesWriter.close();
+                    } finally {
+                        scoresWriter.close();
+                    }
+                }
+            }
+        }
+    }
+
+    private static String scanHeader(Feature f) {
+        String name = f.name().toLowerCase();
+        return name.startsWith("scan_") ? name : "scan_" + name;
+    }
+
+    private static String format(double value) {
+        return Double.isNaN(value) ? "NaN" : Double.toString(value);
     }
 }

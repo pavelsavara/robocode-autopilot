@@ -6,11 +6,9 @@ import cz.zamboch.autopilot.core.VcsFile;
 import cz.zamboch.autopilot.core.VcsStore;
 import cz.zamboch.autopilot.core.ModelSelector;
 import cz.zamboch.autopilot.core.Whiteboard;
-import cz.zamboch.autopilot.core.features.IdentityFeatures;
-import cz.zamboch.autopilot.core.features.MovementFeatures;
-import cz.zamboch.autopilot.core.features.SpatialFeatures;
+import cz.zamboch.autopilot.core.features.AccumulatorFeatures;
 import cz.zamboch.autopilot.core.features.FireFeatures;
-import cz.zamboch.autopilot.core.features.TimingFeatures;
+import cz.zamboch.autopilot.core.features.ScanFeatures;
 import cz.zamboch.autopilot.core.features.WallHitEstimator;
 import cz.zamboch.autopilot.core.features.OurWaveFeatures;
 import cz.zamboch.autopilot.core.features.WaveTracker;
@@ -88,13 +86,12 @@ public final class Autopilot extends AdvancedRobot {
     }
 
     /**
-     * Snapshot of the damage accumulators taken in {@link #doTurn()} AFTER
-     * {@code wb.process()} (so WallHitEstimator's wall charge and FireFeatures'
-     * read have happened) but BEFORE the scan-tick reset zeroes them. The live
-     * robot does not read this; it exists so the headless validation pipeline can
-     * observe the exact per-tick values FireFeatures consumed — in particular the
-     * OPPONENT_WALL_HIT_DAMAGE charge, which is produced inside process() and
-     * would otherwise be 0 both before process() and after the reset.
+    * Snapshot of the damage accumulators taken in {@link #doTurn()} after
+    * {@code wb.process()}. On scan ticks this reads the values copied into the
+    * current SCAN row by AccumulatorFeatures before it reset the live window; on
+    * non-scan ticks it reads the still-running live accumulator state. The live
+    * robot does not read this; it exists so the headless validation pipeline can
+    * observe the exact per-tick values FireFeatures consumed.
      */
     private final double[] consumedAccumulators = new double[Feature.COUNT];
 
@@ -127,12 +124,12 @@ public final class Autopilot extends AdvancedRobot {
 
     @Override
     public void onScannedRobot(ScannedRobotEvent event) {
+        wb.beginScanRow(wb.getFeature(Feature.TICK));
         wb.setFeature(Feature.DISTANCE, event.getDistance());
         wb.setFeature(Feature.BEARING_RADIANS, event.getBearingRadians());
         wb.setFeature(Feature.OPPONENT_HEADING, event.getHeadingRadians());
         wb.setFeature(Feature.OPPONENT_VELOCITY, event.getVelocity());
         wb.setFeature(Feature.OPPONENT_ENERGY, event.getEnergy());
-        wb.setFeature(Feature.LAST_SCAN_TICK, wb.getFeature(Feature.TICK));
 
         // Opponent identity — always set name (survives clearFeatures between rounds)
         wb.setStringFeature(Feature.OPPONENT_ID, event.getName());
@@ -228,16 +225,14 @@ public final class Autopilot extends AdvancedRobot {
     @Override
     public void onBulletHit(BulletHitEvent e) {
         wb.markBulletHit(e.getBullet().hashCode());
-        double current = wb.getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT);
         double damage = Rules.getBulletDamage(e.getBullet().getPower());
-        wb.setFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT, (Double.isNaN(current) ? 0 : current) + damage);
+        addToFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT, damage);
     }
 
     @Override
     public void onHitByBullet(HitByBulletEvent e) {
-        double current = wb.getFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN);
         double gain = Rules.getBulletHitBonus(e.getBullet().getPower());
-        wb.setFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN, (Double.isNaN(current) ? 0 : current) + gain);
+        addToFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN, gain);
         wb.markTheirBulletHitUs(e.getBullet().getPower());
     }
 
@@ -245,8 +240,12 @@ public final class Autopilot extends AdvancedRobot {
     public void onHitRobot(HitRobotEvent e) {
         // Both robots always take ROBOT_HIT_DAMAGE; ROBOT_HIT_BONUS is a score
         // bonus only (see RobotStatistics.scoreRammingDamage), not an energy gain.
-        double current = wb.getFeature(Feature.RAM_DAMAGE_TO_OPPONENT);
-        wb.setFeature(Feature.RAM_DAMAGE_TO_OPPONENT, (Double.isNaN(current) ? 0 : current) + Rules.ROBOT_HIT_DAMAGE);
+        addToFeature(Feature.RAM_DAMAGE_TO_OPPONENT, Rules.ROBOT_HIT_DAMAGE);
+    }
+
+    private void addToFeature(Feature f, double value) {
+        double current = wb.getFeature(f);
+        wb.setFeature(f, (Double.isNaN(current) ? 0 : current) + value);
     }
 
     /**
@@ -316,12 +315,10 @@ public final class Autopilot extends AdvancedRobot {
         this.bfHeight = bfHeight;
         if (!featuresRegistered) {
             wb.registerFeatures(
-                    new SpatialFeatures(),
-                    new MovementFeatures(),
-                    new TimingFeatures(),
+                    new ScanFeatures(),
                     new WallHitEstimator(bfWidth, bfHeight),
                     new FireFeatures(),
-                    new IdentityFeatures(),
+                    new AccumulatorFeatures(),
                     new OurWaveFeatures(),
                     new WaveTracker(),
                     new TheirWaveTracker());
@@ -359,20 +356,17 @@ public final class Autopilot extends AdvancedRobot {
     public void doTurn() {
         wb.process();
 
-        // Snapshot the accumulators post-process (WallHitEstimator has charged the
-        // wall channel and FireFeatures has consumed all four) but BEFORE the
-        // scan-tick reset below, so the validation pipeline can read the exact
-        // values FireFeatures saw. Harmless for the live robot.
-        wb.snapshotDamageAccumulators(consumedAccumulators);
-
-        // Reset accumulators after FireFeatures has consumed them on scan ticks
-        double tick = wb.getFeature(Feature.TICK);
-        double lastScan = wb.getFeature(Feature.LAST_SCAN_TICK);
-        boolean scanTick = !Double.isNaN(tick) && tick == lastScan;
-        if (scanTick) {
-            wb.resetDamageAccumulators();
+        boolean scanTick = wb.hasCurrentScan();
+        for (Feature f : Whiteboard.damageAccumulatorFeatures()) {
+            consumedAccumulators[f.ordinal()] = scanTick
+                    ? wb.getFeature(f)
+                    : wb.getFeature(f);
         }
-        accumulatorsResetThisTurn = scanTick;
+        if (scanTick) {
+            accumulatorsResetThisTurn = true;
+        } else {
+            accumulatorsResetThisTurn = false;
+        }
 
         // Radar — independent of body/gun thanks to setAdjustRadarFor*(true).
         setTurnRadarRightRadians(radar.getRadarTurn());
@@ -448,8 +442,9 @@ public final class Autopilot extends AdvancedRobot {
         // resolver — which derives the same way — produces matching values.
         double aimFirerX = wb.getPreviousTickFeature(Feature.OUR_X);
         double aimFirerY = wb.getPreviousTickFeature(Feature.OUR_Y);
-        double aimOppX = wb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_X, 1);
-        double aimOppY = wb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_Y, 1);
+        double aimTick = wb.getFeature(Feature.TICK) - 1.0;
+        double aimOppX = wb.getScanFeatureAtOrBeforeTick(Feature.OPPONENT_X, aimTick);
+        double aimOppY = wb.getScanFeatureAtOrBeforeTick(Feature.OPPONENT_Y, aimTick);
         double aimDx = aimOppX - aimFirerX;
         double aimDy = aimOppY - aimFirerY;
         wb.setFeature(Feature.OUR_AIM_X, aimFirerX);

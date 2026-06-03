@@ -227,8 +227,9 @@ final class GodViewWaveResolver {
         Whiteboard firerWb = ctx.godWb();
         double aimFirerX = firerWb.getFeatureNTicksAgo(Feature.OUR_X, 2);
         double aimFirerY = firerWb.getFeatureNTicksAgo(Feature.OUR_Y, 2);
-        double aimTargetX = firerWb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_X, 2);
-        double aimTargetY = firerWb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_Y, 2);
+        double aimTick = firerWb.getFeature(Feature.TICK) - 2.0;
+        double aimTargetX = firerWb.getScanFeatureAtOrBeforeTick(Feature.OPPONENT_X, aimTick);
+        double aimTargetY = firerWb.getScanFeatureAtOrBeforeTick(Feature.OPPONENT_Y, aimTick);
 
         PerPerspective pp = persp[ctx.perspectiveIndex()];
         pp.activeWaves.add(new TrackedWave(wave, bullet.getBulletId(),

@@ -28,10 +28,13 @@ public final class MovementFeatures implements IInGameFeatures {
     }
 
     public FileType getFileType() {
-        return FileType.TICKS;
+        return FileType.SCAN;
     }
 
     public void process(Whiteboard wb) {
+        if (!wb.hasCurrentScan()) {
+            return;
+        }
         double oppVelocity = wb.getFeature(Feature.OPPONENT_VELOCITY);
         double oppHeading = wb.getFeature(Feature.OPPONENT_HEADING);
         double absoluteBearing = wb.getFeature(Feature.OPPONENT_BEARING_ABSOLUTE);
@@ -44,7 +47,7 @@ public final class MovementFeatures implements IInGameFeatures {
         double bearingFromOpponent = absoluteBearing + Math.PI;
         double relativeHeading = oppHeading - bearingFromOpponent;
 
-        wb.setFeature(Feature.OPPONENT_LATERAL_VELOCITY, oppVelocity * Math.sin(relativeHeading));
-        wb.setFeature(Feature.OPPONENT_ADVANCING_VELOCITY, oppVelocity * Math.cos(relativeHeading));
+        wb.setCurrentScanFeature(Feature.OPPONENT_LATERAL_VELOCITY, oppVelocity * Math.sin(relativeHeading));
+        wb.setCurrentScanFeature(Feature.OPPONENT_ADVANCING_VELOCITY, oppVelocity * Math.cos(relativeHeading));
     }
 }

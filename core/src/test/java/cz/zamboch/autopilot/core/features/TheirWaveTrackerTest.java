@@ -31,7 +31,7 @@ final class TheirWaveTrackerTest {
         wb.setFeature(Feature.OUR_Y, ourY);
         wb.setFeature(Feature.OUR_HEADING, 0);
         wb.setFeature(Feature.OPPONENT_ENERGY, 100);
-        wb.setFeature(Feature.LAST_SCAN_TICK, tick);
+        wb.setFeature(Feature.SCAN_TICK, tick);
         // Set opponent position (normally from SpatialFeatures)
         wb.setFeature(Feature.OPPONENT_X, oppX);
         wb.setFeature(Feature.OPPONENT_Y, oppY);
@@ -50,7 +50,7 @@ final class TheirWaveTrackerTest {
         // Tick 6: opponent loses 2.0 energy → fire detected
         wb.setFeature(Feature.TICK, 6);
         wb.setFeature(Feature.OPPONENT_ENERGY, 98);
-        wb.setFeature(Feature.LAST_SCAN_TICK, 6);
+        wb.setFeature(Feature.SCAN_TICK, 6);
         wb.setFeature(Feature.DISTANCE, 200);
         wb.setFeature(Feature.BEARING_RADIANS, 0);
         wb.setFeature(Feature.OPPONENT_HEADING, 0);
@@ -101,7 +101,7 @@ final class TheirWaveTrackerTest {
         // tick-5 opponent position (200, 400), and the true fire tick is 5.
         wb.setFeature(Feature.TICK, 6);
         wb.setFeature(Feature.OPPONENT_ENERGY, 98);
-        wb.setFeature(Feature.LAST_SCAN_TICK, 6);
+        wb.setFeature(Feature.SCAN_TICK, 6);
         wb.setFeature(Feature.DISTANCE, 200);
         wb.setFeature(Feature.BEARING_RADIANS, 0);
         wb.setFeature(Feature.OPPONENT_HEADING, 0);

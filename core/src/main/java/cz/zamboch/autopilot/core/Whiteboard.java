@@ -8,6 +8,7 @@ import java.util.Arrays;
  * Storage is structured into per-table arrays:
  * <ul>
  * <li>TickRing (depth=3): current + two previous ticks of features</li>
+ * <li>Scan ring buffer: one row per radar scan event</li>
  * <li>OurWave ring buffer (capacity=64): pre-allocated wave lifecycle
  * storage</li>
  * <li>TheirWave staging: single row for pipeline fire detection</li>
@@ -33,29 +34,39 @@ public final class Whiteboard {
     private int tickHead = 0;
     private long lastTick = Long.MIN_VALUE;
 
-        private static final Feature[] DAMAGE_ACCUMULATOR_FEATURES = {
+    private static final Feature[] DAMAGE_ACCUMULATOR_FEATURES = {
             Feature.OUR_BULLET_DAMAGE_TO_OPPONENT,
             Feature.OPPONENT_BULLET_ENERGY_GAIN,
             Feature.RAM_DAMAGE_TO_OPPONENT,
             Feature.OPPONENT_WALL_HIT_DAMAGE
-        };
+    };
 
-        private static final Feature[] CARRIED_SCAN_STATE_FEATURES = {
-            Feature.LAST_SCAN_TICK,
-            Feature.PREV_SCAN_OPPONENT_ENERGY
-        };
+    // --- Scan ring: one row per ScannedRobotEvent ---
+    public static final int SCAN_RING_CAPACITY = 64;
+    private final double[][] scanRing = new double[SCAN_RING_CAPACITY][ScanColumn.COUNT];
+    private final String[] scanOpponentIds = new String[SCAN_RING_CAPACITY];
+    private int scanHead = -1;
+    private int scanCount = 0;
 
-    // --- None ring (depth=3): whiteboard-internal features (FileType.NONE).
-    // Robot-side decision outputs + inter-tick accumulators. Shares the tick
-    // ring's head/rotation so it carries the same per-tick / N-ticks-ago
-    // semantics, but is never written to any CSV. ---
-    private final double[][] noneRing = new double[TICK_RING_DEPTH][NoneColumn.COUNT];
+    // Scan-window state accumulated between scan rows and copied into the scan row
+    // after all scan consumers have had a chance to add/read it.
+    private final double[] damageAccumulatorState = new double[Feature.COUNT];
+
+    // --- Decision ring (depth=3): whiteboard-internal robot decision outputs. ---
+    private final double[][] decisionRing = new double[TICK_RING_DEPTH][DecisionColumn.COUNT];
 
     // --- Our wave ring buffer ---
     public static final int OUR_WAVE_CAPACITY = 64;
     public static final byte WAVE_FREE = 0;
     public static final byte WAVE_ACTIVE = 1;
     public static final byte WAVE_RESOLVED = 2;
+
+    private static final OurWaveColumn[] JUST_RESOLVED_BREAK_COLUMNS = {
+            OurWaveColumn.BREAK_TICK, OurWaveColumn.BREAK_GF,
+            OurWaveColumn.BREAK_BEARING_OFFSET, OurWaveColumn.BREAK_OPPONENT_X,
+            OurWaveColumn.BREAK_OPPONENT_Y, OurWaveColumn.BREAK_HIT,
+            OurWaveColumn.IS_REAL
+    };
 
     private final double[][] ourWaves = new double[OUR_WAVE_CAPACITY][OurWaveColumn.COUNT];
     private final byte[] ourWaveState = new byte[OUR_WAVE_CAPACITY];
@@ -90,6 +101,10 @@ public final class Whiteboard {
         clearFeatures();
     }
 
+    public static Feature[] damageAccumulatorFeatures() {
+        return Arrays.copyOf(DAMAGE_ACCUMULATOR_FEATURES, DAMAGE_ACCUMULATOR_FEATURES.length);
+    }
+
     // ========== Public Feature API (backward compatible) ==========
 
     /** Register feature processors. Call before first process(). */
@@ -103,20 +118,6 @@ public final class Whiteboard {
     /** Execute all registered feature processors in dependency order. */
     public void process() {
         transformer.process(this);
-    }
-
-    /** Copy current damage accumulator values into a Feature-indexed target array. */
-    public void snapshotDamageAccumulators(double[] target) {
-        for (Feature f : DAMAGE_ACCUMULATOR_FEATURES) {
-            target[f.ordinal()] = getFeature(f);
-        }
-    }
-
-    /** Reset the scan-window damage accumulator features after consumers have run. */
-    public void resetDamageAccumulators() {
-        for (Feature f : DAMAGE_ACCUMULATOR_FEATURES) {
-            setFeature(f, 0);
-        }
     }
 
     /** Set a feature value. Throws if value is infinite. */
@@ -137,8 +138,16 @@ public final class Whiteboard {
                 }
                 tickRing[tickHead][col] = value;
                 break;
-            case NONE:
-                noneRing[tickHead][col] = value;
+            case SCAN:
+                if (isDamageAccumulator(f)) {
+                    damageAccumulatorState[f.ordinal()] = value;
+                } else {
+                    ensureCurrentScanRow();
+                    scanRing[scanHead][col] = value;
+                }
+                break;
+            case DECISIONS:
+                decisionRing[tickHead][col] = value;
                 break;
             case OUR_WAVES:
                 ourWaveStaging[col] = value;
@@ -153,35 +162,9 @@ public final class Whiteboard {
     }
 
     private void rotateTickRing() {
-        double[] damageAccumulatorValues = captureCarriedValues(DAMAGE_ACCUMULATOR_FEATURES, false);
-        double[] scanStateValues = captureCarriedValues(CARRIED_SCAN_STATE_FEATURES, true);
-
-        tickHead = (tickHead + 1) % TICK_RING_DEPTH;
+        tickHead = nextRingIndex(tickHead, TICK_RING_DEPTH);
         Arrays.fill(tickRing[tickHead], Double.NaN);
-        Arrays.fill(noneRing[tickHead], Double.NaN);
-
-        restoreCarriedValues(DAMAGE_ACCUMULATOR_FEATURES, damageAccumulatorValues);
-        restoreCarriedValues(CARRIED_SCAN_STATE_FEATURES, scanStateValues);
-    }
-
-    private double[] captureCarriedValues(Feature[] features, boolean carryZero) {
-        double[] values = new double[features.length];
-        Arrays.fill(values, Double.NaN);
-        for (int i = 0; i < features.length; i++) {
-            double value = getFeature(features[i]);
-            if (!Double.isNaN(value) && (carryZero || value != 0)) {
-                values[i] = value;
-            }
-        }
-        return values;
-    }
-
-    private void restoreCarriedValues(Feature[] features, double[] values) {
-        for (int i = 0; i < features.length; i++) {
-            if (!Double.isNaN(values[i])) {
-                setFeature(features[i], values[i]);
-            }
-        }
+        Arrays.fill(decisionRing[tickHead], Double.NaN);
     }
 
     /** Get a feature value. Returns NaN if not yet set. */
@@ -190,8 +173,19 @@ public final class Whiteboard {
         switch (f.getFileType()) {
             case TICKS:
                 return tickRing[tickHead][col];
-            case NONE:
-                return noneRing[tickHead][col];
+            case SCAN:
+                if (isDamageAccumulator(f)) {
+                    double state = damageAccumulatorState[f.ordinal()];
+                    if (!Double.isNaN(state)) {
+                        return state;
+                    }
+                }
+                if (!hasCurrentScan()) {
+                    return Double.NaN;
+                }
+                return scanRing[scanHead][col];
+            case DECISIONS:
+                return decisionRing[tickHead][col];
             case OUR_WAVES:
                 return ourWaveStaging[col];
             case THEIR_WAVES:
@@ -212,61 +206,48 @@ public final class Whiteboard {
      * Get a tick feature's value from {@code n} ticks ago (0 = current tick,
      * 1 = previous tick, 2 = two ticks ago). {@code n} must be in
      * {@code [0, TICK_RING_DEPTH - 1]}. Works for {@link FileType#TICKS} and
-     * {@link FileType#NONE} features (both share the tick ring rotation).
+     * {@link FileType#DECISIONS} features (both share the tick ring rotation). For
+     * {@link FileType#SCAN}, returns the previous scan row.
      */
     public double getFeatureNTicksAgo(Feature f, int n) {
         FileType ft = f.getFileType();
-        if (ft != FileType.TICKS && ft != FileType.NONE) {
+        if (ft == FileType.SCAN) {
+            if (n != 1) {
+                throw new IllegalArgumentException("Only previous scan row is supported for scan features: " + n);
+            }
+            return getPreviousScanFeature(f);
+        }
+        if (ft != FileType.TICKS && ft != FileType.DECISIONS) {
             throw new IllegalArgumentException("Not a tick-ring feature: " + f.name());
         }
         if (n < 0 || n >= TICK_RING_DEPTH) {
             throw new IllegalArgumentException(
                     "n out of range [0, " + (TICK_RING_DEPTH - 1) + "]: " + n);
         }
-        int idx = ((tickHead - n) % TICK_RING_DEPTH + TICK_RING_DEPTH) % TICK_RING_DEPTH;
-        double[][] ring = (ft == FileType.NONE) ? noneRing : tickRing;
+        int idx = ringIndex(tickHead, n, TICK_RING_DEPTH);
+        double[][] ring = (ft == FileType.DECISIONS) ? decisionRing : tickRing;
         return ring[idx][f.columnIndex()];
-    }
-
-    /**
-     * Get a tick feature's most recent KNOWN (non-NaN) value at or before
-     * {@code startN} ticks ago, walking deeper into the ring until a value is
-     * found. Returns NaN only if no slot in {@code [startN, TICK_RING_DEPTH)}
-     * holds a value.
-     * <p>
-     * Used for aim-time opponent geometry: the gun aims at the opponent's most
-     * recently scanned position, which may be a few ticks stale when the opponent
-     * was not freshly scanned on the exact aim tick (radar-lock gap). Using the
-     * raw aim-tick value would yield NaN on those ticks.
-     */
-    public double getLastKnownFeatureNTicksAgo(Feature f, int startN) {
-        for (int n = startN; n < TICK_RING_DEPTH; n++) {
-            double v = getFeatureNTicksAgo(f, n);
-            if (!Double.isNaN(v)) {
-                return v;
-            }
-        }
-        return Double.NaN;
     }
 
     /** Reset all features to NaN. Typically called at round start. */
     public void clearFeatures() {
-        for (int i = 0; i < TICK_RING_DEPTH; i++) {
-            Arrays.fill(tickRing[i], Double.NaN);
-            Arrays.fill(noneRing[i], Double.NaN);
+        clearRows(tickRing);
+        clearRows(decisionRing);
+        clearRows(scanRing);
+        for (int i = 0; i < scanOpponentIds.length; i++) {
+            scanOpponentIds[i] = null;
         }
+        scanHead = -1;
+        scanCount = 0;
+        Arrays.fill(damageAccumulatorState, Double.NaN);
         Arrays.fill(ourWaveStaging, Double.NaN);
         Arrays.fill(theirWaveStaging, Double.NaN);
         Arrays.fill(scoreRow, Double.NaN);
-        for (int i = 0; i < OUR_WAVE_CAPACITY; i++) {
-            Arrays.fill(ourWaves[i], Double.NaN);
-            ourWaveState[i] = WAVE_FREE;
-        }
+        clearRows(ourWaves);
+        Arrays.fill(ourWaveState, WAVE_FREE);
         ourWaveHead = 0;
-        for (int i = 0; i < THEIR_WAVE_CAPACITY; i++) {
-            Arrays.fill(theirWaves[i], Double.NaN);
-            theirWaveState[i] = WAVE_FREE;
-        }
+        clearRows(theirWaves);
+        Arrays.fill(theirWaveState, WAVE_FREE);
         theirWaveHead = 0;
         Arrays.fill(stringFeatures, null);
         tickHead = 0;
@@ -275,12 +256,149 @@ public final class Whiteboard {
 
     /** Set a string feature value. */
     public void setStringFeature(Feature f, String value) {
+        if (f.getFileType() == FileType.SCAN) {
+            ensureCurrentScanRow();
+            if (f == Feature.OPPONENT_ID) {
+                scanOpponentIds[scanHead] = value;
+            }
+            return;
+        }
         stringFeatures[f.ordinal()] = value;
     }
 
     /** Get a string feature value. Returns null if not set. */
     public String getStringFeature(Feature f) {
+        if (f.getFileType() == FileType.SCAN) {
+            if (scanHead < 0 || f != Feature.OPPONENT_ID) {
+                return null;
+            }
+            return scanOpponentIds[scanHead];
+        }
         return stringFeatures[f.ordinal()];
+    }
+
+    // ========== Scan Ring Buffer API ==========
+
+    /** Allocate and initialize a scan row for one ScannedRobotEvent. */
+    public void beginScanRow(double scanTick) {
+        scanHead = nextRingIndex(scanHead, SCAN_RING_CAPACITY);
+        scanCount = Math.min(scanCount + 1, SCAN_RING_CAPACITY);
+        Arrays.fill(scanRing[scanHead], Double.NaN);
+        scanOpponentIds[scanHead] = null;
+        scanRing[scanHead][Feature.SCAN_TICK.columnIndex()] = scanTick;
+    }
+
+    /** True when the latest scan row belongs to the current tick. */
+    public boolean hasCurrentScan() {
+        if (scanHead < 0) {
+            return false;
+        }
+        double tick = tickRing[tickHead][Feature.TICK.columnIndex()];
+        double scanTick = scanRing[scanHead][Feature.SCAN_TICK.columnIndex()];
+        return !Double.isNaN(tick) && !Double.isNaN(scanTick) && tick == scanTick;
+    }
+
+    public void setCurrentScanFeature(Feature f, double value) {
+        ensureScanFeature(f);
+        ensureCurrentScanRow();
+        scanRing[scanHead][f.columnIndex()] = value;
+    }
+
+    public double getLatestScanFeature(Feature f) {
+        ensureScanFeature(f);
+        if (scanHead < 0) {
+            return Double.NaN;
+        }
+        return scanRing[scanHead][f.columnIndex()];
+    }
+
+    public double getPreviousScanFeature(Feature f) {
+        ensureScanFeature(f);
+        if (scanCount < 2) {
+            return Double.NaN;
+        }
+        int idx = ringIndex(scanHead, 1, SCAN_RING_CAPACITY);
+        return scanRing[idx][f.columnIndex()];
+    }
+
+    public double getScanFeatureAtOrBeforeTick(Feature f, double targetTick) {
+        ensureScanFeature(f);
+        if (Double.isNaN(targetTick)) {
+            return Double.NaN;
+        }
+        for (int n = 0; n < scanCount; n++) {
+            int idx = ringIndex(scanHead, n, SCAN_RING_CAPACITY);
+            double scanTick = scanRing[idx][Feature.SCAN_TICK.columnIndex()];
+            if (!Double.isNaN(scanTick) && scanTick <= targetTick) {
+                return scanRing[idx][f.columnIndex()];
+            }
+        }
+        return Double.NaN;
+    }
+
+    private void ensureCurrentScanRow() {
+        if (hasCurrentScan()) {
+            return;
+        }
+        beginScanRow(tickRing[tickHead][Feature.TICK.columnIndex()]);
+    }
+
+    private static void ensureScanFeature(Feature f) {
+        if (f.getFileType() != FileType.SCAN) {
+            throw new IllegalArgumentException("Not a scan feature: " + f.name());
+        }
+    }
+
+    public void copyDamageAccumulatorsToCurrentScanRow() {
+        ensureCurrentScanRow();
+        for (Feature f : DAMAGE_ACCUMULATOR_FEATURES) {
+            scanRing[scanHead][f.columnIndex()] = damageAccumulatorState[f.ordinal()];
+        }
+    }
+
+    public void clearDamageAccumulatorFeatures() {
+        for (Feature f : DAMAGE_ACCUMULATOR_FEATURES) {
+            damageAccumulatorState[f.ordinal()] = Double.NaN;
+        }
+    }
+
+    private static boolean isDamageAccumulator(Feature f) {
+        for (Feature accumulator : DAMAGE_ACCUMULATOR_FEATURES) {
+            if (accumulator == f) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static int nextRingIndex(int head, int capacity) {
+        return (head + 1) % capacity;
+    }
+
+    private static int ringIndex(int head, int offset, int capacity) {
+        return Math.floorMod(head - offset, capacity);
+    }
+
+    private static void clearRows(double[][] rows) {
+        for (double[] row : rows) {
+            Arrays.fill(row, Double.NaN);
+        }
+    }
+
+    private static int countState(byte[] states, byte state) {
+        int count = 0;
+        for (byte value : states) {
+            if (value == state) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private static void clearWaveSlot(double[][] waves, byte[] states, int slot, int zeroColumn) {
+        Arrays.fill(waves[slot], Double.NaN);
+        waves[slot][zeroColumn] = 0;
+        states[slot] = WAVE_FREE;
     }
 
     // ========== VCS ==========
@@ -322,10 +440,8 @@ public final class Whiteboard {
             throw new IllegalStateException(
                     "Our wave ring buffer overflow at slot " + slot);
         }
-        Arrays.fill(ourWaves[slot], Double.NaN);
-        ourWaves[slot][OurWaveColumn.BREAK_HIT.ordinal()] = 0;
-        ourWaveState[slot] = WAVE_FREE;
-        ourWaveHead = (ourWaveHead + 1) % OUR_WAVE_CAPACITY;
+        clearWaveSlot(ourWaves, ourWaveState, slot, OurWaveColumn.BREAK_HIT.ordinal());
+        ourWaveHead = nextRingIndex(ourWaveHead, OUR_WAVE_CAPACITY);
         return slot;
     }
 
@@ -367,12 +483,7 @@ public final class Whiteboard {
 
     /** Count the number of active (in-flight) wave slots. */
     public int getActiveWaveCount() {
-        int count = 0;
-        for (int i = 0; i < OUR_WAVE_CAPACITY; i++) {
-            if (ourWaveState[i] == WAVE_ACTIVE)
-                count++;
-        }
-        return count;
+        return countState(ourWaveState, WAVE_ACTIVE);
     }
 
     /**
@@ -408,16 +519,10 @@ public final class Whiteboard {
      * the virtual waves' break geometry, so it is a permanent part of the fidelity check.
      */
     public void forEachJustResolvedWaveBreak(java.util.function.BiConsumer<String, String> sink) {
-        double tick = getFeature(Feature.TICK);
+        double tick = tickRing[tickHead][Feature.TICK.columnIndex()];
         if (Double.isNaN(tick)) {
             return;
         }
-        OurWaveColumn[] breakCols = {
-                OurWaveColumn.BREAK_TICK, OurWaveColumn.BREAK_GF,
-                OurWaveColumn.BREAK_BEARING_OFFSET, OurWaveColumn.BREAK_OPPONENT_X,
-                OurWaveColumn.BREAK_OPPONENT_Y, OurWaveColumn.BREAK_HIT,
-                OurWaveColumn.IS_REAL
-        };
         for (int i = 0; i < OUR_WAVE_CAPACITY; i++) {
             if (ourWaveState[i] != WAVE_RESOLVED) {
                 continue;
@@ -427,7 +532,7 @@ public final class Whiteboard {
                 continue;
             }
             long waveId = (long) ourWaves[i][OurWaveColumn.WAVE_ID.ordinal()];
-            for (OurWaveColumn c : breakCols) {
+            for (OurWaveColumn c : JUST_RESOLVED_BREAK_COLUMNS) {
                 double v = ourWaves[i][c.ordinal()];
                 sink.accept("RES_" + c.name() + "/" + waveId, Double.isNaN(v) ? "NaN" : String.valueOf(v));
             }
@@ -449,10 +554,8 @@ public final class Whiteboard {
             throw new IllegalStateException(
                     "Their wave ring buffer overflow at slot " + slot);
         }
-        Arrays.fill(theirWaves[slot], Double.NaN);
-        theirWaves[slot][TheirWaveColumn.HIT_US.ordinal()] = 0;
-        theirWaveState[slot] = WAVE_FREE;
-        theirWaveHead = (theirWaveHead + 1) % THEIR_WAVE_CAPACITY;
+        clearWaveSlot(theirWaves, theirWaveState, slot, TheirWaveColumn.HIT_US.ordinal());
+        theirWaveHead = nextRingIndex(theirWaveHead, THEIR_WAVE_CAPACITY);
         return slot;
     }
 
@@ -478,12 +581,7 @@ public final class Whiteboard {
 
     /** Count the number of active (in-flight) their-wave slots. */
     public int getActiveTheirWaveCount() {
-        int count = 0;
-        for (int i = 0; i < THEIR_WAVE_CAPACITY; i++) {
-            if (theirWaveState[i] == WAVE_ACTIVE)
-                count++;
-        }
-        return count;
+        return countState(theirWaveState, WAVE_ACTIVE);
     }
 
     /**

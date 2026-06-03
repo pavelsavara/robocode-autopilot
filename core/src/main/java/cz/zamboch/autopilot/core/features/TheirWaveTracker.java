@@ -101,17 +101,17 @@ public final class TheirWaveTracker implements IInGameFeatures {
         // (Layer 0 regression: 19 -> 11882 mismatches on BeepBoop).
         // Cost: ~6-8 px muzzle position error on waves where T-1 was missed
         // (one tick of opponent movement at max velocity).
-        double oppX = wb.getPreviousTickFeature(Feature.OPPONENT_X);
-        double oppY = wb.getPreviousTickFeature(Feature.OPPONENT_Y);
+        double fireTick = wb.getFeature(Feature.TICK) - 1.0;
+        double oppX = wb.getScanFeatureAtOrBeforeTick(Feature.OPPONENT_X, fireTick);
+        double oppY = wb.getScanFeatureAtOrBeforeTick(Feature.OPPONENT_Y, fireTick);
         if (Double.isNaN(oppX) || Double.isNaN(oppY)) {
             oppX = wb.getFeature(Feature.OPPONENT_X);
             oppY = wb.getFeature(Feature.OPPONENT_Y);
         }
         double ourX = wb.getPreviousTickFeature(Feature.OUR_X);
         double ourY = wb.getPreviousTickFeature(Feature.OUR_Y);
-        double tick = wb.getFeature(Feature.TICK) - 1.0;
 
-        if (Double.isNaN(oppX) || Double.isNaN(ourX) || Double.isNaN(tick)) {
+        if (Double.isNaN(oppX) || Double.isNaN(ourX) || Double.isNaN(fireTick)) {
             return;
         }
 
@@ -124,7 +124,7 @@ public final class TheirWaveTracker implements IInGameFeatures {
         // Allocate ring buffer slot and write fire-time columns
         int slot = wb.allocateTheirWave();
         wb.setTheirWave(slot, TheirWaveColumn.FIRE_POWER, power);
-        wb.setTheirWave(slot, TheirWaveColumn.FIRE_TICK, tick);
+        wb.setTheirWave(slot, TheirWaveColumn.FIRE_TICK, fireTick);
         wb.setTheirWave(slot, TheirWaveColumn.FIRE_X, oppX);
         wb.setTheirWave(slot, TheirWaveColumn.FIRE_Y, oppY);
         wb.setTheirWave(slot, TheirWaveColumn.BULLET_SPEED, bulletSpeed);
@@ -140,8 +140,9 @@ public final class TheirWaveTracker implements IInGameFeatures {
         // most recently scanned one at or before the aim tick — walk the ring back
         // across any radar-lock gap so this is never NaN. Our own position at the
         // aim tick is always known.
-        double aimOppX = wb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_X, 2);
-        double aimOppY = wb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_Y, 2);
+        double aimTick = wb.getFeature(Feature.TICK) - 2.0;
+        double aimOppX = wb.getScanFeatureAtOrBeforeTick(Feature.OPPONENT_X, aimTick);
+        double aimOppY = wb.getScanFeatureAtOrBeforeTick(Feature.OPPONENT_Y, aimTick);
         double aimOurX = wb.getFeatureNTicksAgo(Feature.OUR_X, 2);
         double aimOurY = wb.getFeatureNTicksAgo(Feature.OUR_Y, 2);
         double aimDx = aimOurX - aimOppX;
@@ -156,7 +157,7 @@ public final class TheirWaveTracker implements IInGameFeatures {
         wb.setTheirWave(slot, TheirWaveColumn.AIM_BEARING, aimBearing);
 
         // Also write fire-time features to staging for CsvWriter
-        wb.setFeature(Feature.THEIR_FIRE_TICK, tick);
+        wb.setFeature(Feature.THEIR_FIRE_TICK, fireTick);
         wb.setFeature(Feature.THEIR_FIRE_X, oppX);
         wb.setFeature(Feature.THEIR_FIRE_Y, oppY);
         wb.setFeature(Feature.THEIR_BULLET_SPEED, bulletSpeed);

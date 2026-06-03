@@ -14,8 +14,7 @@ import cz.zamboch.autopilot.core.Whiteboard;
  * opponentBulletGain
  * <p>
  * If 0.1 ≤ adjustedDrop ≤ 3.0 → opponent fired with that power.
- * Uses PREV_SCAN_OPPONENT_ENERGY stored in the Whiteboard as inter-tick state.
- * Resets accumulator features after consumption.
+ * Uses the previous scan row's opponent energy as the comparison baseline.
  * <p>
  * Note: ram bonus (+1.2 to at-fault rammer) is intentionally NOT included.
  * Robocode's {@code HitRobotEvent.isMyFault()} on the local side does not
@@ -27,10 +26,7 @@ public final class FireFeatures implements IInGameFeatures {
     private double lastProcessedTick = Double.NaN;
 
     private static final Feature[] DEPS = {
-            Feature.TICK, Feature.LAST_SCAN_TICK, Feature.OPPONENT_ENERGY,
-            Feature.OUR_BULLET_DAMAGE_TO_OPPONENT,
-            Feature.OPPONENT_BULLET_ENERGY_GAIN,
-            Feature.RAM_DAMAGE_TO_OPPONENT,
+            Feature.SCAN_TICK, Feature.OPPONENT_ENERGY,
             Feature.OPPONENT_WALL_HIT_DAMAGE
     };
     private static final Feature[] OUTPUTS = {
@@ -50,13 +46,10 @@ public final class FireFeatures implements IInGameFeatures {
     }
 
     public void process(Whiteboard wb) {
-        double tick = wb.getFeature(Feature.TICK);
-        double lastScanTick = wb.getFeature(Feature.LAST_SCAN_TICK);
-
-        // Only compute on ticks where a new scan occurred
-        if (Double.isNaN(tick) || Double.isNaN(lastScanTick) || tick != lastScanTick) {
+        if (!wb.hasCurrentScan()) {
             return;
         }
+        double tick = wb.getFeature(Feature.SCAN_TICK);
 
         // Guard against re-processing when ring didn't advance (e.g. robot dead)
         if (tick == lastProcessedTick) {
@@ -65,7 +58,8 @@ public final class FireFeatures implements IInGameFeatures {
         lastProcessedTick = tick;
 
         double currentEnergy = wb.getFeature(Feature.OPPONENT_ENERGY);
-        double prevEnergy = wb.getPreviousTickFeature(Feature.PREV_SCAN_OPPONENT_ENERGY);
+        double prevEnergy = wb.getPreviousTickFeature(Feature.OPPONENT_ENERGY);
+        wb.setFeature(Feature.PREV_SCAN_OPPONENT_ENERGY, prevEnergy);
 
         if (!Double.isNaN(prevEnergy)) {
             double drop = prevEnergy - currentEnergy;
@@ -92,7 +86,5 @@ public final class FireFeatures implements IInGameFeatures {
                 wb.setFeature(Feature.THEIR_FIRE_POWER, Double.NaN);
             }
         }
-
-        wb.setFeature(Feature.PREV_SCAN_OPPONENT_ENERGY, currentEnergy);
     }
 }

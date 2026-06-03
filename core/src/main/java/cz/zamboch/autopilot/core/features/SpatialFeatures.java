@@ -24,17 +24,20 @@ public final class SpatialFeatures implements IInGameFeatures {
     }
 
     public FileType getFileType() {
-        return FileType.TICKS;
+        return FileType.SCAN;
     }
 
     public void process(Whiteboard wb) {
+        if (!wb.hasCurrentScan()) {
+            return;
+        }
         double bearing = wb.getFeature(Feature.BEARING_RADIANS);
         double heading = wb.getFeature(Feature.OUR_HEADING);
         if (Double.isNaN(bearing) || Double.isNaN(heading)) {
             return;
         }
         double absBearing = heading + bearing;
-        wb.setFeature(Feature.OPPONENT_BEARING_ABSOLUTE, absBearing);
+        wb.setCurrentScanFeature(Feature.OPPONENT_BEARING_ABSOLUTE, absBearing);
 
         double ourX = wb.getFeature(Feature.OUR_X);
         double ourY = wb.getFeature(Feature.OUR_Y);
@@ -42,7 +45,7 @@ public final class SpatialFeatures implements IInGameFeatures {
         if (Double.isNaN(ourX) || Double.isNaN(ourY) || Double.isNaN(distance)) {
             return;
         }
-        wb.setFeature(Feature.OPPONENT_X, ourX + distance * Math.sin(absBearing));
-        wb.setFeature(Feature.OPPONENT_Y, ourY + distance * Math.cos(absBearing));
+        wb.setCurrentScanFeature(Feature.OPPONENT_X, ourX + distance * Math.sin(absBearing));
+        wb.setCurrentScanFeature(Feature.OPPONENT_Y, ourY + distance * Math.cos(absBearing));
     }
 }

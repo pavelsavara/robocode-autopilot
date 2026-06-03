@@ -64,6 +64,10 @@ public final class CsvRowWriter {
         out.write(value.getBytes(StandardCharsets.UTF_8));
     }
 
+    public void writeString(String value) throws IOException {
+        writeRaw(value == null ? "" : value);
+    }
+
     public void writeInt(int value) throws IOException {
         if (!firstColumn) {
             out.write(',');

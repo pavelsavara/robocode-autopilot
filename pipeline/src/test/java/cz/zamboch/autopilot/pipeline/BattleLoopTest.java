@@ -146,12 +146,21 @@ final class BattleLoopTest {
         List<String> tickLines = readLines(ticksCsv);
         assertTrue(tickLines.size() > 1, "ticks.csv should have data rows");
         String header = tickLines.get(0);
-        assertTrue(header.contains("distance"), "Header should contain distance column");
         assertTrue(header.contains("our_energy"), "Header should contain our_energy column");
+
+        // Check scan.csv
+        File scanCsv = new File(autopilotDir, "scan.csv");
+        assertTrue(scanCsv.exists(), "scan.csv should exist");
+        List<String> scanLines = readLines(scanCsv);
+        assertTrue(scanLines.size() > 1, "scan.csv should have data rows");
+        String scanHeader = scanLines.get(0);
+        assertTrue(scanHeader.contains("scan_distance"), "scan.csv header should contain scan_distance");
+        assertTrue(scanHeader.contains("scan_opponent_energy"), "scan.csv header should contain scan_opponent_energy");
 
         System.out.println("=== BATTLE LOOP TEST SUMMARY ===");
         System.out.println("Rounds: " + rounds);
         System.out.println("Ticks recorded: " + (tickLines.size() - 1));
+        System.out.println("Scans recorded: " + (scanLines.size() - 1));
 
         // Check scores.csv
         File scoresCsv = new File(autopilotDir, "scores.csv");

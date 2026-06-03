@@ -361,37 +361,35 @@ public final class GodViewQualityValidator {
         checkSpatialFeature(wb, Feature.TICK, turn.getTurn());
 
         // Opponent features (only valid on scan ticks — whiteboard is stale otherwise)
-        double lastScanTick = wb.getFeature(Feature.LAST_SCAN_TICK);
-        if (Double.isNaN(lastScanTick) || Math.abs(tick - lastScanTick) > EPSILON) {
+        if (!wb.hasCurrentScan()) {
             return; // not a scan tick — skip opponent features
         }
 
-        checkSpatialFeature(wb, Feature.OPPONENT_X, opponent.getX());
-        checkSpatialFeature(wb, Feature.OPPONENT_Y, opponent.getY());
-        checkSpatialFeature(wb, Feature.OPPONENT_HEADING, opponent.getBodyHeading());
-        checkSpatialFeature(wb, Feature.OPPONENT_VELOCITY, opponent.getVelocity());
-        checkSpatialFeature(wb, Feature.OPPONENT_ENERGY, opponent.getEnergy());
+        checkScanFeature(wb, Feature.OPPONENT_X, opponent.getX());
+        checkScanFeature(wb, Feature.OPPONENT_Y, opponent.getY());
+        checkScanFeature(wb, Feature.OPPONENT_HEADING, opponent.getBodyHeading());
+        checkScanFeature(wb, Feature.OPPONENT_VELOCITY, opponent.getVelocity());
+        checkScanFeature(wb, Feature.OPPONENT_ENERGY, opponent.getEnergy());
 
         // Derived features (depend on opponent position)
         double dx = opponent.getX() - self.getX();
         double dy = opponent.getY() - self.getY();
         double expectedDistance = Math.hypot(dx, dy);
-        checkSpatialFeature(wb, Feature.DISTANCE, expectedDistance);
+        checkScanFeature(wb, Feature.DISTANCE, expectedDistance);
 
         double absBearing = Math.atan2(dx, dy);
         double expectedBearing = RoboMath.normalRelativeAngle(absBearing - self.getBodyHeading());
-        checkSpatialFeature(wb, Feature.BEARING_RADIANS, expectedBearing);
+        checkScanFeature(wb, Feature.BEARING_RADIANS, expectedBearing);
 
         double oppVel = opponent.getVelocity();
         double oppHeading = opponent.getBodyHeading();
         double expectedLateral = oppVel * Math.sin(oppHeading - absBearing - Math.PI);
         double expectedAdvancing = oppVel * Math.cos(oppHeading - absBearing - Math.PI);
-        checkSpatialFeature(wb, Feature.OPPONENT_LATERAL_VELOCITY, expectedLateral);
-        checkSpatialFeature(wb, Feature.OPPONENT_ADVANCING_VELOCITY, expectedAdvancing);
+        checkScanFeature(wb, Feature.OPPONENT_LATERAL_VELOCITY, expectedLateral);
+        checkScanFeature(wb, Feature.OPPONENT_ADVANCING_VELOCITY, expectedAdvancing);
 
         // Scan timing (only meaningful on scan ticks)
-        checkSpatialFeature(wb, Feature.LAST_SCAN_TICK, turn.getTurn());
-        checkSpatialFeature(wb, Feature.TICKS_SINCE_SCAN, 0.0);
+        checkScanFeature(wb, Feature.SCAN_TICK, turn.getTurn());
     }
 
     private void checkSpatialFeature(Whiteboard wb, Feature feature, double expected) {
@@ -400,6 +398,18 @@ public final class GodViewQualityValidator {
         double actual = wb.getFeature(feature);
         if (Double.isNaN(actual) && Double.isNaN(expected)) {
             return; // both NaN = match
+        }
+        if (Double.isNaN(actual) || Double.isNaN(expected) || Math.abs(actual - expected) > EPSILON) {
+            stats.mismatches++;
+        }
+    }
+
+    private void checkScanFeature(Whiteboard wb, Feature feature, double expected) {
+        ValidationStats stats = spatialStats.computeIfAbsent(feature, k -> new ValidationStats());
+        stats.checks++;
+        double actual = wb.getFeature(feature);
+        if (Double.isNaN(actual) && Double.isNaN(expected)) {
+            return;
         }
         if (Double.isNaN(actual) || Double.isNaN(expected) || Math.abs(actual - expected) > EPSILON) {
             stats.mismatches++;

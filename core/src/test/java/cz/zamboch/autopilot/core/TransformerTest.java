@@ -25,10 +25,12 @@ final class TransformerTest {
         wb.setFeature(Feature.OUR_VELOCITY, 5.0);
         wb.setFeature(Feature.OUR_ENERGY, 85.0);
         wb.setFeature(Feature.GUN_HEAT, 1.5);
+        wb.beginScanRow(40);
+        wb.setFeature(Feature.TICK, 42);
+        wb.beginScanRow(42);
         wb.setFeature(Feature.BEARING_RADIANS, Math.toRadians(30));
         wb.setFeature(Feature.OPPONENT_HEADING, Math.toRadians(180));
         wb.setFeature(Feature.OPPONENT_VELOCITY, 4.0);
-        wb.setFeature(Feature.LAST_SCAN_TICK, 40);
 
         wb.process();
 
@@ -36,7 +38,7 @@ final class TransformerTest {
         double expectedAbsBearing = Math.toRadians(45) + Math.toRadians(30);
         assertEquals(expectedAbsBearing, wb.getFeature(Feature.OPPONENT_BEARING_ABSOLUTE), 1e-9);
 
-        // TICKS_SINCE_SCAN = TICK - LAST_SCAN_TICK
+        // TICKS_SINCE_SCAN = current scan tick - previous scan tick
         assertEquals(2.0, wb.getFeature(Feature.TICKS_SINCE_SCAN), 1e-9);
 
         // Lateral/advancing should be computed (not NaN)
@@ -58,9 +60,8 @@ final class TransformerTest {
 
         wb.process();
 
-        // No bearing → OPPONENT_BEARING_ABSOLUTE should remain NaN
+        // No scan row means scan-derived values are absent.
         assertTrue(Double.isNaN(wb.getFeature(Feature.OPPONENT_BEARING_ABSOLUTE)));
-        // No LAST_SCAN_TICK → TICKS_SINCE_SCAN should remain NaN
         assertTrue(Double.isNaN(wb.getFeature(Feature.TICKS_SINCE_SCAN)));
     }
 }

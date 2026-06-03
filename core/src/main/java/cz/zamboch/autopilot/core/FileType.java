@@ -7,6 +7,8 @@ package cz.zamboch.autopilot.core;
 public enum FileType {
     /** One row per simulation tick. */
     TICKS,
+    /** One row per radar scan event. */
+    SCAN,
     /** One row per detected opponent fire (energy drop). */
     THEIR_WAVES,
     /**
@@ -17,11 +19,8 @@ public enum FileType {
     /** One row per round (outcomes + per-battle constants). */
     SCORES,
     /**
-     * Whiteboard-internal state only; never written to any CSV. Used for
-     * robot-side decision outputs (gun aim) and scan-window state that are inputs
-     * to other features but are not themselves part of the dataset. Backed by the
-     * tick ring; Whiteboard rotation preserves selected scan-window values and
-     * clears the rest.
+     * Whiteboard-internal decision state only; never written to any CSV. Used for
+     * robot-side decision outputs such as gun aim.
      */
-    NONE
+    DECISIONS
 }

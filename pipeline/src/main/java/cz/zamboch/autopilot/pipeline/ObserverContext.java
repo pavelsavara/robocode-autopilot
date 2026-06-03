@@ -158,7 +158,7 @@ public final class ObserverContext {
         }
 
         double debugTick = debugValue(props, "TICK");
-        double lastScanTick = debugValue(props, Feature.LAST_SCAN_TICK.name());
+        double lastScanTick = debugValue(props, Feature.SCAN_TICK.name());
         if (Double.isNaN(debugTick) || Double.isNaN(lastScanTick) || Math.abs(debugTick - events.getTurn()) > 1e-4
                 || Math.abs(lastScanTick - events.getTurn()) <= 1e-4) {
             return events;
@@ -203,9 +203,9 @@ public final class ObserverContext {
      * (and its scan-gap staleness / NaN), but is built omnisciently from the
      * engine's true robot states every tick.
      * <p>
-     * The opponent's position is set EVERY tick (not just scan ticks), so
-     * {@code LAST_SCAN_TICK == TICK} always holds on the god-view and its
-     * opponent geometry is exact ground truth. Must be called after
+    * The opponent's position is set EVERY tick into a god-view scan row, so
+    * {@code SCAN_TICK == TICK} on the god-view and its opponent geometry is
+    * exact ground truth. Must be called after
      * {@link #processTick(ITurnSnapshot)} and before god-view wave resolution.
      */
     public void seedGodView(ITurnSnapshot curr) {
@@ -241,7 +241,7 @@ public final class ObserverContext {
         godWb.setFeature(Feature.OPPONENT_HEADING, opp.getBodyHeading());
         godWb.setFeature(Feature.OPPONENT_VELOCITY, opp.getVelocity());
         godWb.setFeature(Feature.OPPONENT_ENERGY, opp.getEnergy());
-        godWb.setFeature(Feature.LAST_SCAN_TICK, tick);
+        godWb.setFeature(Feature.SCAN_TICK, tick);
         godWb.setStringFeature(Feature.OPPONENT_ID, opp.getName());
 
         godWb.process();

@@ -1,5 +1,6 @@
 package cz.zamboch.autopilot.core;
 
+import cz.zamboch.autopilot.core.features.AccumulatorFeatures;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -73,55 +74,56 @@ final class WhiteboardTickRingTest {
     }
 
     @Test
-    void lastKnownWalksBackAcrossNaNGaps() {
-        // Opponent scanned at tick 2, then a one-tick radar-lock gap, then current.
+    void scanLookupWalksBackBySimulationTick() {
         wb.setFeature(Feature.TICK, 2);
-        wb.setFeature(Feature.OPPONENT_X, 100);
-        wb.setFeature(Feature.TICK, 3); // no scan: OPPONENT_X stays NaN this tick
+        wb.beginScanRow(2);
+        wb.setCurrentScanFeature(Feature.OPPONENT_X, 100);
+        wb.setFeature(Feature.TICK, 3); // no scan row this tick
         wb.setFeature(Feature.TICK, 4);
-        wb.setFeature(Feature.OPPONENT_X, 140);
+        wb.beginScanRow(4);
+        wb.setCurrentScanFeature(Feature.OPPONENT_X, 140);
 
-        // From one tick ago (tick 3, NaN) walk back to the last known value (tick 2).
-        assertEquals(100, wb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_X, 1), 1e-9);
-        // From the current tick the value is the fresh one.
-        assertEquals(140, wb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_X, 0), 1e-9);
+        assertEquals(100, wb.getScanFeatureAtOrBeforeTick(Feature.OPPONENT_X, 3), 1e-9);
+        assertEquals(140, wb.getScanFeatureAtOrBeforeTick(Feature.OPPONENT_X, 4), 1e-9);
     }
 
     @Test
-    void lastKnownReturnsNaNWhenNoValueInRange() {
+    void scanLookupReturnsNaNWhenNoRowInRange() {
         wb.setFeature(Feature.TICK, 1);
         wb.setFeature(Feature.TICK, 2);
-        assertTrue(Double.isNaN(wb.getLastKnownFeatureNTicksAgo(Feature.OPPONENT_X, 0)));
+        assertTrue(Double.isNaN(wb.getScanFeatureAtOrBeforeTick(Feature.OPPONENT_X, 2)));
     }
 
     @Test
-    void damageAccumulatorSurvivesTickRotationUntilReset() {
+    void damageAccumulatorWindowSurvivesTickRotationUntilAccumulatorFeaturesCopiesAndResets() {
         wb.setFeature(Feature.TICK, 1);
         wb.setFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT, 2.5);
 
         wb.setFeature(Feature.TICK, 2);
         assertEquals(2.5, wb.getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT), 1e-9);
 
-        wb.resetDamageAccumulators();
-        assertEquals(0, wb.getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT), 1e-9);
+        wb.beginScanRow(2);
+        new AccumulatorFeatures().process(wb);
+        assertEquals(2.5, wb.getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT), 1e-9);
 
         wb.setFeature(Feature.TICK, 3);
         assertTrue(Double.isNaN(wb.getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT)));
     }
 
     @Test
-    void scanStateSurvivesTickRotation() {
+    void scanRowsSurviveTickRotationAsLatestScanState() {
         wb.setFeature(Feature.TICK, 0);
-        wb.setFeature(Feature.LAST_SCAN_TICK, 0);
-        wb.setFeature(Feature.PREV_SCAN_OPPONENT_ENERGY, 100);
+        wb.beginScanRow(0);
+        wb.setCurrentScanFeature(Feature.OPPONENT_ENERGY, 100);
 
         wb.setFeature(Feature.TICK, 1);
-        assertEquals(0, wb.getFeature(Feature.LAST_SCAN_TICK), 1e-9);
-        assertEquals(100, wb.getFeature(Feature.PREV_SCAN_OPPONENT_ENERGY), 1e-9);
+        assertTrue(Double.isNaN(wb.getFeature(Feature.SCAN_TICK)));
+        assertEquals(0, wb.getLatestScanFeature(Feature.SCAN_TICK), 1e-9);
+        assertEquals(100, wb.getLatestScanFeature(Feature.OPPONENT_ENERGY), 1e-9);
 
         wb.setFeature(Feature.TICK, 2);
-        assertEquals(0, wb.getFeature(Feature.LAST_SCAN_TICK), 1e-9);
-        assertEquals(100, wb.getFeature(Feature.PREV_SCAN_OPPONENT_ENERGY), 1e-9);
+        assertEquals(0, wb.getLatestScanFeature(Feature.SCAN_TICK), 1e-9);
+        assertEquals(100, wb.getLatestScanFeature(Feature.OPPONENT_ENERGY), 1e-9);
     }
 
     @Test

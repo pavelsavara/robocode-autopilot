@@ -41,6 +41,8 @@ class GodViewQualityValidatorTest {
                 wb.setFeature(Feature.GUN_HEAT, gunHeat);
                 wb.setFeature(Feature.GUN_HEADING, gunHeading);
                 wb.setFeature(Feature.RADAR_HEADING, radarHeading);
+                wb.setFeature(Feature.TICK, 42);
+                wb.beginScanRow(42);
                 wb.setFeature(Feature.OPPONENT_X, oppX);
                 wb.setFeature(Feature.OPPONENT_Y, oppY);
                 wb.setFeature(Feature.OPPONENT_HEADING, oppHeading);
@@ -56,8 +58,6 @@ class GodViewQualityValidatorTest {
                                 oppVelocity * Math.sin(oppHeading - absBearing - Math.PI));
                 wb.setFeature(Feature.OPPONENT_ADVANCING_VELOCITY,
                                 oppVelocity * Math.cos(oppHeading - absBearing - Math.PI));
-                wb.setFeature(Feature.TICK, 42);
-                wb.setFeature(Feature.LAST_SCAN_TICK, 42);
                 wb.setFeature(Feature.TICKS_SINCE_SCAN, 0);
 
                 IRobotSnapshot self = TestSnapshots.robot(selfX, selfY, selfHeading, selfVelocity,
@@ -94,7 +94,7 @@ class GodViewQualityValidatorTest {
                 wb.setFeature(Feature.OPPONENT_LATERAL_VELOCITY, 0);
                 wb.setFeature(Feature.OPPONENT_ADVANCING_VELOCITY, 0);
                 wb.setFeature(Feature.TICK, 10);
-                wb.setFeature(Feature.LAST_SCAN_TICK, 10);
+                wb.setFeature(Feature.SCAN_TICK, 10);
                 wb.setFeature(Feature.TICKS_SINCE_SCAN, 0);
 
                 IRobotSnapshot self = TestSnapshots.robot(100, 200, 1.0, 6.0, 80, 0.5, 1.5, 2.0,
@@ -115,7 +115,7 @@ class GodViewQualityValidatorTest {
         void spatialChecks_selfValidatedButOpponentSkippedWhenNotScanTick() {
                 Whiteboard wb = new Whiteboard();
                 wb.setFeature(Feature.TICK, 42);
-                wb.setFeature(Feature.LAST_SCAN_TICK, 40); // not a scan tick
+                wb.setFeature(Feature.SCAN_TICK, 40); // not a scan tick
                 wb.setFeature(Feature.OUR_X, 100);
                 wb.setFeature(Feature.OUR_Y, 200);
                 wb.setFeature(Feature.OUR_HEADING, 0);
@@ -428,7 +428,7 @@ class GodViewQualityValidatorTest {
                 wb.setFeature(Feature.OPPONENT_LATERAL_VELOCITY, 0);
                 wb.setFeature(Feature.OPPONENT_ADVANCING_VELOCITY, 0);
                 wb.setFeature(Feature.TICK, 1);
-                wb.setFeature(Feature.LAST_SCAN_TICK, 1);
+                wb.setFeature(Feature.SCAN_TICK, 1);
                 wb.setFeature(Feature.TICKS_SINCE_SCAN, 0);
 
                 IRobotSnapshot self = TestSnapshots.robot(100, 200, 0, 0, 100, 0, 0, 0,
@@ -474,7 +474,7 @@ class GodViewQualityValidatorTest {
                 // Feed Layer 1
                 Whiteboard wb = new Whiteboard();
                 wb.setFeature(Feature.TICK, 1);
-                wb.setFeature(Feature.LAST_SCAN_TICK, 1);
+                wb.setFeature(Feature.SCAN_TICK, 1);
                 wb.setFeature(Feature.OUR_X, 100);
                 wb.setFeature(Feature.OUR_Y, 200);
                 wb.setFeature(Feature.OUR_HEADING, 0);
@@ -515,7 +515,7 @@ class GodViewQualityValidatorTest {
         void assertNonVacuous_passesWithEmptyLayer4() {
                 Whiteboard wb = new Whiteboard();
                 wb.setFeature(Feature.TICK, 1);
-                wb.setFeature(Feature.LAST_SCAN_TICK, 1);
+                wb.setFeature(Feature.SCAN_TICK, 1);
                 wb.setFeature(Feature.OUR_X, 100);
                 wb.setFeature(Feature.OUR_Y, 200);
                 wb.setFeature(Feature.OUR_HEADING, 0);

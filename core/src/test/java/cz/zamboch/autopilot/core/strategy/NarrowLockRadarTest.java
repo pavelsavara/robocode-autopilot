@@ -20,6 +20,17 @@ final class NarrowLockRadarTest {
         radar = new NarrowLockRadar(wb);
     }
 
+    private void scanAt(long tick, double ourX, double ourY, double heading, double distance, double bearing) {
+        wb.setFeature(Feature.TICK, tick);
+        wb.setFeature(Feature.OUR_X, ourX);
+        wb.setFeature(Feature.OUR_Y, ourY);
+        wb.setFeature(Feature.OUR_HEADING, heading);
+        wb.beginScanRow(tick);
+        wb.setFeature(Feature.DISTANCE, distance);
+        wb.setFeature(Feature.BEARING_RADIANS, bearing);
+        wb.process();
+    }
+
     @Test
     void spinsClockwiseInitiallyWhenNoScan() {
         double turn = radar.getRadarTurn();
@@ -29,12 +40,7 @@ final class NarrowLockRadarTest {
 
     @Test
     void crossesKnownCenterWithNarrowOvershoot() {
-        wb.setFeature(Feature.OUR_X, 100);
-        wb.setFeature(Feature.OUR_Y, 100);
-        wb.setFeature(Feature.DISTANCE, 400);
-        wb.setFeature(Feature.OUR_HEADING, Math.PI / 4);
-        wb.setFeature(Feature.BEARING_RADIANS, 0);
-        wb.process();
+        scanAt(0, 100, 100, Math.PI / 4, 400, 0);
 
         wb.setFeature(Feature.RADAR_HEADING, Math.PI / 6);
         double turn = radar.getRadarTurn();
@@ -46,20 +52,15 @@ final class NarrowLockRadarTest {
 
     @Test
     void crossesBackTowardLastKnownCenterAfterLockLost() {
-        wb.setFeature(Feature.OUR_X, 100);
-        wb.setFeature(Feature.OUR_Y, 100);
-        wb.setFeature(Feature.DISTANCE, 400);
-        wb.setFeature(Feature.OUR_HEADING, 0);
-        wb.setFeature(Feature.BEARING_RADIANS, 0);
-        wb.process();
+        scanAt(0, 100, 100, 0, 400, 0);
 
         wb.setFeature(Feature.RADAR_HEADING, Math.PI / 4);
         double turn1 = radar.getRadarTurn();
         assertTrue(turn1 < 0, "Turn should be negative (counter-clockwise)");
 
         wb.setFeature(Feature.TICK, 1);
-    wb.setFeature(Feature.OUR_X, 100);
-    wb.setFeature(Feature.OUR_Y, 100);
+        wb.setFeature(Feature.OUR_X, 100);
+        wb.setFeature(Feature.OUR_Y, 100);
         wb.setFeature(Feature.RADAR_HEADING, Math.toRadians(-2));
         wb.process();
 
@@ -70,12 +71,7 @@ final class NarrowLockRadarTest {
 
     @Test
     void alternatesWhenAlreadyOnCenter() {
-        wb.setFeature(Feature.OUR_X, 100);
-        wb.setFeature(Feature.OUR_Y, 100);
-        wb.setFeature(Feature.DISTANCE, 400);
-        wb.setFeature(Feature.OUR_HEADING, 0);
-        wb.setFeature(Feature.BEARING_RADIANS, 0);
-        wb.process();
+        scanAt(0, 100, 100, 0, 400, 0);
 
         wb.setFeature(Feature.RADAR_HEADING, 0);
         double turn1 = radar.getRadarTurn();

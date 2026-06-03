@@ -67,7 +67,7 @@ final class AutopilotObserverTest {
         assertEquals(80.0, wb.getFeature(Feature.OPPONENT_ENERGY), 1e-9);
         assertEquals(5.0, wb.getFeature(Feature.OPPONENT_VELOCITY), 1e-9);
         assertEquals(Math.toRadians(90), wb.getFeature(Feature.OPPONENT_HEADING), 1e-9);
-        assertEquals(1.0, wb.getFeature(Feature.LAST_SCAN_TICK), 1e-9);
+        assertEquals(1.0, wb.getFeature(Feature.SCAN_TICK), 1e-9);
     }
 
     @Test
@@ -136,7 +136,7 @@ final class AutopilotObserverTest {
         autopilot.doTurn();
 
         Whiteboard wb = autopilot.getWhiteboard();
-        assertEquals(1.0, wb.getFeature(Feature.LAST_SCAN_TICK), 1e-9);
+        assertEquals(1.0, wb.getLatestScanFeature(Feature.SCAN_TICK), 1e-9);
 
         // Tick 2: no scan
         peer.executeTick();
@@ -148,10 +148,10 @@ final class AutopilotObserverTest {
         feedStatus(100, 400, 300, 0, 0, 0, 0, 0, 3);
         autopilot.doTurn();
 
-        // LAST_SCAN_TICK should still be 1
-        assertEquals(1.0, wb.getFeature(Feature.LAST_SCAN_TICK), 1e-9);
-        // TICKS_SINCE_SCAN should be 2 (tick 3 - tick 1 = 2)
-        double tss = wb.getFeature(Feature.TICKS_SINCE_SCAN);
+        // Latest scan row should still be tick 1.
+        assertEquals(1.0, wb.getLatestScanFeature(Feature.SCAN_TICK), 1e-9);
+        // The latest scan row stores the gap observed when that scan was processed.
+        double tss = wb.getLatestScanFeature(Feature.TICKS_SINCE_SCAN);
         if (!Double.isNaN(tss)) {
             assertEquals(2.0, tss, 1e-9);
         }

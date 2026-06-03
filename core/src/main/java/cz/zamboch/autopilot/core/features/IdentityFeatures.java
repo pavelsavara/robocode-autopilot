@@ -39,10 +39,13 @@ public final class IdentityFeatures implements IInGameFeatures {
     }
 
     public FileType getFileType() {
-        return FileType.TICKS;
+        return FileType.SCAN;
     }
 
     public void process(Whiteboard wb) {
+        if (!wb.hasCurrentScan()) {
+            return;
+        }
         String name = wb.getStringFeature(Feature.OPPONENT_ID);
         if (name == null) {
             // Identity unknown (pre-scan / round start) — leave OPPONENT_ID_HASH unset
@@ -57,7 +60,7 @@ public final class IdentityFeatures implements IInGameFeatures {
             cachedHash = RoboMath.fnv1a32(botId);
             cachedName = name;
         }
-        wb.setFeature(Feature.OPPONENT_ID_HASH, cachedHash);
+        wb.setCurrentScanFeature(Feature.OPPONENT_ID_HASH, cachedHash);
     }
 
     /** Reset cached state — for testing only. */
