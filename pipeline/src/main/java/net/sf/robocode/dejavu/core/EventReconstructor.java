@@ -882,7 +882,11 @@ public final class EventReconstructor {
      */
     private void buildRobotCollisionEvents(ITurnSnapshot prev, ITurnSnapshot cur, List<Event> events,
             Map<Event, EnumSet<Provenance>> eventFlags) {
-        if (heroDead) {
+        // Use prevState (state hero entered the turn with), not heroDead which buildBulletEvents
+        // already raised when the hero dies this very turn; the death turn is still live and the
+        // dying hero reads out this turn's ram before its DeathEvent, so the at-fault death-tick
+        // ram (opponent's 0.6 charge) must still be credited.
+        if (prevState.isDead()) {
             return;
         }
         IRobotSnapshot me = cur.getRobots()[heroIndex];
