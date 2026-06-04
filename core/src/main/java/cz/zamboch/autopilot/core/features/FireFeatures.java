@@ -46,8 +46,6 @@ public final class FireFeatures implements IInGameFeatures {
     private static final double INACTIVITY_ZAP = 0.1;
     /** Robocode default gun cooling rate; gun heat falls this much each tick. */
     private static final double GUN_COOLING_RATE = 0.1;
-    /** Gun heat every robot starts a round with (cannot fire for ~30 ticks). */
-    private static final double INITIAL_GUN_HEAT = 3.0;
 
     private static final Feature[] DEPS = {
             Feature.SCAN_TICK, Feature.OPPONENT_ENERGY,
@@ -99,7 +97,7 @@ public final class FireFeatures implements IInGameFeatures {
         // round-start gun heat (cooled below for the elapsed ticks).
         double prevGunHeat = wb.getPreviousScanFeature(Feature.THEIR_GUN_HEAT);
         if (Double.isNaN(prevGunHeat)) {
-            prevGunHeat = INITIAL_GUN_HEAT;
+            prevGunHeat = 0.0;
         }
         double gunHeat = Math.max(0.0, prevGunHeat - GUN_COOLING_RATE * deltaTick);
 
@@ -124,17 +122,27 @@ public final class FireFeatures implements IInGameFeatures {
             zapActive = false;
         }
 
-        // Detect the onset of an idle drain from a signal a fire cannot produce:
-        // a one-quantum idle loss while the gun is still hot, or two such losses
-        // on consecutive ticks (a robot cannot fire on back-to-back ticks).
+        // The engine zap drains one quantum every tick until a damage event, so a
+        // stable consecutive tick with no adjusted drain disproves an active zap.
+        // Clear the latch there: otherwise a latch set during a transient would
+        // persist across the flat ticks between a bot's minimum-power shots and
+        // keep subtracting 0.1 from the next real fire, hiding it.
+        boolean noDrain = Math.abs(adjustedDrop) <= FIRE_POWER_EPSILON;
+        if (consecutive && noDrain) {
+            zapActive = false;
+        }
+
+        // Detect the onset of an idle drain from a signature a real fire cannot
+        // produce: two one-quantum losses on consecutive ticks. A robot cannot
+        // fire on back-to-back ticks, so a 0.1 drop immediately preceded by
+        // another 0.1 drop is the continuous engine drain, not a fire. Seeded gun
+        // heat is unreliable after a late radar lock, so it must not be used as an
+        // onset trigger; that misreads the opponent's first real shot as a zap.
         boolean oneQuantum = Math.abs(adjustedDrop - INACTIVITY_ZAP) <= FIRE_POWER_EPSILON;
-        if (consecutive && oneQuantum) {
-            boolean gunHot = gunHeat > FIRE_POWER_EPSILON;
-            boolean prevOneQuantum =
-                    Math.abs(prevAdjustedDrop - INACTIVITY_ZAP) <= FIRE_POWER_EPSILON;
-            if (gunHot || prevOneQuantum) {
-                zapActive = true;
-            }
+        boolean prevOneQuantum =
+                Math.abs(prevAdjustedDrop - INACTIVITY_ZAP) <= FIRE_POWER_EPSILON;
+        if (consecutive && oneQuantum && prevOneQuantum) {
+            zapActive = true;
         }
 
         // Remove the ongoing drain so a real fire during it is measured right.
@@ -143,7 +151,12 @@ public final class FireFeatures implements IInGameFeatures {
             fireDrop -= INACTIVITY_ZAP;
         }
 
-        if (fireDrop >= MIN_FIRE_POWER - FIRE_POWER_EPSILON
+        // A robot cannot fire while its gun is hot. Tracked gun heat is exact when
+        // it follows a fire we observed, so a fire-sized drop while hot is the zap.
+        boolean gunReady = gunHeat <= FIRE_POWER_EPSILON;
+
+        if (gunReady
+                && fireDrop >= MIN_FIRE_POWER - FIRE_POWER_EPSILON
                 && fireDrop <= MAX_FIRE_POWER + FIRE_POWER_EPSILON) {
             double firePower = Math.max(MIN_FIRE_POWER, Math.min(MAX_FIRE_POWER, fireDrop));
             wb.setFeature(Feature.THEIR_FIRE_POWER, firePower);
