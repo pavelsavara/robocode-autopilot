@@ -25,7 +25,7 @@ import cz.zamboch.autopilot.core.Whiteboard;
  * that {@code FireFeatures} then misclassifies as enemy fire.</li>
  * <li><b>Proximity at wall</b> — opponent center is within
  * {@code WALL_MARGIN + WALL_TOLERANCE} of an edge and the previous-scan
- * velocity component pointed at it. Charge {@code wallDamage(absPrevV)}.
+ * velocity component pointed at it. Charge {@code wallDamage(impactSpeed)}.
  * This catches the steady-state "pinned to wall" case where the velocity
  * collapse already happened in an earlier scan window.</li>
  * </ol>
@@ -65,7 +65,7 @@ public final class WallHitEstimator implements IInGameFeatures {
             Feature.SCAN_TICK,
             Feature.OPPONENT_X, Feature.OPPONENT_Y,
             Feature.OPPONENT_VELOCITY, Feature.OPPONENT_HEADING,
-            Feature.RAM_DAMAGE_TO_OPPONENT, Feature.OPPONENT_ID
+            Feature.RAM_DAMAGE_TO_OPPONENT
     };
     private static final Feature[] OUTPUTS = {
             Feature.OPPONENT_WALL_HIT_DAMAGE
@@ -149,6 +149,7 @@ public final class WallHitEstimator implements IInGameFeatures {
 
         double absPrevV = Math.abs(prevVelocity);
         double absCurrV = Math.abs(currVelocity);
+        double impactSpeed = Math.min(MAX_VELOCITY, absPrevV + ACCEL_PER_TICK * scanGap);
 
         // ---- Signal 1: velocity collapse beyond max braking budget --------
         // Engine caps voluntary |Δv| at 2/tick. Any larger collapse proves a
@@ -158,20 +159,8 @@ public final class WallHitEstimator implements IInGameFeatures {
         double brakingBudget = DECEL_PER_TICK * scanGap;
         double collapseDamage = 0;
         if (velocityDrop > brakingBudget + 1e-6) {
-            // Reconstruct the speed the opponent actually reached at the wall.
-            // Only the last KNOWN scan velocity (absPrevV) and the scan gap are
-            // observable; the intra-gap acceleration choice is not. Use an
-            // opponent-behaviour prior: test.Aggressive is still ACCELERATING at
-            // impact; sample.Crazy cruises at constant MAX_VELOCITY; every other
-            // opponent is assumed to be braking before the wall.
-            // wallApproachAcceleration() returns the per-tick acceleration
-            // (+ACCEL for Aggressive, 0 for Crazy, -DECEL otherwise); the
-            // reconstructed impact speed is the last scan speed propagated over
-            // the scan gap by that acceleration, clamped to [0, MAX_VELOCITY].
-            // This matches god-view, which charges wallDamage(prev-tick velocity).
-            double accel = wallApproachAcceleration(wb);
-            double impactSpeed = Math.max(0,
-                    Math.min(MAX_VELOCITY, absPrevV + accel * scanGap));
+            // The collapse confirms a wall hit; charge wallDamage(impactSpeed),
+            // the engine preCollisionVelocity reconstruction computed above.
             collapseDamage = wallDamage(impactSpeed);
         }
 
@@ -190,16 +179,16 @@ public final class WallHitEstimator implements IInGameFeatures {
         double proximityDamage = 0;
         if (absCurrV < STOP_TOLERANCE) {
             if (opX <= WALL_MARGIN + WALL_TOLERANCE && vx < 0) {
-                proximityDamage = Math.max(proximityDamage, wallDamage(absPrevV));
+                proximityDamage = Math.max(proximityDamage, wallDamage(impactSpeed));
             }
             if (opX >= bfWidth - WALL_MARGIN - WALL_TOLERANCE && vx > 0) {
-                proximityDamage = Math.max(proximityDamage, wallDamage(absPrevV));
+                proximityDamage = Math.max(proximityDamage, wallDamage(impactSpeed));
             }
             if (opY <= WALL_MARGIN + WALL_TOLERANCE && vy < 0) {
-                proximityDamage = Math.max(proximityDamage, wallDamage(absPrevV));
+                proximityDamage = Math.max(proximityDamage, wallDamage(impactSpeed));
             }
             if (opY >= bfHeight - WALL_MARGIN - WALL_TOLERANCE && vy > 0) {
-                proximityDamage = Math.max(proximityDamage, wallDamage(absPrevV));
+                proximityDamage = Math.max(proximityDamage, wallDamage(impactSpeed));
             }
         }
 
@@ -214,41 +203,5 @@ public final class WallHitEstimator implements IInGameFeatures {
     /** Robocode engine wall-damage formula. */
     private static double wallDamage(double speed) {
         return Math.max(Math.abs(speed) / 2.0 - 1.0, 0);
-    }
-
-    /**
-     * Per-tick velocity change to assume while the opponent approaches a wall,
-     * used to propagate the last scanned speed to the impact tick. Three
-     * behaviour priors keyed off the OPPONENT_ID string (bot id, version suffix
-     * stripped after the first space):
-     * <ul>
-     * <li><b>test.Aggressive</b> drives into the target/wall under power and is
-     * still ACCELERATING at impact &rarr; +{@link #ACCEL_PER_TICK}.</li>
-     * <li><b>sample.Crazy</b> cruises at saturated MAX_VELOCITY (setAhead(40000))
-     * so its speed is CONSTANT at impact &rarr; 0. Returning +ACCEL here
-     * over-charged every Crazy wall hit by exactly
-     * {@code wallDamage(v+1) - wallDamage(v) = 0.5} relative to god-view, which
-     * charges {@code wallDamage(prevScanV)} directly.</li>
-     * <li><b>everyone else</b> is assumed to brake on approach &rarr;
-     * -{@link #DECEL_PER_TICK}.</li>
-     * </ul>
-     *
-     * @return signed acceleration in px/tick^2 (positive = accelerating into the
-     *         wall, 0 = constant speed, negative = decelerating before it)
-     */
-    private static double wallApproachAcceleration(Whiteboard wb) {
-        String name = wb.getStringFeature(Feature.OPPONENT_ID);
-        if (name == null) {
-            return -DECEL_PER_TICK;
-        }
-        int sp = name.indexOf(' ');
-        String botId = (sp < 0) ? name : name.substring(0, sp);
-        if (botId.endsWith(".Crazy") || botId.equals("Crazy")) {
-            return 0;
-        }
-        if (botId.endsWith(".Aggressive") || botId.equals("Aggressive")) {
-            return ACCEL_PER_TICK;
-        }
-        return -DECEL_PER_TICK;
     }
 }

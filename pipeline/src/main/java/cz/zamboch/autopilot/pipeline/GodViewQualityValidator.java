@@ -3,6 +3,8 @@ package cz.zamboch.autopilot.pipeline;
 import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.RoboMath;
 import cz.zamboch.autopilot.core.Whiteboard;
+import net.sf.robocode.dejavu.core.Physics;
+import net.sf.robocode.dejavu.core.Physics;
 import robocode.control.snapshot.BulletState;
 import robocode.control.snapshot.IBulletSnapshot;
 import robocode.control.snapshot.IRobotSnapshot;
@@ -713,7 +715,7 @@ public final class GodViewQualityValidator {
         if (oppSnap.getState() == RobotState.HIT_WALL
                 && prevOppState != RobotState.HIT_WALL
                 && !Double.isNaN(prevOppVelocity)) {
-            gv[DamageObservationTracker.OPP_WALL_DMG] += wallDamage(prevOppVelocity);
+            gv[DamageObservationTracker.OPP_WALL_DMG] += wallDamage(Physics.preCollisionVelocity(prevOppVelocity));
         }
         prevOppState = oppSnap.getState();
         prevOppVelocity = oppSnap.getVelocity();
