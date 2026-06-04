@@ -10,8 +10,7 @@ import cz.zamboch.autopilot.core.features.AccumulatorFeatures;
 import cz.zamboch.autopilot.core.features.FireFeatures;
 import cz.zamboch.autopilot.core.features.ScanFeatures;
 import cz.zamboch.autopilot.core.features.WallHitEstimator;
-import cz.zamboch.autopilot.core.features.OurWaveFeatures;
-import cz.zamboch.autopilot.core.features.WaveTracker;
+import cz.zamboch.autopilot.core.features.OurWaveTracker;
 import cz.zamboch.autopilot.core.features.TheirWaveTracker;
 import cz.zamboch.autopilot.core.strategy.*;
 import robocode.AdvancedRobot;
@@ -233,7 +232,8 @@ public final class Autopilot extends AdvancedRobot {
     public void onHitByBullet(HitByBulletEvent e) {
         double gain = Rules.getBulletHitBonus(e.getBullet().getPower());
         addToFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN, gain);
-        wb.markTheirBulletHitUs(e.getBullet().getPower());
+        TheirWaveTracker.markBulletHitUs(wb, e.getBullet().hashCode(), e.getBullet().getPower(),
+                e.getBullet().getX(), e.getBullet().getY(), e.getBullet().getHeading(), getTime());
     }
 
     @Override
@@ -319,8 +319,7 @@ public final class Autopilot extends AdvancedRobot {
                     new WallHitEstimator(bfWidth, bfHeight),
                     new FireFeatures(),
                     new AccumulatorFeatures(),
-                    new OurWaveFeatures(),
-                    new WaveTracker(),
+                    new OurWaveTracker(),
                     new TheirWaveTracker());
             featuresRegistered = true;
         }
@@ -395,27 +394,33 @@ public final class Autopilot extends AdvancedRobot {
             }
         }
 
-        // Debug
-        for (Feature f : Feature.values()) {
-            if (f == Feature.OPPONENT_ID) {
-                String s = wb.getStringFeature(f);
-                setDebugProperty(f.name(), s != null ? s : "");
-                continue;
+        if (debugPropertiesEnabled()) {
+            // Debug
+            for (Feature f : Feature.values()) {
+                if (f == Feature.OPPONENT_ID) {
+                    String s = wb.getStringFeature(f);
+                    setDebugProperty(f.name(), s != null ? s : "");
+                    continue;
+                }
+                double v = wb.getFeature(f);
+                setDebugProperty(f.name(), Double.isNaN(v) ? "NaN" : String.valueOf(v));
             }
-            double v = wb.getFeature(f);
-            setDebugProperty(f.name(), Double.isNaN(v) ? "NaN" : String.valueOf(v));
-        }
 
-        // Debug — every alive wave's columns, keyed COLUMN/waveId, so Layer 0
-        // fidelity can compare the in-flight wave set against the observer shadow.
-        wb.forEachAliveWaveProperty(this::setDebugProperty);
-        // Break columns (RES_*) of waves that resolved this tick — the only Layer 0
-        // coverage of the virtual waves' break geometry (gone from the alive set).
-        wb.forEachJustResolvedWaveBreak(this::setDebugProperty);
+            // Debug — every alive wave's columns, keyed COLUMN/waveId, so Layer 0
+            // fidelity can compare the in-flight wave set against the observer shadow.
+            wb.forEachAliveWaveProperty(this::setDebugProperty);
+            // Break columns (RES_*) of waves that resolved this tick — the only Layer 0
+            // coverage of the virtual waves' break geometry (gone from the alive set).
+            wb.forEachJustResolvedWaveBreak(this::setDebugProperty);
+        }
+    }
+
+    private static boolean debugPropertiesEnabled() {
+        return Boolean.getBoolean("autopilot.debugProperties");
     }
 
     /**
-     * Snapshot current state into OUR_FIRE_* features for WaveTracker to pick up
+    * Snapshot current state into OUR_FIRE_* features for OurWaveTracker to pick up
      * next tick.
      */
     private void snapshotFireFeatures(double power, int bulletId) {

@@ -12,6 +12,7 @@ import robocode.control.snapshot.ITurnSnapshot;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Wires snapshot replay → Observers → CSV.
@@ -209,10 +210,11 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
         }
 
         // Phase 2: Capture robot-side wave values (god-view writes a separate wb now)
-        double[] robotSideGf = new double[2];
+        @SuppressWarnings("unchecked")
+        List<Layer4WaveBreak>[] robotSideBreaks = new List[2];
         for (ObserverContext ctx : observers) {
             int pi = ctx.perspectiveIndex();
-            robotSideGf[pi] = wavePrecisionComparator.captureRobotSideBreak(pi, ctx.wb());
+            robotSideBreaks[pi] = wavePrecisionComparator.captureRobotSideBreaks(pi, ctx.wb());
             wavePrecisionComparator.captureRobotSideFire(pi, ctx.wb());
         }
 
@@ -225,7 +227,6 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
             if (godViewWaveResolver.firedThisTick(pi)) {
                 wavePrecisionComparator.recordGodViewFire(pi);
             }
-            wavePrecisionComparator.compareTick(pi, ctx.godWb(), robotSideGf[pi], resolved[pi]);
         }
 
         // Layer 0: IDebugProperty fidelity — observer's robot-side whiteboard must
@@ -292,7 +293,12 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                         double y = oppCtx.godWb().getFeature(Feature.OUR_FIRE_Y);
                         double trueHeading = godViewWaveResolver.getLastFiredTrueHeading(oppIndex);
                         long tick = (long) oppCtx.godWb().getFeature(Feature.OUR_FIRE_TICK);
-                        validator.recordGodViewTheirFire(power, x, y, trueHeading, tick);
+                        validator.recordGodViewTheirFire(power, x, y, trueHeading, tick,
+                            oppCtx.godWb().getFeature(Feature.OUR_FIRE_BULLET_SPEED),
+                            oppCtx.godWb().getFeature(Feature.OUR_FIRE_BEARING_ABSOLUTE),
+                            oppCtx.godWb().getFeature(Feature.OUR_FIRE_DISTANCE),
+                            oppCtx.godWb().getFeature(Feature.OUR_FIRE_OPPONENT_X),
+                            oppCtx.godWb().getFeature(Feature.OUR_FIRE_OPPONENT_Y));
                         if (theirFireTrace != null) {
                             long nowTick = (long) ctx.wb().getFeature(Feature.TICK);
                                 long lastScanTick = (long) ctx.wb().getFeature(Feature.SCAN_TICK);
@@ -324,7 +330,10 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                         double rsY = ctx.wb().getFeature(Feature.THEIR_FIRE_Y);
                         double rsBearing = ctx.wb().getFeature(Feature.THEIR_FIRE_BEARING);
                         validator.recordRobotSideTheirFire(rsPower, rsX, rsY, rsBearing,
-                                (long) theirFireTick);
+                            (long) theirFireTick, rsSpeed,
+                            ctx.wb().getFeature(Feature.THEIR_FIRE_DISTANCE),
+                            ctx.wb().getFeature(Feature.THEIR_FIRE_OUR_X),
+                            ctx.wb().getFeature(Feature.THEIR_FIRE_OUR_Y));
                         if (theirFireTrace != null) {
                             long nowTick = (long) ctx.wb().getFeature(Feature.TICK);
                                 long lastScanTick = (long) ctx.wb().getFeature(Feature.SCAN_TICK);
@@ -343,19 +352,11 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
                 }
 
                 // Layer 4: wave resolution tracking
-                if (resolved[pi]) {
-                    validator.recordGodViewWaveResolution(pi);
+                for (Layer4WaveBreak godViewBreak : godViewWaveResolver.resolvedWavesThisTick(pi)) {
+                    validator.recordGodViewWaveResolution(pi, godViewBreak);
                 }
-                if (!Double.isNaN(robotSideGf[pi])) {
-                    validator.recordRobotSideWaveResolution(pi);
-                }
-                // Layer 4: GF comparison when both sides resolved same tick
-                if (resolved[pi] && !Double.isNaN(robotSideGf[pi])) {
-                    double godViewGf = ctx.godWb().getFeature(Feature.OUR_BREAK_GF);
-                    long godViewBreakTick = (long) ctx.godWb().getFeature(Feature.OUR_BREAK_TICK);
-                    long robotSideBreakTick = godViewBreakTick; // same tick if both resolved
-                    validator.compareWaveBreak(pi, godViewGf, robotSideGf[pi],
-                            godViewBreakTick, robotSideBreakTick);
+                for (Layer4WaveBreak robotSideBreak : robotSideBreaks[pi]) {
+                    validator.recordRobotSideWaveResolution(pi, robotSideBreak);
                 }
             }
         }

@@ -11,11 +11,13 @@ import cz.zamboch.autopilot.core.VcsStore;
 import cz.zamboch.autopilot.core.Whiteboard;
 
 /**
- * Manages the lifecycle of outgoing bullet waves using the Whiteboard's
- * pre-allocated our-wave ring buffer.
+ * Computes gun aiming features and manages the lifecycle of outgoing bullet
+ * waves using the Whiteboard's pre-allocated our-wave ring buffer.
  * <p>
  * On each process() call:
  * <ol>
+ * <li>Compute GUN_AIM_* every tick.</li>
+ * <li>Compute fire-time derived features when OUR_FIRE_POWER is staged.</li>
  * <li>If OUR_FIRE_POWER is set (we fired last tick), allocate a ring slot,
  * copy fire features from staging, mark ACTIVE, then clear staging.
  * Also creates K virtual bullet slots with evenly-spaced AIM_GFs.</li>
@@ -24,7 +26,7 @@ import cz.zamboch.autopilot.core.Whiteboard;
  * features.</li>
  * </ol>
  */
-public final class WaveTracker implements IInGameFeatures {
+public final class OurWaveTracker implements IInGameFeatures {
 
     /** Number of virtual bullets created per real fire event. */
     public static final int VIRTUAL_BULLET_COUNT = 10;
@@ -33,13 +35,15 @@ public final class WaveTracker implements IInGameFeatures {
     static final double BOT_HALF_WIDTH = 18.0;
 
     private static final Feature[] DEPS = {
+            Feature.DISTANCE,
+            Feature.GUN_HEAT,
+            Feature.OPPONENT_BEARING_ABSOLUTE,
+            Feature.OPPONENT_LATERAL_VELOCITY,
             Feature.OUR_FIRE_POWER,
             Feature.OUR_FIRE_X,
             Feature.OUR_FIRE_Y,
             Feature.OUR_FIRE_TICK,
             Feature.OUR_FIRE_BEARING_ABSOLUTE,
-            Feature.OUR_FIRE_BULLET_SPEED,
-            Feature.OUR_FIRE_DIRECTION,
             Feature.OUR_FIRE_DISTANCE,
             Feature.OUR_FIRE_LATERAL_VELOCITY,
             Feature.OUR_FIRE_BULLET_ID,
@@ -56,6 +60,12 @@ public final class WaveTracker implements IInGameFeatures {
             Feature.TICK
     };
     private static final Feature[] OUTPUTS = {
+            Feature.GUN_AIM_POWER,
+            Feature.GUN_AIM_ANGLE,
+            Feature.GUN_AIM_GF,
+            Feature.OUR_FIRE_BULLET_SPEED,
+            Feature.OUR_FIRE_MEA,
+            Feature.OUR_FIRE_DIRECTION,
             Feature.OUR_BREAK_TICK,
             Feature.OUR_BREAK_GF,
             Feature.OUR_BREAK_BEARING_OFFSET,
@@ -77,8 +87,69 @@ public final class WaveTracker implements IInGameFeatures {
     }
 
     public void process(Whiteboard wb) {
+        computeGunAim(wb);
+        computeFireDerived(wb);
         createWaveIfFired(wb);
         resolveWaves(wb);
+    }
+
+    private void computeGunAim(Whiteboard wb) {
+        double distance = wb.getFeature(Feature.DISTANCE);
+        if (Double.isNaN(distance)) {
+            return;
+        }
+
+        double gunHeat = wb.getFeature(Feature.GUN_HEAT);
+        double absoluteBearing = wb.getFeature(Feature.OPPONENT_BEARING_ABSOLUTE);
+        double latVel = wb.getFeature(Feature.OPPONENT_LATERAL_VELOCITY);
+
+        double power = Math.min(3.0, Math.max(1.0, (400.0 - distance) / 100.0 + 1.0));
+        if (gunHeat > 0) {
+            power = 0;
+        }
+
+        double bulletSpeed = GuessFactor.bulletSpeed(power > 0 ? power : 2.0);
+        double mea = GuessFactor.maxEscapeAngle(bulletSpeed);
+        int direction = Double.isNaN(latVel) ? 1 : GuessFactor.direction(latVel);
+
+        double offset = 0;
+        double aimGf = 0;
+
+        ModelSelector selector = wb.getModelSelector();
+        if (selector != null) {
+            aimGf = selector.predictForAim(distance, Double.isNaN(latVel) ? 0 : latVel);
+            offset = aimGf * mea * direction;
+        } else {
+            VcsStore vcs = wb.getVcsStore();
+            if (vcs != null) {
+                int distSeg = GuessFactor.distanceSegment(distance);
+                int latVelSeg = GuessFactor.lateralVelocitySegment(Double.isNaN(latVel) ? 0 : latVel);
+                int bestBin = vcs.getBestBin(distSeg, latVelSeg);
+                double bestGf = GuessFactor.binIndexToGf(bestBin, GuessFactor.NUM_BINS);
+                offset = bestGf * mea * direction;
+                aimGf = bestGf;
+            }
+        }
+
+        double aimAngle = absoluteBearing + offset;
+        wb.setFeature(Feature.GUN_AIM_POWER, power);
+        wb.setFeature(Feature.GUN_AIM_ANGLE, aimAngle);
+        wb.setFeature(Feature.GUN_AIM_GF, aimGf);
+    }
+
+    private void computeFireDerived(Whiteboard wb) {
+        double power = wb.getFeature(Feature.OUR_FIRE_POWER);
+        if (Double.isNaN(power)) {
+            return;
+        }
+        double bulletSpeed = GuessFactor.bulletSpeed(power);
+        double mea = GuessFactor.maxEscapeAngle(bulletSpeed);
+        double latVel = wb.getFeature(Feature.OUR_FIRE_LATERAL_VELOCITY);
+        int direction = Double.isNaN(latVel) ? 1 : GuessFactor.direction(latVel);
+
+        wb.setFeature(Feature.OUR_FIRE_BULLET_SPEED, bulletSpeed);
+        wb.setFeature(Feature.OUR_FIRE_MEA, mea);
+        wb.setFeature(Feature.OUR_FIRE_DIRECTION, direction);
     }
 
     private void createWaveIfFired(Whiteboard wb) {

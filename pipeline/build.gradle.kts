@@ -167,6 +167,53 @@ tasks.register<Test>("battleTest") {
     }
 }
 
+tasks.register<Test>("battleCsvProducer") {
+    dependsOn(seedVcsData)
+    group = "verification"
+    description = "Run top robot 1v1 matrix and produce robot-side Whiteboard CSVs"
+
+    useJUnitPlatform()
+
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+
+    filter {
+        includeTestsMatching("cz.zamboch.autopilot.pipeline.BattleCSVProducer")
+    }
+
+    val stageDir = layout.buildDirectory.dir("battle-stage").get().asFile
+    systemProperty("battle.stage", stageDir.absolutePath)
+    jvmArgs(
+        "-Djava.awt.headless=true",
+        "--add-opens", "java.base/sun.net.www.protocol.jar=ALL-UNNAMED",
+        "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED",
+        "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+        "--add-opens", "java.base/java.net=ALL-UNNAMED",
+        "--add-opens", "java.base/java.util=ALL-UNNAMED",
+        "--add-opens", "java.base/java.io=ALL-UNNAMED"
+    )
+
+    if (project.hasProperty("rounds")) {
+        systemProperty("battle.rounds", project.property("rounds")!!)
+    }
+    if (project.hasProperty("seed")) {
+        systemProperty("battle.seed", project.property("seed")!!)
+    }
+    if (project.hasProperty("csvDir")) {
+        systemProperty("battle.csv.dir", project.property("csvDir")!!)
+    }
+    if (project.hasProperty("robotA")) {
+        systemProperty("battle.robotA", project.property("robotA")!!)
+    }
+    if (project.hasProperty("robotB")) {
+        systemProperty("battle.robotB", project.property("robotB")!!)
+    }
+
+    testLogging {
+        showStandardStreams = true
+    }
+}
+
 // Exclude integration tests from the standard 'test' task — they require
 // staged JARs and battle-stage directory (use battleTest instead).
 tasks.test {

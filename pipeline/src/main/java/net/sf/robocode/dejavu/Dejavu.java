@@ -8,11 +8,13 @@
 package net.sf.robocode.dejavu;
 
 import net.sf.robocode.dejavu.core.Reconstructor;
+import net.sf.robocode.dejavu.model.BattleEndEvent;
 import net.sf.robocode.dejavu.replay.IReplayRobotPeer;
 import net.sf.robocode.dejavu.replay.PeerReplayDriver;
 import net.sf.robocode.dejavu.replay.RobotReplayDriver;
 import robocode.BattleRules;
 import robocode.control.events.BattleAdaptor;
+import robocode.control.events.BattleCompletedEvent;
 import robocode.control.events.BattleStartedEvent;
 import robocode.control.events.RoundStartedEvent;
 import robocode.control.events.TurnEndedEvent;
@@ -50,6 +52,7 @@ public class Dejavu extends BattleAdaptor {
     private RobotReplayDriver robotDriver;
     private PeerReplayDriver peerDriver;
     private Reconstructor.TickResult lastResult;
+    private BattleEndEvent battleEndEvent;
 
     /**
      * Select the hero by robot index (0-based contestant index in the battle).
@@ -89,6 +92,7 @@ public class Dejavu extends BattleAdaptor {
         }
         robotDriver = new RobotReplayDriver(robot);
         peerDriver = new PeerReplayDriver(peer);
+        battleEndEvent = null;
         if (peer instanceof IReplayRobotPeer) {
             ((IReplayRobotPeer) peer).loadBattleRules(battlefieldWidth, battlefieldHeight, numRounds);
         }
@@ -147,9 +151,18 @@ public class Dejavu extends BattleAdaptor {
         peerDriver.record(result.commands);
     }
 
+    @Override
+    public void onBattleCompleted(BattleCompletedEvent event) {
+        battleEndEvent = BattleEndEvent.from(event);
+    }
+
     /** The {@link Reconstructor.TickResult} produced for the most recent turn, or {@code null}. */
     Reconstructor.TickResult getLastResult() {
         return lastResult;
+    }
+
+    public BattleEndEvent getBattleEndEvent() {
+        return battleEndEvent;
     }
 
     private int resolveHeroIndex(ITurnSnapshot start) {

@@ -75,6 +75,21 @@ public final class BattleRunner {
      * @return BattleResult with orchestrator and scores
      */
     public static BattleResult runBattle(String opponent, int rounds, String outputDir) {
+        return runBattle("cz.zamboch.Autopilot", opponent, rounds, outputDir, true);
+        }
+
+        /**
+         * Run a battle between arbitrary robot classes.
+         *
+         * @param robotA       fully-qualified first robot class name
+         * @param robotB       fully-qualified second robot class name
+         * @param rounds       number of rounds
+         * @param outputDir    CSV output directory (null for results-only mode)
+         * @param enableLayer0 attach Layer 0 debug-property fidelity validator
+         * @return BattleResult with orchestrator and scores
+         */
+        public static BattleResult runBattle(String robotA, String robotB, int rounds,
+            String outputDir, boolean enableLayer0) {
         Autopilot.resetLiveBattleState();
         RobocodeEngine.setLogMessagesEnabled(false);
         RobocodeEngine engine = new RobocodeEngine();
@@ -92,8 +107,10 @@ public final class BattleRunner {
         }
 
         // Attach validators: Layer 0 (debug-property fidelity) + god-view quality (1-4)
-        Layer0DebugFidelityValidator layer0Validator = new Layer0DebugFidelityValidator();
-        orchestrator.setLayer0Validator(layer0Validator);
+        if (enableLayer0) {
+            Layer0DebugFidelityValidator layer0Validator = new Layer0DebugFidelityValidator();
+            orchestrator.setLayer0Validator(layer0Validator);
+        }
         GodViewQualityValidator validator = new GodViewQualityValidator();
         orchestrator.setValidator(validator);
 
@@ -102,8 +119,8 @@ public final class BattleRunner {
             try {
                 String battleId = "battle-" + System.currentTimeMillis();
                 File battleDir = new File(outputDir, battleId);
-                File perspDir0 = new File(battleDir, "Autopilot");
-                File perspDir1 = new File(battleDir, "Opponent");
+                File perspDir0 = new File(battleDir, "cz.zamboch.Autopilot".equals(robotA) ? "Autopilot" : "Perspective0");
+                File perspDir1 = new File(battleDir, "cz.zamboch.Autopilot".equals(robotA) ? "Opponent" : "Perspective1");
                 CsvWriter writer0 = new CsvWriter(perspDir0);
                 CsvWriter writer1 = new CsvWriter(perspDir1);
                 orchestrator.setCsvWriters(writer0, writer1);
@@ -122,7 +139,7 @@ public final class BattleRunner {
         String debugCsvDir = System.getProperty("debug.csv.dir");
         if (debugCsvDir != null && !debugCsvDir.isBlank()) {
             try {
-                orchestrator.setDebugCsv(new DebugPropertyCsvWriter(new File(debugCsvDir), opponent));
+                orchestrator.setDebugCsv(new DebugPropertyCsvWriter(new File(debugCsvDir), robotB));
             } catch (IOException e) {
                 throw new RuntimeException("Failed to initialize debug-property CSV writer", e);
             }
@@ -133,7 +150,7 @@ public final class BattleRunner {
         String theirFireDir = System.getProperty("their.fires.dir");
         if (theirFireDir != null && !theirFireDir.isBlank()) {
             try {
-                orchestrator.setTheirFireTrace(new TheirFireTraceWriter(new File(theirFireDir), opponent));
+                orchestrator.setTheirFireTrace(new TheirFireTraceWriter(new File(theirFireDir), robotB));
             } catch (IOException e) {
                 throw new RuntimeException("Failed to initialize their-fire trace writer", e);
             }
@@ -143,7 +160,7 @@ public final class BattleRunner {
         String damageEventsDir = System.getProperty("damage.events.dir");
         if (damageEventsDir != null && !damageEventsDir.isBlank()) {
             try {
-                orchestrator.setDamageEventsTrace(new DamageEventsTraceWriter(new File(damageEventsDir), opponent));
+                orchestrator.setDamageEventsTrace(new DamageEventsTraceWriter(new File(damageEventsDir), robotB));
             } catch (IOException e) {
                 throw new RuntimeException("Failed to initialize damage-events trace writer", e);
             }
@@ -164,31 +181,36 @@ public final class BattleRunner {
                         result.opponentScore = r.getScore();
                     }
                 }
+                if (!"cz.zamboch.Autopilot".equals(robotA) && results.length >= 2) {
+                    result.ourScore = results[0].getScore();
+                    result.ourFirsts = results[0].getFirsts();
+                    result.opponentScore = results[1].getScore();
+                }
                 result.totalRounds = rounds;
             }
         });
 
         try {
-            String robotFilter = "cz.zamboch.Autopilot," + opponent;
+            String robotFilter = robotA + "," + robotB;
             RobotSpecification[] robots = engine.getLocalRepository(robotFilter);
 
             RobotSpecification ourBot = null;
             RobotSpecification oppBot = null;
             for (RobotSpecification spec : robots) {
                 String name = spec.getClassName();
-                if ("cz.zamboch.Autopilot".equals(name)) {
+                if (robotA.equals(name)) {
                     ourBot = spec;
                 }
-                if (opponent.equals(name)) {
+                if (robotB.equals(name)) {
                     oppBot = spec;
                 }
             }
 
             if (ourBot == null) {
-                throw new IllegalStateException("Cannot find cz.zamboch.Autopilot in ROBOTPATH");
+                throw new IllegalStateException("Cannot find robot A: " + robotA);
             }
             if (oppBot == null) {
-                throw new IllegalStateException("Cannot find opponent: " + opponent);
+                throw new IllegalStateException("Cannot find robot B: " + robotB);
             }
 
             BattlefieldSpecification battlefield = new BattlefieldSpecification(800, 600);

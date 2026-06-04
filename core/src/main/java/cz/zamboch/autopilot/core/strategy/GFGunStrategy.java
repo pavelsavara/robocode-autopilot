@@ -5,7 +5,7 @@ import cz.zamboch.autopilot.core.Whiteboard;
 
 /**
  * GuessFactor gun strategy. Reads pre-computed GUN_AIM_ANGLE and GUN_AIM_POWER
- * features from the Whiteboard (produced by OurWaveFeatures).
+ * features from the Whiteboard (produced by OurWaveTracker).
  */
 public final class GFGunStrategy implements IGunStrategy {
 

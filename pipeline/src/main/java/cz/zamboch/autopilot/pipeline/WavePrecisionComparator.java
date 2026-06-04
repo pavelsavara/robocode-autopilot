@@ -1,10 +1,16 @@
 package cz.zamboch.autopilot.pipeline;
 
 import cz.zamboch.autopilot.core.Feature;
+import cz.zamboch.autopilot.core.OurWaveColumn;
 import cz.zamboch.autopilot.core.Whiteboard;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 /**
- * Compares robot-side wave detection (from observer's WaveTracker, using stale
+ * Compares robot-side wave detection (from observer's OurWaveTracker, using stale
  * scan data)
  * with god-view wave detection (from GodViewWaveResolver, using exact
  * positions).
@@ -25,9 +31,8 @@ final class WavePrecisionComparator {
     private final double[] gfErrorSum = { 0, 0 };
     private final int[] gfErrorCount = { 0, 0 };
 
-    // Per-perspective last-seen break tick to detect new resolutions
-    private final double[] lastRobotSideBreakTick = { Double.NaN, Double.NaN };
-    private final double[] lastGodViewBreakTick = { Double.NaN, Double.NaN };
+    // Per-perspective seen robot-side real bullet ids to detect new resolutions.
+    private final Set<Long>[] seenRobotSideBreakBulletIds = newIdSets();
 
     // Per-perspective last-seen fire tick to detect new robot-side fires
     private final double[] lastRobotSideFireTick = { Double.NaN, Double.NaN };
@@ -37,16 +42,35 @@ final class WavePrecisionComparator {
      * Must be called after ctx.doTurn() but before
      * godViewWaveResolver.processTick().
      *
-     * @return robot-side OUR_BREAK_GF if a new break was detected this tick, else
-     *         NaN
+     * @return robot-side real-wave breaks newly resolved since the last capture.
      */
-    public double captureRobotSideBreak(int perspIndex, Whiteboard wb) {
-        double breakTick = wb.getFeature(Feature.OUR_BREAK_TICK);
-        if (!Double.isNaN(breakTick) && breakTick != lastRobotSideBreakTick[perspIndex]) {
-            lastRobotSideBreakTick[perspIndex] = breakTick;
-            return wb.getFeature(Feature.OUR_BREAK_GF);
+    public List<Layer4WaveBreak> captureRobotSideBreaks(int perspIndex, Whiteboard wb) {
+        List<Layer4WaveBreak> breaks = new ArrayList<>();
+        Set<Long> seen = seenRobotSideBreakBulletIds[perspIndex];
+        for (int slot = 0; slot < Whiteboard.OUR_WAVE_CAPACITY; slot++) {
+            if (wb.getOurWaveState(slot) != Whiteboard.WAVE_RESOLVED) {
+                continue;
+            }
+            if (wb.getOurWave(slot, OurWaveColumn.IS_REAL) != 1.0) {
+                continue;
+            }
+            double bulletIdValue = wb.getOurWave(slot, OurWaveColumn.FIRE_BULLET_ID);
+            double breakTickValue = wb.getOurWave(slot, OurWaveColumn.BREAK_TICK);
+            double gf = wb.getOurWave(slot, OurWaveColumn.BREAK_GF);
+            if (Double.isNaN(bulletIdValue) || Double.isNaN(breakTickValue) || Double.isNaN(gf)) {
+                continue;
+            }
+            long bulletId = (long) bulletIdValue;
+            if (seen.add(bulletId)) {
+                breaks.add(new Layer4WaveBreak(bulletId, gf, (long) breakTickValue));
+            }
         }
-        return Double.NaN;
+        return breaks;
+    }
+
+    public double captureRobotSideBreak(int perspIndex, Whiteboard wb) {
+        List<Layer4WaveBreak> breaks = captureRobotSideBreaks(perspIndex, wb);
+        return breaks.isEmpty() ? Double.NaN : breaks.get(0).gf();
     }
 
     /**
@@ -60,9 +84,6 @@ final class WavePrecisionComparator {
     public void compareTick(int perspIndex, Whiteboard wb, double robotSideGf, boolean godViewResolved) {
         if (godViewResolved) {
             double godViewGf = wb.getFeature(Feature.OUR_BREAK_GF);
-            double breakTick = wb.getFeature(Feature.OUR_BREAK_TICK);
-            lastGodViewBreakTick[perspIndex] = breakTick;
-
             // If robot-side also resolved this tick, compare GFs
             if (!Double.isNaN(robotSideGf)) {
                 recordGfComparison(perspIndex, godViewGf, robotSideGf);
@@ -96,7 +117,7 @@ final class WavePrecisionComparator {
      * Record a GF comparison when both sides resolved the same wave.
      *
      * @param godViewGf   the GF from GodViewWaveResolver (ground truth)
-     * @param robotSideGf the GF from WaveTracker (stale-data estimate)
+    * @param robotSideGf the GF from OurWaveTracker (stale-data estimate)
      */
     public void recordGfComparison(int perspIndex, double godViewGf, double robotSideGf) {
         gfErrorSum[perspIndex] += Math.abs(godViewGf - robotSideGf);
@@ -109,10 +130,14 @@ final class WavePrecisionComparator {
             robotSideFires[i] = 0;
             gfErrorSum[i] = 0;
             gfErrorCount[i] = 0;
-            lastRobotSideBreakTick[i] = Double.NaN;
-            lastGodViewBreakTick[i] = Double.NaN;
+            seenRobotSideBreakBulletIds[i].clear();
             lastRobotSideFireTick[i] = Double.NaN;
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Set<Long>[] newIdSets() {
+        return new Set[] { new HashSet<Long>(), new HashSet<Long>() };
     }
 
     /** Fire detection rate: robot-side fires / god-view fires. */

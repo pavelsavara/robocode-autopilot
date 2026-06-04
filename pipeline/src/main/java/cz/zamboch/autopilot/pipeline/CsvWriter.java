@@ -1,6 +1,8 @@
 package cz.zamboch.autopilot.pipeline;
 
 import cz.zamboch.autopilot.core.Feature;
+import cz.zamboch.autopilot.core.OurWaveColumn;
+import cz.zamboch.autopilot.core.TheirWaveColumn;
 import cz.zamboch.autopilot.core.Whiteboard;
 
 import java.io.Closeable;
@@ -15,13 +17,14 @@ import java.util.List;
  * Routes features to the correct CSV file based on their FileType.
  * <p>
  * Output structure:
- * {@code <outputDir>/<battleId>/<robotName>/ticks.csv|scan.csv|their-waves.csv|our-waves.csv|scores.csv}
+ * {@code <outputDir>/<battleId>/<robotName>/ticks.csv|scan.csv|their-waves.csv|autopilot-waves.csv|dejavu-waves.csv|scores.csv}
  */
 public final class CsvWriter implements Closeable {
     private final CsvRowWriter ticksWriter;
-     private final CsvRowWriter scanWriter;
+    private final CsvRowWriter scanWriter;
     private final CsvRowWriter theirWavesWriter;
-    private final CsvRowWriter ourWavesWriter;
+    private final CsvRowWriter autopilotWavesWriter;
+    private final CsvRowWriter dejavuWavesWriter;
     private final CsvRowWriter scoresWriter;
 
     private final List<Feature> ticksFeatures = new ArrayList<Feature>();
@@ -36,17 +39,22 @@ public final class CsvWriter implements Closeable {
         ticksWriter = new CsvRowWriter(new FileOutputStream(new File(outputDir, "ticks.csv")));
         scanWriter = new CsvRowWriter(new FileOutputStream(new File(outputDir, "scan.csv")));
         theirWavesWriter = new CsvRowWriter(new FileOutputStream(new File(outputDir, "their-waves.csv")));
-        ourWavesWriter = new CsvRowWriter(new FileOutputStream(new File(outputDir, "our-waves.csv")));
+        autopilotWavesWriter = new CsvRowWriter(new FileOutputStream(new File(outputDir, "autopilot-waves.csv")));
+        dejavuWavesWriter = new CsvRowWriter(new FileOutputStream(new File(outputDir, "dejavu-waves.csv")));
         scoresWriter = new CsvRowWriter(new FileOutputStream(new File(outputDir, "scores.csv")));
 
         // Group features by file type
         for (Feature f : Feature.values()) {
             switch (f.getFileType()) {
                 case TICKS:
-                    ticksFeatures.add(f);
+                    if (f != Feature.TICK) {
+                        ticksFeatures.add(f);
+                    }
                     break;
                 case SCAN:
-                    scanFeatures.add(f);
+                    if (!excludedFromScanCsv(f)) {
+                        scanFeatures.add(f);
+                    }
                     break;
                 case THEIR_WAVES:
                     theirWavesFeatures.add(f);
@@ -92,13 +100,22 @@ public final class CsvWriter implements Closeable {
         }
         theirWavesWriter.endRow();
 
-        // our-waves.csv: battle_id, round, tick, then all OUR_WAVES features
-        ourWavesWriter.beginRow();
-        ourWavesWriter.writeHeaders("battle_id", "round", "tick");
+        // autopilot-waves.csv: battle_id, round, tick, then all OUR_WAVES features
+        autopilotWavesWriter.beginRow();
+        autopilotWavesWriter.writeHeaders("battle_id", "round", "tick");
         for (Feature f : ourWavesFeatures) {
-            ourWavesWriter.writeHeader(f.name().toLowerCase());
+            autopilotWavesWriter.writeHeader(f.name().toLowerCase());
         }
-        ourWavesWriter.endRow();
+        autopilotWavesWriter.endRow();
+
+        // dejavu-waves.csv: same schema as autopilot-waves.csv, but sourced from
+        // reconstructed real fire commands.
+        dejavuWavesWriter.beginRow();
+        dejavuWavesWriter.writeHeaders("battle_id", "round", "tick");
+        for (Feature f : ourWavesFeatures) {
+            dejavuWavesWriter.writeHeader(f.name().toLowerCase());
+        }
+        dejavuWavesWriter.endRow();
 
         // scores.csv: battle_id, round, result, then all SCORES features
         scoresWriter.beginRow();
@@ -149,16 +166,52 @@ public final class CsvWriter implements Closeable {
         theirWavesWriter.endRow();
     }
 
-    /** Write one row to our-waves.csv (called when we fire a bullet). */
-    public void writeOurWaveRow(Whiteboard wb, String battleId, int round) throws IOException {
-        ourWavesWriter.beginRow();
-        ourWavesWriter.writeRaw(battleId);
-        ourWavesWriter.writeInt(round);
-        ourWavesWriter.writeLong((long) wb.getFeature(Feature.TICK));
-        for (Feature f : ourWavesFeatures) {
-            ourWavesWriter.writeDouble(wb, f);
+    /** Write one row to their-waves.csv from a resolved their-wave ring slot. */
+    public void writeTheirWaveRow(Whiteboard wb, int slot, String battleId, int round) throws IOException {
+        theirWavesWriter.beginRow();
+        theirWavesWriter.writeRaw(battleId);
+        theirWavesWriter.writeInt(round);
+        theirWavesWriter.writeLong((long) wb.getFeature(Feature.TICK));
+        for (Feature f : theirWavesFeatures) {
+            theirWavesWriter.writeRaw(format(wb.getTheirWave(slot, TheirWaveColumn.values()[f.columnIndex()])));
         }
-        ourWavesWriter.endRow();
+        theirWavesWriter.endRow();
+    }
+
+    /** Write one row to autopilot-waves.csv from staged OUR_WAVES features. */
+    public void writeOurWaveRow(Whiteboard wb, String battleId, int round) throws IOException {
+        autopilotWavesWriter.beginRow();
+        autopilotWavesWriter.writeRaw(battleId);
+        autopilotWavesWriter.writeInt(round);
+        autopilotWavesWriter.writeLong((long) wb.getFeature(Feature.TICK));
+        for (Feature f : ourWavesFeatures) {
+            autopilotWavesWriter.writeDouble(wb, f);
+        }
+        autopilotWavesWriter.endRow();
+    }
+
+    /** Write one row to autopilot-waves.csv from a resolved our-wave ring slot. */
+    public void writeOurWaveRow(Whiteboard wb, int slot, String battleId, int round) throws IOException {
+        autopilotWavesWriter.beginRow();
+        autopilotWavesWriter.writeRaw(battleId);
+        autopilotWavesWriter.writeInt(round);
+        autopilotWavesWriter.writeLong((long) wb.getFeature(Feature.TICK));
+        for (Feature f : ourWavesFeatures) {
+            autopilotWavesWriter.writeRaw(format(wb.getOurWave(slot, OurWaveColumn.values()[f.columnIndex()])));
+        }
+        autopilotWavesWriter.endRow();
+    }
+
+    /** Write one row to dejavu-waves.csv using the OUR_WAVES schema. */
+    public void writeDejavuWaveRow(double[] valuesByColumn, String battleId, int round, long tick) throws IOException {
+        dejavuWavesWriter.beginRow();
+        dejavuWavesWriter.writeRaw(battleId);
+        dejavuWavesWriter.writeInt(round);
+        dejavuWavesWriter.writeLong(tick);
+        for (Feature f : ourWavesFeatures) {
+            dejavuWavesWriter.writeRaw(format(valuesByColumn[f.columnIndex()]));
+        }
+        dejavuWavesWriter.endRow();
     }
 
     /** Write one row to scores.csv (called at end of each round). */
@@ -185,9 +238,13 @@ public final class CsvWriter implements Closeable {
                     theirWavesWriter.close();
                 } finally {
                     try {
-                        ourWavesWriter.close();
+                        autopilotWavesWriter.close();
                     } finally {
-                        scoresWriter.close();
+                        try {
+                            dejavuWavesWriter.close();
+                        } finally {
+                            scoresWriter.close();
+                        }
                     }
                 }
             }
@@ -197,6 +254,15 @@ public final class CsvWriter implements Closeable {
     private static String scanHeader(Feature f) {
         String name = f.name().toLowerCase();
         return name.startsWith("scan_") ? name : "scan_" + name;
+    }
+
+    private static boolean excludedFromScanCsv(Feature f) {
+        return f == Feature.OPPONENT_ID
+                || f == Feature.PREV_SCAN_OPPONENT_ENERGY
+                || f == Feature.OUR_BULLET_DAMAGE_TO_OPPONENT
+                || f == Feature.OPPONENT_BULLET_ENERGY_GAIN
+                || f == Feature.RAM_DAMAGE_TO_OPPONENT
+                || f == Feature.OPPONENT_WALL_HIT_DAMAGE;
     }
 
     private static String format(double value) {

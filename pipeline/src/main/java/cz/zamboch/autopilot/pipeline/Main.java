@@ -19,7 +19,7 @@ import java.util.List;
  * Usage: pipeline --input <recordings-dir> --output <csv-dir>
  *
  * Each .br recording is replayed producing:
- * <output>/<battleId>/<perspectiveName>/ticks.csv, our-waves.csv,
+ * <output>/<battleId>/<perspectiveName>/ticks.csv, autopilot-waves.csv,
  * their-waves.csv, scores.csv
  */
 public final class Main {

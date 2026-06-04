@@ -73,7 +73,7 @@ public final class Whiteboard {
     private int ourWaveHead = 0;
 
     // --- Their wave ring buffer ---
-    public static final int THEIR_WAVE_CAPACITY = 32;
+    public static final int THEIR_WAVE_CAPACITY = 512;
 
     private final double[][] theirWaves = new double[THEIR_WAVE_CAPACITY][TheirWaveColumn.COUNT];
     private final byte[] theirWaveState = new byte[THEIR_WAVE_CAPACITY];
@@ -584,17 +584,4 @@ public final class Whiteboard {
         return countState(theirWaveState, WAVE_ACTIVE);
     }
 
-    /**
-     * Mark that the opponent's bullet hit us.
-     * Finds the oldest active their-wave matching the given power.
-     */
-    public void markTheirBulletHitUs(double power) {
-        for (int i = 0; i < THEIR_WAVE_CAPACITY; i++) {
-            if (theirWaveState[i] == WAVE_ACTIVE
-                    && Math.abs(theirWaves[i][TheirWaveColumn.FIRE_POWER.ordinal()] - power) < 0.001) {
-                theirWaves[i][TheirWaveColumn.HIT_US.ordinal()] = 1.0;
-                return;
-            }
-        }
-    }
 }

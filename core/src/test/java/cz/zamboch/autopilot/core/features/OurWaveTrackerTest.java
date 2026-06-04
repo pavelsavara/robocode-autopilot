@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-final class WaveTrackerTest {
+final class OurWaveTrackerTest {
 
     private Whiteboard wb;
 
@@ -22,8 +22,7 @@ final class WaveTrackerTest {
                 new MovementFeatures(),
                 new TimingFeatures(),
                 new FireFeatures(),
-                new OurWaveFeatures(),
-                new WaveTracker());
+                new OurWaveTracker());
         wb.setVcsStore(new VcsStore());
     }
 
@@ -39,6 +38,18 @@ final class WaveTrackerTest {
         wb.setFeature(Feature.OPPONENT_VELOCITY, 0);
         wb.setFeature(Feature.OPPONENT_ENERGY, 100);
         wb.setFeature(Feature.SCAN_TICK, tick);
+    }
+
+    @Test
+    void computesGunAimFeatures() {
+        setBasicScanState(1, 400, 300, 250, 0.25);
+        wb.setFeature(Feature.GUN_HEAT, 0);
+
+        wb.process();
+
+        assertEquals(2.5, wb.getFeature(Feature.GUN_AIM_POWER), 1e-9);
+        assertEquals(0.25, wb.getFeature(Feature.GUN_AIM_ANGLE), 1e-9);
+        assertEquals(0.0, wb.getFeature(Feature.GUN_AIM_GF), 1e-9);
     }
 
     @Test
@@ -67,7 +78,7 @@ final class WaveTrackerTest {
         wb.process();
 
         // 1 real + 10 virtual = 11 active waves
-        assertEquals(1 + WaveTracker.VIRTUAL_BULLET_COUNT, wb.getActiveWaveCount());
+        assertEquals(1 + OurWaveTracker.VIRTUAL_BULLET_COUNT, wb.getActiveWaveCount());
         assertEquals(Whiteboard.WAVE_ACTIVE, wb.getOurWaveState(0));
         assertEquals(400, wb.getOurWave(0, OurWaveColumn.FIRE_X), 1e-9);
         assertEquals(300, wb.getOurWave(0, OurWaveColumn.FIRE_Y), 1e-9);
@@ -258,17 +269,17 @@ final class WaveTrackerTest {
     void virtualBulletBreakHitComputedGeometrically() {
         // Opponent at (400, 500) — bearing 0 from (400, 300)
         // Virtual bullet aimed at GF=0 → should hit (fires straight at them)
-        assertTrue(WaveTracker.computeWouldHit(
+        assertTrue(OurWaveTracker.computeWouldHit(
                 400, 300, 0, 0.0, GuessFactor.maxEscapeAngle(14.0), 1,
                 400, 500));
 
         // Virtual bullet aimed at GF=1.0 → large offset, should miss
-        assertFalse(WaveTracker.computeWouldHit(
+        assertFalse(OurWaveTracker.computeWouldHit(
                 400, 300, 0, 1.0, GuessFactor.maxEscapeAngle(14.0), 1,
                 400, 500));
 
         // Virtual bullet aimed at GF=-1.0 → large offset, should miss
-        assertFalse(WaveTracker.computeWouldHit(
+        assertFalse(OurWaveTracker.computeWouldHit(
                 400, 300, 0, -1.0, GuessFactor.maxEscapeAngle(14.0), 1,
                 400, 500));
     }

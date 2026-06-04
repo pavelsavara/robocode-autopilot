@@ -2,7 +2,10 @@ package cz.zamboch.autopilot.pipeline;
 
 import cz.zamboch.autopilot.core.Feature;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -28,16 +31,30 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * - PipelineValidator spatial accuracy
  * - Fire detection rate and GF precision
  * - Score baselines per opponent (win rate and score ratio)
- * - GF gun hit rate from our-waves.csv
+ * - GF gun hit rate from autopilot-waves.csv
  */
 @Tag("integration")
 final class BattleLoopTest {
 
+    private static final String BEEPBEEP = "kc.mega.BeepBoop";
+
     /** Per-opponent layer/feature drift snapshots, accumulated across the parameterized run. */
     private static final List<OppReport> REPORTS = new ArrayList<>();
 
+    private String previousDebugProperties;
+
     @TempDir
     Path tempDir;
+
+    @BeforeEach
+    void captureSystemProperties() {
+        previousDebugProperties = System.getProperty("autopilot.debugProperties");
+    }
+
+    @AfterEach
+    void restoreSystemProperties() {
+        restoreProperty("autopilot.debugProperties", previousDebugProperties);
+    }
 
     @ParameterizedTest(name = "vs {0}")
     @ValueSource(strings = { "test.SittingDuck", "test.Aggressive", "sample.Fire",
@@ -56,141 +73,111 @@ final class BattleLoopTest {
             "wcsv.Engineer.Engineer", "wcsv.PowerHouse.PowerHouse", "fromHell.CHCl3", "dft.Cyanide",
             "jk.mini.CunobelinDC", "ags.rougedc.RougeDC" })
     void battleProducesCsvAndValidatesDebugProperties(String opponent) {
-        // Allow system property override (single-opponent mode)
-        String overrideOpponent = System.getProperty("battle.opponent");
-        if (overrideOpponent != null && !overrideOpponent.isEmpty()) {
-            if (!opponent.equals(overrideOpponent)) {
-                return;
-            }
-        }
-
-        // Resolve the battle-stage directory (set by Gradle task or fallback)
-        String robotsPath = System.getProperty("battle.stage");
-        if (robotsPath == null) {
-            robotsPath = new File("build/battle-stage").getAbsolutePath();
-        }
-        assumeTrue(new File(robotsPath).isDirectory(),
-                "Skipping: battle-stage directory not found (run via ./gradlew :pipeline:battleTest)");
-
-        // Configure Robocode
-        System.setProperty("ROBOTPATH", robotsPath);
-        System.setProperty("NOSECURITY", "true");
-        System.setProperty("java.awt.headless", "true");
-
-        int rounds = Integer.parseInt(System.getProperty("battle.rounds", "10"));
-        // Deterministic RNG: Robocode reads -DRANDOMSEED at battle start and seeds
-        // java.util.Random for the whole battle. Default to the current timestamp so
-        // every run is reproducible; print it so a failing run can be replayed with
-        // -Dbattle.seed=<printed value>. A per-battle seed (one per opponent) keeps
-        // each parameterized case independently reproducible.
-        long seed;
-        String seedOverride = System.getProperty("battle.seed");
-        if (seedOverride != null && !seedOverride.isEmpty()) {
-            seed = Long.parseLong(seedOverride);
-        } else {
-            seed = System.currentTimeMillis();
-        }
-        System.setProperty("RANDOMSEED", Long.toString(seed));
-        System.out.println(String.format(
-                "=== RANDOM SEED: %d (vs %s) === replay with -Dbattle.seed=%d", seed, opponent, seed));
-
-        // Emit all CSVs into a directory named "<seed>-<timestamp>" so two runs with
-        // the same seed land in distinct, self-describing directories that can be
-        // diffed. Base location is overridable via -Dbattle.csv.dir (default build/).
-        String csvBase = System.getProperty("battle.csv.dir", new File("build").getAbsolutePath());
-        File outputRoot = new File(csvBase, seed + "-" + System.currentTimeMillis());
-        assertTrue(outputRoot.mkdirs() || outputRoot.isDirectory(),
-                "Should be able to create CSV output directory: " + outputRoot);
-        String outputDir = outputRoot.getAbsolutePath();
-        System.out.println("=== CSV OUTPUT DIR: " + outputDir + " ===");
-
-        // Always emit DebugPropertyCsvWriter (in-game.csv/observer.csv) and
-        // TheirFireTraceWriter (their-fires.csv) into the per-seed dir unless the
-        // caller already pinned them elsewhere via -Ddebug.csv.dir / -Dtheir.fires.dir.
-        boolean setDebugCsv = System.getProperty("debug.csv.dir") == null;
-        boolean setTheirFires = System.getProperty("their.fires.dir") == null;
-        if (setDebugCsv) {
-            System.setProperty("debug.csv.dir", outputDir);
-        }
-        if (setTheirFires) {
-            System.setProperty("their.fires.dir", outputDir);
-        }
-
-        // Run the battle — may fail if --add-opens JVM args are missing
-        BattleRunner.BattleResult result;
-        try {
-            result = BattleRunner.runBattle(opponent, rounds, outputDir);
-        } catch (NullPointerException e) {
-            assumeTrue(false, "Skipping: Robocode engine requires --add-opens JVM args "
-                    + "(run via ./gradlew :pipeline:battleTest)");
+        if (shouldSkipForOpponentOverride(opponent)) {
             return;
         }
+
+        configureRobocodeOrAssume();
+        int rounds = battleRounds();
+        long seed = configureSeed("(vs " + opponent + ")");
+
+        boolean csvEnabled = System.getProperty("battle.csv.dir") != null;
+        File outputRoot = null;
+        String outputDir = null;
+        if (csvEnabled) {
+            // Emit CSVs into a directory named "<seed>-<timestamp>" so two runs with
+            // the same seed land in distinct, self-describing directories that can be
+            // diffed. Base location is explicitly provided via -Dbattle.csv.dir.
+            String csvBase = System.getProperty("battle.csv.dir");
+            outputRoot = new File(csvBase, seed + "-" + System.currentTimeMillis());
+            assertTrue(outputRoot.mkdirs() || outputRoot.isDirectory(),
+                    "Should be able to create CSV output directory: " + outputRoot);
+            outputDir = outputRoot.getAbsolutePath();
+            System.out.println("=== CSV OUTPUT DIR: " + outputDir + " ===");
+        } else {
+            System.out.println("=== CSV OUTPUT DISABLED (set -PcsvDir to enable) ===");
+        }
+
+        System.setProperty("autopilot.debugProperties", "true");
+
+    final String battleOutputDir = outputDir;
+    BattleRunner.BattleResult result = runBattleOrSkip(() -> BattleRunner.runBattle(opponent, rounds, battleOutputDir));
 
         GodViewQualityValidator validator = result.orchestrator().validator();
         assertNotNull(validator, "Validator should be attached");
         Layer0DebugFidelityValidator layer0 = result.orchestrator().layer0Validator();
         assertNotNull(layer0, "Layer 0 validator should be attached");
 
-        // --- Verify CSV output ---
-        File[] battleDirs = outputRoot.listFiles(f -> f.isDirectory() && f.getName().startsWith("battle-"));
-        assertNotNull(battleDirs);
-        assertEquals(1, battleDirs.length, "Should have exactly one battle output directory");
+        // --- Verify optional CSV output ---
+        File battleDir = null;
+        File autopilotDir = null;
+        List<String> waveLines = List.of();
+        if (csvEnabled) {
+            File[] battleDirs = outputRoot.listFiles(f -> f.isDirectory() && f.getName().startsWith("battle-"));
+            assertNotNull(battleDirs);
+            assertEquals(1, battleDirs.length, "Should have exactly one battle output directory");
 
-        File battleDir = battleDirs[0];
-        File autopilotDir = new File(battleDir, "Autopilot");
-        assertTrue(autopilotDir.isDirectory(), "Autopilot CSV dir should exist");
+            battleDir = battleDirs[0];
+            autopilotDir = new File(battleDir, "Autopilot");
+            assertTrue(autopilotDir.isDirectory(), "Autopilot CSV dir should exist");
 
-        // Check ticks.csv
-        File ticksCsv = new File(autopilotDir, "ticks.csv");
-        assertTrue(ticksCsv.exists(), "ticks.csv should exist");
-        List<String> tickLines = readLines(ticksCsv);
-        assertTrue(tickLines.size() > 1, "ticks.csv should have data rows");
-        String header = tickLines.get(0);
-        assertTrue(header.contains("our_energy"), "Header should contain our_energy column");
+            // Check ticks.csv
+            File ticksCsv = new File(autopilotDir, "ticks.csv");
+            assertTrue(ticksCsv.exists(), "ticks.csv should exist");
+            List<String> tickLines = readLines(ticksCsv);
+            assertTrue(tickLines.size() > 1, "ticks.csv should have data rows");
+            String header = tickLines.get(0);
+            assertTrue(header.contains("our_energy"), "Header should contain our_energy column");
 
-        // Check scan.csv
-        File scanCsv = new File(autopilotDir, "scan.csv");
-        assertTrue(scanCsv.exists(), "scan.csv should exist");
-        List<String> scanLines = readLines(scanCsv);
-        assertTrue(scanLines.size() > 1, "scan.csv should have data rows");
-        String scanHeader = scanLines.get(0);
-        assertTrue(scanHeader.contains("scan_distance"), "scan.csv header should contain scan_distance");
-        assertTrue(scanHeader.contains("scan_opponent_energy"), "scan.csv header should contain scan_opponent_energy");
+            // Check scan.csv
+            File scanCsv = new File(autopilotDir, "scan.csv");
+            assertTrue(scanCsv.exists(), "scan.csv should exist");
+            List<String> scanLines = readLines(scanCsv);
+            assertTrue(scanLines.size() > 1, "scan.csv should have data rows");
+            String scanHeader = scanLines.get(0);
+            assertTrue(scanHeader.contains("scan_distance"), "scan.csv header should contain scan_distance");
+            assertTrue(scanHeader.contains("scan_opponent_energy"), "scan.csv header should contain scan_opponent_energy");
+
+            System.out.println("Ticks recorded: " + (tickLines.size() - 1));
+            System.out.println("Scans recorded: " + (scanLines.size() - 1));
+
+            // Check scores.csv
+            File scoresCsv = new File(autopilotDir, "scores.csv");
+            assertTrue(scoresCsv.exists(), "scores.csv should exist");
+            List<String> scoreLines = readLines(scoresCsv);
+            int scoreRows = scoreLines.size() - 1;
+            assertTrue(scoreRows >= 1, "scores.csv should have at least 1 round result");
+            System.out.println("Score rows: " + scoreRows);
+
+            // Check autopilot-waves.csv (wave resolution output)
+            File ourWavesCsv = new File(autopilotDir, "autopilot-waves.csv");
+            assertTrue(ourWavesCsv.exists(), "autopilot-waves.csv should exist");
+            waveLines = readLines(ourWavesCsv);
+            assertTrue(waveLines.size() > 1, "autopilot-waves.csv should have data rows (waves resolved)");
+            String waveHeader = waveLines.get(0);
+            assertTrue(waveHeader.contains("our_break_gf"), "autopilot-waves.csv header should contain our_break_gf");
+            assertTrue(waveHeader.contains("our_fire_power"), "autopilot-waves.csv header should contain our_fire_power");
+            assertTrue(waveHeader.contains("our_fire_mea"), "autopilot-waves.csv header should contain our_fire_mea");
+            assertTrue(waveHeader.contains("our_break_hit"), "autopilot-waves.csv header should contain our_break_hit");
+            System.out.println("Autopilot-waves rows: " + (waveLines.size() - 1));
+        }
 
         System.out.println("=== BATTLE LOOP TEST SUMMARY ===");
         System.out.println("Rounds: " + rounds);
-        System.out.println("Ticks recorded: " + (tickLines.size() - 1));
-        System.out.println("Scans recorded: " + (scanLines.size() - 1));
-
-        // Check scores.csv
-        File scoresCsv = new File(autopilotDir, "scores.csv");
-        assertTrue(scoresCsv.exists(), "scores.csv should exist");
-        List<String> scoreLines = readLines(scoresCsv);
-        int scoreRows = scoreLines.size() - 1;
-        assertTrue(scoreRows >= 1, "scores.csv should have at least 1 round result");
-        System.out.println("Score rows: " + scoreRows);
-
-        // Check our-waves.csv (wave resolution output)
-        File ourWavesCsv = new File(autopilotDir, "our-waves.csv");
-        assertTrue(ourWavesCsv.exists(), "our-waves.csv should exist");
-        List<String> waveLines = readLines(ourWavesCsv);
-        assertTrue(waveLines.size() > 1, "our-waves.csv should have data rows (waves resolved)");
-        String waveHeader = waveLines.get(0);
-        assertTrue(waveHeader.contains("our_break_gf"), "our-waves.csv header should contain our_break_gf");
-        assertTrue(waveHeader.contains("our_fire_power"), "our-waves.csv header should contain our_fire_power");
-        assertTrue(waveHeader.contains("our_fire_mea"), "our-waves.csv header should contain our_fire_mea");
-        assertTrue(waveHeader.contains("our_break_hit"), "our-waves.csv header should contain our_break_hit");
-        System.out.println("Our-waves rows: " + (waveLines.size() - 1));
 
         // --- Score + hit metrics (computed before any baseline assertion) ---
         double winRate = result.getWinRate();
         double scoreRatio = result.getScoreRatio();
-        double hitRate = computeHitRate(waveLines);
+        double hitRate = csvEnabled ? computeHitRate(waveLines) : Double.NaN;
         System.out.println(String.format("Win rate: %.1f%% (%d/%d)", winRate * 100,
                 result.getOurFirsts(), result.getTotalRounds()));
         System.out.println(String.format("Score ratio: %.2f (%d/%d)", scoreRatio,
                 result.getOurScore(), result.getOpponentScore()));
-        System.out.println(String.format("Hit rate: %.1f%%", hitRate * 100));
+        if (csvEnabled) {
+            System.out.println(String.format("Hit rate: %.1f%%", hitRate * 100));
+        } else {
+            System.out.println("Hit rate: N/A (CSV disabled)");
+        }
 
         // Capture this opponent's full layer/feature drift snapshot for the markdown
         // report BEFORE any baseline assertion, so an opponent that trips a quality
@@ -199,13 +186,12 @@ final class BattleLoopTest {
                 hitRate, validator, layer0));
 
         assertScoreBaseline(opponent, winRate, scoreRatio, result.getTotalRounds());
-        assertHitRateBaseline(opponent, hitRate);
+        if (csvEnabled) {
+            assertHitRateBaseline(opponent, hitRate);
+        }
 
         // --- PipelineValidator: spatial accuracy ---
-        int spatialMismatches = validator.getSpatialMismatches();
-        System.out.println(String.format("Spatial mismatches: %d", spatialMismatches));
-        assertEquals(0, spatialMismatches,
-                "Spatial features must match exactly between observer and god-view");
+        assertSpatialFidelity(validator);
 
         // --- PipelineValidator: incoming-fire detection rate (autopilot only) ---
         double fireDetectionRate0 = validator.getTheirFireDetectionRate();
@@ -248,32 +234,116 @@ final class BattleLoopTest {
         // Print full summary (before assertions so we always see breakdown)
         validator.printSummary();
         layer0.printSummary();
-        System.out.println("Output: " + battleDir.getAbsolutePath());
-        System.out.println("  ticks.csv (Autopilot):  " + new File(autopilotDir, "ticks.csv").getAbsolutePath());
-        System.out.println("  their-waves.csv (Autopilot): "
+        if (csvEnabled) {
+            System.out.println("Output: " + battleDir.getAbsolutePath());
+            System.out.println("  ticks.csv (Autopilot):  " + new File(autopilotDir, "ticks.csv").getAbsolutePath());
+            System.out.println("  their-waves.csv (Autopilot): "
                 + new File(autopilotDir, "their-waves.csv").getAbsolutePath());
-        System.out.println("  our-waves.csv (Autopilot):   "
-                + new File(autopilotDir, "our-waves.csv").getAbsolutePath());
-        System.out.println("  scores.csv (Autopilot):      " + new File(autopilotDir, "scores.csv").getAbsolutePath());
-        File opponentDir = new File(battleDir, "Opponent");
-        System.out.println("  ticks.csv (Opponent):   " + new File(opponentDir, "ticks.csv").getAbsolutePath());
-        System.out.println("  their-waves.csv (Opponent):  "
+            System.out.println("  autopilot-waves.csv (Autopilot): "
+                + new File(autopilotDir, "autopilot-waves.csv").getAbsolutePath());
+            System.out.println("  scores.csv (Autopilot):      "
+                + new File(autopilotDir, "scores.csv").getAbsolutePath());
+            File opponentDir = new File(battleDir, "Opponent");
+            System.out.println("  ticks.csv (Opponent):   " + new File(opponentDir, "ticks.csv").getAbsolutePath());
+            System.out.println("  their-waves.csv (Opponent):  "
                 + new File(opponentDir, "their-waves.csv").getAbsolutePath());
-        System.out.println("  in-game.csv:  " + new File(outputDir, "in-game.csv").getAbsolutePath());
-        System.out.println("  observer.csv: " + new File(outputDir, "observer.csv").getAbsolutePath());
-        System.out.println("  their-fires.csv: " + new File(outputDir, "their-fires.csv").getAbsolutePath());
-        // Restore system properties to leave the JVM clean for sibling tests
-        if (setDebugCsv) {
-            System.clearProperty("debug.csv.dir");
-        }
-        if (setTheirFires) {
-            System.clearProperty("their.fires.dir");
         }
 
         // --- Assert debug properties match (ALL features, every tick, every round) ---
         assertEquals(0, layer0.getUnexpectedMismatches(),
                 "Observer must be a faithful deterministic shadow: every feature must match "
                         + "the live robot's debug properties every tick");
+    }
+
+    @Test
+    void beepBoopSelfPlayValidatesGodViewLayersWithoutLayer0() {
+        if (shouldSkipForOpponentOverride(BEEPBEEP)) {
+            return;
+        }
+
+        configureRobocodeOrAssume();
+        int rounds = battleRounds();
+        long seed = configureSeed("(" + BEEPBEEP + " vs " + BEEPBEEP + ")");
+
+        BattleRunner.BattleResult result = runBattleOrSkip(
+                () -> BattleRunner.runBattle(BEEPBEEP, BEEPBEEP, rounds, null, false));
+
+        GodViewQualityValidator validator = result.orchestrator().validator();
+        assertNotNull(validator, "Validator should be attached");
+        assertNull(result.orchestrator().layer0Validator(), "Layer 0 should be skipped for non-Autopilot self-play");
+
+        REPORTS.add(captureReport(BEEPBEEP + " vs " + BEEPBEEP, seed, rounds, result,
+                result.getWinRate(), result.getScoreRatio(), Double.NaN, validator, null));
+
+            assertSpatialFidelity(validator);
+
+        double fireDetectionRate0 = validator.getTheirFireDetectionRate();
+        System.out.println(String.format("Incoming-fire detection rate: %.1f%%", fireDetectionRate0 * 100));
+        System.out.println(String.format("GF mean absolute error: %.4f", validator.getGfMeanAbsoluteError(0)));
+
+        boolean anyFiresDetected = !Double.isNaN(fireDetectionRate0);
+        validator.assertNonVacuous(anyFiresDetected);
+        validator.printSummary();
+    }
+
+    private static boolean shouldSkipForOpponentOverride(String opponent) {
+        String overrideOpponent = System.getProperty("battle.opponent");
+        return overrideOpponent != null && !overrideOpponent.isEmpty() && !opponent.equals(overrideOpponent);
+    }
+
+    private static void configureRobocodeOrAssume() {
+        String robotsPath = System.getProperty("battle.stage");
+        if (robotsPath == null) {
+            robotsPath = new File("build/battle-stage").getAbsolutePath();
+        }
+        assumeTrue(new File(robotsPath).isDirectory(),
+                "Skipping: battle-stage directory not found (run via ./gradlew :pipeline:battleTest)");
+
+        System.setProperty("ROBOTPATH", robotsPath);
+        System.setProperty("NOSECURITY", "true");
+        System.setProperty("java.awt.headless", "true");
+    }
+
+    private static int battleRounds() {
+        return Integer.parseInt(System.getProperty("battle.rounds", "10"));
+    }
+
+    /**
+     * Robocode reads RANDOMSEED at battle start and seeds java.util.Random for the
+     * whole battle. Defaulting to the current timestamp keeps every printed run
+     * replayable with -Dbattle.seed=<printed value>.
+     */
+    private static long configureSeed(String battleLabel) {
+        String seedOverride = System.getProperty("battle.seed");
+        long seed = seedOverride != null && !seedOverride.isEmpty()
+                ? Long.parseLong(seedOverride)
+                : System.currentTimeMillis();
+        System.setProperty("RANDOMSEED", Long.toString(seed));
+        System.out.println(String.format(
+                "=== RANDOM SEED: %d %s === replay with -Dbattle.seed=%d", seed, battleLabel, seed));
+        return seed;
+    }
+
+    private static BattleRunner.BattleResult runBattleOrSkip(BattleInvocation battle) {
+        try {
+            return battle.run();
+        } catch (NullPointerException e) {
+            assumeTrue(false, "Skipping: Robocode engine requires --add-opens JVM args "
+                    + "(run via ./gradlew :pipeline:battleTest)");
+            return null;
+        }
+    }
+
+    private static void assertSpatialFidelity(GodViewQualityValidator validator) {
+        int spatialMismatches = validator.getSpatialMismatches();
+        System.out.println(String.format("Spatial mismatches: %d", spatialMismatches));
+        assertEquals(0, spatialMismatches,
+                "Spatial features must match exactly between observer and god-view");
+    }
+
+    @FunctionalInterface
+    private interface BattleInvocation {
+        BattleRunner.BattleResult run();
     }
 
     // --- Score baseline per opponent ---
@@ -337,7 +407,7 @@ final class BattleLoopTest {
         }
     }
 
-    // --- Compute hit rate from our-waves.csv lines (real bullets only) ---
+    // --- Compute hit rate from autopilot-waves.csv lines (real bullets only) ---
     private double computeHitRate(List<String> lines) {
         if (lines.size() < 2)
             return 0;
@@ -388,6 +458,14 @@ final class BattleLoopTest {
         }
     }
 
+    private static void restoreProperty(String key, String previousValue) {
+        if (previousValue == null) {
+            System.clearProperty(key);
+        } else {
+            System.setProperty(key, previousValue);
+        }
+    }
+
     // ======================================================================
     // Drift report (./BattleLoopTest.md) — by layer and by feature.
     // ======================================================================
@@ -400,6 +478,9 @@ final class BattleLoopTest {
     private record ChannelDrift(String label, long gvEvents, long obsEvents,
             long driftIncidents, double gvTotal, double obsTotal, double absDrift) {
     }
+
+        private record FieldMetric(String name, int checks, int mismatches, double mae, double maxError) {
+        }
 
     /** Immutable per-opponent snapshot of all layer/feature drift metrics. */
     private static final class OppReport {
@@ -439,6 +520,7 @@ final class BattleLoopTest {
         double l3PowMAE;
         double l3Latency;
         double l3AngleMAE;
+        final List<FieldMetric> l3Fields = new ArrayList<>();
 
         // Layer 4 — perspective 0 (autopilot) only.
         int l4Comparisons;
@@ -463,25 +545,28 @@ final class BattleLoopTest {
         r.scoreRatio = scoreRatio;
         r.hitRate = hitRate;
 
-        // Layer 0 — IDebugProperty fidelity, per feature.
-        r.l0Checks = layer0.getChecks();
-        r.l0Mismatches = layer0.getMismatches();
-        r.l0UnexpectedMismatches = layer0.getUnexpectedMismatches();
-        r.l0WaivedMismatches = layer0.getWaivedMismatches();
-        int l0FeatureMismatchSum = 0;
-        for (Feature f : Feature.values()) {
-            int checks = layer0.getChecks(f);
-            if (checks == 0) {
-                continue;
+        // Layer 0 — IDebugProperty fidelity, per feature. May be absent for
+        // non-Autopilot battles where no live debug properties exist.
+        if (layer0 != null) {
+            r.l0Checks = layer0.getChecks();
+            r.l0Mismatches = layer0.getMismatches();
+            r.l0UnexpectedMismatches = layer0.getUnexpectedMismatches();
+            r.l0WaivedMismatches = layer0.getWaivedMismatches();
+            int l0FeatureMismatchSum = 0;
+            for (Feature f : Feature.values()) {
+                int checks = layer0.getChecks(f);
+                if (checks == 0) {
+                    continue;
+                }
+                int mism = layer0.getMismatches(f);
+                l0FeatureMismatchSum += mism;
+                if (mism > 0) {
+                    r.l0Features.add(new FeatureDrift(f.name(), checks, mism));
+                }
             }
-            int mism = layer0.getMismatches(f);
-            l0FeatureMismatchSum += mism;
-            if (mism > 0) {
-                r.l0Features.add(new FeatureDrift(f.name(), checks, mism));
-            }
+            // Wave-column drift is folded into the L0 total but not enumerable per enum.
+            r.l0WaveOther = Math.max(0, r.l0Mismatches - l0FeatureMismatchSum);
         }
-        // Wave-column drift is folded into the L0 total but not enumerable per enum.
-        r.l0WaveOther = Math.max(0, r.l0Mismatches - l0FeatureMismatchSum);
 
         // Layer 1 — spatial fidelity, per feature.
         r.l1Checks = validator.getSpatialChecks();
@@ -523,6 +608,13 @@ final class BattleLoopTest {
         r.l3PowMAE = validator.getTheirFirePowerMAE();
         r.l3Latency = validator.getTheirFireDetectionLatency();
         r.l3AngleMAE = validator.getTheirFireAngleMAE();
+        for (Feature f : GodViewQualityValidator.theirFireFields()) {
+            int checks = validator.getTheirFireFieldChecks(f);
+            if (checks > 0) {
+                r.l3Fields.add(new FieldMetric(f.name(), checks, validator.getTheirFireFieldMismatches(f),
+                        validator.getTheirFireFieldMAE(f), validator.getTheirFireFieldMaxError(f)));
+            }
+        }
 
         // Layer 4 — GF precision (autopilot perspective 0).
         r.l4Comparisons = validator.getGfComparisonCount(0);
@@ -632,6 +724,23 @@ final class BattleLoopTest {
                     fmt(r.l3Latency, "%.2f"), fmt(r.l3AngleMAE, "%.4f")));
         }
         md.append('\n');
+
+        md.append("### Layer 3 — their-fire fields\n\n");
+        boolean anyL3Fields = REPORTS.stream().anyMatch(r -> !r.l3Fields.isEmpty());
+        if (!anyL3Fields) {
+            md.append("No paired incoming-fire field comparisons recorded.\n\n");
+        } else {
+            md.append("| Opponent | Feature | Checks | Mismatches | MAE | Max err |\n");
+            md.append("|---|---|---:|---:|---:|---:|\n");
+            for (OppReport r : REPORTS) {
+                for (FieldMetric f : r.l3Fields) {
+                    md.append(String.format("| %s | %s | %d | %d | %s | %s |%n",
+                            r.opponent, f.name(), f.checks(), f.mismatches(),
+                            fmt(f.mae(), "%.4f"), fmt(f.maxError(), "%.4f")));
+                }
+            }
+            md.append('\n');
+        }
 
         // --- Layer 4 ---
         md.append("## Layer 4 — GF Precision (autopilot)\n\n");

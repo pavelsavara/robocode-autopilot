@@ -1,9 +1,11 @@
 # Feature Flow
 
 This document describes the live-robot feature flow for `Autopilot` and
-`Whiteboard`. The pipeline has a god-view reconstruction path and writes CSV
-from god-view whiteboards, but the feature lifetimes and timing names below are
-defined from the robot's in-game point of view.
+`Whiteboard`. The quality pipeline has a god-view reconstruction path and, when
+CSV is enabled for `BattleLoopTest`, writes from god-view whiteboards. The
+`BattleCSVProducer` path writes robot-side observer whiteboards instead. The
+feature lifetimes and timing names below are defined from the robot's in-game
+point of view.
 
 ## Robocode Turn Model
 
@@ -229,18 +231,22 @@ later tick. Real wave resolution updates `ModelSelector` when present, otherwise
 
 | Feature | Source and timing |
 |---|---|
-| `ROUND_HIT_RATE` | Pipeline/god-view score output. The live robot path does not populate it. |
-| `ROUND_RESULT` | Pipeline/god-view score output. The live robot path does not populate it. |
+| `ROUND_HIT_RATE` | Pipeline score output. The live robot path does not populate it. |
+| `ROUND_RESULT` | Pipeline score output. The live robot path does not populate it. |
 
 ## CSV Row Timing
 
-The pipeline writer groups headers directly from `Feature.getFileType()`:
+The pipeline writer groups headers directly from `Feature.getFileType()`. The
+existing quality pipeline writes god-view rows when `BattleLoopTest` CSV output
+is enabled; `BattleCSVProducer` writes the same files from robot-side observer
+whiteboards and uses DeJaVu battle-end score events for `scores.csv`.
 
 | CSV | Trigger in current pipeline |
 |---|---|
 | `ticks.csv` | Every processed tick, from the god-view whiteboard. |
 | `scan.csv` | Processed ticks where the god-view whiteboard has a current scan row. |
-| `our-waves.csv` | Ticks where the pipeline detected an outgoing god-view wave resolution. The row contains the staged real `OUR_FIRE_*`, `OUR_AIM_*`, and `OUR_BREAK_*` values for that resolved wave. |
+| `autopilot-waves.csv` | Ticks where the pipeline detected an outgoing Autopilot wave resolution. The row contains `OUR_FIRE_*`, `OUR_AIM_*`, and `OUR_BREAK_*` values for that resolved real or virtual Autopilot wave. |
+| `dejavu-waves.csv` | Ticks where a DeJaVu CommandReconstructor-backed real outgoing bullet wave resolves. The file uses the same outgoing-wave schema as `autopilot-waves.csv`. |
 | `their-waves.csv` | For a perspective `pi`, written when the peer perspective's outgoing wave resolution corresponds to an incoming wave for `pi`. |
 | `scores.csv` | End of round. |
 

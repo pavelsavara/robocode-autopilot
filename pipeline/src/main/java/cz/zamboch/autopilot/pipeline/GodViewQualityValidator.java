@@ -38,6 +38,18 @@ public final class GodViewQualityValidator {
 
     private static final double EPSILON = 1e-4;
 
+        private static final Feature[] THEIR_FIRE_FIELDS = {
+            Feature.THEIR_FIRE_POWER,
+            Feature.THEIR_FIRE_TICK,
+            Feature.THEIR_FIRE_X,
+            Feature.THEIR_FIRE_Y,
+            Feature.THEIR_BULLET_SPEED,
+            Feature.THEIR_FIRE_BEARING,
+            Feature.THEIR_FIRE_DISTANCE,
+            Feature.THEIR_FIRE_OUR_X,
+            Feature.THEIR_FIRE_OUR_Y
+        };
+
     // --- Layer 1: Spatial (per-feature stats) ---
     private final EnumMap<Feature, ValidationStats> spatialStats = new EnumMap<>(Feature.class);
 
@@ -47,6 +59,7 @@ public final class GodViewQualityValidator {
     // bullet id for incoming fire. Origin/timing/power are knowable exactly; the
     // muzzle angle is not — angleMAE quantifies that single irreducible unknown.
     private final TheirFireDetectionTracker theirFireTracking = new TheirFireDetectionTracker();
+    private final EnumMap<Feature, NumericErrorStats> theirFireFieldStats = new EnumMap<>(Feature.class);
 
     // --- Layer 4: Wave GF Precision ---
     private final WavePrecisionTracker[] waveTracking = {
@@ -128,19 +141,43 @@ public final class GodViewQualityValidator {
         int mismatches;
     }
 
+    private static final class NumericErrorStats {
+        int checks;
+        int mismatches;
+        int finiteErrorCount;
+        double absErrorSum;
+        double maxError;
+
+        double meanAbsError() {
+            return finiteErrorCount > 0 ? absErrorSum / finiteErrorCount : Double.NaN;
+        }
+    }
+
     private static final class FireRecord {
         final double power;
         final double x;
         final double y;
         final double heading;
         final long tick;
+        final double bulletSpeed;
+        final double fireBearing;
+        final double distance;
+        final double ourX;
+        final double ourY;
 
-        FireRecord(double power, double x, double y, double heading, long tick) {
+        FireRecord(double power, double x, double y, double heading, long tick,
+                double bulletSpeed, double fireBearing, double distance,
+                double ourX, double ourY) {
             this.power = power;
             this.x = x;
             this.y = y;
             this.heading = heading;
             this.tick = tick;
+            this.bulletSpeed = bulletSpeed;
+            this.fireBearing = fireBearing;
+            this.distance = distance;
+            this.ourX = ourX;
+            this.ourY = ourY;
         }
     }
 
@@ -184,12 +221,20 @@ public final class GodViewQualityValidator {
          * {@code robotSide.heading} is the robot's head-on assumption. Their gap is
          * the irreducible muzzle-angle unknown.
          */
-        void pair(FireRecord godView, FireRecord robotSide) {
+        void pair(FireRecord godView, FireRecord robotSide,
+                EnumMap<Feature, NumericErrorStats> fieldStats) {
             positionErrorSum += Math.hypot(godView.x - robotSide.x, godView.y - robotSide.y);
             powerErrorSum += Math.abs(godView.power - robotSide.power);
             latencySum += (robotSide.tick - godView.tick);
             angleErrorSum += Math.abs(RoboMath.normalRelativeAngle(godView.heading - robotSide.heading));
+            recordTheirFireFields(fieldStats, godView, robotSide);
             pairedCount++;
+        }
+
+        void resetRound() {
+            pendingGodView.clear();
+            pendingRobotSide.clear();
+            seenGodViewTicks.clear();
         }
 
         double getPositionMAE() {
@@ -314,6 +359,8 @@ public final class GodViewQualityValidator {
         int breakTickComparisonCount;
         int godViewResolutions;
         int robotSideResolutions;
+        final Map<Long, Layer4WaveBreak> pendingGodView = new HashMap<>();
+        final Map<Long, Layer4WaveBreak> pendingRobotSide = new HashMap<>();
 
         double getWaveMatchRate() {
             if (godViewResolutions == 0)
@@ -325,6 +372,11 @@ public final class GodViewQualityValidator {
             return breakTickComparisonCount > 0
                     ? breakTickErrorSum / breakTickComparisonCount
                     : Double.NaN;
+        }
+
+        void resetRound() {
+            pendingGodView.clear();
+            pendingRobotSide.clear();
         }
     }
 
@@ -423,16 +475,24 @@ public final class GodViewQualityValidator {
      * it (true muzzle origin, true fire tick, true power, true flight heading).
      * Paired with the autopilot's energy-drop inference of the same fire tick.
      */
-    public void recordGodViewTheirFire(double power, double x, double y,
+        public void recordGodViewTheirFire(double power, double x, double y,
             double heading, long fireTick) {
+        recordGodViewTheirFire(power, x, y, heading, fireTick,
+            Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN);
+        }
+
+    public void recordGodViewTheirFire(double power, double x, double y,
+            double heading, long fireTick, double bulletSpeed, double fireBearing,
+            double distance, double ourX, double ourY) {
         if (!theirFireTracking.seenGodViewTicks.add(fireTick)) {
             return;
         }
         theirFireTracking.godViewCount++;
-        FireRecord godView = new FireRecord(power, x, y, heading, fireTick);
+        FireRecord godView = new FireRecord(power, x, y, heading, fireTick,
+                bulletSpeed, fireBearing, distance, ourX, ourY);
         FireRecord robotSide = theirFireTracking.pendingRobotSide.remove(fireTick);
         if (robotSide != null) {
-            theirFireTracking.pair(godView, robotSide);
+            theirFireTracking.pair(godView, robotSide, theirFireFieldStats);
         } else {
             theirFireTracking.pendingGodView.put(fireTick, godView);
         }
@@ -443,13 +503,21 @@ public final class GodViewQualityValidator {
      * energy drop. {@code bearing} is the head-on assumption of the muzzle angle.
      * Paired with the god-view fire of the same fire tick.
      */
-    public void recordRobotSideTheirFire(double power, double x, double y,
+        public void recordRobotSideTheirFire(double power, double x, double y,
             double bearing, long fireTick) {
+        recordRobotSideTheirFire(power, x, y, bearing, fireTick,
+            Double.NaN, Double.NaN, Double.NaN, Double.NaN);
+        }
+
+    public void recordRobotSideTheirFire(double power, double x, double y,
+            double bearing, long fireTick, double bulletSpeed, double distance,
+            double ourX, double ourY) {
         theirFireTracking.robotSideCount++;
-        FireRecord robotSide = new FireRecord(power, x, y, bearing, fireTick);
+        FireRecord robotSide = new FireRecord(power, x, y, bearing, fireTick,
+                bulletSpeed, bearing, distance, ourX, ourY);
         FireRecord godView = theirFireTracking.pendingGodView.remove(fireTick);
         if (godView != null) {
-            theirFireTracking.pair(godView, robotSide);
+            theirFireTracking.pair(godView, robotSide, theirFireFieldStats);
         } else {
             theirFireTracking.pendingRobotSide.put(fireTick, robotSide);
         }
@@ -471,6 +539,30 @@ public final class GodViewQualityValidator {
         tracker.breakTickComparisonCount++;
     }
 
+    public void recordGodViewWaveResolution(int perspIndex, Layer4WaveBreak godViewBreak) {
+        WavePrecisionTracker tracker = waveTracking[perspIndex];
+        tracker.godViewResolutions++;
+        Layer4WaveBreak robotSideBreak = tracker.pendingRobotSide.remove(godViewBreak.bulletId());
+        if (robotSideBreak != null) {
+            compareWaveBreak(perspIndex, godViewBreak.gf(), robotSideBreak.gf(),
+                    godViewBreak.breakTick(), robotSideBreak.breakTick());
+        } else {
+            tracker.pendingGodView.put(godViewBreak.bulletId(), godViewBreak);
+        }
+    }
+
+    public void recordRobotSideWaveResolution(int perspIndex, Layer4WaveBreak robotSideBreak) {
+        WavePrecisionTracker tracker = waveTracking[perspIndex];
+        tracker.robotSideResolutions++;
+        Layer4WaveBreak godViewBreak = tracker.pendingGodView.remove(robotSideBreak.bulletId());
+        if (godViewBreak != null) {
+            compareWaveBreak(perspIndex, godViewBreak.gf(), robotSideBreak.gf(),
+                    godViewBreak.breakTick(), robotSideBreak.breakTick());
+        } else {
+            tracker.pendingRobotSide.put(robotSideBreak.bulletId(), robotSideBreak);
+        }
+    }
+
     /**
      * Record a god-view wave resolution (even if no robot-side match).
      */
@@ -483,6 +575,43 @@ public final class GodViewQualityValidator {
      */
     public void recordRobotSideWaveResolution(int perspIndex) {
         waveTracking[perspIndex].robotSideResolutions++;
+    }
+
+    private static void recordTheirFireFields(EnumMap<Feature, NumericErrorStats> fieldStats,
+            FireRecord godView, FireRecord robotSide) {
+        recordTheirFireField(fieldStats, Feature.THEIR_FIRE_POWER, godView.power, robotSide.power, false);
+        recordTheirFireField(fieldStats, Feature.THEIR_FIRE_TICK, godView.tick, robotSide.tick, false);
+        recordTheirFireField(fieldStats, Feature.THEIR_FIRE_X, godView.x, robotSide.x, false);
+        recordTheirFireField(fieldStats, Feature.THEIR_FIRE_Y, godView.y, robotSide.y, false);
+        recordTheirFireField(fieldStats, Feature.THEIR_BULLET_SPEED, godView.bulletSpeed, robotSide.bulletSpeed, false);
+        recordTheirFireField(fieldStats, Feature.THEIR_FIRE_BEARING,
+                godView.fireBearing, robotSide.fireBearing, true);
+        recordTheirFireField(fieldStats, Feature.THEIR_FIRE_DISTANCE, godView.distance, robotSide.distance, false);
+        recordTheirFireField(fieldStats, Feature.THEIR_FIRE_OUR_X, godView.ourX, robotSide.ourX, false);
+        recordTheirFireField(fieldStats, Feature.THEIR_FIRE_OUR_Y, godView.ourY, robotSide.ourY, false);
+    }
+
+    private static void recordTheirFireField(EnumMap<Feature, NumericErrorStats> fieldStats,
+            Feature feature, double expected, double actual, boolean angle) {
+        NumericErrorStats stats = fieldStats.computeIfAbsent(feature, k -> new NumericErrorStats());
+        stats.checks++;
+        if (Double.isNaN(expected) && Double.isNaN(actual)) {
+            return;
+        }
+        if (Double.isNaN(expected) || Double.isNaN(actual)) {
+            stats.mismatches++;
+            return;
+        }
+
+        double error = angle
+                ? Math.abs(RoboMath.normalRelativeAngle(expected - actual))
+                : Math.abs(expected - actual);
+        stats.finiteErrorCount++;
+        stats.absErrorSum += error;
+        stats.maxError = Math.max(stats.maxError, error);
+        if (error > EPSILON) {
+            stats.mismatches++;
+        }
     }
 
     // ========== Layer 2: Damage-Observation Drift (autopilot-only) ==========
@@ -748,7 +877,10 @@ public final class GodViewQualityValidator {
         }
         obsHitByUsBulletIds.clear();
         obsHitOnUsBulletIds.clear();
-        theirFireTracking.seenGodViewTicks.clear();
+        theirFireTracking.resetRound();
+        for (WavePrecisionTracker tracker : waveTracking) {
+            tracker.resetRound();
+        }
         prevOppState = null;
         prevOppVelocity = Double.NaN;
         prevDamageObsSelfEnergy = Double.NaN;
@@ -856,6 +988,30 @@ public final class GodViewQualityValidator {
         return theirFireTracking.getAngleMAE();
     }
 
+    public int getTheirFireFieldChecks(Feature feature) {
+        NumericErrorStats s = theirFireFieldStats.get(feature);
+        return s != null ? s.checks : 0;
+    }
+
+    public int getTheirFireFieldMismatches(Feature feature) {
+        NumericErrorStats s = theirFireFieldStats.get(feature);
+        return s != null ? s.mismatches : 0;
+    }
+
+    public double getTheirFireFieldMAE(Feature feature) {
+        NumericErrorStats s = theirFireFieldStats.get(feature);
+        return s != null ? s.meanAbsError() : Double.NaN;
+    }
+
+    public double getTheirFireFieldMaxError(Feature feature) {
+        NumericErrorStats s = theirFireFieldStats.get(feature);
+        return s != null && s.finiteErrorCount > 0 ? s.maxError : Double.NaN;
+    }
+
+    public static Feature[] theirFireFields() {
+        return THEIR_FIRE_FIELDS.clone();
+    }
+
     public double getGfMeanAbsoluteError(int perspIndex) {
         WavePrecisionTracker t = waveTracking[perspIndex];
         return t.gfComparisonCount > 0 ? t.gfErrorSum / t.gfComparisonCount : Double.NaN;
@@ -953,6 +1109,15 @@ public final class GodViewQualityValidator {
                 formatMetric(t3.getPowerMAE(), "%.4f"),
                 formatMetric(t3.getDetectionLatency(), "%.2f"),
                 formatMetric(t3.getAngleMAE(), "%.4f"));
+        for (Feature feature : THEIR_FIRE_FIELDS) {
+            NumericErrorStats s = theirFireFieldStats.get(feature);
+            if (s != null && s.checks > 0) {
+            System.out.printf("    %-24s checks=%d, mismatches=%d, MAE=%s, max=%s%n",
+                feature, s.checks, s.mismatches,
+                formatMetric(s.meanAbsError(), "%.4f"),
+                formatMetric(s.finiteErrorCount > 0 ? s.maxError : Double.NaN, "%.4f"));
+            }
+        }
         System.out.println();
 
         // Layer 4

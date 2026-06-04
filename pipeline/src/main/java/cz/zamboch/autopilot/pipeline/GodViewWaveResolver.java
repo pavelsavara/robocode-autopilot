@@ -13,6 +13,7 @@ import robocode.control.snapshot.IRobotSnapshot;
 import robocode.control.snapshot.ITurnSnapshot;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -32,7 +33,7 @@ import java.util.Set;
  * Sets OUR_FIRE_* at fire time and OUR_BREAK_* at resolution time on the
  * observer's Whiteboard. Also sets THEIR_* features on the peer's Whiteboard.
  * <p>
- * Unlike the robot-side {@code WaveTracker} which relies on stale scan data,
+ * Unlike the robot-side {@code OurWaveTracker} which relies on stale scan data,
  * this uses exact opponent coordinates every tick for ground-truth resolution.
  */
 final class GodViewWaveResolver {
@@ -42,6 +43,9 @@ final class GodViewWaveResolver {
 
     /** Per-perspective flag: true if a new fire was detected this tick. */
     private final boolean[] firedThisTick = { false, false };
+
+    /** Per-perspective real-wave resolutions produced by the last processTick. */
+    private final List<Layer4WaveBreak>[] resolvedThisTick = newBreakLists();
 
     /** Set of bullet IDs already used to create waves. */
     private final Set<Integer> knownBulletIds = new HashSet<>();
@@ -57,6 +61,9 @@ final class GodViewWaveResolver {
         for (PerPerspective pp : persp) {
             pp.activeWaves.clear();
             pp.pendingFire = false;
+        }
+        for (List<Layer4WaveBreak> breaks : resolvedThisTick) {
+            breaks.clear();
         }
         knownBulletIds.clear();
         hitBulletIds.clear();
@@ -90,6 +97,10 @@ final class GodViewWaveResolver {
         return tw != null ? tw.trueHeading : Double.NaN;
     }
 
+    List<Layer4WaveBreak> resolvedWavesThisTick(int perspIndex) {
+        return Collections.unmodifiableList(resolvedThisTick[perspIndex]);
+    }
+
     /**
      * Main per-tick call. Detects new bullets (fire), resolves existing waves,
      * and sets features on whiteboards.
@@ -100,6 +111,8 @@ final class GodViewWaveResolver {
         boolean[] resolved = { false, false };
         firedThisTick[0] = false;
         firedThisTick[1] = false;
+        resolvedThisTick[0].clear();
+        resolvedThisTick[1].clear();
 
         detectNewBullets(turn, observers, robots);
         detectHitBullets(turn);
@@ -334,6 +347,7 @@ final class GodViewWaveResolver {
                 roundFired[perspIndex]++;
                 if (hit)
                     roundHits[perspIndex]++;
+                resolvedThisTick[perspIndex].add(new Layer4WaveBreak(tw.bulletId, gf, currentTick));
 
                 // Also re-set fire features so CSV row has both fire + break —
                 // UNLESS a new fire was detected for this perspective on the SAME
@@ -355,6 +369,11 @@ final class GodViewWaveResolver {
             }
         }
         return anyResolved;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Layer4WaveBreak>[] newBreakLists() {
+        return new List[] { new ArrayList<Layer4WaveBreak>(), new ArrayList<Layer4WaveBreak>() };
     }
 
     /**

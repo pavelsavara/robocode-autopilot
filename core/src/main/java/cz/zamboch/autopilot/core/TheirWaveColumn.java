@@ -30,7 +30,10 @@ public enum TheirWaveColumn {
     BREAK_OUR_Y,
     BREAK_GF, // GF where we were (their perspective)
     BREAK_BEARING_OFFSET,
-    HIT_US; // 1 if their bullet hit us, 0 otherwise
+    HIT_US, // 1 if their bullet hit us, 0 otherwise
+
+    /** Internal bookkeeping: engine bullet id once known from snapshots/events. */
+    BULLET_ID;
 
     public static final int COUNT = values().length;
 }

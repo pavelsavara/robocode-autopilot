@@ -25,6 +25,8 @@ import cz.zamboch.autopilot.core.Whiteboard;
  * SpatialFeatures having computed OPPONENT_X/Y.
  */
 public final class TheirWaveTracker implements IInGameFeatures {
+    private static final double HIT_MATCH_TOLERANCE = 45.0;
+
     private static final Feature[] DEPS = {
             Feature.THEIR_FIRE_POWER,
             Feature.OPPONENT_X,
@@ -71,6 +73,93 @@ public final class TheirWaveTracker implements IInGameFeatures {
     public void process(Whiteboard wb) {
         createWaveIfFired(wb);
         resolveWaves(wb);
+    }
+
+    /**
+     * Mark that an opponent bullet hit us, preferring bullet identity and
+     * trajectory geometry over the legacy power-only match.
+     */
+    public static void markBulletHitUs(Whiteboard wb, int bulletId, double power,
+            double bulletX, double bulletY, double bulletHeading, long tick) {
+        int slot = uniqueActiveWaveWithBulletId(wb, bulletId);
+        if (slot < 0) {
+            slot = nearestActiveWave(wb, power, bulletX, bulletY, bulletHeading, tick);
+        }
+        if (slot >= 0) {
+            wb.setTheirWave(slot, TheirWaveColumn.BULLET_ID, bulletId);
+            wb.setTheirWave(slot, TheirWaveColumn.HIT_US, 1.0);
+            return;
+        }
+        markBulletHitUs(wb, power);
+    }
+
+    /** Attach a known engine bullet id to the matching active incoming wave. */
+    public static void assignBulletId(Whiteboard wb, int bulletId, double power,
+            double bulletX, double bulletY, double bulletHeading, long tick) {
+        if (bulletId == 0) {
+            return;
+        }
+        int slot = nearestActiveWave(wb, power, bulletX, bulletY, bulletHeading, tick);
+        if (slot >= 0 && Double.isNaN(wb.getTheirWave(slot, TheirWaveColumn.BULLET_ID))) {
+            wb.setTheirWave(slot, TheirWaveColumn.BULLET_ID, bulletId);
+        }
+    }
+
+    /** Legacy fallback for idless/ambiguous hits. */
+    public static void markBulletHitUs(Whiteboard wb, double power) {
+        for (int i = 0; i < Whiteboard.THEIR_WAVE_CAPACITY; i++) {
+            if (wb.getTheirWaveState(i) == Whiteboard.WAVE_ACTIVE
+                    && Math.abs(wb.getTheirWave(i, TheirWaveColumn.FIRE_POWER) - power) < 0.001) {
+                wb.setTheirWave(i, TheirWaveColumn.HIT_US, 1.0);
+                return;
+            }
+        }
+    }
+
+    private static int uniqueActiveWaveWithBulletId(Whiteboard wb, int bulletId) {
+        if (bulletId == 0) {
+            return -1;
+        }
+        int found = -1;
+        for (int i = 0; i < Whiteboard.THEIR_WAVE_CAPACITY; i++) {
+            if (wb.getTheirWaveState(i) == Whiteboard.WAVE_ACTIVE
+                    && (int) wb.getTheirWave(i, TheirWaveColumn.BULLET_ID) == bulletId) {
+                if (found >= 0) {
+                    return -1;
+                }
+                found = i;
+            }
+        }
+        return found;
+    }
+
+    private static int nearestActiveWave(Whiteboard wb, double power, double bulletX, double bulletY,
+            double bulletHeading, long tick) {
+        if (Double.isNaN(bulletX) || Double.isNaN(bulletY) || Double.isNaN(bulletHeading)) {
+            return -1;
+        }
+        int bestSlot = -1;
+        double bestError = Double.POSITIVE_INFINITY;
+        for (int i = 0; i < Whiteboard.THEIR_WAVE_CAPACITY; i++) {
+            if (wb.getTheirWaveState(i) != Whiteboard.WAVE_ACTIVE
+                    || Math.abs(wb.getTheirWave(i, TheirWaveColumn.FIRE_POWER) - power) >= 0.001) {
+                continue;
+            }
+            double fireTick = wb.getTheirWave(i, TheirWaveColumn.FIRE_TICK);
+            double bulletSpeed = wb.getTheirWave(i, TheirWaveColumn.BULLET_SPEED);
+            if (Double.isNaN(fireTick) || Double.isNaN(bulletSpeed)) {
+                continue;
+            }
+            double travelled = (tick - fireTick) * bulletSpeed;
+            double expectedX = wb.getTheirWave(i, TheirWaveColumn.FIRE_X) + Math.sin(bulletHeading) * travelled;
+            double expectedY = wb.getTheirWave(i, TheirWaveColumn.FIRE_Y) + Math.cos(bulletHeading) * travelled;
+            double error = Math.hypot(expectedX - bulletX, expectedY - bulletY);
+            if (error < bestError) {
+                bestError = error;
+                bestSlot = i;
+            }
+        }
+        return bestError <= HIT_MATCH_TOLERANCE ? bestSlot : -1;
     }
 
     private void createWaveIfFired(Whiteboard wb) {

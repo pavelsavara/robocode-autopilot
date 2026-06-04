@@ -20,10 +20,14 @@ The learning pipeline exists to make offline data trustworthy before it is used 
 
 The critical invariant is Layer 0 fidelity: the in-game robot publishes every internal feature through `IDebugProperty[]`, while an observer reconstructs the same partial-information events from snapshots and must reproduce the same whiteboard. A zero-mismatch Layer 0 result proves the replay pipeline gave the observer the exact experience the robot had, not god-view. Only then do the god-view layers matter: a separate god-view whiteboard is seeded from truth snapshots to measure spatial drift, damage-observation drift, enemy-fire inference quality, and robot-side vs god-view wave/GF precision. God-view state is diagnostic only and never mutates the robot-side whiteboard.
 
-Current data collection writes one directory per battle and perspective:
+CSV data collection writes one directory per battle and perspective. `BattleCSVProducer`
+writes robot-side observer `Whiteboard` CSVs for the hardcoded top-five robot set
+plus `cz.zamboch.Autopilot`; `BattleLoopTest` keeps its quality validation focus
+and only writes its existing feature CSVs when `-PcsvDir` is supplied.
 
 - `ticks.csv`: per-tick state and derived features.
-- `our-waves.csv`: our fired/resolved waves, aim-time geometry, break GF, hit labels, and virtual/real wave fields.
+- `autopilot-waves.csv`: Autopilot observer fired/resolved waves, aim-time geometry, break GF, hit labels, and virtual/real wave fields.
+- `dejavu-waves.csv`: DeJaVu reconstructed real outgoing bullet waves, using the same outgoing-wave schema.
 - `their-waves.csv`: inferred incoming-fire waves, aim/fire/break geometry, hit-us labels.
 - `scores.csv`: per-round result and hit-rate summary.
 - Optional diagnostics: `in-game.csv`, `observer.csv`, `their-fires.csv`, `damage-events.csv`, and generated drift reports under `build/reports/`.
@@ -49,6 +53,9 @@ The practical loop today is: stage robot/opponents, run deterministic or seeded 
 .\gradlew.bat :robot:jar
 .\gradlew.bat :pipeline:runBattle -Prounds=5 -Popponent=test.SittingDuck
 .\gradlew.bat :pipeline:battleTest -Prounds=35 -Popponent=sample.Crazy
+.\gradlew.bat :pipeline:battleTest -Prounds=1 -Popponent=test.SittingDuck -PcsvDir=build/csv-check
+.\gradlew.bat :pipeline:battleCsvProducer -Prounds=1 -Pseed=12345
+.\gradlew.bat :pipeline:battleCsvProducer -Prounds=1 -ProbotA=cz.zamboch.Autopilot -ProbotB=kc.mega.BeepBoop
 node scripts/local-loop.mjs --rounds 5 --opponent test.SittingDuck
 .\gradlew.bat :pipeline:updateVcsData
 ```

@@ -38,7 +38,7 @@ public final class ModelSelector {
 
     /**
      * Predict using each model for the current tick situation (before wave
-     * is allocated). Used by OurWaveFeatures for gun aiming.
+    * is allocated). Used by OurWaveTracker for gun aiming.
      *
      * @param distance current distance to opponent
      * @param latVel   current lateral velocity of opponent

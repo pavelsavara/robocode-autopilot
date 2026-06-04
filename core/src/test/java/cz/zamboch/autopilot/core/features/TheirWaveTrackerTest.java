@@ -231,7 +231,7 @@ final class TheirWaveTrackerTest {
         wb.setTheirWaveState(slot, Whiteboard.WAVE_ACTIVE);
 
         // Mark that this bullet hit us
-        wb.markTheirBulletHitUs(2.0);
+        TheirWaveTracker.markBulletHitUs(wb, 2.0);
 
         // Resolve on tick 20
         setBasicState(20, 200, 200, 200, 400);
