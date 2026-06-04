@@ -3,7 +3,8 @@
 This document describes the live-robot feature flow for `Autopilot` and
 `Whiteboard`. The quality pipeline has a god-view reconstruction path and, when
 CSV is enabled for `BattleLoopTest`, writes from god-view whiteboards. The
-`BattleCSVProducer` path writes robot-side observer whiteboards instead. The
+`BattleCsvRunner` / `RobotSideCsvObserver` path writes robot-side observer
+whiteboards instead. The
 feature lifetimes and timing names below are defined from the robot's in-game
 point of view.
 
@@ -45,8 +46,7 @@ new ScanFeatures(),
 new WallHitEstimator(bfWidth, bfHeight),
 new FireFeatures(),
 new AccumulatorFeatures(),
-new OurWaveFeatures(),
-new WaveTracker(),
+new OurWaveTracker(),
 new TheirWaveTracker()
 ```
 
@@ -56,9 +56,13 @@ unless a dependency edge forces it. The important dependency-constrained flow is
 
 ```text
 ScanFeatures -> WallHitEstimator -> FireFeatures -> AccumulatorFeatures
-ScanFeatures -> OurWaveFeatures -> WaveTracker
+ScanFeatures -> OurWaveTracker
 FireFeatures + ScanFeatures -> TheirWaveTracker
 ```
+
+`OurWaveTracker` is the consolidated outgoing-gun processor: it computes
+`GUN_AIM_*`, derives staged `OUR_FIRE_*` values, allocates outgoing real and
+virtual waves, resolves them, and updates the learning model for real waves.
 
 The older `SpatialFeatures`, `MovementFeatures`, `TimingFeatures`, and
 `IdentityFeatures` classes still exist for focused tests and compatibility, but
@@ -75,10 +79,10 @@ is consolidated in `ScanFeatures`.
 | `SCAN` | 64-row scan ring. One row is opened by `beginScanRow(S)` for each `ScannedRobotEvent`. Historical reads walk this ring by `SCAN_TICK`. | Raw scan facts, scan-derived geometry/movement/timing, opponent identity, previous energy, and consumed damage ledger columns. |
 | Damage accumulator state | Separate live scan-window state for four `SCAN` features. It survives tick-ring rotation until copied into the current scan row. | `OUR_BULLET_DAMAGE_TO_OPPONENT`, `OPPONENT_BULLET_ENERGY_GAIN`, `RAM_DAMAGE_TO_OPPONENT`, `OPPONENT_WALL_HIT_DAMAGE`. |
 | `DECISIONS` | Depth-3 tick ring, rotated with `TICKS`. Not written to CSV. | Robot-side decisions: `GUN_AIM_POWER`, `GUN_AIM_ANGLE`, `GUN_AIM_GF`. |
-| `OUR_WAVES` staging | Single staging row addressed by `getFeature`/`setFeature`; copied into the outgoing wave ring by `WaveTracker`. | `OUR_FIRE_*`, `OUR_AIM_*`, and real-break `OUR_BREAK_*` staging. |
+| `OUR_WAVES` staging | Single staging row addressed by `getFeature`/`setFeature`; copied into the outgoing wave ring by `OurWaveTracker`. | `OUR_FIRE_*`, `OUR_AIM_*`, and real-break `OUR_BREAK_*` staging. |
 | Our-wave ring | 64 slots. One real slot plus 10 virtual slots are allocated for each accepted real fire command. Slots move `FREE -> ACTIVE -> RESOLVED`. | Full lifecycle columns for outgoing real and virtual waves, plus internal `WAVE_ID`. |
 | `THEIR_WAVES` staging | Single staging row addressed by `getFeature`/`setFeature`; copied into the incoming wave ring by `TheirWaveTracker`. | `THEIR_FIRE_*`, `THEIR_AIM_*`, and `THEIR_BREAK_*` staging. |
-| Their-wave ring | 32 slots. One active slot per detected opponent fire. Slots move `FREE -> ACTIVE -> RESOLVED`. | Full lifecycle columns for incoming opponent waves. |
+| Their-wave ring | 512 slots. One active slot per detected opponent fire. Slots move `FREE -> ACTIVE -> RESOLVED`. | Full lifecycle columns for incoming opponent waves, plus internal `BULLET_ID`. |
 | `SCORES` | One score row. | `ROUND_HIT_RATE`, `ROUND_RESULT`. |
 
 `getFeature(f)` returns the current table value for the feature's type. For scan
@@ -97,8 +101,7 @@ from newest to oldest and returns the first row whose `SCAN_TICK <= targetTick`.
 | `WallHitEstimator` | Only on current scan rows. | Current/previous scan velocity and heading, current opponent position, battlefield bounds, ram accumulator, opponent id. | Adds `OPPONENT_WALL_HIT_DAMAGE` when wall evidence is present and no existing positive wall accumulator is present. It uses real scan gap from `SCAN_TICK`, not `TICKS_SINCE_SCAN`, for braking-budget math. |
 | `FireFeatures` | Only on current scan rows, guarded against duplicate processing of the same `SCAN_TICK`. | Current opponent energy, previous scan opponent energy, and damage accumulators. | Writes `PREV_SCAN_OPPONENT_ENERGY` and detects `THEIR_FIRE_POWER` from adjusted energy drop. |
 | `AccumulatorFeatures` | Only on current scan rows, after `FireFeatures` because it depends on `THEIR_FIRE_POWER`. | Live scan-window damage accumulators. | Copies the four damage accumulators into the current scan row, then clears the live accumulator state for the next scan window. |
-| `OurWaveFeatures` | Every `wb.process()`. | Current scan distance/geometry for gun aim, gun heat, VCS/model selector, and any `OUR_FIRE_*` staging from the previous command tick. | Writes `GUN_AIM_POWER/ANGLE/GF`; when `OUR_FIRE_POWER` is staged, derives `OUR_FIRE_BULLET_SPEED`, `OUR_FIRE_MEA`, and `OUR_FIRE_DIRECTION`. |
-| `WaveTracker` | Every `wb.process()`. | Staged `OUR_FIRE_*`/`OUR_AIM_*`, current opponent position, current tick, active outgoing waves. | Allocates one real and 10 virtual outgoing wave slots, clears fire/aim staging, resolves active outgoing waves, writes real `OUR_BREAK_*` staging, and updates VCS/model selector for real waves only. |
+| `OurWaveTracker` | Every `wb.process()`. | Current scan distance/geometry for gun aim, gun heat, VCS/model selector, staged `OUR_FIRE_*`/`OUR_AIM_*`, current opponent position, current tick, and active outgoing waves. | Writes `GUN_AIM_POWER/ANGLE/GF`; when `OUR_FIRE_POWER` is staged, derives `OUR_FIRE_BULLET_SPEED`, `OUR_FIRE_MEA`, and `OUR_FIRE_DIRECTION`; allocates one real and 10 virtual outgoing wave slots; clears fire/aim staging; resolves active outgoing waves; writes real `OUR_BREAK_*` staging; updates `ModelSelector` or `VcsStore` for real waves only. |
 | `TheirWaveTracker` | Every `wb.process()`. | `THEIR_FIRE_POWER`, current/previous own positions, opponent scan geometry, active incoming waves. | Allocates incoming wave slots, fills `THEIR_FIRE_*` and `THEIR_AIM_*`, clears `THEIR_FIRE_POWER`, resolves incoming waves, and writes `THEIR_BREAK_*`/`THEIR_HIT_US`. |
 
 ## Feature Groups
@@ -134,7 +137,7 @@ Whiteboard's separate damage accumulator state, not in the current scan row.
 | Feature | Source and timing |
 |---|---|
 | `OUR_BULLET_DAMAGE_TO_OPPONENT` | `onBulletHit` adds `Rules.getBulletDamage(power)` and marks the matching active outgoing real wave as hit. |
-| `OPPONENT_BULLET_ENERGY_GAIN` | `onHitByBullet` adds `Rules.getBulletHitBonus(power)` and marks the oldest active incoming wave with matching power as hit-us. |
+| `OPPONENT_BULLET_ENERGY_GAIN` | `onHitByBullet` adds `Rules.getBulletHitBonus(power)` and marks an active incoming wave as hit-us. Matching first tries a unique bullet id, then nearest trajectory match within tolerance, then a power-only fallback. |
 | `RAM_DAMAGE_TO_OPPONENT` | `onHitRobot` adds `Rules.ROBOT_HIT_DAMAGE`. The ram score bonus is not treated as opponent energy gain. |
 | `OPPONENT_WALL_HIT_DAMAGE` | `WallHitEstimator` estimates wall damage from scan-window evidence unless an exact positive value already exists, so pipeline god-view values can win. |
 
@@ -163,8 +166,8 @@ for observer/pipeline validation; the live robot strategy does not read them.
 
 | Feature | Source and timing |
 |---|---|
-| `GUN_AIM_POWER` | `OurWaveFeatures` computes power from current scan distance, clamps it to `[1.0, 3.0]`, and sets it to `0` when `GUN_HEAT > 0`. If no current scan distance is available, it leaves the current decision slot as `NaN`. |
-| `GUN_AIM_ANGLE` | `OurWaveFeatures` starts from `OPPONENT_BEARING_ABSOLUTE` and applies a guess-factor offset from `ModelSelector` when present, else `VcsStore`, else head-on offset `0`. |
+| `GUN_AIM_POWER` | `OurWaveTracker` computes power from current scan distance, clamps it to `[1.0, 3.0]`, and sets it to `0` when `GUN_HEAT > 0`. If no current scan distance is available, it leaves the current decision slot as `NaN`. |
+| `GUN_AIM_ANGLE` | `OurWaveTracker` starts from `OPPONENT_BEARING_ABSOLUTE` and applies a guess-factor offset from `ModelSelector` when present, else `VcsStore`, else head-on offset `0`. |
 | `GUN_AIM_GF` | The chosen guess factor for `GUN_AIM_ANGLE`; default `0` without model signal. |
 
 `DECISIONS` are intentionally excluded from CSV because they are robot-side
@@ -190,29 +193,29 @@ source tick as `A = S - 2`.
 | `THEIR_BREAK_TICK` | Current tick `B` when `(B - THEIR_FIRE_TICK) * bulletSpeed >= distance(fire origin, our current position)`. |
 | `THEIR_BREAK_OUR_X`, `THEIR_BREAK_OUR_Y` | Our position at break tick `B`. |
 | `THEIR_BREAK_GF`, `THEIR_BREAK_BEARING_OFFSET` | Our break bearing from their perspective, normalized by max escape angle for the bullet speed. |
-| `THEIR_HIT_US` | `onHitByBullet` marks the oldest active incoming wave with matching power; break staging writes that value, defaulting to `0`. |
+| `THEIR_HIT_US` | `onHitByBullet` marks the matching active incoming wave. Matching first tries a unique engine bullet id, then nearest trajectory match within `45px`, then a legacy power-only fallback. Break staging writes that value, defaulting to `0`. |
 
 ### Our-Fire And Outgoing-Wave Features
 
 Our fire command is staged during `doTurn()` after `wb.process()` has already run
-for tick `C`. `WaveTracker` sees and allocates the staged fire on the next
+for tick `C`. `OurWaveTracker` sees and allocates the staged fire on the next
 `wb.process()` call. The stored `OUR_FIRE_TICK` is the command/snapshot tick
 `C`; the physical Robocode bullet is created at engine tick `F = C + 1`.
 
 | Feature | Source and timing |
 |---|---|
-| `OUR_FIRE_POWER` | `snapshotFireFeatures()` writes accepted `setFireBullet()` power when gun strategy requested positive power, gun turn remaining is under 5 degrees, and Robocode returned a non-null bullet handle. Cleared by `WaveTracker` after allocation. |
+| `OUR_FIRE_POWER` | `snapshotFireFeatures()` writes accepted `setFireBullet()` power when gun strategy requested positive power, gun turn remaining is under 5 degrees, and Robocode returned a non-null bullet handle. Cleared by `OurWaveTracker` after allocation. |
 | `OUR_FIRE_BULLET_ID` | Hash code of the returned `Bullet` handle. Used to mark real outgoing wave hits. Virtual waves get bullet id `0`. |
 | `OUR_FIRE_X`, `OUR_FIRE_Y` | Our current position at command tick `C`, not the later physical muzzle position at `F`. |
-| `OUR_FIRE_TICK` | Current `TICK`, so it stores `C`. Travel math in `WaveTracker` currently uses this stored tick. |
+| `OUR_FIRE_TICK` | Current `TICK`, so it stores `C`. Travel math in `OurWaveTracker` currently uses this stored tick. |
 | `OUR_FIRE_BEARING_ABSOLUTE`, `OUR_FIRE_DISTANCE` | Current scan-derived bearing and distance at `C`. They can be `NaN` if no usable scan-derived values exist. |
 | `OUR_FIRE_LATERAL_VELOCITY`, `OUR_FIRE_ADVANCING_VELOCITY` | Current scan-derived opponent velocity decomposition at `C`. |
 | `OUR_FIRE_OPPONENT_X`, `OUR_FIRE_OPPONENT_Y` | Current scan-derived opponent position at `C`. |
 | `OUR_FIRE_AIM_GF` | Current `GUN_AIM_GF` decision at `C`. |
-| `OUR_FIRE_IS_REAL` | `1.0` for the real staged bullet. `WaveTracker` creates 10 virtual siblings with `0.0`. |
-| `OUR_FIRE_BULLET_SPEED` | `OurWaveFeatures` derives `GuessFactor.bulletSpeed(OUR_FIRE_POWER)` while staging is present. |
-| `OUR_FIRE_MEA` | `OurWaveFeatures` derives max escape angle from `OUR_FIRE_BULLET_SPEED`. |
-| `OUR_FIRE_DIRECTION` | `OurWaveFeatures` stores the sign of `OUR_FIRE_LATERAL_VELOCITY`, defaulting to `1` if missing. |
+| `OUR_FIRE_IS_REAL` | `1.0` for the real staged bullet. `OurWaveTracker` creates 10 virtual siblings with `0.0`. |
+| `OUR_FIRE_BULLET_SPEED` | `OurWaveTracker` derives `GuessFactor.bulletSpeed(OUR_FIRE_POWER)` while staging is present. |
+| `OUR_FIRE_MEA` | `OurWaveTracker` derives max escape angle from `OUR_FIRE_BULLET_SPEED`. |
+| `OUR_FIRE_DIRECTION` | `OurWaveTracker` stores the sign of `OUR_FIRE_LATERAL_VELOCITY`, defaulting to `1` if missing. |
 | `OUR_AIM_X`, `OUR_AIM_Y` | Our previous tick position, `OUR_X/Y@(C - 1)`. |
 | `OUR_AIM_OPPONENT_X`, `OUR_AIM_OPPONENT_Y` | Latest scanned opponent position at or before `C - 1`, walking the scan ring across radar gaps. |
 | `OUR_AIM_DISTANCE`, `OUR_AIM_BEARING_ABSOLUTE` | Distance and absolute bearing derived from the aim-time positions. |
@@ -221,7 +224,7 @@ for tick `C`. `WaveTracker` sees and allocates the staged fire on the next
 | `OUR_BREAK_OPPONENT_X`, `OUR_BREAK_OPPONENT_Y` | Opponent position at break tick `B`. |
 | `OUR_BREAK_HIT` | `Whiteboard.markBulletHit` sets the matching active real wave's `BREAK_HIT` to `1.0`; if the real wave resolves without a recorded hit, the emitted value is `0`. Virtual wave hit/miss is computed geometrically in ring slots but not emitted through real `OUR_BREAK_*` staging. |
 
-When `WaveTracker` allocates outgoing waves, it creates one real slot and 10
+When `OurWaveTracker` allocates outgoing waves, it creates one real slot and 10
 virtual slots with evenly spaced aim GFs from `-1.0` to `1.0`. It then clears all
 `OUR_FIRE_*` and `OUR_AIM_*` staging features so the fire is not re-created on a
 later tick. Real wave resolution updates `ModelSelector` when present, otherwise
@@ -238,13 +241,19 @@ later tick. Real wave resolution updates `ModelSelector` when present, otherwise
 
 The pipeline writer groups headers directly from `Feature.getFileType()`. The
 existing quality pipeline writes god-view rows when `BattleLoopTest` CSV output
-is enabled; `BattleCSVProducer` writes the same files from robot-side observer
-whiteboards and uses DeJaVu battle-end score events for `scores.csv`.
+is enabled; the `BattleCsvRunner` / `RobotSideCsvObserver` path writes the same
+files from robot-side observer whiteboards and uses DeJaVu battle-end score
+events for `scores.csv`.
+
+`CsvWriter` intentionally excludes `DECISIONS` from all CSVs. It also excludes
+`OPPONENT_ID`, `PREV_SCAN_OPPONENT_ENERGY`, and the four damage accumulator
+ledger columns from `scan.csv`, even though those values are still present in
+the live `Whiteboard` for feature computation and diagnostics.
 
 | CSV | Trigger in current pipeline |
 |---|---|
 | `ticks.csv` | Every processed tick, from the god-view whiteboard. |
-| `scan.csv` | Processed ticks where the god-view whiteboard has a current scan row. |
+| `scan.csv` | God-view CSV writes on processed ticks where the god-view whiteboard has a current scan row; current god-view seeding creates that omniscient row every live tick. Robot-side CSV writes only when the observer whiteboard has a real current scan row. |
 | `autopilot-waves.csv` | Ticks where the pipeline detected an outgoing Autopilot wave resolution. The row contains `OUR_FIRE_*`, `OUR_AIM_*`, and `OUR_BREAK_*` values for that resolved real or virtual Autopilot wave. |
 | `dejavu-waves.csv` | Ticks where a DeJaVu CommandReconstructor-backed real outgoing bullet wave resolves. The file uses the same outgoing-wave schema as `autopilot-waves.csv`. |
 | `their-waves.csv` | For a perspective `pi`, written when the peer perspective's outgoing wave resolution corresponds to an incoming wave for `pi`. |
@@ -277,19 +286,19 @@ flowchart LR
     subgraph P["P/C: processing and command tick"]
         Status["StatusEvent\nTICK, OUR_*, GUN_*, RADAR_*"]
         HitEvents["Hit callbacks\nadd damage accumulators\nmark active wave hits"]
-        Aim["OurWaveFeatures\nGUN_AIM_POWER/ANGLE/GF"]
+        Aim["OurWaveTracker\nGUN_AIM_POWER/ANGLE/GF"]
         Command["setFireBullet accepted\nsnapshot OUR_FIRE_* and OUR_AIM_*"]
     end
 
     subgraph Waves["Wave allocation"]
         TheirWave["TheirWaveTracker\ncreate incoming wave\nF = S - 1"]
         OurPhysical["Robocode physical bullet\ncreated at F = C + 1"]
-        OurWave["WaveTracker\ncreate real + virtual outgoing waves\nfrom staged OUR_FIRE_*"]
+        OurWave["OurWaveTracker\ncreate real + virtual outgoing waves\nfrom staged OUR_FIRE_*"]
     end
 
     subgraph B["B: wave-break tick"]
         TheirBreak["TheirWaveTracker resolves\nTHEIR_BREAK_*, THEIR_HIT_US"]
-        OurBreak["WaveTracker resolves\nOUR_BREAK_*, OUR_BREAK_HIT"]
+        OurBreak["OurWaveTracker resolves\nOUR_BREAK_*, OUR_BREAK_HIT"]
         Models["ModelSelector/VcsStore update\nreal outgoing waves only"]
     end
 
@@ -318,4 +327,5 @@ flowchart LR
 - For our fire origin and travel math, current wave slots use stored command tick
   snapshots (`C`), even though the physical Robocode bullet appears at `C + 1`.
 - Accumulators are consumed by `FireFeatures` before they are copied into
-  `scan.csv` and reset by `AccumulatorFeatures`.
+  the current scan row and reset by `AccumulatorFeatures`; `CsvWriter` excludes
+  those ledger columns from `scan.csv`.

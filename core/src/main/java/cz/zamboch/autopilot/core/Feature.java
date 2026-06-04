@@ -38,6 +38,9 @@ public enum Feature {
     OPPONENT_BULLET_ENERGY_GAIN(FileType.SCAN),
     RAM_DAMAGE_TO_OPPONENT(FileType.SCAN),
     OPPONENT_WALL_HIT_DAMAGE(FileType.SCAN),
+    THEIR_GUN_HEAT(FileType.SCAN),
+    THEIR_INACTIVITY_ZAP_ACTIVE(FileType.SCAN),
+    THEIR_ENERGY_DROP_ADJUSTED(FileType.SCAN),
 
     // --- Computed: gun aim (from GF strategy) ---
     // FileType.DECISIONS: robot-side gun decision, not engine ground truth, so excluded
@@ -142,3 +145,4 @@ public enum Feature {
         }
     }
 }
+

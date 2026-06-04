@@ -50,7 +50,10 @@ public final class Layer0DebugFidelityValidator {
             Feature.GUN_AIM_POWER,
             Feature.GUN_AIM_ANGLE,
             Feature.GUN_AIM_GF,
-            Feature.TICKS_SINCE_SCAN);
+            Feature.TICKS_SINCE_SCAN,
+            Feature.THEIR_GUN_HEAT,
+            Feature.THEIR_INACTIVITY_ZAP_ACTIVE,
+            Feature.THEIR_ENERGY_DROP_ADJUSTED);
 
     private static final EnumSet<Feature> SCAN_TIMING_DERIVED_FEATURES = EnumSet.of(
             Feature.OUR_AIM_X,
@@ -355,3 +358,4 @@ public final class Layer0DebugFidelityValidator {
         System.out.println("=========================================");
     }
 }
+
