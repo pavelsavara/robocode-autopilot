@@ -22,7 +22,7 @@ import cz.zamboch.autopilot.core.Whiteboard;
  * reachable at the wall. Using the raw {@code |prevScanV|} systematically
  * under-charges by up to {@code wallDamage}'s slope whenever the opponent was
  * speeding up into the wall (the common v7→v8 case), leaving residual energy
- * that {@code FireFeatures} then misclassifies as enemy fire.</li>
+ * that {@code TheirWaveTracker} then misclassifies as enemy fire.</li>
  * <li><b>Proximity at wall</b> — opponent center is within
  * {@code WALL_MARGIN + WALL_TOLERANCE} of an edge and the previous-scan
  * velocity component pointed at it. Charge {@code wallDamage(impactSpeed)}.
@@ -32,7 +32,7 @@ import cz.zamboch.autopilot.core.Whiteboard;
  * Both signals attribute the full {@code wallDamage} of the speed the opponent
  * reached at the wall (reconstructed for the collapse signal, see above) rather
  * than discounting for braking, because any under-attribution leaves residual
- * energy that {@code FireFeatures} would then misclassify as enemy fire.
+ * energy that {@code TheirWaveTracker} would then misclassify as enemy fire.
  * <p>
  * Only adds to {@code OPPONENT_WALL_HIT_DAMAGE} when the existing accumulator
  * is empty for this scan window, so the pipeline's exact god-view value (when
@@ -154,7 +154,7 @@ public final class WallHitEstimator implements IInGameFeatures {
         // ---- Signal 1: velocity collapse beyond max braking budget --------
         // Engine caps voluntary |Δv| at 2/tick. Any larger collapse proves a
         // collision; assume wall (ram damage is a separate accumulator and is
-        // additive at FireFeatures consumption).
+        // additive at TheirWaveTracker consumption).
         double velocityDrop = absPrevV - absCurrV;
         double brakingBudget = DECEL_PER_TICK * scanGap;
         double collapseDamage = 0;

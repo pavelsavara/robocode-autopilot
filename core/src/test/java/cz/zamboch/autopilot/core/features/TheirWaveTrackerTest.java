@@ -17,10 +17,7 @@ final class TheirWaveTrackerTest {
     void setUp() {
         wb = new Whiteboard();
         wb.registerFeatures(
-                new SpatialFeatures(),
-                new MovementFeatures(),
-                new TimingFeatures(),
-                new FireFeatures(),
+                new ScanFeatures(),
                 new TheirWaveTracker());
     }
 

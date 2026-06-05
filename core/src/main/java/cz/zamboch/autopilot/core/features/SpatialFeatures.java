@@ -5,15 +5,23 @@ import cz.zamboch.autopilot.core.FileType;
 import cz.zamboch.autopilot.core.IInGameFeatures;
 import cz.zamboch.autopilot.core.Whiteboard;
 
-/**
- * Computes the absolute bearing to the opponent from our heading + relative
- * bearing.
- */
+/** Computes opponent position and movement values for the current scan row. */
 public final class SpatialFeatures implements IInGameFeatures {
-    private static final Feature[] DEPS = { Feature.OUR_HEADING, Feature.BEARING_RADIANS,
-            Feature.OUR_X, Feature.OUR_Y, Feature.DISTANCE };
+    private static final Feature[] DEPS = {
+            Feature.OUR_HEADING,
+            Feature.BEARING_RADIANS,
+            Feature.OUR_X,
+            Feature.OUR_Y,
+            Feature.DISTANCE,
+            Feature.OPPONENT_HEADING,
+            Feature.OPPONENT_VELOCITY
+    };
     private static final Feature[] OUTPUTS = { Feature.OPPONENT_BEARING_ABSOLUTE,
-            Feature.OPPONENT_X, Feature.OPPONENT_Y };
+            Feature.OPPONENT_X,
+            Feature.OPPONENT_Y,
+            Feature.OPPONENT_LATERAL_VELOCITY,
+            Feature.OPPONENT_ADVANCING_VELOCITY
+    };
 
     public Feature[] getDependencies() {
         return DEPS;
@@ -47,5 +55,15 @@ public final class SpatialFeatures implements IInGameFeatures {
         }
         wb.setCurrentScanFeature(Feature.OPPONENT_X, ourX + distance * Math.sin(absBearing));
         wb.setCurrentScanFeature(Feature.OPPONENT_Y, ourY + distance * Math.cos(absBearing));
+
+        double oppVelocity = wb.getFeature(Feature.OPPONENT_VELOCITY);
+        double oppHeading = wb.getFeature(Feature.OPPONENT_HEADING);
+        if (Double.isNaN(oppVelocity) || Double.isNaN(oppHeading)) {
+            return;
+        }
+        double bearingFromOpponent = absBearing + Math.PI;
+        double relativeHeading = oppHeading - bearingFromOpponent;
+        wb.setCurrentScanFeature(Feature.OPPONENT_LATERAL_VELOCITY, oppVelocity * Math.sin(relativeHeading));
+        wb.setCurrentScanFeature(Feature.OPPONENT_ADVANCING_VELOCITY, oppVelocity * Math.cos(relativeHeading));
     }
 }

@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Integration test: verifies the robot-side THEIR_FIRE/THEIR_BREAK features
- * that FireFeatures + TheirWaveTracker produce inside ObserverContext.
+ * that TheirWaveTracker produces inside ObserverContext.
  * These detect opponent firing via energy drop on scan.
  *
  * Key requirement: replay reconstruction needs radar to MOVE between ticks to

@@ -6,8 +6,6 @@ import cz.zamboch.autopilot.core.VcsFile;
 import cz.zamboch.autopilot.core.VcsStore;
 import cz.zamboch.autopilot.core.ModelSelector;
 import cz.zamboch.autopilot.core.Whiteboard;
-import cz.zamboch.autopilot.core.features.AccumulatorFeatures;
-import cz.zamboch.autopilot.core.features.FireFeatures;
 import cz.zamboch.autopilot.core.features.ScanFeatures;
 import cz.zamboch.autopilot.core.features.WallHitEstimator;
 import cz.zamboch.autopilot.core.features.OurWaveTracker;
@@ -85,12 +83,12 @@ public final class Autopilot extends AdvancedRobot {
     }
 
     /**
-    * Snapshot of the damage accumulators taken in {@link #doTurn()} after
-    * {@code wb.process()}. On scan ticks this reads the values copied into the
-    * current SCAN row by AccumulatorFeatures before it reset the live window; on
-    * non-scan ticks it reads the still-running live accumulator state. The live
-    * robot does not read this; it exists so the headless validation pipeline can
-    * observe the exact per-tick values FireFeatures consumed.
+        * Snapshot of the damage accumulators taken in {@link #doTurn()} after
+        * {@code wb.process()}. On scan ticks this reads the values copied into the
+        * current SCAN row by TheirWaveTracker before it reset the live window; on
+        * non-scan ticks it reads the still-running live accumulator state. The live
+        * robot does not read this; it exists so the headless validation pipeline can
+        * observe the exact per-tick values TheirWaveTracker consumed.
      */
     private final double[] consumedAccumulators = new double[Feature.COUNT];
 
@@ -317,8 +315,6 @@ public final class Autopilot extends AdvancedRobot {
             wb.registerFeatures(
                     new ScanFeatures(),
                     new WallHitEstimator(bfWidth, bfHeight),
-                    new FireFeatures(),
-                    new AccumulatorFeatures(),
                     new OurWaveTracker(),
                     new TheirWaveTracker());
             featuresRegistered = true;

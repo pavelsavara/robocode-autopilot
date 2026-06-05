@@ -15,20 +15,36 @@ import cz.zamboch.autopilot.core.Whiteboard;
  * <p>
  * On each process() call:
  * <ol>
- * <li>If THEIR_FIRE_POWER is set (opponent fired), allocate a ring slot,
- * snapshot fire-time geometry, mark ACTIVE, then clear staging.</li>
+ * <li>Detect opponent fire from scan-to-scan energy drop and stage
+ * THEIR_FIRE_POWER.</li>
+ * <li>If THEIR_FIRE_POWER is set, allocate a ring slot, snapshot fire-time
+ * geometry, mark ACTIVE, then clear staging.</li>
+ * <li>Copy the consumed damage-window accumulators into the current scan row
+ * and reset the live accumulator window.</li>
  * <li>Resolve any active their-wave slots whose bullet has reached our current
  * position → set THEIR_BREAK_* staging features.</li>
  * </ol>
  * <p>
- * Depends on FireFeatures having already computed THEIR_FIRE_POWER, and
- * SpatialFeatures having computed OPPONENT_X/Y.
+ * Depends on ScanFeatures having computed previous-scan energy and opponent
+ * geometry, and WallHitEstimator having staged opponent wall-hit damage.
  */
 public final class TheirWaveTracker implements IInGameFeatures {
+    private static final double MIN_FIRE_POWER = 0.1;
+    private static final double MAX_FIRE_POWER = 3.0;
+    private static final double FIRE_POWER_EPSILON = 1e-9;
+
+    /** Per-turn energy the engine drains from an idle robot (one quantum). */
+    private static final double INACTIVITY_ZAP = 0.1;
+    /** Robocode default gun cooling rate; gun heat falls this much each tick. */
+    private static final double GUN_COOLING_RATE = 0.1;
+
     private static final double HIT_MATCH_TOLERANCE = 45.0;
 
     private static final Feature[] DEPS = {
-            Feature.THEIR_FIRE_POWER,
+            Feature.SCAN_TICK,
+            Feature.OPPONENT_ENERGY,
+            Feature.PREV_SCAN_OPPONENT_ENERGY,
+            Feature.OPPONENT_WALL_HIT_DAMAGE,
             Feature.OPPONENT_X,
             Feature.OPPONENT_Y,
             Feature.OUR_X,
@@ -36,6 +52,10 @@ public final class TheirWaveTracker implements IInGameFeatures {
             Feature.TICK
     };
     private static final Feature[] OUTPUTS = {
+            Feature.THEIR_FIRE_POWER,
+            Feature.THEIR_GUN_HEAT,
+            Feature.THEIR_INACTIVITY_ZAP_ACTIVE,
+            Feature.THEIR_ENERGY_DROP_ADJUSTED,
             Feature.THEIR_FIRE_TICK,
             Feature.THEIR_FIRE_X,
             Feature.THEIR_FIRE_Y,
@@ -71,8 +91,97 @@ public final class TheirWaveTracker implements IInGameFeatures {
     }
 
     public void process(Whiteboard wb) {
+        detectFirePower(wb);
         createWaveIfFired(wb);
+        copyAndResetDamageAccumulators(wb);
         resolveWaves(wb);
+    }
+
+    private void copyAndResetDamageAccumulators(Whiteboard wb) {
+        if (!wb.hasCurrentScan()) {
+            return;
+        }
+        wb.copyDamageAccumulatorsToCurrentScanRow();
+        wb.clearDamageAccumulatorFeatures();
+    }
+
+    private void detectFirePower(Whiteboard wb) {
+        if (!wb.hasCurrentScan()) {
+            return;
+        }
+        double tick = wb.getFeature(Feature.SCAN_TICK);
+
+        double currentEnergy = wb.getFeature(Feature.OPPONENT_ENERGY);
+        double prevEnergy = wb.getFeature(Feature.PREV_SCAN_OPPONENT_ENERGY);
+
+        if (Double.isNaN(prevEnergy)) {
+            return;
+        }
+
+        double prevScanTick = wb.getPreviousScanFeature(Feature.SCAN_TICK);
+        double deltaTick = (Double.isNaN(prevScanTick) || Double.isNaN(tick))
+                ? 1.0
+                : tick - prevScanTick;
+        boolean consecutive = deltaTick == 1.0;
+
+        double prevGunHeat = wb.getPreviousScanFeature(Feature.THEIR_GUN_HEAT);
+        if (Double.isNaN(prevGunHeat)) {
+            prevGunHeat = 0.0;
+        }
+        double gunHeat = Math.max(0.0, prevGunHeat - GUN_COOLING_RATE * deltaTick);
+
+        boolean zapActive =
+                wb.getPreviousScanFeature(Feature.THEIR_INACTIVITY_ZAP_ACTIVE) > 0.5;
+        double prevAdjustedDrop =
+                wb.getPreviousScanFeature(Feature.THEIR_ENERGY_DROP_ADJUSTED);
+
+        double drop = prevEnergy - currentEnergy;
+
+        double bulletDmg = nonNan(wb.getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT));
+        double bulletGain = nonNan(wb.getFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN));
+        double ramDmg = nonNan(wb.getFeature(Feature.RAM_DAMAGE_TO_OPPONENT));
+        double wallDmg = nonNan(wb.getFeature(Feature.OPPONENT_WALL_HIT_DAMAGE));
+
+        double adjustedDrop = drop - bulletDmg - ramDmg - wallDmg + bulletGain;
+
+        boolean combatActivity = bulletDmg > FIRE_POWER_EPSILON
+                || bulletGain > FIRE_POWER_EPSILON
+                || ramDmg > FIRE_POWER_EPSILON
+                || wallDmg > FIRE_POWER_EPSILON;
+        if (combatActivity) {
+            zapActive = false;
+        }
+
+        boolean noDrain = Math.abs(adjustedDrop) <= FIRE_POWER_EPSILON;
+        if (consecutive && noDrain) {
+            zapActive = false;
+        }
+
+        boolean oneQuantum = Math.abs(adjustedDrop - INACTIVITY_ZAP) <= FIRE_POWER_EPSILON;
+        if (consecutive && oneQuantum && !combatActivity) {
+            zapActive = true;
+        }
+
+        double fireDrop = adjustedDrop;
+        if (zapActive && consecutive) {
+            fireDrop -= INACTIVITY_ZAP;
+        }
+
+        boolean gunReady = gunHeat <= FIRE_POWER_EPSILON;
+
+        if (gunReady
+                && fireDrop >= MIN_FIRE_POWER - FIRE_POWER_EPSILON
+                && fireDrop <= MAX_FIRE_POWER + FIRE_POWER_EPSILON) {
+            double firePower = Math.max(MIN_FIRE_POWER, Math.min(MAX_FIRE_POWER, fireDrop));
+            wb.setFeature(Feature.THEIR_FIRE_POWER, firePower);
+            gunHeat = 1.0 + firePower / 5.0;
+        } else {
+            wb.setFeature(Feature.THEIR_FIRE_POWER, Double.NaN);
+        }
+
+        wb.setCurrentScanFeature(Feature.THEIR_GUN_HEAT, gunHeat);
+        wb.setCurrentScanFeature(Feature.THEIR_INACTIVITY_ZAP_ACTIVE, zapActive ? 1.0 : 0.0);
+        wb.setCurrentScanFeature(Feature.THEIR_ENERGY_DROP_ADJUSTED, adjustedDrop);
     }
 
     /**
@@ -168,7 +277,7 @@ public final class TheirWaveTracker implements IInGameFeatures {
             return;
         }
 
-        // FireFeatures detects the opponent's fire from a scan-to-scan energy
+        // The fire detector observes opponent fire from a scan-to-scan energy
         // drop observed at the CURRENT tick D. By Robocode timing, the opponent's
         // fire code ran at tick D-1: the bullet is created (and energy deducted)
         // at loadCommands of tick D from the opponent's position at the end of
@@ -179,7 +288,7 @@ public final class TheirWaveTracker implements IInGameFeatures {
         // ground truth (back-projected IBulletSnapshot muzzle) to an exact match.
         // Prefer strict T-1 (true muzzle). If T-1 was a no-scan tick, fall back
         // to the CURRENT-tick scan rather than walking the ring back:
-        // * FireFeatures only sets THEIR_FIRE_POWER when OPPONENT_ENERGY is
+        // * THEIR_FIRE_POWER is only set when OPPONENT_ENERGY is
         // present THIS tick (a scan just landed), so current OPPONENT_X/Y
         // is guaranteed populated AND identical between live and observer
         // (both decode from the same engine snapshot).
@@ -323,5 +432,9 @@ public final class TheirWaveTracker implements IInGameFeatures {
                 wb.setTheirWaveState(slot, Whiteboard.WAVE_RESOLVED);
             }
         }
+    }
+
+    private static double nonNan(double value) {
+        return Double.isNaN(value) ? 0.0 : value;
     }
 }

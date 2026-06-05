@@ -1,6 +1,6 @@
 package cz.zamboch.autopilot.core;
 
-import cz.zamboch.autopilot.core.features.AccumulatorFeatures;
+import cz.zamboch.autopilot.core.features.TheirWaveTracker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -95,7 +95,7 @@ final class WhiteboardTickRingTest {
     }
 
     @Test
-    void damageAccumulatorWindowSurvivesTickRotationUntilAccumulatorFeaturesCopiesAndResets() {
+    void damageAccumulatorWindowSurvivesTickRotationUntilTheirWaveTrackerCopiesAndResets() {
         wb.setFeature(Feature.TICK, 1);
         wb.setFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT, 2.5);
 
@@ -103,7 +103,7 @@ final class WhiteboardTickRingTest {
         assertEquals(2.5, wb.getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT), 1e-9);
 
         wb.beginScanRow(2);
-        new AccumulatorFeatures().process(wb);
+        new TheirWaveTracker().process(wb);
         assertEquals(2.5, wb.getFeature(Feature.OUR_BULLET_DAMAGE_TO_OPPONENT), 1e-9);
 
         wb.setFeature(Feature.TICK, 3);

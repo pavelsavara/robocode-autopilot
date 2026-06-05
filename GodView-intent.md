@@ -75,12 +75,12 @@ perspective where the live `Autopilot` actually fought.
 ### Layer 2 — Damage-Observation Drift (autopilot perspective)
 
 - **What vs what:** the **autopilot's running tally** of opponent-damage events
-  this tick — exactly the values `FireFeatures.process` subtracts from the
+  this tick — exactly the values `TheirWaveTracker.process` subtracts from the
   scan-to-scan opponent-energy drop before classifying it as fire — vs the
   **god-view ground truth** of the same four channels.
 - **Why autopilot-only:** L2 measures *observation quality*, not engine model
   correctness. The opponent's perspective has nothing to observe with (it has
-  no autopilot of ours); only the autopilot has a `FireFeatures`-style ledger
+  no autopilot of ours); only the autopilot has a `TheirWaveTracker`-style ledger
   that feeds Layer 3.
 - **The four damage channels** (each compared independently):
   1. `OUR_BULLET_DMG → opp` — our bullets transitioning to `HIT_VICTIM` on the

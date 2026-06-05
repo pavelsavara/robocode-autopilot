@@ -70,7 +70,7 @@ public final class GodViewQualityValidator {
 
     // --- Layer 2: Damage-Observation Drift (autopilot perspective only) ---
     // Compares the autopilot's running tally of opponent damage events
-    // (subtracted out of the energy delta in FireFeatures.process) against the
+    // (subtracted out of the energy delta in TheirWaveTracker.process) against the
     // god-view ledger of the same components. When all four sub-metrics are
     // zero, the autopilot has perfectly observed every legal source of
     // opponent energy change, so anything left over in the scan-to-scan drop
@@ -104,7 +104,7 @@ public final class GodViewQualityValidator {
 
     // Last per-channel obs accumulator reading. The autopilot's wb accumulators
     // monotonically grow within a carry window and snap to a smaller value (or
-    // 0) when FireFeatures consumes + resets them on a scan tick. Per-tick obs
+    // 0) when TheirWaveTracker consumes + resets them on a scan tick. Per-tick obs
     // delta is therefore: max(0, curr - prev) when curr >= prev (growth), or
     // curr when curr < prev (reset happened; the new value is this tick's fresh
     // contribution).
@@ -622,7 +622,7 @@ public final class GodViewQualityValidator {
      * Per-tick comparison of the autopilot's observed opponent-damage tally vs
      * god-view truth, for the four channels that legitimately move opponent
      * energy. The four numbers in {@code obs*} come straight off the autopilot
-     * whiteboard — the exact values {@code FireFeatures.process} subtracts from
+    * whiteboard — the exact values {@code TheirWaveTracker.process} subtracts from
      * the scan-to-scan drop before deciding "fire vs not-fire".
      * <p>
      * Channels (autopilot perspective; opponent = {@code 1 - autopilotIndex}):
@@ -723,7 +723,7 @@ public final class GodViewQualityValidator {
         prevDamageObsOppEnergy = oppSnap.getEnergy();
 
         // Per-tick obs delta: monotonic growth within a window, snap-down on
-        // FireFeatures consumption. Treat any decrease as a reset, so the new
+        // TheirWaveTracker consumption. Treat any decrease as a reset, so the new
         // value IS this tick's contribution. Additionally, when the PREVIOUS
         // tick was a scan tick the autopilot zeroed the accumulators at the end
         // of that tick's doTurn, so this tick's snapshot is already a fresh
@@ -1070,7 +1070,7 @@ public final class GodViewQualityValidator {
         System.out.println();
 
         // Layer 2 — autopilot's observation of opponent-damage events vs god-view.
-        // Drift here is what FireFeatures cannot subtract out of the energy delta,
+        // Drift here is what TheirWaveTracker cannot subtract out of the energy delta,
         // so it directly upper-bounds the L3 phantom rate.
         System.out.printf("Layer 2 — Damage Observation Drift (autopilot):%n");
         DamageObservationTracker d2 = damageObsTracking;

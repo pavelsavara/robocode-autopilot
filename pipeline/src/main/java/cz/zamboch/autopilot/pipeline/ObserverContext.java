@@ -6,10 +6,7 @@ import cz.zamboch.autopilot.core.ModelSelector;
 import cz.zamboch.autopilot.core.RoboMath;
 import cz.zamboch.autopilot.core.VcsStore;
 import cz.zamboch.autopilot.core.Whiteboard;
-import cz.zamboch.autopilot.core.features.IdentityFeatures;
-import cz.zamboch.autopilot.core.features.MovementFeatures;
-import cz.zamboch.autopilot.core.features.SpatialFeatures;
-import cz.zamboch.autopilot.core.features.TimingFeatures;
+import cz.zamboch.autopilot.core.features.ScanFeatures;
 import net.sf.robocode.security.HiddenAccess;
 import net.sf.robocode.dejavu.core.EventReconstructor;
 import net.sf.robocode.dejavu.model.Provenance;
@@ -66,18 +63,15 @@ public final class ObserverContext {
         VcsStore godVcs = new VcsStore();
         this.godWb.setVcsStore(godVcs);
         this.godWb.setModelSelector(new ModelSelector(godVcs));
-        // Register the kinematic ground-truth feature subset on the god-view
-        // whiteboard so it independently reconstructs the per-tick TICKS features
-        // from the engine snapshot (see seedGodView). Deliberately excludes the
-        // wave/fire inference processors (FireFeatures, OurWaveTracker,
-        // TheirWaveTracker) — those are robot-side heuristics whose
+        // Register the scan-row ground-truth feature subset on the god-view
+        // whiteboard so it independently reconstructs scan-derived features from
+        // the engine snapshot (see seedGodView). Deliberately excludes the
+        // wave/fire inference processors (OurWaveTracker, TheirWaveTracker) —
+        // those are robot-side heuristics whose
         // god-view counterpart is produced authoritatively by GodViewWaveResolver,
         // and WallHitEstimator, whose accumulator output is robot-side-only.
         this.godWb.registerFeatures(
-                new SpatialFeatures(),
-                new MovementFeatures(),
-                new TimingFeatures(),
-                new IdentityFeatures());
+            new ScanFeatures());
     }
 
     /**

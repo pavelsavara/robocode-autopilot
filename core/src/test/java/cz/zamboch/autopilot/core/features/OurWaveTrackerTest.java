@@ -18,10 +18,7 @@ final class OurWaveTrackerTest {
     void setUp() {
         wb = new Whiteboard();
         wb.registerFeatures(
-                new SpatialFeatures(),
-                new MovementFeatures(),
-                new TimingFeatures(),
-                new FireFeatures(),
+                new ScanFeatures(),
                 new OurWaveTracker());
         wb.setVcsStore(new VcsStore());
     }
@@ -53,7 +50,7 @@ final class OurWaveTrackerTest {
     }
 
     @Test
-    void createsWaveFromFireFeatures() {
+    void createsWaveFromSnapshotFireFeatures() {
         wb.setFeature(Feature.TICK, 10);
         wb.setFeature(Feature.OUR_X, 400);
         wb.setFeature(Feature.OUR_Y, 300);

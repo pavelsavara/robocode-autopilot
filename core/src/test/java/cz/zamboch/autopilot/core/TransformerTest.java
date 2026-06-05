@@ -1,8 +1,6 @@
 package cz.zamboch.autopilot.core;
 
-import cz.zamboch.autopilot.core.features.MovementFeatures;
-import cz.zamboch.autopilot.core.features.SpatialFeatures;
-import cz.zamboch.autopilot.core.features.TimingFeatures;
+import cz.zamboch.autopilot.core.features.ScanFeatures;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -12,10 +10,7 @@ final class TransformerTest {
     @Test
     void processWritesComputedFeatures() {
         Whiteboard wb = new Whiteboard();
-        wb.registerFeatures(
-                new SpatialFeatures(),
-                new MovementFeatures(),
-                new TimingFeatures());
+        wb.registerFeatures(new ScanFeatures());
 
         // Set input features
         wb.setFeature(Feature.TICK, 42);
@@ -49,10 +44,7 @@ final class TransformerTest {
     @Test
     void missingInputLeavesComputedAsNaN() {
         Whiteboard wb = new Whiteboard();
-        wb.registerFeatures(
-                new SpatialFeatures(),
-                new MovementFeatures(),
-                new TimingFeatures());
+        wb.registerFeatures(new ScanFeatures());
 
         // Only set TICK, no scan data
         wb.setFeature(Feature.TICK, 10);

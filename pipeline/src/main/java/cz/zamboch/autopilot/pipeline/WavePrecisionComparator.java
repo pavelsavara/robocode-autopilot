@@ -18,7 +18,7 @@ import java.util.Set;
  * Tracks:
  * <ul>
  * <li>God-view fires detected (IBulletSnapshot)</li>
- * <li>Robot-side fires detected (energy drop via FireFeatures)</li>
+ * <li>Robot-side fires detected (energy drop via TheirWaveTracker)</li>
  * <li>Fire detection rate = robotSideFires / godViewFires</li>
  * <li>GF mean absolute error (when both resolve the same wave)</li>
  * </ul>

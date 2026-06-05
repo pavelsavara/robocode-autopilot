@@ -18,6 +18,7 @@ public final class ScanFeatures implements IInGameFeatures {
             Feature.BEARING_RADIANS,
             Feature.OPPONENT_HEADING,
             Feature.OPPONENT_VELOCITY,
+            Feature.OPPONENT_ENERGY,
             Feature.OPPONENT_ID
     };
     private static final Feature[] OUTPUTS = {
@@ -27,7 +28,8 @@ public final class ScanFeatures implements IInGameFeatures {
             Feature.OPPONENT_Y,
             Feature.OPPONENT_LATERAL_VELOCITY,
             Feature.OPPONENT_ADVANCING_VELOCITY,
-            Feature.TICKS_SINCE_SCAN
+            Feature.TICKS_SINCE_SCAN,
+            Feature.PREV_SCAN_OPPONENT_ENERGY
     };
 
     public Feature[] getDependencies() {
@@ -48,6 +50,7 @@ public final class ScanFeatures implements IInGameFeatures {
         }
         computeIdentity(wb);
         computeTiming(wb);
+        computeEnergy(wb);
         computeSpatial(wb);
         computeMovement(wb);
     }
@@ -68,6 +71,11 @@ public final class ScanFeatures implements IInGameFeatures {
         if (!Double.isNaN(scanTick) && !Double.isNaN(previousScanTick)) {
             wb.setCurrentScanFeature(Feature.TICKS_SINCE_SCAN, scanTick - previousScanTick);
         }
+    }
+
+    private void computeEnergy(Whiteboard wb) {
+        wb.setCurrentScanFeature(Feature.PREV_SCAN_OPPONENT_ENERGY,
+                wb.getPreviousScanFeature(Feature.OPPONENT_ENERGY));
     }
 
     private void computeSpatial(Whiteboard wb) {

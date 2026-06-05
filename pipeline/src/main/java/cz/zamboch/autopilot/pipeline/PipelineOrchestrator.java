@@ -164,16 +164,16 @@ public final class PipelineOrchestrator extends BattleAdaptor implements Closeab
         // This populates the per-tick damage accumulators on the observer
         // whiteboards (OUR_BULLET_DAMAGE_TO_OPPONENT, OPPONENT_BULLET_ENERGY_GAIN,
         // RAM_DAMAGE_TO_OPPONENT, OPPONENT_WALL_HIT_DAMAGE). Strategy/process is
-        // deferred to Phase 1c because AccumulatorFeatures resets those
-        // accumulators on every scan tick after FireFeatures consumes them.
+        // deferred to Phase 1c because TheirWaveTracker resets those
+        // accumulators on every scan tick after consuming them.
         for (ObserverContext ctx : observers) {
             ctx.processTickEvents(curr);
         }
 
         // Phase 1b/1c: Layer 2 damage-observation drift (autopilot perspective).
         // The wall-hit accumulator is produced by WallHitEstimator INSIDE doTurn
-        // (Phase 1c), FireFeatures consumes all four accumulators there, and
-        // AccumulatorFeatures copies them into the current SCAN row before reset.
+        // (Phase 1c), TheirWaveTracker consumes all four accumulators there, and
+        // TheirWaveTracker copies them into the current SCAN row before reset.
         // Read Autopilot's post-doTurn snapshot so the wall channel reflects the
         // robot-side estimate instead of the structural 0 it had before doTurn.
         boolean recordObs = validator != null && !observers[autopilotPiEarly].isDead();

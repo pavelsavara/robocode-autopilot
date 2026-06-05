@@ -28,6 +28,8 @@ final class NarrowLockRadarTest {
         wb.beginScanRow(tick);
         wb.setFeature(Feature.DISTANCE, distance);
         wb.setFeature(Feature.BEARING_RADIANS, bearing);
+        wb.setFeature(Feature.OPPONENT_HEADING, 0);
+        wb.setFeature(Feature.OPPONENT_VELOCITY, 0);
         wb.process();
     }
 
