@@ -1,6 +1,6 @@
 # Sequence hypothesis - does recent context predict a wave's aim (and outcome)?
 
-_Generated 2026-06-07 15:29 UTC from `pipeline/build/battle-csv-producer/1780834355900-1780834355900`. Deterministic (seed 1234567). `cz.zamboch.Autopilot` excluded as host and opponent._
+_Generated 2026-06-07 16:12 UTC from `pipeline/build/battle-csv-producer/1780834355900-1780834355900`. Deterministic (seed 1234567). `cz.zamboch.Autopilot` excluded as host and opponent._
 
 ## What is tested
 
@@ -55,6 +55,74 @@ Predicting the continuous break GuessFactor from fire-tick context. `lag-1 autoc
 | `voidious.Diamond` | def | 40,195 | 0.691 | 0.179 (0.032) | 0.745 | -0.118 |
 
 > The leaky lag-1 column reproduces C8 (~0.7); the leakage-safe `developing_gf` keeps a positive, usable correlation with the next break GF on every opponent and side, while the stale broken-feedback mean sits near zero. This is the result the original report missed by testing hit/miss instead of the GF.
+
+## Scenario 1: multi-lag GF aiming model
+
+Extends the lag-1 headline. `lag-1/2/3` are the fire-order break-GF autocorrelations (leaky C8 reference); they show how fast the aiming signal decays with wave distance. `dev-only R^2` is the leakage-safe single-predictor fit (`developing_gf` -> break GF); `dev+online R^2` adds `online_broken_mean` to test whether older landed feedback adds anything beyond the lag-1 proxy.
+
+| Opponent | side | N | lag-1 | lag-2 | lag-3 | dev-only R^2 | dev+online R^2 |
+|---|---|---|---|---|---|---|---|
+| `aaa.r.ScalarR` | off | 192,697 | 0.670 | 0.154 | -0.077 | 0.036 | 0.041 |
+| `aaa.r.ScalarR` | def | 15,276 | 0.399 | 0.087 | -0.041 | 0.030 | 0.035 |
+| `jk.mega.DrussGT` | off | 170,493 | 0.685 | 0.168 | -0.086 | 0.028 | 0.032 |
+| `jk.mega.DrussGT` | def | 154,624 | 0.702 | 0.200 | -0.069 | 0.038 | 0.042 |
+| `kc.mega.BeepBoop` | off | 195,831 | 0.700 | 0.193 | -0.073 | 0.032 | 0.035 |
+| `kc.mega.BeepBoop` | def | 123,120 | 0.694 | 0.196 | -0.090 | 0.031 | 0.035 |
+| `rsalesc.mega.Knight` | off | 165,896 | 0.714 | 0.223 | -0.059 | 0.059 | 0.064 |
+| `rsalesc.mega.Knight` | def | 154,605 | 0.688 | 0.182 | -0.066 | 0.035 | 0.039 |
+| `voidious.Diamond` | off | 96,308 | 0.701 | 0.193 | -0.084 | 0.029 | 0.035 |
+| `voidious.Diamond` | def | 40,195 | 0.691 | 0.197 | -0.091 | 0.032 | 0.046 |
+
+> The autocorrelation decays fast (lag-1 ~0.7 -> lag-2 a fraction of that -> lag-3 near zero or negative): only the immediately preceding wave carries strong aiming information, which is exactly why the in-flight `developing_gf` proxy works and the ~3-fires-stale broken feedback does not. `dev+online R^2` barely improves on `dev-only R^2` - the lag-1 proxy already captures the usable structure, so a deeper AR(k) model buys little.
+
+## Scenarios 2-8 conditioned on the GF target
+
+The same contexts as the hit/miss tables below, but scored against the continuous break GF instead of the noisy outcome. Each context is split into two subgroups; within each we report the leakage-safe `developing_gf` -> break-GF predictability `r` (n) and the mean break GF. A context helps aiming if `r` rises in one subgroup (aim is more predictable there) or the mean GF shifts (the opponent dodges to a different place).
+
+| Opponent | side | Scenario | subgroup A | subgroup B |
+|---|---|---|---|---|
+| `aaa.r.ScalarR` | off | 2. Direction-reversal cadence | 0 flips: r 0.23 (n=75,874), GF -0.00 | >=2 flips: r 0.17 (n=35,979), GF 0.00 |
+| `aaa.r.ScalarR` | off | 3. Post-hit adaptation | prev miss: r 0.19 (n=174,874), GF 0.00 | prev hit: r 0.20 (n=16,499), GF -0.00 |
+| `aaa.r.ScalarR` | off | 4. Range trajectory | opening: r 0.18 (n=92,654), GF 0.00 | closing: r 0.20 (n=99,442), GF -0.00 |
+| `aaa.r.ScalarR` | off | 5. Wall-proximity / cornering | cornered(<=49): r 0.14 (n=47,975), GF -0.00 | open(>=156): r 0.23 (n=47,903), GF -0.00 |
+| `aaa.r.ScalarR` | off | 8. Inactivity-zap phase | zap off: r 0.19 (n=175,629), GF 0.00 | zap on: r 0.19 (n=16,187), GF 0.00 |
+| `aaa.r.ScalarR` | def | 3. Post-hit adaptation | prev miss: r 0.17 (n=8,490), GF 0.01 | prev hit: r 0.20 (n=1,072), GF 0.00 |
+| `aaa.r.ScalarR` | def | 6. Incoming fire rhythm | regular(<=0): r 0.19 (n=6,068), GF 0.01 | irregular(>=138): r 0.13 (n=612), GF 0.03 |
+| `aaa.r.ScalarR` | def | 7. Incoming bullet-power ladder | power down: r 0.27 (n=1,862), GF -0.00 | power up: r -0.00 (n=881), GF 0.01 |
+| `jk.mega.DrussGT` | off | 2. Direction-reversal cadence | 0 flips: r 0.23 (n=70,636), GF 0.00 | >=2 flips: r 0.15 (n=27,474), GF -0.00 |
+| `jk.mega.DrussGT` | off | 3. Post-hit adaptation | prev miss: r 0.17 (n=153,519), GF 0.00 | prev hit: r 0.18 (n=15,755), GF 0.00 |
+| `jk.mega.DrussGT` | off | 4. Range trajectory | opening: r 0.04 (n=61,634), GF 0.00 | closing: r 0.24 (n=105,779), GF 0.00 |
+| `jk.mega.DrussGT` | off | 5. Wall-proximity / cornering | cornered(<=40): r 0.18 (n=42,404), GF 0.00 | open(>=120): r 0.21 (n=42,166), GF 0.00 |
+| `jk.mega.DrussGT` | off | 8. Inactivity-zap phase | zap off: r 0.17 (n=169,279), GF 0.00 | zap on: r n/a (n=0), GF n/a |
+| `jk.mega.DrussGT` | def | 3. Post-hit adaptation | prev miss: r 0.19 (n=139,726), GF 0.00 | prev hit: r 0.23 (n=13,764), GF -0.00 |
+| `jk.mega.DrussGT` | def | 6. Incoming fire rhythm | regular(<=0): r 0.20 (n=126,092), GF 0.00 | irregular(>=0): r 0.19 (n=153,805), GF 0.00 |
+| `jk.mega.DrussGT` | def | 7. Incoming bullet-power ladder | power down: r 0.27 (n=4,156), GF 0.01 | power up: r 0.22 (n=2,990), GF 0.02 |
+| `kc.mega.BeepBoop` | off | 2. Direction-reversal cadence | 0 flips: r 0.23 (n=77,546), GF -0.00 | >=2 flips: r 0.14 (n=50,606), GF -0.00 |
+| `kc.mega.BeepBoop` | off | 3. Post-hit adaptation | prev miss: r 0.17 (n=180,081), GF -0.00 | prev hit: r 0.24 (n=14,404), GF -0.00 |
+| `kc.mega.BeepBoop` | off | 4. Range trajectory | opening: r 0.08 (n=65,757), GF -0.00 | closing: r 0.23 (n=129,492), GF -0.00 |
+| `kc.mega.BeepBoop` | off | 5. Wall-proximity / cornering | cornered(<=0): r 0.19 (n=48,883), GF -0.00 | open(>=44): r 0.24 (n=48,642), GF -0.00 |
+| `kc.mega.BeepBoop` | off | 8. Inactivity-zap phase | zap off: r 0.18 (n=188,903), GF -0.00 | zap on: r 0.21 (n=6,309), GF 0.00 |
+| `kc.mega.BeepBoop` | def | 3. Post-hit adaptation | prev miss: r 0.17 (n=108,497), GF -0.00 | prev hit: r 0.19 (n=11,668), GF -0.01 |
+| `kc.mega.BeepBoop` | def | 6. Incoming fire rhythm | regular(<=0): r 0.18 (n=91,190), GF -0.00 | irregular(>=1): r 0.16 (n=29,248), GF 0.00 |
+| `kc.mega.BeepBoop` | def | 7. Incoming bullet-power ladder | power down: r 0.17 (n=6,391), GF -0.00 | power up: r 0.14 (n=5,537), GF -0.01 |
+| `rsalesc.mega.Knight` | off | 2. Direction-reversal cadence | 0 flips: r 0.32 (n=93,709), GF -0.00 | >=2 flips: r 0.09 (n=9,003), GF -0.01 |
+| `rsalesc.mega.Knight` | off | 3. Post-hit adaptation | prev miss: r 0.24 (n=146,730), GF -0.00 | prev hit: r 0.29 (n=17,924), GF -0.01 |
+| `rsalesc.mega.Knight` | off | 4. Range trajectory | opening: r 0.22 (n=64,572), GF -0.00 | closing: r 0.32 (n=78,547), GF -0.00 |
+| `rsalesc.mega.Knight` | off | 5. Wall-proximity / cornering | cornered(<=50): r 0.20 (n=41,153), GF -0.01 | open(>=129): r 0.31 (n=41,168), GF 0.00 |
+| `rsalesc.mega.Knight` | off | 8. Inactivity-zap phase | zap off: r 0.24 (n=164,658), GF -0.00 | zap on: r n/a (n=0), GF n/a |
+| `rsalesc.mega.Knight` | def | 3. Post-hit adaptation | prev miss: r 0.18 (n=140,208), GF -0.00 | prev hit: r 0.22 (n=13,184), GF -0.01 |
+| `rsalesc.mega.Knight` | def | 6. Incoming fire rhythm | regular(<=0): r 0.18 (n=124,107), GF -0.00 | irregular(>=0): r 0.19 (n=153,786), GF -0.00 |
+| `rsalesc.mega.Knight` | def | 7. Incoming bullet-power ladder | power down: r 0.22 (n=5,402), GF 0.01 | power up: r 0.17 (n=3,559), GF -0.01 |
+| `voidious.Diamond` | off | 2. Direction-reversal cadence | 0 flips: r 0.22 (n=52,190), GF 0.00 | >=2 flips: r 0.10 (n=5,882), GF -0.00 |
+| `voidious.Diamond` | off | 3. Post-hit adaptation | prev miss: r 0.17 (n=86,550), GF 0.00 | prev hit: r 0.19 (n=8,506), GF 0.00 |
+| `voidious.Diamond` | off | 4. Range trajectory | opening: r 0.06 (n=37,768), GF -0.00 | closing: r 0.29 (n=47,788), GF 0.00 |
+| `voidious.Diamond` | off | 5. Wall-proximity / cornering | cornered(<=30): r 0.19 (n=23,894), GF 0.00 | open(>=95): r 0.20 (n=23,745), GF -0.00 |
+| `voidious.Diamond` | off | 8. Inactivity-zap phase | zap off: r 0.17 (n=90,714), GF -0.00 | zap on: r 0.17 (n=4,628), GF 0.02 |
+| `voidious.Diamond` | def | 3. Post-hit adaptation | prev miss: r 0.18 (n=35,045), GF 0.00 | prev hit: r 0.19 (n=3,061), GF -0.00 |
+| `voidious.Diamond` | def | 6. Incoming fire rhythm | regular(<=0): r 0.18 (n=31,697), GF -0.00 | irregular(>=0): r 0.18 (n=38,513), GF 0.00 |
+| `voidious.Diamond` | def | 7. Incoming bullet-power ladder | power down: r 0.19 (n=27,819), GF 0.00 | power up: r 0.16 (n=2,466), GF -0.01 |
+
+> Read across each row: similar `r` and mean GF in both subgroups means the context adds nothing to aiming; a gap means it carries exploitable structure. These mirror the hit/miss proposals below, which test the same axes against the ~10%-noise-floor outcome label.
 
 ## Secondary: gun-heat phase vs hit/miss (Wilson 95% CI + lift)
 
@@ -201,7 +269,7 @@ _Largest offense per-shot MI across all extended hit/miss scenarios: **0.0010 bi
 
 ## Further scenarios to explore (other dimensions)
 
-Ten more sequence framings on dimensions not exercised by S1-S5. `[existing]` = minable from the current CSVs now; `[synthetic]` = needs new / interventional battles. Each names a new axis and the data channel that feeds it.
+Ten more sequence framings on dimensions not exercised by S1-S5. Scenarios 1-8 are now **computed above** (the multi-lag GF model and the GF-context tables, plus the hit/miss tables); this list is retained as the catalogue of axes and channels. `[existing]` = minable from the current CSVs (done above); `[synthetic]` = needs new / interventional battles (9-10, still deferred). Each names a new axis and the data channel that feeds it.
 
 1. **GF sign-sequence aiming model** `[existing]`. Predict the *next* break GF (sign or bin) from the last 2-3 break GFs in the round. Puts C8's lag-1 autocorrelation (0.643) to work on the aiming target itself, where the predictable structure actually lives. Channel: `our_break_gf` ordered by `our_break_tick`.
 2. **Opponent direction-reversal cadence** `[existing]`. Count lateral-velocity sign flips over the last K ticks; a recently-wobbling dodger may be more predictable on the next shot. Channel: `scan_opponent_lateral_velocity`.
