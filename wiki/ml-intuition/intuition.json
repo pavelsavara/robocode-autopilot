@@ -95,7 +95,7 @@
       "gf_entropy_bits": 5.521493,
       "hero_hit": 0.080868,
       "hit_us": 0.1151,
-      "kl_adapt": 0.02559,
+      "kl_adapt": 0.001033,
       "typ_power": 0.173805
     },
     {
@@ -106,7 +106,7 @@
       "gf_entropy_bits": 5.502742,
       "hero_hit": 0.082625,
       "hit_us": 0.089202,
-      "kl_adapt": 0.416067,
+      "kl_adapt": 0.376786,
       "typ_power": 0.194178
     },
     {
@@ -117,7 +117,7 @@
       "gf_entropy_bits": 5.489819,
       "hero_hit": 0.077158,
       "hit_us": 0.097863,
-      "kl_adapt": 0.020387,
+      "kl_adapt": 0.0,
       "typ_power": 0.174077
     },
     {
@@ -128,7 +128,7 @@
       "gf_entropy_bits": 5.485779,
       "hero_hit": 0.089755,
       "hit_us": 0.08528,
-      "kl_adapt": 0.04519,
+      "kl_adapt": 0.015236,
       "typ_power": 0.204712
     },
     {
@@ -139,7 +139,7 @@
       "gf_entropy_bits": 5.486649,
       "hero_hit": 0.078239,
       "hit_us": 0.081366,
-      "kl_adapt": 0.070585,
+      "kl_adapt": 0.028911,
       "typ_power": 0.319781
     }
   ],

@@ -5,7 +5,7 @@
 ## Run header
 
 - **Source run directory:** `pipeline/build/battle-csv-producer/1780834355900-1780834355900`
-- **Generated (UTC):** 2026-06-07 13:43:11Z
+- **Generated (UTC):** 2026-06-07 14:21:36Z
 - **Resolved producer contract:** full split (dejavu-waves + autopilot-waves)
 - **Assets directory:** `wiki/ml-intuition`
 - **Inventory:** 25 matchups · 5 distinct robots · 50 perspectives · 5 self-play matchups · 6766.7 MB of CSV
@@ -17,7 +17,7 @@
 - **Hit (canonical, analytic):** `|aim_gf − break_gf| ≤ (18 / fire_distance) / mea`, computed per wave (robot half-width 18 px). Engine hits (`our_break_hit==1`) are reported only in a separate column.
 - **GF binning:** fixed 47-bin uniform grid over [−1, 1] with Laplace (add-one) smoothing for entropy/KL.
   - Bin edges: `[-1.0000, -0.9574, …, 0.9574, 1.0000]` (width 0.042553).
-- **Uncertainty:** Wilson 95% CI for proportions; seeded 1000-resample bootstrap for GF peak/entropy/KL.
+- **Uncertainty:** Wilson 95% CI for proportions; seeded 1000-resample bootstrap for GF peak/entropy; bias-corrected basic-bootstrap CI for round-to-round KL.
 - **Small-N flag:** per-opponent cells with N < 200 resolved waves are flagged `†` and excluded from cross-opponent rankings.
 - **Random seed:** 1234567 (deterministic across runs).
 
@@ -370,7 +370,7 @@ The honest targeting label budget is dejavu's real waves; the autopilot virtual 
 
 ### A4 — Unresolved-wave rate (break columns NaN — round ended first)
 
-Unresolved waves are dropped from label tables but are **not** missing at random (they cluster at round end / low energy — trap #7).
+Unresolved waves are dropped from label tables but are **not** missing at random (they cluster at round end / low energy — trap #6).
 
 | Wave source | Unresolved rate |
 |---|---|
@@ -532,7 +532,7 @@ Out of 47 canonical bins; low effective-bins ⇒ peaked/learnable.
 | `kc.mega.BeepBoop` | 9.41% (N=42400) | 7.72% (N=195831) | 0.405 | 0.572 | 3.0 | -0.00 |
 | `rsalesc.mega.Knight` | 10.96% (N=21344) | 8.98% (N=165896) | 0.416 | 0.590 | 14.7 | -1.45 |
 | `voidious.Diamond` | 9.74% (N=21751) | 7.82% (N=96308) | 0.411 | 0.587 | 1.1 | 0.00 |
-The floor fires at its own self-selected ticks/states, so the floor↔hero gap is **not** pure aim quality (trap #8): Δdist / Δ|latV| show how far apart the two fire-time samples are.
+The floor fires at its own self-selected ticks/states, so the floor↔hero gap is **not** pure aim quality (trap #7): Δdist / Δ|latV| show how far apart the two fire-time samples are.
 
 ### C5 — Achievable ceiling
 
@@ -628,7 +628,7 @@ A flat profile (high entropy) = hard to hit; a peak reveals an exploitable movem
 | `kc.mega.BeepBoop` | 123,120 | -0.001 | [-0.004, 0.002] | -0.000 |
 | `rsalesc.mega.Knight` | 154,605 | -0.001 | [-0.004, 0.001] | -0.170 |
 | `voidious.Diamond` | 40,195 | 0.001 | [-0.003, 0.007] | 0.128 |
-A bias away from 0 = a predictable gun that movement can deterministically dodge.
+Same `their_break_gf` distribution as D1, read as opponent aim bias rather than our dodge profile. A bias away from 0 = a predictable gun that movement can deterministically dodge.
 
 ### D4 — Incoming bullet power × distance + zap overlap
 
@@ -824,7 +824,7 @@ Dropped as redundant: `our_fire_direction`, `our_fire_mea`, `our_fire_power`.
 | 47 | 900 | 858 | 39372 | 39884 |
 | 48 | 857 | 922 | 40229 | 40980 |
 | 49 | 832 | 714 | 41061 | 42035 |
-Per-matchup statistics across 20 matchups (**not** the pooled 36-perspective sum); the cold-start budget is what a single battle accumulates.
+Per-matchup statistics across 20 matchups (**not** the pooled cross-matchup total); the cold-start budget is what a single battle accumulates.
 
 ![F1 per-matchup cold-start curve](ml-intuition/F1-cold-start-curve.png)
 
@@ -832,12 +832,12 @@ Per-matchup statistics across 20 matchups (**not** the pooled 36-perspective sum
 
 | Opponent | N(r0/last) | KL (bits) | 95% CI |
 |---|---|---|---|
-| `aaa.r.ScalarR` | 1930/3847 | 0.026 | [0.034, 0.069] |
-| `jk.mega.DrussGT` | 881/3904 | 0.416 | [0.361, 0.562] |
-| `kc.mega.BeepBoop` | 2532/3858 | 0.020 | [0.028, 0.058] |
-| `rsalesc.mega.Knight` | 1567/3355 | 0.045 | [0.052, 0.104] |
-| `voidious.Diamond` | 1507/1679 | 0.071 | [0.079, 0.152] |
-High KL ⇒ the opponent adapts across rounds; recency-weighting matters.
+| `aaa.r.ScalarR` | 1930/3847 | 0.001 | [0.000, 0.017] |
+| `jk.mega.DrussGT` | 881/3904 | 0.377 | [0.272, 0.469] |
+| `kc.mega.BeepBoop` | 2532/3858 | 0.000 | [0.000, 0.013] |
+| `rsalesc.mega.Knight` | 1567/3355 | 0.015 | [0.000, 0.038] |
+| `voidious.Diamond` | 1507/1679 | 0.029 | [0.000, 0.064] |
+Bias-corrected KL (the finite-sample plug-in KL is positively biased and is corrected toward 0). High KL ⇒ the opponent adapts across rounds and recency-weighting matters; ≈0 ⇒ stationary within sampling noise.
 
 ### F3 — Segmented VCS grid occupancy (distance 5 × lateralV 5 × advancingV 3 = 75 cells)
 
@@ -879,14 +879,14 @@ Floor is what ML must beat; head-on/best-static are dejavu-derived; the quantiza
 
 ### G2 — Battle outcomes (robots facing this opponent)
 
-| Opponent | Faced-robot wins | Losses | Ties | Mean round_hit_rate |
+| Opponent | Battles | Faced-robot wins | Losses | Ties |
 |---|---|---|---|---|
-| `aaa.r.ScalarR` | 2 | 6 | 0 | 0.00% |
-| `jk.mega.DrussGT` | 4 | 4 | 0 | 0.00% |
-| `kc.mega.BeepBoop` | 0 | 8 | 0 | 0.21% |
-| `rsalesc.mega.Knight` | 8 | 0 | 0 | 0.00% |
-| `voidious.Diamond` | 6 | 2 | 0 | 0.23% |
-Win = the robot facing this opponent beat it; many losses ⇒ a strong opponent.
+| `aaa.r.ScalarR` | 8 | 2 | 6 | 0 |
+| `jk.mega.DrussGT` | 8 | 4 | 4 | 0 |
+| `kc.mega.BeepBoop` | 8 | 0 | 8 | 0 |
+| `rsalesc.mega.Knight` | 8 | 8 | 0 | 0 |
+| `voidious.Diamond` | 8 | 6 | 2 | 0 |
+Win = the robot facing this opponent beat it; many losses ⇒ a strong opponent. Per-shot hit rates live in G1/H1 (computed canonically from waves); the producer's battle-end `round_hit_rate` field is not reliably populated, so it is omitted here.
 
 ### G3 — Virtual-gun hit-rate curves (fixed-aim sweep)
 
@@ -901,11 +901,11 @@ Sweeping a single fixed aim-GF through the canonical hit rule: the peak marks th
 
 | Opponent | N | Mean dist | GF peak | GF entropy | Our hit | Hit-us | KL(adapt) | Typ. power |
 |---|---|---|---|---|---|---|---|---|
-| `aaa.r.ScalarR` | 192,697 | 490 | -0.128 | 5.52 | 8.09% | 11.51% | 0.026 | 0.17 |
-| `jk.mega.DrussGT` | 170,493 | 524 | -0.000 | 5.50 | 8.26% | 8.92% | 0.416 | 0.19 |
-| `kc.mega.BeepBoop` | 195,831 | 533 | -0.170 | 5.49 | 7.72% | 9.79% | 0.020 | 0.17 |
-| `rsalesc.mega.Knight` | 165,896 | 513 | -0.000 | 5.49 | 8.98% | 8.53% | 0.045 | 0.20 |
-| `voidious.Diamond` | 96,308 | 538 | -0.000 | 5.49 | 7.82% | 8.14% | 0.071 | 0.32 |
+| `aaa.r.ScalarR` | 192,697 | 490 | -0.128 | 5.52 | 8.09% | 11.51% | 0.001 | 0.17 |
+| `jk.mega.DrussGT` | 170,493 | 524 | -0.000 | 5.50 | 8.26% | 8.92% | 0.377 | 0.19 |
+| `kc.mega.BeepBoop` | 195,831 | 533 | -0.170 | 5.49 | 7.72% | 9.79% | 0.000 | 0.17 |
+| `rsalesc.mega.Knight` | 165,896 | 513 | -0.000 | 5.49 | 8.98% | 8.53% | 0.015 | 0.20 |
+| `voidious.Diamond` | 96,308 | 538 | -0.000 | 5.49 | 7.82% | 8.14% | 0.029 | 0.32 |
 
 ### H2 — Opponent similarity (Jensen-Shannon distance of GF distributions)
 
@@ -946,7 +946,7 @@ Per C1–C5: GF distributions are peaked enough to be learnable for several oppo
 2. **Virtual-wave leakage** (autopilot only) — group by parent fire.
 3. **Variable per-wave label latency** (mean ≈28 ticks; scales with distance/power — B4).
 4. **Self-play double-counting** — excluded from aggregates.
-5. **Per-round adaptation** — several opponents shift GF across rounds (F2).
+5. **Per-round adaptation** — opponents with non-zero F2 KL shift GF across rounds; recency-weight those (most are stationary after bias correction).
 6. **Round-end censoring** — unresolved waves (A4) are not missing at random.
 7. **Floor selection bias** — the floor↔hero gap is unpaired (C4).
 8. **Missing scans** — stale features when coverage drops (B6).

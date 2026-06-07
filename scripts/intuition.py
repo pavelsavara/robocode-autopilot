@@ -484,6 +484,34 @@ def kl_bits(p, q) -> float:
     return float(np.sum(p * np.log2(p / q)))
 
 
+def kl_adapt_ci(g0, gl, n_boot: int = 1000):
+    """Bias-corrected round-to-round KL(round 0 ‖ round last) in bits, plus a basic
+    (pivotal) bootstrap 95% CI.
+
+    The plug-in KL of two Laplace-smoothed histograms is positively biased at finite N:
+    it is > 0 even when both rounds are drawn from the *same* distribution, with the bias
+    growing as (#bins) / N. Resampling both rounds therefore yields a bootstrap cloud that
+    sits *above* the plug-in point, so a naive percentile CI excludes its own estimate from
+    below. We apply the textbook bootstrap bias correction (``2·plug − mean(boot)``) and the
+    matching basic/pivotal interval, both clamped at 0 so a non-adapting opponent reads ≈ 0
+    instead of a spurious positive shift. Returns ``(kl_corrected, ci_lo, ci_hi)`` in bits.
+    """
+    g0 = np.asarray(g0, dtype=np.float64)
+    gl = np.asarray(gl, dtype=np.float64)
+    plug = kl_bits(gf_hist_laplace(g0), gf_hist_laplace(gl))
+    rng = np.random.default_rng(SEED)
+    boot = np.empty(n_boot, dtype=np.float64)
+    for i in range(n_boot):
+        b0 = g0[rng.integers(0, len(g0), len(g0))]
+        bl = gl[rng.integers(0, len(gl), len(gl))]
+        boot[i] = kl_bits(gf_hist_laplace(b0), gf_hist_laplace(bl))
+    boot_mean = float(boot.mean())
+    corrected = max(0.0, 2.0 * plug - boot_mean)
+    ci_lo = max(0.0, 2.0 * plug - float(np.percentile(boot, 97.5)))
+    ci_hi = max(0.0, 2.0 * plug - float(np.percentile(boot, 2.5)))
+    return corrected, ci_lo, ci_hi
+
+
 def correlation_ratio(categories: np.ndarray, values: np.ndarray) -> float:
     """Correlation ratio η² = between-group variance / total variance (variance of a
     continuous target explained by a categorical/segment grouping)."""
@@ -780,7 +808,7 @@ def build_header(run_dir: Path, perspectives: Sequence[Perspective], assets_dir:
     )
     lines.append(
         "- **Uncertainty:** Wilson 95% CI for proportions; seeded 1000-resample bootstrap "
-        "for GF peak/entropy/KL."
+        "for GF peak/entropy; bias-corrected basic-bootstrap CI for round-to-round KL."
     )
     lines.append(
         f"- **Small-N flag:** per-opponent cells with N < {SMALL_N_THRESHOLD} resolved waves "
@@ -1053,7 +1081,7 @@ def section_a(ds: Dataset) -> str:
         "### A4 — Unresolved-wave rate (break columns NaN — round ended first)",
         "",
         "Unresolved waves are dropped from label tables but are **not** missing at random "
-        "(they cluster at round end / low energy — trap #7).",
+        "(they cluster at round end / low energy — trap #6).",
         "",
         md_table(
             ["Wave source", "Unresolved rate"],
@@ -1369,7 +1397,7 @@ def section_c(ds: Dataset, max_model_rows: int, figs: Figures) -> str:
             ["Opponent", "Floor hit", "Hero hit", "Floor |GF err|", "Hero |GF err|",
              "Δdist (floor−hero)", "Δ|latV|"], c4),
             "The floor fires at its own self-selected ticks/states, so the floor↔hero gap is "
-            "**not** pure aim quality (trap #8): Δdist / Δ|latV| show how far apart the two "
+            "**not** pure aim quality (trap #7): Δdist / Δ|latV| show how far apart the two "
             "fire-time samples are.", ""]
 
     # C5 — ceiling (quantization bound vs best-static vs CV-model vs current)
@@ -1571,7 +1599,9 @@ def section_d(ds: Dataset, figs: Figures) -> str:
                    _f(peak_gf(g), 3)))
     out += ["### D3 — Where opponents aim relative to head-on (`their_break_gf` bias)", "",
             md_table(["Opponent", "N", "Mean aim GF", "95% CI", "Peak bin"], d3),
-            "A bias away from 0 = a predictable gun that movement can deterministically dodge.", ""]
+            "Same `their_break_gf` distribution as D1, read as opponent aim bias rather than our "
+            "dodge profile. A bias away from 0 = a predictable gun that movement can "
+            "deterministically dodge.", ""]
 
     # D4 — incoming power x distance + zap
     d4 = []
@@ -1766,7 +1796,7 @@ def section_f(ds: Dataset, figs: Figures) -> str:
             md_table(["Round", "Waves/round (mean)", "Waves/round (median)",
                       "Cumulative (mean)", "Cumulative (median)"], f1),
             f"Per-matchup statistics across {per.shape[0]} matchups (**not** the pooled "
-            "36-perspective sum); the cold-start budget is what a single battle accumulates.",
+            "cross-matchup total); the cold-start budget is what a single battle accumulates.",
             "",
             figs.save(fig, "F1-cold-start-curve.png", "F1 per-matchup cold-start curve"), ""]
 
@@ -1780,19 +1810,14 @@ def section_f(ds: Dataset, figs: Figures) -> str:
         if len(g0) < 20 or len(gl) < 20:
             f2.append((f"`{opp}`", f"{len(g0)}/{len(gl)}", "—", "—"))
             continue
-        kl = kl_bits(gf_hist_laplace(g0), gf_hist_laplace(gl))
-        # Bootstrap BOTH round distributions so the CI is centered on the estimate rather
-        # than biased upward (resampling only `gl` while holding `g0` fixed inflates KL).
-        rng = np.random.default_rng(SEED)
-        boot = [kl_bits(gf_hist_laplace(g0[rng.integers(0, len(g0), len(g0))]),
-                        gf_hist_laplace(gl[rng.integers(0, len(gl), len(gl))]))
-                for _ in range(300)]
-        lo, hi = float(np.percentile(boot, 2.5)), float(np.percentile(boot, 97.5))
+        kl, lo, hi = kl_adapt_ci(g0, gl)
         flag = _flag(min(len(g0), len(gl)))
         f2.append((f"`{opp}`", f"{len(g0)}/{len(gl)}{flag}", _f(kl, 3), _ci_val(lo, hi, 3)))
     out += [f"### F2 — Non-stationarity: KL(round 0 ‖ round {last_round}) per opponent (bits)", "",
             md_table(["Opponent", "N(r0/last)", "KL (bits)", "95% CI"], f2),
-            "High KL ⇒ the opponent adapts across rounds; recency-weighting matters.", ""]
+            "Bias-corrected KL (the finite-sample plug-in KL is positively biased and is "
+            "corrected toward 0). High KL ⇒ the opponent adapts across rounds and recency-"
+            "weighting matters; ≈0 ⇒ stationary within sampling noise.", ""]
 
     # F3 — VCS grid occupancy (distance 5 x lateralV 5 x advancingV 3)
     out += ["### F3 — Segmented VCS grid occupancy (distance 5 × lateralV 5 × advancingV 3 = 75 cells)", ""]
@@ -1924,11 +1949,12 @@ def section_g(ds: Dataset, figs: Figures) -> str:
             wins = int((so["result"] == 1).sum())
             losses = int((so["result"] == -1).sum())
             ties = int((so["result"] == 0).sum())
-            g2.append((f"`{opp}`", f"{wins}", f"{losses}", f"{ties}",
-                       _pct(so["round_hit_rate"].mean(), 2)))
+            g2.append((f"`{opp}`", f"{len(so)}", f"{wins}", f"{losses}", f"{ties}"))
         out += [md_table(
-            ["Opponent", "Faced-robot wins", "Losses", "Ties", "Mean round_hit_rate"], g2),
-            "Win = the robot facing this opponent beat it; many losses ⇒ a strong opponent.", ""]
+            ["Opponent", "Battles", "Faced-robot wins", "Losses", "Ties"], g2),
+            "Win = the robot facing this opponent beat it; many losses ⇒ a strong opponent. "
+            "Per-shot hit rates live in G1/H1 (computed canonically from waves); the producer's "
+            "battle-end `round_hit_rate` field is not reliably populated, so it is omitted here.", ""]
 
     # G3 — virtual-gun hit-rate curves (sweep a fixed aim-GF; dejavu vs autopilot fan)
     out += ["### G3 — Virtual-gun hit-rate curves (fixed-aim sweep)", ""]
@@ -1978,7 +2004,7 @@ def compute_h1(ds: Dataset) -> list[dict]:
         hu = float(tw["their_hit_us"].mean()) if len(tw) else float("nan")
         g0 = d[d["round"] == 0]["our_break_gf"].dropna().to_numpy(dtype=float)
         gl = d[d["round"] == last_round]["our_break_gf"].dropna().to_numpy(dtype=float)
-        kl = (kl_bits(gf_hist_laplace(g0), gf_hist_laplace(gl))
+        kl = (kl_adapt_ci(g0, gl)[0]
               if len(g0) >= 20 and len(gl) >= 20 else float("nan"))
         rows.append({
             "opponent": opp, "n": n,
@@ -2094,7 +2120,8 @@ def section_i(ds: Dataset) -> str:
             "2. **Virtual-wave leakage** (autopilot only) — group by parent fire.",
             "3. **Variable per-wave label latency** (mean ≈28 ticks; scales with distance/power — B4).",
             "4. **Self-play double-counting** — excluded from aggregates.",
-            "5. **Per-round adaptation** — several opponents shift GF across rounds (F2).",
+            "5. **Per-round adaptation** — opponents with non-zero F2 KL shift GF across "
+            "rounds; recency-weight those (most are stationary after bias correction).",
             "6. **Round-end censoring** — unresolved waves (A4) are not missing at random.",
             "7. **Floor selection bias** — the floor↔hero gap is unpaired (C4).",
             "8. **Missing scans** — stale features when coverage drops (B6).", ""]
