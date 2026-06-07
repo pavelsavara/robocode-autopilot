@@ -256,60 +256,6 @@ final class TheirWaveTrackerFireDetectionTest {
     }
 
     @Test
-    void rejectsInactivityZapWhileGunHot() {
-        wb.setFeature(Feature.TICK, 1);
-        wb.setFeature(Feature.SCAN_TICK, 1);
-        wb.setFeature(Feature.OUR_HEADING, 0);
-        wb.setFeature(Feature.BEARING_RADIANS, 0);
-        wb.setFeature(Feature.OPPONENT_HEADING, 0);
-        wb.setFeature(Feature.OPPONENT_VELOCITY, 0);
-        wb.setFeature(Feature.OPPONENT_ENERGY, 100.0);
-        wb.process();
-
-        // Consecutive ticks each losing exactly one 0.1 quantum: the inactivity
-        // zap, not a fire (a hot gun cannot fire).
-        for (int t = 2; t <= 6; t++) {
-            wb.setFeature(Feature.TICK, t);
-            wb.setFeature(Feature.SCAN_TICK, t);
-            wb.setFeature(Feature.OPPONENT_ENERGY, 100.0 - 0.1 * (t - 1));
-            wb.process();
-            assertTrue(Double.isNaN(wb.getFeature(Feature.THEIR_FIRE_POWER)),
-                    "tick " + t + " should be inactivity zap, not a fire");
-        }
-    }
-
-    @Test
-    void realFireDuringDrainReadsUninflatedPower() {
-        wb.setFeature(Feature.TICK, 1);
-        wb.setFeature(Feature.SCAN_TICK, 1);
-        wb.setFeature(Feature.OUR_HEADING, 0);
-        wb.setFeature(Feature.BEARING_RADIANS, 0);
-        wb.setFeature(Feature.OPPONENT_HEADING, 0);
-        wb.setFeature(Feature.OPPONENT_VELOCITY, 0);
-        wb.setFeature(Feature.OPPONENT_ENERGY, 100.0);
-        wb.process();
-
-        // Two zap ticks establish an active drain.
-        wb.setFeature(Feature.TICK, 2);
-        wb.setFeature(Feature.SCAN_TICK, 2);
-        wb.setFeature(Feature.OPPONENT_ENERGY, 99.9);
-        wb.process();
-        wb.setFeature(Feature.TICK, 3);
-        wb.setFeature(Feature.SCAN_TICK, 3);
-        wb.setFeature(Feature.OPPONENT_ENERGY, 99.8);
-        wb.process();
-
-        // Tick 4 drops 0.2: a real 0.1 fire stacked on the 0.1 drain. The drain
-        // must be removed so the fire reads 0.1, not the inflated 0.2.
-        wb.setFeature(Feature.TICK, 4);
-        wb.setFeature(Feature.SCAN_TICK, 4);
-        wb.setFeature(Feature.OPPONENT_ENERGY, 99.6);
-        wb.process();
-
-        assertEquals(0.1, wb.getFeature(Feature.THEIR_FIRE_POWER), 1e-9);
-    }
-
-    @Test
     void rejectsMinPowerDropImmediatelyAfterFire() {
         wb.setFeature(Feature.TICK, 1);
         wb.setFeature(Feature.SCAN_TICK, 1);
@@ -333,38 +279,5 @@ final class TheirWaveTrackerFireDetectionTest {
         wb.setFeature(Feature.OPPONENT_ENERGY, 97.9);
         wb.process();
         assertTrue(Double.isNaN(wb.getFeature(Feature.THEIR_FIRE_POWER)));
-    }
-
-    @Test
-    void combatActivityEndsDrainAndDetectionResumes() {
-        wb.setFeature(Feature.TICK, 1);
-        wb.setFeature(Feature.SCAN_TICK, 1);
-        wb.setFeature(Feature.OUR_HEADING, 0);
-        wb.setFeature(Feature.BEARING_RADIANS, 0);
-        wb.setFeature(Feature.OPPONENT_HEADING, 0);
-        wb.setFeature(Feature.OPPONENT_VELOCITY, 0);
-        wb.setFeature(Feature.OPPONENT_ENERGY, 100.0);
-        wb.process();
-
-        // Establish a drain.
-        wb.setFeature(Feature.TICK, 2);
-        wb.setFeature(Feature.SCAN_TICK, 2);
-        wb.setFeature(Feature.OPPONENT_ENERGY, 99.9);
-        wb.process();
-        wb.setFeature(Feature.TICK, 3);
-        wb.setFeature(Feature.SCAN_TICK, 3);
-        wb.setFeature(Feature.OPPONENT_ENERGY, 99.8);
-        wb.process();
-        assertTrue(Double.isNaN(wb.getFeature(Feature.THEIR_FIRE_POWER)));
-
-        // Opponent hits us (gains 6) and fires 1.0: combat resets inactivity, so
-        // the drain stops and the fire is detected at full power.
-        wb.setFeature(Feature.TICK, 4);
-        wb.setFeature(Feature.SCAN_TICK, 4);
-        wb.setFeature(Feature.OPPONENT_ENERGY, 104.8);
-        wb.setFeature(Feature.OPPONENT_BULLET_ENERGY_GAIN, 6.0);
-        wb.process();
-
-        assertEquals(1.0, wb.getFeature(Feature.THEIR_FIRE_POWER), 1e-9);
     }
 }

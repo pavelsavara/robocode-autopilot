@@ -33,8 +33,6 @@ public final class TheirWaveTracker implements IInGameFeatures {
     private static final double MAX_FIRE_POWER = 3.0;
     private static final double FIRE_POWER_EPSILON = 1e-9;
 
-    /** Per-turn energy the engine drains from an idle robot (one quantum). */
-    private static final double INACTIVITY_ZAP = 0.1;
     /** Robocode default gun cooling rate; gun heat falls this much each tick. */
     private static final double GUN_COOLING_RATE = 0.1;
 
@@ -122,18 +120,12 @@ public final class TheirWaveTracker implements IInGameFeatures {
         double deltaTick = (Double.isNaN(prevScanTick) || Double.isNaN(tick))
                 ? 1.0
                 : tick - prevScanTick;
-        boolean consecutive = deltaTick == 1.0;
 
         double prevGunHeat = wb.getPreviousScanFeature(Feature.THEIR_GUN_HEAT);
         if (Double.isNaN(prevGunHeat)) {
             prevGunHeat = 0.0;
         }
         double gunHeat = Math.max(0.0, prevGunHeat - GUN_COOLING_RATE * deltaTick);
-
-        boolean zapActive =
-                wb.getPreviousScanFeature(Feature.THEIR_INACTIVITY_ZAP_ACTIVE) > 0.5;
-        double prevAdjustedDrop =
-                wb.getPreviousScanFeature(Feature.THEIR_ENERGY_DROP_ADJUSTED);
 
         double drop = prevEnergy - currentEnergy;
 
@@ -142,30 +134,12 @@ public final class TheirWaveTracker implements IInGameFeatures {
         double ramDmg = nonNan(wb.getFeature(Feature.RAM_DAMAGE_TO_OPPONENT));
         double wallDmg = nonNan(wb.getFeature(Feature.OPPONENT_WALL_HIT_DAMAGE));
 
-        double adjustedDrop = drop - bulletDmg - ramDmg - wallDmg + bulletGain;
-
-        boolean combatActivity = bulletDmg > FIRE_POWER_EPSILON
-                || bulletGain > FIRE_POWER_EPSILON
-                || ramDmg > FIRE_POWER_EPSILON
-                || wallDmg > FIRE_POWER_EPSILON;
-        if (combatActivity) {
-            zapActive = false;
-        }
-
-        boolean noDrain = Math.abs(adjustedDrop) <= FIRE_POWER_EPSILON;
-        if (consecutive && noDrain) {
-            zapActive = false;
-        }
-
-        boolean oneQuantum = Math.abs(adjustedDrop - INACTIVITY_ZAP) <= FIRE_POWER_EPSILON;
-        if (consecutive && oneQuantum && !combatActivity) {
-            zapActive = true;
-        }
-
-        double fireDrop = adjustedDrop;
-        if (zapActive && consecutive) {
-            fireDrop -= INACTIVITY_ZAP;
-        }
+        // Adjusted scan-to-scan energy drop: strip the energy we can attribute to
+        // bullet/ram/wall damage so what remains is the opponent's fire spend.
+        // Inactivity-zap attribution is deliberately NOT modeled: competitive
+        // opponents fire continuously and never reach the engine's 450-tick idle
+        // threshold, so a zap term only ever steals genuine fire signal.
+        double fireDrop = drop - bulletDmg - ramDmg - wallDmg + bulletGain;
 
         boolean gunReady = gunHeat <= FIRE_POWER_EPSILON;
 
@@ -180,8 +154,8 @@ public final class TheirWaveTracker implements IInGameFeatures {
         }
 
         wb.setCurrentScanFeature(Feature.THEIR_GUN_HEAT, gunHeat);
-        wb.setCurrentScanFeature(Feature.THEIR_INACTIVITY_ZAP_ACTIVE, zapActive ? 1.0 : 0.0);
-        wb.setCurrentScanFeature(Feature.THEIR_ENERGY_DROP_ADJUSTED, adjustedDrop);
+        wb.setCurrentScanFeature(Feature.THEIR_INACTIVITY_ZAP_ACTIVE, 0.0);
+        wb.setCurrentScanFeature(Feature.THEIR_ENERGY_DROP_ADJUSTED, fireDrop);
     }
 
     /**
