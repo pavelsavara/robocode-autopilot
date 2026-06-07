@@ -183,6 +183,10 @@ tasks.register<Test>("battleCsvProducer") {
 
     val stageDir = layout.buildDirectory.dir("battle-stage").get().asFile
     systemProperty("battle.stage", stageDir.absolutePath)
+    // Memory-heavy megabots (e.g. jk.mega.DrussGT) plus accumulated per-tick CSV
+    // buffers exhaust the default 512 MB test heap on long (50-round) battles,
+    // sending G1 into a full-GC death spiral that stalls the battle without OOM.
+    maxHeapSize = "4g"
     jvmArgs(
         "-Djava.awt.headless=true",
         "--add-opens", "java.base/sun.net.www.protocol.jar=ALL-UNNAMED",

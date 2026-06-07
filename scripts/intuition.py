@@ -94,6 +94,12 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_PRODUCER_ROOT = REPO_ROOT / "pipeline" / "build" / "battle-csv-producer"
 MATCHUP_SEP = "__vs__"
 
+#: Robots whose battles are dropped entirely (as hero *and* as opponent) before any
+#: analysis. ``cz.zamboch.Autopilot`` is the in-development bot and far weaker than the
+#: top-bot field; including it would pollute cross-opponent aggregates and floor/hero
+#: comparisons with conclusions we explicitly do not want to draw.
+EXCLUDED_ROBOTS = frozenset({"cz.zamboch.Autopilot"})
+
 
 # --------------------------------------------------------------------------------------
 # Loud self-consistency assertion framework (used heavily in Phase 2)
@@ -347,6 +353,28 @@ def walk_perspectives(run_dir: Path) -> list[Perspective]:
     if not perspectives:
         fail(f"run directory contained no perspectives: {_rel(run_dir)}")
     return perspectives
+
+
+def filter_excluded_robots(perspectives: Sequence[Perspective]) -> list[Perspective]:
+    """Drop perspectives whose hero or opponent is in ``EXCLUDED_ROBOTS`` (i.e. every
+    battle the excluded bot took part in, in either role). Returns the survivors and
+    aborts loudly if nothing is left."""
+    kept = [
+        p for p in perspectives
+        if p.robot not in EXCLUDED_ROBOTS and p.opponent not in EXCLUDED_ROBOTS
+    ]
+    dropped = len(perspectives) - len(kept)
+    if dropped:
+        print(
+            f"intuition.py: excluded {dropped} perspective(s) involving "
+            f"{', '.join(sorted(EXCLUDED_ROBOTS))} (hero or opponent)"
+        )
+    if not kept:
+        fail(
+            "all perspectives were excluded by EXCLUDED_ROBOTS "
+            f"({', '.join(sorted(EXCLUDED_ROBOTS))})"
+        )
+    return kept
 
 
 def resolve_contract(perspectives: Sequence[Perspective]) -> str:
@@ -2153,6 +2181,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     run_dir = find_run_dir(args.run_dir)
     perspectives = walk_perspectives(run_dir)
+    perspectives = filter_excluded_robots(perspectives)
 
     out_path = (REPO_ROOT / args.out) if not Path(args.out).is_absolute() else Path(args.out)
     assets_dir = (REPO_ROOT / args.assets) if not Path(args.assets).is_absolute() else Path(args.assets)
