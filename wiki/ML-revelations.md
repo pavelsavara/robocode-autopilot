@@ -62,3 +62,57 @@ baseline match the engine.
 
 **Verdict: CONFIRMED (engine mechanism).** See [abs-angle-gf.md](abs-angle-gf.md) for the
 full distribution, per-bin table, and figure.
+
+## Recent dodge history predicts the next dodge, and it is usable online
+
+**Hypothesis.** The intuition report's C8 says consecutive break GuessFactors (GF) are
+autocorrelated (lag-1 ≈ 0.643), so *where* an opponent dodged on recent waves should predict
+where it dodges next. The open question is whether that signal is *usable*: with 2-3 of our
+waves always in flight, the previous wave has not broken when the next is fired, so its break
+GF is a future value (leak). If the autocorrelation is only visible after the fact, it cannot
+drive a gun.
+
+**Evidence.** Over **821,225** hero offense waves across five competitive opponents (ScalarR,
+DrussGT, BeepBoop, Knight, Diamond; self-play and the non-competitive Autopilot excluded), the
+fire-order lag-1 break-GF autocorrelation is **0.67-0.71** — reproducing C8. A leakage-safe
+feature, `developing_gf` (the previous *still-in-flight* wave's GF re-evaluated at the current
+fire tick), tracks that previous break GF at proxy `r = 0.74-0.79` and **still predicts the
+current wave's break GF at fire time, `r = 0.17-0.24`, positive for every opponent on both the
+gun and movement sides** (strongest vs `rsalesc.mega.Knight`, `r = 0.243`, R² 0.059). The
+already-broken feedback a naive design reaches for instead (`online_broken_mean`, ~3 fires
+stale because cadence ~14 ticks ≪ flight ~34 ticks) sits near zero (−0.05 to −0.12), which is
+why earlier passes that used the "freshest broken wave" saw nothing.
+
+**Why it matters.** The exploitable structure lives in the **continuous GF (aim), not in
+hit/miss.** Correlating the same `developing_gf` against the binary hit label gives `r ≈ 0`,
+because at a ~10% base rate against world-class movement whether one low-power bullet lands is
+dominated by irreducible residual dodge — so a hit/miss-only analysis wrongly reads "no
+signal". A memoryless VCS gun discards this lag-1 structure; a predictor that carries the recent
+GF history recovers ~3-6% of break-GF variance for free, available at fire time.
+
+**Verdict: CONFIRMED (usable online).** See [sequence.md](sequence.md) for the per-opponent
+table, leakage analysis, and figures.
+
+## Irregular incoming fire desyncs our wave-surfing, but only measurable against the simplest opponent
+
+**Hypothesis.** If our movement surfs a regular incoming fire cadence well, then *irregular*
+incoming timing should desynchronise the surf and raise how often we are hit; a steady
+metronome of incoming waves should be the easiest to pre-dodge.
+
+**Evidence.** This is the one place the noisy hit/miss label lights up — and only for
+`aaa.r.ScalarR` (15,276 incoming waves). Splitting incoming waves by reconstructed fire-gap
+regularity, we are hit **8.5% when the incoming cadence is regular vs 15.9% when it is
+irregular** (mutual information 0.0072, the largest hit/miss MI anywhere in the run); a
+de-escalating incoming power ladder is similarly worse for us (14.0% on falling power vs 9.9%
+on rising). For all four mega-class opponents the same test is flat (MI ≈ 0.000).
+
+**Why / caveat.** Treat this as a **ScalarR-specific exploitable, not a universal law.** ScalarR
+is both the simplest mover and the hardest firer (mean bullet power 0.89 vs ~0.15-0.20 for
+DrussGT/BeepBoop/Knight), so its fire timing reconstructs cleanly from energy drops, whereas the
+low-power megabots' reconstructed fire-gap barely forms two buckets — their null is partly a
+*measurement* limit, not proof of no effect. But `voidious.Diamond` also fires hard (mean 0.73)
+and still shows no rhythm signal, so the effect does not obviously generalise; the safe reading
+is a real surfing-desync lever against ScalarR that needs confirmation elsewhere before it
+drives movement.
+
+**Verdict: PARTIAL (strong for ScalarR, unconfirmed elsewhere).** See [sequence.md](sequence.md).
