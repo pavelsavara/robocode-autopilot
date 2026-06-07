@@ -5,7 +5,7 @@
 ## Run header
 
 - **Source run directory:** `pipeline/build/battle-csv-producer/1780763098676-1780763098676`
-- **Generated (UTC):** 2026-06-07 08:39:37Z
+- **Generated (UTC):** 2026-06-07 11:32:55Z
 - **Resolved producer contract:** full split (dejavu-waves + autopilot-waves)
 - **Assets directory:** `wiki/ml-intuition`
 - **Inventory:** 36 matchups · 6 distinct robots · 72 perspectives · 6 self-play matchups · 579.6 MB of CSV
@@ -666,7 +666,7 @@ Out of 47 canonical bins; low effective-bins ⇒ peaked/learnable.
 
 ### C4 — Current-autopilot floor vs in-game hero (unpaired) + selection bias
 
-| Opponent | Floor hit | Hero hit | Floor |GF err| | Hero |GF err| | Δdist (floor−hero) | Δ|latV| |
+| Opponent | Floor hit | Hero hit | Floor \|GF err\| | Hero \|GF err\| | Δdist (floor−hero) | Δ\|latV\| |
 |---|---|---|---|---|---|---|
 | `aaa.r.ScalarR` | 9.92% (N=3114) | 7.59% (N=13787) | 0.476 | 0.631 | -2.1 | 0.28 |
 | `cz.zamboch.Autopilot` | 36.60% (N=418) | 14.14% (N=1619) | 0.336 | 0.725 | 6.6 | 0.32 |
@@ -692,14 +692,14 @@ _Quantization bound = aim the realized bin every time (sanity bound, **not** lea
 
 | Feature | Pearson r | Mutual info (nats) |
 |---|---|---|
-| `our_fire_lateral_velocity` | 0.358 | 0.1413 |
-| `our_fire_direction` | 0.328 | 0.0809 |
-| `our_fire_advancing_velocity` | -0.001 | 0.0202 |
-| `our_fire_power` | 0.003 | 0.0131 |
-| `our_fire_distance` | -0.014 | 0.0126 |
-| `our_fire_bullet_speed` | -0.003 | 0.0121 |
-| `our_fire_mea` | 0.004 | 0.0110 |
-Computed on a seeded subsample of 30,000 dejavu real waves (capped at --max-model-rows=30,000; **not** full-data correlation).
+| `our_fire_lateral_velocity` | 0.357 | 0.1464 |
+| `our_fire_direction` | 0.324 | 0.0801 |
+| `our_fire_advancing_velocity` | -0.002 | 0.0281 |
+| `our_fire_distance` | -0.011 | 0.0140 |
+| `our_fire_bullet_speed` | -0.003 | 0.0127 |
+| `our_fire_power` | 0.003 | 0.0106 |
+| `our_fire_mea` | 0.004 | 0.0099 |
+Computed on a seeded subsample of 50,000 dejavu real waves (capped at --max-model-rows=50,000; **not** full-data correlation).
 
 ### C7 — GF variance explained by segmentation axes (η²)
 
@@ -885,27 +885,27 @@ Ticks the surfer has to react after detecting a wave.
 
 | Feature | Impurity importance | Permutation importance |
 |---|---|---|
-| `our_fire_lateral_velocity` | 0.6025 | 0.4570 |
-| `our_fire_advancing_velocity` | 0.1824 | 0.1525 |
-| `our_fire_distance` | 0.1621 | 0.1093 |
-| `our_fire_bullet_speed` | 0.0207 | 0.0116 |
-| `our_fire_mea` | 0.0140 | 0.0083 |
-| `our_fire_power` | 0.0137 | 0.0078 |
-| `our_fire_direction` | 0.0046 | 0.0008 |
-Fit on 30,000 dejavu real waves (capped at --max-model-rows=30,000).
+| `our_fire_lateral_velocity` | 0.6471 | 0.4622 |
+| `our_fire_advancing_velocity` | 0.1659 | 0.1505 |
+| `our_fire_distance` | 0.1474 | 0.0884 |
+| `our_fire_bullet_speed` | 0.0168 | 0.0092 |
+| `our_fire_mea` | 0.0119 | 0.0062 |
+| `our_fire_power` | 0.0107 | 0.0054 |
+| `our_fire_direction` | 0.0001 | 0.0001 |
+Fit on 50,000 dejavu real waves (capped at --max-model-rows=50,000).
 
 ### E4 — Feature importance for hit / no-hit (PR-AUC-scored)
 
 | Feature | Permutation importance (PR-AUC) |
 |---|---|
-| `our_fire_distance` | 0.2290 |
-| `our_fire_advancing_velocity` | 0.2107 |
-| `our_fire_lateral_velocity` | 0.2058 |
-| `our_fire_bullet_speed` | 0.1070 |
-| `our_fire_power` | 0.1046 |
-| `our_fire_mea` | 0.0911 |
-| `our_fire_direction` | 0.0889 |
-Positive base rate 7.99% (2,396/30,000); in-sample PR-AUC 0.376. At ~12:1 imbalance, accuracy and impurity importance mislead, so PR-AUC is the fixed metric.
+| `our_fire_distance` | 0.1690 |
+| `our_fire_advancing_velocity` | 0.1676 |
+| `our_fire_lateral_velocity` | 0.1442 |
+| `our_fire_bullet_speed` | 0.0822 |
+| `our_fire_power` | 0.0801 |
+| `our_fire_mea` | 0.0800 |
+| `our_fire_direction` | 0.0654 |
+Positive base rate 7.88% (3,942/50,000); in-sample PR-AUC 0.303. At ~12:1 imbalance, accuracy and impurity importance mislead, so PR-AUC is the fixed metric.
 
 ### E5 — Recommended v1 feature set
 

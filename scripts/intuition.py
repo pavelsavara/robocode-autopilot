@@ -648,10 +648,17 @@ def _ci_val(lo, hi, d: int = 2) -> str:
 
 
 def md_table(headers: Sequence[str], rows: Sequence[Sequence[str]]) -> str:
-    """Render a GitHub-flavored markdown table."""
-    head = "| " + " | ".join(headers) + " |"
+    """Render a GitHub-flavored markdown table.
+
+    Literal ``|`` in any header or cell is escaped to ``\\|`` so values such as
+    ``Floor |GF err|`` or ``Δ|latV|`` don't get parsed as extra column separators.
+    """
+    def esc(c: object) -> str:
+        return str(c).replace("|", "\\|")
+
+    head = "| " + " | ".join(esc(h) for h in headers) + " |"
     sep = "|" + "|".join("---" for _ in headers) + "|"
-    body = "\n".join("| " + " | ".join(str(c) for c in r) + " |" for r in rows)
+    body = "\n".join("| " + " | ".join(esc(c) for c in r) + " |" for r in rows)
     return "\n".join([head, sep, body]) if rows else "\n".join([head, sep, "| _(no data)_ |"])
 
 
