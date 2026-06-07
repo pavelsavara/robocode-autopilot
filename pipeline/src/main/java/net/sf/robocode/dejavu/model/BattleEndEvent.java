@@ -4,12 +4,19 @@ import robocode.BattleResults;
 import robocode.control.events.BattleCompletedEvent;
 
 /** Battle-end score event reconstructed from Robocode's completed-battle callback. */
-public record BattleEndEvent(int rounds, Score[] scores) {
-    public BattleEndEvent {
-        scores = scores.clone();
+public final class BattleEndEvent {
+    private final int rounds;
+    private final Score[] scores;
+
+    public BattleEndEvent(int rounds, Score[] scores) {
+        this.rounds = rounds;
+        this.scores = scores.clone();
     }
 
-    @Override
+    public int rounds() {
+        return rounds;
+    }
+
     public Score[] scores() {
         return scores.clone();
     }
@@ -50,7 +57,58 @@ public record BattleEndEvent(int rounds, Score[] scores) {
         return new BattleEndEvent(rounds, scores);
     }
 
-    public record Score(String robotName, int rank, int score, int firsts, int seconds,
-            int survival, int bulletDamage, int ramDamage) {
+    public static final class Score {
+        private final String robotName;
+        private final int rank;
+        private final int score;
+        private final int firsts;
+        private final int seconds;
+        private final int survival;
+        private final int bulletDamage;
+        private final int ramDamage;
+
+        public Score(String robotName, int rank, int score, int firsts, int seconds,
+                int survival, int bulletDamage, int ramDamage) {
+            this.robotName = robotName;
+            this.rank = rank;
+            this.score = score;
+            this.firsts = firsts;
+            this.seconds = seconds;
+            this.survival = survival;
+            this.bulletDamage = bulletDamage;
+            this.ramDamage = ramDamage;
+        }
+
+        public String robotName() {
+            return robotName;
+        }
+
+        public int rank() {
+            return rank;
+        }
+
+        public int score() {
+            return score;
+        }
+
+        public int firsts() {
+            return firsts;
+        }
+
+        public int seconds() {
+            return seconds;
+        }
+
+        public int survival() {
+            return survival;
+        }
+
+        public int bulletDamage() {
+            return bulletDamage;
+        }
+
+        public int ramDamage() {
+            return ramDamage;
+        }
     }
 }

@@ -8,7 +8,6 @@
 package net.sf.robocode.dejavu.core;
 
 import net.sf.robocode.dejavu.model.EnergyBreakdown;
-import net.sf.robocode.dejavu.model.Provenance;
 import net.sf.robocode.dejavu.model.TickCommands;
 import net.sf.robocode.dejavu.model.TickEvents;
 import robocode.control.snapshot.ITurnSnapshot;
@@ -22,7 +21,6 @@ public final class Reconstructor {
     private final int heroIndex;
     private final EventReconstructor eventReconstructor;
     private final CommandReconstructor commandReconstructor;
-    private final BulletIdCanonicalizer bulletIds;
 
     private ITurnSnapshot prev;
 
@@ -30,16 +28,13 @@ public final class Reconstructor {
         this.heroIndex = heroIndex;
         this.eventReconstructor = new EventReconstructor(heroIndex, battlefieldWidth, battlefieldHeight, numRounds);
         this.commandReconstructor = new CommandReconstructor(heroIndex);
-        this.bulletIds = new BulletIdCanonicalizer(numRounds);
     }
 
     /** Begin a new round, seeding from the spawn snapshot. */
     public void startRound(ITurnSnapshot start) {
-        bulletIds.reset();
-        ITurnSnapshot canonicalStart = bulletIds.canonicalize(start);
         eventReconstructor.resetRound();
-        eventReconstructor.seedRoundStart(canonicalStart);
-        prev = canonicalStart;
+        eventReconstructor.seedRoundStart(start);
+        prev = start;
     }
 
     /** Result bundle for one reconstructed tick. */
@@ -62,21 +57,12 @@ public final class Reconstructor {
      * @return reconstructed events, commands and energy decomposition, or
      *         {@code null} if there is no baseline yet
      */
-    public TickResult onTurn(ITurnSnapshot raw) {
-        // Restore unique per-bullet identity before any id-keyed reconstruction.
-        // An unpatched engine can fire one persisted command twice, producing two
-        // live bullets that share an id; the canonicalizer re-keys the duplicate
-        // into a negative band so every reconstructor site keeps them separable.
-        ITurnSnapshot cur = bulletIds.canonicalize(raw);
-        boolean duplicateRemapped = bulletIds.remappedThisTick();
+    public TickResult onTurn(ITurnSnapshot cur) {
         if (prev == null) {
             prev = cur;
             return null;
         }
         TickEvents events = eventReconstructor.reconstruct(prev, cur);
-        if (duplicateRemapped) {
-            events.addTickFlag(Provenance.DUPLICATE_ID);
-        }
         EnergyBreakdown energy = eventReconstructor.getLastEnergyBreakdown();
         // Split the realized turns under the always-false coupling assumption.
         TickCommands commands = commandReconstructor.reconstruct(prev, cur);

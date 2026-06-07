@@ -8,7 +8,7 @@
 package net.sf.robocode.dejavu.core;
 
 import net.sf.robocode.dejavu.model.EnergyBreakdown;
-import net.sf.robocode.dejavu.model.Provenance;
+import net.sf.robocode.dejavu.model.DriftReason;
 import robocode.BulletHitEvent;
 import robocode.Event;
 import robocode.HitByBulletEvent;
@@ -69,11 +69,39 @@ public final class EnergyLedger {
     private static final double MAX_WALL_DAMAGE = Rules.getWallHitDamage(Rules.MAX_VELOCITY);
     /** The per-turn inactivity energy zap once a robot has been idle too long. */
     private static final double INACTIVITY_ZAP = 0.1;
+    /**
+     * Idle turns the battle tolerates before draining energy. The engine default
+     * (Battle rules / BattleSpecification) is 450; the dejavu capture battle uses
+     * it unchanged. Mirrored here as a constant alongside {@link #INACTIVITY_ZAP}
+     * (the engine's zap quantum) so the battle-global idle counter can be
+     * reconstructed without threading the rule through every constructor.
+     */
+    private static final int INACTIVITY_TIME = 450;
 
     private final int heroIndex;
 
+    // Battle-global inactivity state (design: solve the zap from data on BOTH
+    // sides rather than guess it from the hero alone). The engine drains a fixed
+    // quantum from every living robot once inactiveTurnCount passes
+    // INACTIVITY_TIME; that counter is reset, in 10-energy chunks, by every
+    // robot's qualifying energy losses. Both fields persist across the whole
+    // battle; only the turn count resets each round (mirroring
+    // Battle.initializeRound, which zeroes inactiveTurnCount but carries the
+    // accumulated inactivityEnergy remainder).
+    private int inactiveTurnCount;
+    private double inactivityEnergy;
+
     public EnergyLedger(int heroIndex) {
         this.heroIndex = heroIndex;
+    }
+
+    /**
+     * Reset the per-round inactivity turn counter at the start of each round,
+     * mirroring {@code Battle.initializeRound} (which zeroes the count but leaves
+     * the accumulated {@code inactivityEnergy} remainder to carry over).
+     */
+    public void resetRoundInactivity() {
+        inactiveTurnCount = 0;
     }
 
     /**
@@ -93,8 +121,14 @@ public final class EnergyLedger {
      *         which for a faithful living tick cannot happen
      */
     public EnergyBreakdown account(ITurnSnapshot prev, ITurnSnapshot cur,
-            List<Event> events, EnumSet<Provenance> flags) {
+            List<Event> events, EnumSet<DriftReason> flags) {
         EnergyBreakdown breakdown = new EnergyBreakdown();
+
+        // Advance the battle-global idle counter exactly once per turn, before
+        // the dead-hero short-circuit, so the counter keeps mirroring the engine
+        // even on turns this hero is no longer accounted. Its decision drives the
+        // deterministic zap prediction below.
+        boolean zapThisTurn = advanceInactivity(prev, cur);
 
         IRobotSnapshot me = cur.getRobots()[heroIndex];
         IRobotSnapshot prevMe = prev.getRobots()[heroIndex];
@@ -123,19 +157,32 @@ public final class EnergyLedger {
             return breakdown;
         }
 
-        // Inactivity zap: once the battle-global idle counter passes the
-        // threshold the engine drains a fixed quantum each turn. That counter
-        // depends on the energy losses of *every* robot in the battle, which a
-        // single hero's snapshot stream cannot reconstruct exactly, so rather
-        // than predict the counter we detect the zap from its observable
-        // signature: an otherwise-unexplained idle loss of exactly one quantum.
-        // We apply the drain only when it actually reconciles the observed
-        // energy, so a non-zap tick is never mislabelled.
-        double drain = inactivityDrain(prevEnergy);
-        if (drain != 0 && Math.abs(residual(prevEnergy, breakdown.sum() + drain, observedEnergy)) <= EPSILON) {
-            breakdown.setInactivityDrain(drain);
-            breakdown.setResidual(0);
-            return breakdown;
+        // Inactivity zap (Proposal C): once the battle-global idle counter passes
+        // the threshold the engine drains a fixed quantum from every living
+        // robot. We reconstruct that counter deterministically from the energy
+        // losses of *every* robot (advanceInactivity, above) and treat its
+        // verdict as authoritative — the both-sides "solve once" path.
+        if (zapThisTurn) {
+            // The counter says the engine drained a quantum this turn. Commit it,
+            // then let the normal reconcile/repair flow resolve any remaining
+            // component with the drain already in place.
+            breakdown.setInactivityDrain(inactivityDrain(prevEnergy));
+            if (Math.abs(residual(prevEnergy, breakdown.sum(), observedEnergy)) <= EPSILON) {
+                breakdown.setResidual(0);
+                return breakdown;
+            }
+        } else {
+            // The counter predicted no zap. Safety net (mirroring the kept
+            // snapshot re-scan repair): recover a zap the counter might have
+            // missed from its unmistakable one-quantum signature, committing it
+            // only when it actually reconciles the observed energy.
+            double drain = inactivityDrain(prevEnergy);
+            if (drain != 0
+                    && Math.abs(residual(prevEnergy, breakdown.sum() + drain, observedEnergy)) <= EPSILON) {
+                breakdown.setInactivityDrain(drain);
+                breakdown.setResidual(0);
+                return breakdown;
+            }
         }
 
         // The decomposition does not yet explain the observed change: run a
@@ -344,21 +391,16 @@ public final class EnergyLedger {
     }
 
     /**
-     * Hero fire cost this turn: the summed power of every hero-owned bullet
-     * whose id is absent from {@code prev} (born this turn). The engine deducts
-     * the fire power in {@code loadCommands()} as the bullet is created.
+     * Hero fire cost this turn: the power of the hero-owned bullet born this turn
+     * (its id absent from {@code prev}), or zero when the hero did not fire. The
+     * engine deducts the fire power in {@code loadCommands()} as the bullet is
+     * created and fires at most one bullet per turn. Detection is shared with the
+     * event and command reconstructors via {@link FireDetector}.
      */
     private double fireCost(ITurnSnapshot prev, ITurnSnapshot cur) {
         IRobotSnapshot me = cur.getRobots()[heroIndex];
-        Map<Long, BulletState> prevStates = bulletStates(prev);
-        double cost = 0;
-        for (IBulletSnapshot bullet : cur.getBullets()) {
-            if (bullet.getOwnerIndex() == me.getRobotIndex()
-                    && !prevStates.containsKey(bulletKey(bullet))) {
-                cost += bullet.getPower();
-            }
-        }
-        return cost;
+        IBulletSnapshot born = FireDetector.bornHeroBullet(prev, cur, me.getRobotIndex());
+        return born == null ? 0 : born.getPower();
     }
 
     // ---- Inactivity zap ------------------------------------------------
@@ -369,11 +411,10 @@ public final class EnergyLedger {
      * result below that quantum to zero.
      *
      * <p>The engine drains every living robot this fixed quantum each turn once
-     * the battle-global idle counter passes its threshold. That counter depends
-     * on the energy losses of every robot in the battle, which a single hero's
-     * snapshot stream cannot reconstruct, so {@link #account} does not predict
-     * it: instead it detects the zap from its observable signature &mdash; an
-     * otherwise-unexplained idle loss of exactly this quantum.
+     * the battle-global idle counter passes its threshold. {@link #account}
+     * predicts that zap deterministically via {@link #advanceInactivity}, which
+     * reconstructs the counter from the energy losses of every robot in the
+     * battle; this method supplies the magnitude of the resulting hero drain.
      */
     private static double inactivityDrain(double energyAtZap) {
         if (energyAtZap <= 0) {
@@ -384,6 +425,94 @@ public final class EnergyLedger {
             after = 0;
         }
         return after - energyAtZap;
+    }
+
+    /**
+     * Advance the battle-global idle counter across one turn and report whether
+     * the engine drained an inactivity zap on it. The counter is reconstructed
+     * exactly from the snapshots of <em>both</em> robots, mirroring the order in
+     * {@code Battle.runTurn}/{@code Battle.updateRobots}:
+     *
+     * <ol>
+     *   <li>pre-decision resets &mdash; fire costs ({@code loadCommands}) and
+     *       bullet damage taken ({@code updateBullets}) reset the counter in
+     *       10-energy chunks;</li>
+     *   <li>the zap decision is taken: {@code zap = count > INACTIVITY_TIME};</li>
+     *   <li>post-decision resets &mdash; ram damage (applied during the move)
+     *       and full-energy kills reset the counter;</li>
+     *   <li>the counter is incremented once.</li>
+     * </ol>
+     *
+     * Energy <em>gains</em> (e.g. bullet-hit bonuses) and wall damage do not
+     * reset the counter, matching the engine's {@code setEnergy(.., false)} and
+     * {@code resetInactiveTurnCount}'s positive-loss guard, so they are excluded.
+     */
+    private boolean advanceInactivity(ITurnSnapshot prev, ITurnSnapshot cur) {
+        addInactivityEnergy(preDecisionLoss(prev, cur));
+        boolean zap = inactiveTurnCount > INACTIVITY_TIME;
+        addInactivityEnergy(postDecisionLoss(prev, cur));
+        inactiveTurnCount++;
+        return zap;
+    }
+
+    /**
+     * Accumulate a robot's energy loss into the idle counter, resetting it (the
+     * engine zeroes {@code inactiveTurnCount}) for every whole 10 energy lost.
+     * Mirrors {@code Battle.resetInactiveTurnCount}, whose positive-loss guard
+     * means only losses count.
+     */
+    private void addInactivityEnergy(double loss) {
+        if (loss <= 0) {
+            return;
+        }
+        inactivityEnergy += loss;
+        while (inactivityEnergy >= 10) {
+            inactivityEnergy -= 10;
+            inactiveTurnCount = 0;
+        }
+    }
+
+    /**
+     * Counter-resetting energy losses applied before the engine's zap decision,
+     * summed over the whole battle: each robot's fire cost (a bullet present in
+     * {@code cur} but not {@code prev} cost its owner that power) and each
+     * bullet's damage to its victim (a bullet reaching {@code HIT_VICTIM} on a
+     * rising edge).
+     */
+    private static double preDecisionLoss(ITurnSnapshot prev, ITurnSnapshot cur) {
+        Map<Long, BulletState> prevStates = bulletStates(prev);
+        double loss = 0;
+        for (IBulletSnapshot bullet : cur.getBullets()) {
+            if (prevStates.get(bulletKey(bullet)) == null) {
+                loss += bullet.getPower(); // fire cost to the bullet's owner
+            }
+            if (bullet.getState() == BulletState.HIT_VICTIM && isRisingEdge(prevStates, bullet)) {
+                loss += Rules.getBulletDamage(bullet.getPower()); // damage to the victim
+            }
+        }
+        return loss;
+    }
+
+    /**
+     * Counter-resetting energy losses applied after the engine's zap decision,
+     * summed over the whole battle: each robot's ram damage (state
+     * {@code HIT_ROBOT}) and the full 10-energy reset for each robot that died
+     * this turn (alive in {@code prev}, dead in {@code cur}).
+     */
+    private static double postDecisionLoss(ITurnSnapshot prev, ITurnSnapshot cur) {
+        IRobotSnapshot[] prevRobots = prev.getRobots();
+        IRobotSnapshot[] curRobots = cur.getRobots();
+        double loss = 0;
+        for (int i = 0; i < curRobots.length; i++) {
+            if (curRobots[i].getState() == RobotState.HIT_ROBOT) {
+                loss += Rules.ROBOT_HIT_DAMAGE;
+            }
+            boolean wasAlive = i < prevRobots.length && !prevRobots[i].getState().isDead();
+            if (wasAlive && curRobots[i].getState().isDead()) {
+                loss += 10.0; // kill() -> resetInactiveTurnCount(10.0)
+            }
+        }
+        return loss;
     }
 
     private static boolean isRisingEdge(Map<Long, BulletState> prevStates, IBulletSnapshot bullet) {
@@ -400,8 +529,7 @@ public final class EnergyLedger {
     }
 
     private static long bulletKey(IBulletSnapshot bullet) {
-        // Pack owner in the high word and the full (possibly negative, after
-        // duplicate-id canonicalization) bullet id in the low word, so the key
+        // Pack owner in the high word and the bullet id in the low word, so the key
         // stays collision-free for any int id.
         return (((long) bullet.getOwnerIndex()) << 32) | (bullet.getBulletId() & 0xFFFFFFFFL);
     }

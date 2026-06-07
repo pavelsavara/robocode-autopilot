@@ -3,7 +3,7 @@ package cz.zamboch.autopilot.pipeline;
 import cz.zamboch.autopilot.core.Feature;
 import cz.zamboch.autopilot.core.Whiteboard;
 import net.sf.robocode.security.HiddenAccess;
-import net.sf.robocode.dejavu.model.Provenance;
+import net.sf.robocode.dejavu.model.DriftReason;
 import net.sf.robocode.dejavu.model.TickEvents;
 import robocode.*;
 import org.junit.jupiter.api.BeforeAll;
@@ -144,6 +144,6 @@ final class ObserverContextTest {
     }
 
     private static TickEvents tickEvents(long turn, List<Event> events) {
-        return new TickEvents(turn, events, EnumSet.noneOf(Provenance.class));
+        return new TickEvents(turn, events, EnumSet.noneOf(DriftReason.class));
     }
 }

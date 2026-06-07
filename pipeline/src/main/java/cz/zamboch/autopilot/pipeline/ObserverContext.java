@@ -9,7 +9,7 @@ import cz.zamboch.autopilot.core.Whiteboard;
 import cz.zamboch.autopilot.core.features.ScanFeatures;
 import net.sf.robocode.security.HiddenAccess;
 import net.sf.robocode.dejavu.core.EventReconstructor;
-import net.sf.robocode.dejavu.model.Provenance;
+import net.sf.robocode.dejavu.model.DriftReason;
 import net.sf.robocode.dejavu.model.TickEvents;
 import robocode.*;
 import robocode.control.snapshot.IDebugProperty;
@@ -142,7 +142,7 @@ public final class ObserverContext {
                 me.getGunHeat(),
                 1, 0,
                 curr.getRound(), numRounds, curr.getTurn());
-        return new TickEvents(curr.getTurn(), List.of(new StatusEvent(status)), EnumSet.noneOf(Provenance.class));
+        return new TickEvents(curr.getTurn(), List.of(new StatusEvent(status)), EnumSet.noneOf(DriftReason.class));
     }
 
     private TickEvents filterScanPresenceFromDebug(TickEvents events, IRobotSnapshot me) {
@@ -159,7 +159,7 @@ public final class ObserverContext {
         }
 
         List<Event> filtered = new ArrayList<>();
-        Map<Event, EnumSet<Provenance>> eventFlags = new IdentityHashMap<>();
+        Map<Event, EnumSet<DriftReason>> eventFlags = new IdentityHashMap<>();
         boolean removedScan = false;
         for (Event event : events.getEvents()) {
             if (event instanceof ScannedRobotEvent) {
@@ -167,7 +167,7 @@ public final class ObserverContext {
                 continue;
             }
             filtered.add(event);
-            EnumSet<Provenance> flags = events.flagsFor(event);
+            EnumSet<DriftReason> flags = events.flagsFor(event);
             if (!flags.isEmpty()) {
                 eventFlags.put(event, flags);
             }

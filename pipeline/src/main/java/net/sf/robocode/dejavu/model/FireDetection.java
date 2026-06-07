@@ -27,13 +27,13 @@ public final class FireDetection {
     private final long turn;
     private final double firePower;
     private final Bullet bullet;
-    private final EnumSet<Provenance> flags;
+    private final EnumSet<DriftReason> flags;
 
-    public FireDetection(long turn, double firePower, Bullet bullet, EnumSet<Provenance> flags) {
+    public FireDetection(long turn, double firePower, Bullet bullet, EnumSet<DriftReason> flags) {
         this.turn = turn;
         this.firePower = firePower;
         this.bullet = bullet;
-        this.flags = flags == null ? EnumSet.noneOf(Provenance.class) : EnumSet.copyOf(flags);
+        this.flags = flags == null ? EnumSet.noneOf(DriftReason.class) : EnumSet.copyOf(flags);
     }
 
     public long getTurn() {
@@ -50,11 +50,11 @@ public final class FireDetection {
         return bullet;
     }
 
-    public EnumSet<Provenance> getFlags() {
+    public EnumSet<DriftReason> getFlags() {
         return flags;
     }
 
-    public boolean hasFlag(Provenance flag) {
+    public boolean hasFlag(DriftReason flag) {
         return flags.contains(flag);
     }
 }

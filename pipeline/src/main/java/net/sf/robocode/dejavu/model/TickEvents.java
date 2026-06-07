@@ -21,37 +21,37 @@ import java.util.Map;
  * (time ascending, then descending {@code DEFAULT_PRIORITY}), plus provenance
  * flags describing reconstruction confidence for that tick.
  * <p>
- * Provenance comes at two granularities. <em>Tick-level</em> flags (returned by
+ * DriftReason comes at two granularities. <em>Tick-level</em> flags (returned by
  * {@link #getFlags()}) concern the whole turn. <em>Event-level</em> flags
  * (returned by {@link #flagsFor(Event)}) concern a single reconstructed event;
  * they are also folded into the tick-level set so a coarse consumer can detect
- * them with {@link #hasFlag(Provenance)}, while a precise consumer can apply a
- * targeted per-event exclusion with {@link #hasFlag(Event, Provenance)}.
+ * them with {@link #hasFlag(DriftReason)}, while a precise consumer can apply a
+ * targeted per-event exclusion with {@link #hasFlag(Event, DriftReason)}.
  */
 public final class TickEvents {
 
     private final long turn;
     private final List<Event> events;
-    private final EnumSet<Provenance> flags;
-    private final Map<Event, EnumSet<Provenance>> eventFlags;
+    private final EnumSet<DriftReason> flags;
+    private final Map<Event, EnumSet<DriftReason>> eventFlags;
 
-    public TickEvents(long turn, List<Event> events, EnumSet<Provenance> flags) {
+    public TickEvents(long turn, List<Event> events, EnumSet<DriftReason> flags) {
         this(turn, events, flags, null);
     }
 
-    public TickEvents(long turn, List<Event> events, EnumSet<Provenance> flags,
-            Map<Event, EnumSet<Provenance>> eventFlags) {
+    public TickEvents(long turn, List<Event> events, EnumSet<DriftReason> flags,
+            Map<Event, EnumSet<DriftReason>> eventFlags) {
         this.turn = turn;
         this.events = new ArrayList<Event>(events);
 
-        EnumSet<Provenance> tickFlags = flags == null
-                ? EnumSet.noneOf(Provenance.class) : EnumSet.copyOf(flags);
+        EnumSet<DriftReason> tickFlags = flags == null
+                ? EnumSet.noneOf(DriftReason.class) : EnumSet.copyOf(flags);
 
-        this.eventFlags = new IdentityHashMap<Event, EnumSet<Provenance>>();
+        this.eventFlags = new IdentityHashMap<Event, EnumSet<DriftReason>>();
         if (eventFlags != null) {
-            for (Map.Entry<Event, EnumSet<Provenance>> e : eventFlags.entrySet()) {
+            for (Map.Entry<Event, EnumSet<DriftReason>> e : eventFlags.entrySet()) {
                 if (e.getValue() != null && !e.getValue().isEmpty()) {
-                    EnumSet<Provenance> copy = EnumSet.copyOf(e.getValue());
+                    EnumSet<DriftReason> copy = EnumSet.copyOf(e.getValue());
                     this.eventFlags.put(e.getKey(), copy);
                     // Fold event-level flags into the tick-level union.
                     tickFlags.addAll(copy);
@@ -70,16 +70,16 @@ public final class TickEvents {
         return Collections.unmodifiableList(events);
     }
 
-    public EnumSet<Provenance> getFlags() {
+    public EnumSet<DriftReason> getFlags() {
         return flags;
     }
 
-    public boolean hasFlag(Provenance flag) {
+    public boolean hasFlag(DriftReason flag) {
         return flags.contains(flag);
     }
 
     /** Add a tick-level provenance flag after construction. */
-    public void addTickFlag(Provenance flag) {
+    public void addTickFlag(DriftReason flag) {
         flags.add(flag);
     }
 
@@ -87,14 +87,14 @@ public final class TickEvents {
      * The event-level provenance flags attached to {@code event}, or an empty
      * set if it carries none. The returned set is a copy and safe to mutate.
      */
-    public EnumSet<Provenance> flagsFor(Event event) {
-        EnumSet<Provenance> f = eventFlags.get(event);
-        return f == null ? EnumSet.noneOf(Provenance.class) : EnumSet.copyOf(f);
+    public EnumSet<DriftReason> flagsFor(Event event) {
+        EnumSet<DriftReason> f = eventFlags.get(event);
+        return f == null ? EnumSet.noneOf(DriftReason.class) : EnumSet.copyOf(f);
     }
 
     /** Whether {@code event} carries the given event-level provenance flag. */
-    public boolean hasFlag(Event event, Provenance flag) {
-        EnumSet<Provenance> f = eventFlags.get(event);
+    public boolean hasFlag(Event event, DriftReason flag) {
+        EnumSet<DriftReason> f = eventFlags.get(event);
         return f != null && f.contains(flag);
     }
 }

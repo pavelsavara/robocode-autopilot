@@ -17,6 +17,9 @@ subprojects {
     }
 
     repositories {
+        // robocode 1.11.0 is not yet on Maven Central; resolve it from the local
+        // Maven repository (installed from the c:\robocode 1.11.0 build).
+        mavenLocal()
         mavenCentral()
     }
 

@@ -38,13 +38,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-import net.sf.robocode.dejavu.model.Provenance;
+import net.sf.robocode.dejavu.model.DriftReason;
 
 /**
  * Reconstructs the {@link Event}s delivered to the hero on a given turn by
@@ -133,6 +131,7 @@ public final class EventReconstructor {
         bulletLastPos.clear();
         lastFire = null;
         lastEnergyBreakdown = null;
+        energyLedger.resetRoundInactivity();
     }
 
     /**
@@ -166,11 +165,11 @@ public final class EventReconstructor {
      */
     public TickEvents reconstruct(ITurnSnapshot prev, ITurnSnapshot cur) {
         List<Event> events = new ArrayList<Event>();
-        EnumSet<Provenance> flags = EnumSet.noneOf(Provenance.class);
+        EnumSet<DriftReason> flags = EnumSet.noneOf(DriftReason.class);
         // Per-event provenance: targeted flags attached to a single reconstructed
         // event (keyed by event identity), threaded to the builders that raise
         // them and handed to the TickEvents for the harness to consult per event.
-        Map<Event, EnumSet<Provenance>> eventFlags = new IdentityHashMap<Event, EnumSet<Provenance>>();
+        Map<Event, EnumSet<DriftReason>> eventFlags = new IdentityHashMap<Event, EnumSet<DriftReason>>();
 
         // Fire: a new hero-owned FIRED bullet born this turn. Not itself an Event,
         // but its power feeds the bullet-hit events and the energy ledger.
@@ -181,7 +180,7 @@ public final class EventReconstructor {
 
         // Collisions: HitWallEvent (hero rammed a wall) and HitRobotEvent (hero
         // and opponent boundingboxes touched, possibly with the hero at fault).
-        buildWallEvent(cur, events, eventFlags);
+        buildWallEvent(prev, cur, events);
         buildRobotCollisionEvents(prev, cur, events, eventFlags);
 
         // Energy ledger: decompose the hero's energy change into its components
@@ -274,7 +273,7 @@ public final class EventReconstructor {
      * produce.
      */
     private ScannedRobotEvent buildScanEvent(ITurnSnapshot cur,
-            Map<Event, EnumSet<Provenance>> eventFlags) {
+            Map<Event, EnumSet<DriftReason>> eventFlags) {
         IRobotSnapshot[] robots = cur.getRobots();
         IRobotSnapshot me = robots[heroIndex];
         IRobotSnapshot opponent = robots[1 - heroIndex];
@@ -316,7 +315,7 @@ public final class EventReconstructor {
         // the engine actually delivered a scan this turn is not snapshot-pure
         // (a manual scan() leaves no trace); flag the presence as uncertain.
         if (Math.abs(scanRadians) <= MOVE_EPSILON) {
-            addEventFlag(eventFlags, event, Provenance.SCAN_UNCERTAIN);
+            addEventFlag(eventFlags, event, DriftReason.SCAN_UNCERTAIN);
         }
         return event;
     }
@@ -363,21 +362,7 @@ public final class EventReconstructor {
             return null;
         }
 
-        Set<Integer> priorIds = new HashSet<Integer>();
-        for (IBulletSnapshot bullet : prev.getBullets()) {
-            if (bullet.getOwnerIndex() == me.getRobotIndex()) {
-                priorIds.add(bullet.getBulletId());
-            }
-        }
-
-        IBulletSnapshot born = null;
-        for (IBulletSnapshot bullet : cur.getBullets()) {
-            if (bullet.getOwnerIndex() == me.getRobotIndex()
-                    && !priorIds.contains(bullet.getBulletId())) {
-                born = bullet;
-                break;
-            }
-        }
+        IBulletSnapshot born = FireDetector.bornHeroBullet(prev, cur, me.getRobotIndex());
         if (born == null) {
             return null;
         }
@@ -401,7 +386,7 @@ public final class EventReconstructor {
         Bullet bullet = new Bullet(
                 born.getHeading(), born.getX(), born.getY(), power,
                 me.getName(), null, true, born.getBulletId());
-        return new FireDetection(cur.getTurn(), power, bullet, EnumSet.noneOf(Provenance.class));
+        return new FireDetection(cur.getTurn(), power, bullet, EnumSet.noneOf(DriftReason.class));
     }
 
     /**
@@ -423,7 +408,7 @@ public final class EventReconstructor {
      * paired with the nearest opposing {@code HIT_BULLET} bullet.
      */
     private void buildBulletEvents(ITurnSnapshot cur, List<Event> events,
-            Map<Event, EnumSet<Provenance>> eventFlags) {
+            Map<Event, EnumSet<DriftReason>> eventFlags) {
         IRobotSnapshot[] robots = cur.getRobots();
         IRobotSnapshot me = robots[heroIndex];
         IBulletSnapshot[] bullets = cur.getBullets();
@@ -499,7 +484,7 @@ public final class EventReconstructor {
         // energy ordering is RNG-dependent, so flag each colliding BulletHitEvent.
         if (heroHitsOnOpponent.size() >= 2) {
             for (Event hit : heroHitsOnOpponent) {
-                addEventFlag(eventFlags, hit, Provenance.DOUBLE_HIT);
+                addEventFlag(eventFlags, hit, DriftReason.DOUBLE_HIT);
             }
         }
 
@@ -509,7 +494,7 @@ public final class EventReconstructor {
         // hit on the opponent.
         if (opponentShooterBonusThisTurn) {
             for (Event hit : heroHitsOnOpponent) {
-                addEventFlag(eventFlags, hit, Provenance.SHOOTER_BONUS_UNRESOLVED);
+                addEventFlag(eventFlags, hit, DriftReason.SHOOTER_BONUS_UNRESOLVED);
             }
         }
 
@@ -536,11 +521,11 @@ public final class EventReconstructor {
     }
 
     /** Attach an event-level provenance flag to {@code event}. */
-    private static void addEventFlag(Map<Event, EnumSet<Provenance>> eventFlags,
-            Event event, Provenance flag) {
-        EnumSet<Provenance> set = eventFlags.get(event);
+    private static void addEventFlag(Map<Event, EnumSet<DriftReason>> eventFlags,
+            Event event, DriftReason flag) {
+        EnumSet<DriftReason> set = eventFlags.get(event);
         if (set == null) {
-            set = EnumSet.noneOf(Provenance.class);
+            set = EnumSet.noneOf(DriftReason.class);
             eventFlags.put(event, set);
         }
         set.add(flag);
@@ -704,8 +689,7 @@ public final class EventReconstructor {
 
     /** A bullet identity key stable within a round across owners. */
     private static long bulletKey(IBulletSnapshot bullet) {
-        // Pack owner in the high word and the full (possibly negative, after
-        // duplicate-id canonicalization) bullet id in the low word, so the key
+        // Pack owner in the high word and the bullet id in the low word, so the key
         // stays collision-free for any int id.
         return (((long) bullet.getOwnerIndex()) << 32) | (bullet.getBulletId() & 0xFFFFFFFFL);
     }
@@ -775,8 +759,6 @@ public final class EventReconstructor {
 
     /** Wall-clamp inset: half the robot width/height. */
     private static final double WALL_OFFSET = 18.0;
-    /** Tolerance for recognising a post-clamp coordinate sitting on a wall. */
-    private static final double WALL_TOLERANCE = 1e-3;
     /** Minimum per-axis displacement that counts as "moved into" a wall. */
     private static final double MOVE_EPSILON = 1e-6;
 
@@ -785,16 +767,16 @@ public final class EventReconstructor {
      * engine sets {@code RobotState.HIT_WALL} on exactly the ticks it adds the
      * event, so the snapshot state is a faithful gate.
      * <p>
-     * The wall cannot be read from the clamped position alone: a robot parked on
-     * one boundary (clamped on an earlier turn) can ram a different wall this
-     * turn while still sitting on the first. The violated wall is therefore the
-     * one the robot both ended against and <em>moved into</em> this turn, where
-     * the movement vector is the reconstructed pre-collision velocity projected
-     * along the body heading. Y takes precedence over X at the corners, matching
-     * {@code checkWallCollision}'s {@code if (y...) else if} ordering.
+     * The engine's {@code HitWallEvent} bearing depends only on which wall was
+     * struck and the body heading ({@code RobotPeer.checkWallCollision}): the
+     * struck wall's outward direction less the body heading. A wall-struck robot
+     * is clamped exactly against the boundary it hit, so the struck wall is
+     * recovered from the post-physics position alone &mdash; X first, then Y
+     * overwrites at a corner, matching the engine's {@code if (x...) ... if (y...)}
+     * ordering. No pre-collision velocity estimate is involved, so the bearing is
+     * exact, not best-effort, and carries no uncertainty flag.
      */
-    private void buildWallEvent(ITurnSnapshot cur, List<Event> events,
-            Map<Event, EnumSet<Provenance>> eventFlags) {
+    private void buildWallEvent(ITurnSnapshot prev, ITurnSnapshot cur, List<Event> events) {
         if (heroDead) {
             return;
         }
@@ -803,71 +785,116 @@ public final class EventReconstructor {
             return;
         }
 
-        double bodyHeading = me.getBodyHeading();
-        double minX = WALL_OFFSET;
-        double maxX = battlefieldWidth - WALL_OFFSET;
-        double minY = WALL_OFFSET;
-        double maxY = battlefieldHeight - WALL_OFFSET;
-
-        double velPre = Physics.preCollisionVelocity(prevHeroVelocity);
-        double movedX = velPre * Math.sin(bodyHeading);
-        double movedY = velPre * Math.cos(bodyHeading);
-
-        double angle = Double.NaN;
-        if (Math.abs(me.getX() - minX) <= WALL_TOLERANCE && movedX < -MOVE_EPSILON) {
-            angle = Geometry.normalRelativeAngle(3 * Math.PI / 2 - bodyHeading);
-        } else if (Math.abs(me.getX() - maxX) <= WALL_TOLERANCE && movedX > MOVE_EPSILON) {
-            angle = Geometry.normalRelativeAngle(Math.PI / 2 - bodyHeading);
-        }
-        // Y takes precedence at corners (matches checkWallCollision ordering).
-        if (Math.abs(me.getY() - minY) <= WALL_TOLERANCE && movedY < -MOVE_EPSILON) {
-            angle = Geometry.normalRelativeAngle(Math.PI - bodyHeading);
-        } else if (Math.abs(me.getY() - maxY) <= WALL_TOLERANCE && movedY > MOVE_EPSILON) {
-            angle = Geometry.normalRelativeAngle(-bodyHeading);
-        }
-
-        boolean bearingUnresolved = Double.isNaN(angle);
-        if (bearingUnresolved) {
-            // The movement direction could not be recovered (the pre-collision
-            // velocity resolved to ~0). RobotState.HIT_WALL still guarantees a
-            // wall hit occurred, so rather than drop the event we recover the
-            // wall the robot is sitting on by position alone (Y precedence at
-            // corners, matching the engine) and emit a best-effort bearing,
-            // flagging the bearing as uncertain.
-            angle = bestEffortWallBearing(me, bodyHeading, minX, maxX, minY, maxY);
-            if (Double.isNaN(angle)) {
-                // Not resting on any boundary within tolerance: nothing reliable
-                // to emit. This should not occur for a genuine HIT_WALL tick.
-                return;
-            }
+        double angle = wallBearing(prev, cur);
+        if (Double.isNaN(angle)) {
+            // The reconstructed pre-clamp position did not cross any boundary.
+            // This cannot occur for a genuine HIT_WALL tick (the engine reaches
+            // this state only by overrunning a wall), so emit nothing rather
+            // than guess.
+            return;
         }
 
         HitWallEvent event = new HitWallEvent(angle);
         HiddenAccess.setEventTime(event, cur.getTurn());
         events.add(event);
-        if (bearingUnresolved) {
-            addEventFlag(eventFlags, event, Provenance.WALL_BEARING_UNRESOLVED);
-        }
     }
 
     /**
-     * Best-effort wall bearing when the movement direction is unknown: pick the
-     * boundary the robot is resting against by position alone, with Y taking
-     * precedence at corners (matching {@code checkWallCollision} ordering), and
-     * return the bearing relative to the body heading. Returns {@code NaN} when
-     * the robot is not within tolerance of any boundary.
+     * The engine wall bearing for a {@code HIT_WALL} tick, recovered from the
+     * original snapshot fields on both sides. {@code checkWallCollision} tests the
+     * position the robot reached after moving this turn (previous position plus
+     * this turn's translational velocity along the post-turn body heading) before
+     * clamping it back inside the field, and the bearing is the struck wall's
+     * outward direction less the body heading, with X tested first and a Y
+     * violation overwriting at a corner.
+     * <p>
+     * The snapshot velocity is zeroed by the collision, so the pre-clamp position
+     * is rebuilt two ways, both snapshot-pure:
+     * <ol>
+     * <li>Primary: advance the previous turn's velocity one acceleration step
+     * ({@link Physics#preCollisionVelocity}) and project it along the body heading.
+     * This recovers the case where the robot was already pressed against the wall
+     * and kept driving into it (the clamped position does not move, but the robot
+     * still overran the boundary).</li>
+     * <li>Fallback (when the estimate crosses no boundary because the robot was
+     * reversing or braking into the wall, a turn whose realised velocity sign the
+     * estimate cannot recover): the impact clamps the robot exactly onto the wall
+     * it overran, so the struck wall is the boundary the {@code cur} position sits
+     * on. The {@code prev}-was-inside test is preferred so a wall merely driven
+     * along is not mistaken for the struck one; only if that is inconclusive is the
+     * clamped {@code cur} position used directly (it is always pinned to the wall
+     * the engine fired for).</li>
+     * </ol>
+     * Returns {@code NaN} only when neither method finds a struck boundary.
      */
-    private static double bestEffortWallBearing(IRobotSnapshot me, double bodyHeading,
-            double minX, double maxX, double minY, double maxY) {
+    private double wallBearing(ITurnSnapshot prev, ITurnSnapshot cur) {
+        IRobotSnapshot me = cur.getRobots()[heroIndex];
+        IRobotSnapshot before = prev.getRobots()[heroIndex];
+
+        double bodyHeading = me.getBodyHeading();
+
+        // Mirror the engine's integer field boundaries (checkWallCollision).
+        int minX = (int) WALL_OFFSET;
+        int maxX = (int) battlefieldWidth - (int) WALL_OFFSET;
+        int minY = (int) WALL_OFFSET;
+        int maxY = (int) battlefieldHeight - (int) WALL_OFFSET;
+
+        double beforeX = before.getX();
+        double beforeY = before.getY();
+
+        // Primary: reconstruct the pre-clamp position from the previous velocity
+        // advanced one acceleration step, exactly as the robot-collision geometry
+        // does. X first, then Y overwrites at a corner (engine branch order).
+        double velocity = Physics.preCollisionVelocity(before.getVelocity());
+        double preX = beforeX + velocity * Math.sin(bodyHeading);
+        double preY = beforeY + velocity * Math.cos(bodyHeading);
         double angle = Double.NaN;
-        if (Math.abs(me.getX() - minX) <= WALL_TOLERANCE) {
+        if (preX < minX) {
             angle = Geometry.normalRelativeAngle(3 * Math.PI / 2 - bodyHeading);
-        } else if (Math.abs(me.getX() - maxX) <= WALL_TOLERANCE) {
+        } else if (preX > maxX) {
             angle = Geometry.normalRelativeAngle(Math.PI / 2 - bodyHeading);
         }
-        if (Math.abs(me.getY() - minY) <= WALL_TOLERANCE) {
+        if (preY < minY) {
             angle = Geometry.normalRelativeAngle(Math.PI - bodyHeading);
-        } else if (Math.abs(me.getY() - maxY) <= WALL_TOLERANCE) {
+        } else if (preY > maxY) {
+            angle = Geometry.normalRelativeAngle(-bodyHeading);
+        }
+        if (!Double.isNaN(angle)) {
+            return angle;
+        }
+
+        // Fallback: the estimate under-shot (reversing/braking impact). The impact
+        // clamps the robot onto the wall it overran. Prefer a boundary reached from
+        // strictly inside (so a wall merely driven along is not mistaken for the
+        // struck one); fall back to the clamped cur position, which is always
+        // pinned to the struck wall. Same X-then-Y branch order.
+        double x = me.getX();
+        double y = me.getY();
+        if (x <= minX && beforeX > minX) {
+            angle = Geometry.normalRelativeAngle(3 * Math.PI / 2 - bodyHeading);
+        } else if (x >= maxX && beforeX < maxX) {
+            angle = Geometry.normalRelativeAngle(Math.PI / 2 - bodyHeading);
+        }
+        if (y <= minY && beforeY > minY) {
+            angle = Geometry.normalRelativeAngle(Math.PI - bodyHeading);
+        } else if (y >= maxY && beforeY < maxY) {
+            angle = Geometry.normalRelativeAngle(-bodyHeading);
+        }
+        if (!Double.isNaN(angle)) {
+            return angle;
+        }
+
+        // Last resort: re-ram of a wall the robot was already pinned against. The
+        // clamped cur position alone identifies the struck wall (X first, Y
+        // overwrites at a corner).
+        if (x <= minX) {
+            angle = Geometry.normalRelativeAngle(3 * Math.PI / 2 - bodyHeading);
+        } else if (x >= maxX) {
+            angle = Geometry.normalRelativeAngle(Math.PI / 2 - bodyHeading);
+        }
+        if (y <= minY) {
+            angle = Geometry.normalRelativeAngle(Math.PI - bodyHeading);
+        } else if (y >= maxY) {
             angle = Geometry.normalRelativeAngle(-bodyHeading);
         }
         return angle;
@@ -881,12 +908,8 @@ public final class EventReconstructor {
      * tick when the two robots ram each other simultaneously.
      */
     private void buildRobotCollisionEvents(ITurnSnapshot prev, ITurnSnapshot cur, List<Event> events,
-            Map<Event, EnumSet<Provenance>> eventFlags) {
-        // Use prevState (state hero entered the turn with), not heroDead which buildBulletEvents
-        // already raised when the hero dies this very turn; the death turn is still live and the
-        // dying hero reads out this turn's ram before its DeathEvent, so the at-fault death-tick
-        // ram (opponent's 0.6 charge) must still be credited.
-        if (prevState.isDead()) {
+            Map<Event, EnumSet<DriftReason>> eventFlags) {
+        if (heroDead) {
             return;
         }
         IRobotSnapshot me = cur.getRobots()[heroIndex];
@@ -929,7 +952,7 @@ public final class EventReconstructor {
             // position is unknown (it moved) or the hero's own pre-bounce position
             // was rebuilt from a non-zero, estimated pre-collision velocity.
             if (opponentMoved || Math.abs(velPre) > MOVE_EPSILON) {
-                addEventFlag(eventFlags, event, Provenance.ROBOT_BEARING_UNRESOLVED);
+                addEventFlag(eventFlags, event, DriftReason.ROBOT_BEARING_UNRESOLVED);
             }
         }
 
@@ -952,7 +975,7 @@ public final class EventReconstructor {
             // position rebuilt from its estimated pre-collision velocity; when
             // that velocity is non-zero the bearing is a best-effort estimate.
             if (opponentMoved || Math.abs(oppVelPre) > MOVE_EPSILON) {
-                addEventFlag(eventFlags, event, Provenance.ROBOT_BEARING_UNRESOLVED);
+                addEventFlag(eventFlags, event, DriftReason.ROBOT_BEARING_UNRESOLVED);
             }
         }
     }

@@ -7,7 +7,7 @@
  */
 package net.sf.robocode.dejavu.core;
 
-import net.sf.robocode.dejavu.model.Provenance;
+import net.sf.robocode.dejavu.model.DriftReason;
 import net.sf.robocode.dejavu.model.TickCommands;
 import robocode.Rules;
 import robocode.control.snapshot.IBulletSnapshot;
@@ -51,7 +51,7 @@ import java.util.EnumSet;
  * <ul>
  *   <li><i>Turn gap</i> &mdash; {@code cur.turn − prev.turn > 1}. The hero
  *       issued nothing for the lost tick(s); the lost commands are
- *       unrecoverable, so we surface {@link Provenance#SKIPPED_TURN_SUSPECTED}
+ *       unrecoverable, so we surface {@link DriftReason#SKIPPED_TURN_SUSPECTED}
  *       and replay a no-op tick (zero turns, zero move, no fire).</li>
  *   <li><i>Over-rate</i> &mdash; a single captured tick whose body-heading
  *       delta exceeds the velocity-dependent turn-rate cap, or whose velocity
@@ -84,13 +84,13 @@ public final class CommandReconstructor {
     public TickCommands reconstruct(ITurnSnapshot prev, ITurnSnapshot cur) {
         IRobotSnapshot p = prev.getRobots()[heroIndex];
         IRobotSnapshot c = cur.getRobots()[heroIndex];
-        EnumSet<Provenance> flags = EnumSet.noneOf(Provenance.class);
+        EnumSet<DriftReason> flags = EnumSet.noneOf(DriftReason.class);
 
         // Turn-gap skipped turn: one or more engine advances went unobserved. The
         // lost commands are unrecoverable (the robot issued nothing on the skipped
         // tick), so replay a flagged no-op tick (design §5/§9).
         if (cur.getTurn() - prev.getTurn() > 1) {
-            flags.add(Provenance.SKIPPED_TURN_SUSPECTED);
+            flags.add(DriftReason.SKIPPED_TURN_SUSPECTED);
             return new TickCommands(cur.getTurn(), 0, 0, 0, 0, false, 0, flags);
         }
 
@@ -135,7 +135,7 @@ public final class CommandReconstructor {
                         // A forced stop to ~0 (e.g. a wall hit) is physically legal.
                         && Math.abs(c.getVelocity()) > CAP_SLACK;
         if (bodyOverRate || velocityOverRate) {
-            flags.add(Provenance.SKIPPED_TURN_SUSPECTED);
+            flags.add(DriftReason.SKIPPED_TURN_SUSPECTED);
         }
 
         return new TickCommands(cur.getTurn(), turnBody, turnGun, turnRadar,
@@ -148,30 +148,10 @@ public final class CommandReconstructor {
      * fired bullet is already in flight ({@link BulletState#MOVING}); the
      * transient {@code FIRED} state is not exposed, so the fresh-id test is the
      * reliable cue. Its {@link IBulletSnapshot#getPower()} is the realized power.
+     * Detection is shared with the event and energy reconstructors via
+     * {@link FireDetector}.
      */
     private IBulletSnapshot findFreshHeroBullet(ITurnSnapshot prev, ITurnSnapshot cur) {
-        IBulletSnapshot[] curBullets = cur.getBullets();
-        if (curBullets == null) {
-            return null;
-        }
-        for (IBulletSnapshot b : curBullets) {
-            if (b.getOwnerIndex() == heroIndex && !hasBulletId(prev, b.getBulletId())) {
-                return b;
-            }
-        }
-        return null;
-    }
-
-    private boolean hasBulletId(ITurnSnapshot snapshot, int bulletId) {
-        IBulletSnapshot[] bullets = snapshot.getBullets();
-        if (bullets == null) {
-            return false;
-        }
-        for (IBulletSnapshot b : bullets) {
-            if (b.getBulletId() == bulletId) {
-                return true;
-            }
-        }
-        return false;
+        return FireDetector.bornHeroBullet(prev, cur, heroIndex);
     }
 }

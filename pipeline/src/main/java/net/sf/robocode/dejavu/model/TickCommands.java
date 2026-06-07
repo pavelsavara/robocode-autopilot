@@ -35,10 +35,10 @@ public final class TickCommands {
     private final double moveDistance;
     private final boolean fired;
     private final double firePower;
-    private final EnumSet<Provenance> flags;
+    private final EnumSet<DriftReason> flags;
 
     public TickCommands(long turn, double turnBody, double turnGun, double turnRadar,
-            double moveDistance, boolean fired, double firePower, EnumSet<Provenance> flags) {
+            double moveDistance, boolean fired, double firePower, EnumSet<DriftReason> flags) {
         this.turn = turn;
         this.turnBody = turnBody;
         this.turnGun = turnGun;
@@ -46,7 +46,7 @@ public final class TickCommands {
         this.moveDistance = moveDistance;
         this.fired = fired;
         this.firePower = firePower;
-        this.flags = flags == null ? EnumSet.noneOf(Provenance.class) : EnumSet.copyOf(flags);
+        this.flags = flags == null ? EnumSet.noneOf(DriftReason.class) : EnumSet.copyOf(flags);
     }
 
     public long getTurn() {
@@ -80,7 +80,7 @@ public final class TickCommands {
         return firePower;
     }
 
-    public EnumSet<Provenance> getFlags() {
+    public EnumSet<DriftReason> getFlags() {
         return flags;
     }
 }

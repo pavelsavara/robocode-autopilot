@@ -1,5 +1,5 @@
 [versions]
-robocode = "1.10.1"
+robocode = "1.11.0"
 junit = "5.11.0"
 
 [libraries]

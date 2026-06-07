@@ -217,8 +217,6 @@ def _sequence_features(g: pd.DataFrame, fire_x, fire_y, fire_bearing, mea, opp_x
     arr_gap = np.full(n, np.nan)
     pdelta = np.full(n, np.nan)
     prevbg = np.full(n, np.nan)        # lag-1 break GF in FIRE order (leaky; proxy/ref only)
-    prev2bg = np.full(n, np.nan)       # lag-2 break GF in FIRE order (leaky; ref only)
-    prev3bg = np.full(n, np.nan)       # lag-3 break GF in FIRE order (leaky; ref only)
     online_mean = np.full(n, np.nan)   # mean GF of all waves already broken (leakage-safe)
     # break GF of each wave (recorded-convention, at its own break) for last_broken lookups
     own_break_gf = g["_break_gf"].to_numpy()
@@ -227,10 +225,6 @@ def _sequence_features(g: pd.DataFrame, fire_x, fire_y, fire_bearing, mea, opp_x
             gap[i] = fire_tick[i] - fire_tick[i - 1]
             pdelta[i] = power[i] - power[i - 1]
             prevbg[i] = own_break_gf[i - 1]
-            if i >= 2:
-                prev2bg[i] = own_break_gf[i - 2]
-            if i >= 3:
-                prev3bg[i] = own_break_gf[i - 3]
             # developing GF of the immediately previous wave, if still in flight now
             if break_tick[i - 1] >= fire_tick[i]:
                 dev[i] = _gf_from(fire_x[i - 1], fire_y[i - 1], fire_bearing[i - 1],
@@ -259,8 +253,7 @@ def _sequence_features(g: pd.DataFrame, fire_x, fire_y, fire_bearing, mea, opp_x
     return {"developing_gf": dev, "last_broken_gf": lastb, "last_broken_hit": lbhit,
             "inter_fire_gap": gap, "fire_gap_jitter": jitter, "arrival_gap": arr_gap,
             "power_delta": pdelta, "own_break_gf": own_break_gf,
-            "prev_break_gf": prevbg, "prev2_break_gf": prev2bg,
-            "prev3_break_gf": prev3bg, "online_broken_mean": online_mean}
+            "prev_break_gf": prevbg, "online_broken_mean": online_mean}
 
 
 def load_offense(persp_dir: Path, val: Validation) -> Optional[pd.DataFrame]:
@@ -345,8 +338,6 @@ def load_offense(persp_dir: Path, val: Validation) -> Optional[pd.DataFrame]:
             "last_broken_hit": feats["last_broken_hit"],
             "own_break_gf": feats["own_break_gf"],
             "prev_break_gf": feats["prev_break_gf"],
-            "prev2_break_gf": feats["prev2_break_gf"],
-            "prev3_break_gf": feats["prev3_break_gf"],
             "online_broken_mean": feats["online_broken_mean"],
             "inter_fire_gap": feats["inter_fire_gap"],
             "arrival_gap": feats["arrival_gap"],
@@ -408,8 +399,6 @@ def load_defense(persp_dir: Path, val: Validation) -> Optional[pd.DataFrame]:
             "last_broken_hit": feats["last_broken_hit"],
             "own_break_gf": feats["own_break_gf"],
             "prev_break_gf": feats["prev_break_gf"],
-            "prev2_break_gf": feats["prev2_break_gf"],
-            "prev3_break_gf": feats["prev3_break_gf"],
             "online_broken_mean": feats["online_broken_mean"],
             "inter_fire_gap": feats["inter_fire_gap"],
             "fire_gap_jitter": feats["fire_gap_jitter"],
@@ -501,50 +490,22 @@ def wilson_ci(k: int, n: int, z: float = 1.96) -> tuple:
 GF_PRED_COLS = ("developing_gf", "online_broken_mean", "last_broken_gf")
 
 
-def _ols_r2(predictors: list, y: np.ndarray, min_n: int = 50) -> tuple:
-    """(r, R^2, n) of an OLS fit of ``y`` on the predictor columns plus an intercept."""
-    y = np.asarray(y, dtype=float)
-    cols = [np.asarray(c, dtype=float) for c in predictors]
-    m = np.isfinite(y)
-    for c in cols:
-        m &= np.isfinite(c)
-    n = int(m.sum())
-    if n < min_n:
-        return float("nan"), float("nan"), n
-    A = np.column_stack([np.ones(n)] + [c[m] for c in cols])
-    yy = y[m]
-    coef, *_ = np.linalg.lstsq(A, yy, rcond=None)
-    resid = yy - A @ coef
-    ss_res = float(np.sum(resid ** 2))
-    ss_tot = float(np.sum((yy - yy.mean()) ** 2))
-    r2 = (1.0 - ss_res / ss_tot) if ss_tot > 0 else float("nan")
-    r = math.sqrt(r2) if np.isfinite(r2) and r2 >= 0 else float("nan")
-    return r, r2, n
-
-
 def gf_predictability(df: Optional[pd.DataFrame]) -> dict:
     """Leakage-safe GF-aiming predictability against the continuous ``own_break_gf`` target.
 
     Returns the C8 leaky lag-1 autocorrelation (reference only), the faithfulness of
     ``developing_gf`` as a lag-1 proxy, and per-predictor (r, R^2, n) for each leakage-safe
     predictor in ``GF_PRED_COLS``."""
-    out = {"n": 0, "lag1_autocorr": (float("nan"), 0), "lag2_autocorr": (float("nan"), 0),
-           "lag3_autocorr": (float("nan"), 0), "proxy": (float("nan"), 0),
-           "combo": (float("nan"), float("nan"), 0), "preds": {}}
+    out = {"n": 0, "lag1_autocorr": (float("nan"), 0), "proxy": (float("nan"), 0), "preds": {}}
     if df is None or df.empty or "own_break_gf" not in df.columns:
         return out
     y = df["own_break_gf"].to_numpy()
     out["n"] = int(np.isfinite(y).sum())
-    for lag, col in ((1, "prev_break_gf"), (2, "prev2_break_gf"), (3, "prev3_break_gf")):
-        if col in df.columns:
-            out[f"lag{lag}_autocorr"] = pearson(df[col].to_numpy(), y)  # C8 decay (leaky ref)
-    if "developing_gf" in df.columns and "prev_break_gf" in df.columns:  # proxy faithfulness
-        out["proxy"] = pearson(df["developing_gf"].to_numpy(),
-                               df["prev_break_gf"].to_numpy())
-    # leakage-safe combined model: developing_gf (lag-1 proxy) + online_broken_mean (older)
-    if "developing_gf" in df.columns and "online_broken_mean" in df.columns:
-        out["combo"] = _ols_r2([df["developing_gf"].to_numpy(),
-                                df["online_broken_mean"].to_numpy()], y)
+    if "prev_break_gf" in df.columns:
+        out["lag1_autocorr"] = pearson(df["prev_break_gf"].to_numpy(), y)  # C8 (leaky ref)
+        if "developing_gf" in df.columns:                                  # proxy faithfulness
+            out["proxy"] = pearson(df["developing_gf"].to_numpy(),
+                                   df["prev_break_gf"].to_numpy())
     for pred in GF_PRED_COLS:
         if pred in df.columns:
             r, n = pearson(df[pred].to_numpy(), y)
@@ -638,75 +599,6 @@ def compute_extended(off: pd.DataFrame, dfn: pd.DataFrame) -> dict:
     return ext
 
 
-# --------------------------------------------------------------------------------------
-# Scenarios 2-8 re-scored on the continuous GF target
-# --------------------------------------------------------------------------------------
-
-def _gf_cond(df: pd.DataFrame, feat: str, lo_fn, hi_fn,
-             lo_lab: str, hi_lab: str) -> Optional[dict]:
-    """developing_gf -> own_break_gf predictability (and mean break GF) within a lo/hi split."""
-    if (df is None or df.empty or feat not in df.columns
-            or "developing_gf" not in df.columns or "own_break_gf" not in df.columns):
-        return None
-    f = df[feat].to_numpy()
-    d = df["developing_gf"].to_numpy()
-    y = df["own_break_gf"].to_numpy()
-    out: dict = {}
-    for lab, mask in ((lo_lab, lo_fn(f)), (hi_lab, hi_fn(f))):
-        sel = mask & np.isfinite(d) & np.isfinite(y)
-        n = int(sel.sum())
-        if n >= 50:
-            out[lab] = (float(np.corrcoef(d[sel], y[sel])[0, 1]), n, float(np.mean(y[sel])))
-        else:
-            out[lab] = (float("nan"), n, float("nan"))
-    return out
-
-
-def _gf_cond_quartile(df: pd.DataFrame, feat: str,
-                      lo_lab: str, hi_lab: str) -> Optional[dict]:
-    """Quartile-split variant of ``_gf_cond`` (low vs high feature quartile)."""
-    if (df is None or df.empty or feat not in df.columns
-            or "developing_gf" not in df.columns or "own_break_gf" not in df.columns):
-        return None
-    xf = df[feat].to_numpy()
-    xf = xf[np.isfinite(xf)]
-    if xf.size < 50:
-        return None
-    q1, q3 = np.quantile(xf, [0.25, 0.75])
-    return _gf_cond(df, feat, lambda v, _q=q1: v <= _q, lambda v, _q=q3: v >= _q,
-                    f"{lo_lab}(<={q1:.0f})", f"{hi_lab}(>={q3:.0f})")
-
-
-def gf_context(off: pd.DataFrame, dfn: pd.DataFrame) -> dict:
-    """Scenarios 2-8 against the continuous GF target: does each context modulate the
-    leakage-safe ``developing_gf`` -> break-GF predictability (or shift the mean break GF)?"""
-    g: dict = {"off": {}, "def": {}}
-    if off is not None and not off.empty:
-        g["off"]["dir_reversal"] = _gf_cond(off, "reversal_count",
-                                            lambda x: x <= 0.5, lambda x: x >= 2.0,
-                                            "0 flips", ">=2 flips")
-        g["off"]["post_hit"] = _gf_cond(off, "last_broken_hit",
-                                        lambda x: x < 0.5, lambda x: x >= 0.5,
-                                        "prev miss", "prev hit")
-        g["off"]["range_traj"] = _gf_cond(off, "adv_velocity",
-                                          lambda x: x < 0.0, lambda x: x > 0.0,
-                                          "opening", "closing")
-        g["off"]["wall_prox"] = _gf_cond_quartile(off, "opp_wall_dist", "cornered", "open")
-        g["off"]["zap_phase"] = _gf_cond(off, "zap_active",
-                                         lambda x: x < 0.5, lambda x: x >= 0.5,
-                                         "zap off", "zap on")
-    if dfn is not None and not dfn.empty:
-        g["def"]["post_hit"] = _gf_cond(dfn, "last_broken_hit",
-                                        lambda x: x < 0.5, lambda x: x >= 0.5,
-                                        "prev miss", "prev hit")
-        g["def"]["fire_rhythm"] = _gf_cond_quartile(dfn, "fire_gap_jitter",
-                                                    "regular", "irregular")
-        g["def"]["power_ladder"] = _gf_cond(dfn, "power_delta",
-                                            lambda x: x < 0.0, lambda x: x > 0.0,
-                                            "power down", "power up")
-    return g
-
-
 def heat_grid(df: pd.DataFrame, xcol: str, xedges: np.ndarray, ycol: str,
               yedges: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Hit-rate and count grids over (xcol x ycol). Cells with <20 events -> NaN rate."""
@@ -790,8 +682,6 @@ class OpponentResult:
     mi_def: dict = field(default_factory=dict)
     gf_off: dict = field(default_factory=dict)
     gf_def: dict = field(default_factory=dict)
-    gctx_off: dict = field(default_factory=dict)
-    gctx_def: dict = field(default_factory=dict)
     ext: dict = field(default_factory=dict)
     figure: Optional[Path] = None
 
@@ -1063,82 +953,6 @@ def build_report(run_dir: Path, results: list[OpponentResult], val: Validation,
              "original report missed by testing hit/miss instead of the GF.")
     L.append("")
 
-    # ---- Scenario 1: multi-lag GF aiming model ----
-    L.append("## Scenario 1: multi-lag GF aiming model")
-    L.append("")
-    L.append("Extends the lag-1 headline. `lag-1/2/3` are the fire-order break-GF "
-             "autocorrelations (leaky C8 reference); they show how fast the aiming signal "
-             "decays with wave distance. `dev-only R^2` is the leakage-safe single-predictor "
-             "fit (`developing_gf` -> break GF); `dev+online R^2` adds `online_broken_mean` to "
-             "test whether older landed feedback adds anything beyond the lag-1 proxy.")
-    L.append("")
-    L.append("| Opponent | side | N | lag-1 | lag-2 | lag-3 | dev-only R^2 | dev+online R^2 |")
-    L.append("|---|---|---|---|---|---|---|---|")
-    for r in results:
-        for side, gf in (("off", r.gf_off), ("def", r.gf_def)):
-            if not gf or not gf.get("n"):
-                continue
-            l1 = gf.get("lag1_autocorr", (float("nan"), 0))[0]
-            l2 = gf.get("lag2_autocorr", (float("nan"), 0))[0]
-            l3 = gf.get("lag3_autocorr", (float("nan"), 0))[0]
-            dev = gf.get("preds", {}).get("developing_gf", (float("nan"), float("nan"), 0))
-            combo = gf.get("combo", (float("nan"), float("nan"), 0))
-            L.append(f"| `{r.opponent}` | {side} | {gf['n']:,} | {_fmt(l1, 3)} | "
-                     f"{_fmt(l2, 3)} | {_fmt(l3, 3)} | {_fmt(dev[1], 3)} | "
-                     f"{_fmt(combo[1], 3)} |")
-    L.append("")
-    L.append("> The autocorrelation decays fast (lag-1 ~0.7 -> lag-2 a fraction of that -> "
-             "lag-3 near zero or negative): only the immediately preceding wave carries strong "
-             "aiming information, which is exactly why the in-flight `developing_gf` proxy works "
-             "and the ~3-fires-stale broken feedback does not. `dev+online R^2` barely improves "
-             "on `dev-only R^2` - the lag-1 proxy already captures the usable structure, so a "
-             "deeper AR(k) model buys little.")
-    L.append("")
-
-    # ---- Scenarios 2-8 re-scored on the GF target ----
-    gctx_off_scn = [("dir_reversal", "2. Direction-reversal cadence"),
-                    ("post_hit", "3. Post-hit adaptation"),
-                    ("range_traj", "4. Range trajectory"),
-                    ("wall_prox", "5. Wall-proximity / cornering"),
-                    ("zap_phase", "8. Inactivity-zap phase")]
-    gctx_def_scn = [("post_hit", "3. Post-hit adaptation"),
-                    ("fire_rhythm", "6. Incoming fire rhythm"),
-                    ("power_ladder", "7. Incoming bullet-power ladder")]
-
-    def _gc_cells(entry: Optional[dict]) -> tuple[str, str]:
-        if not entry:
-            return "n/a", "n/a"
-        cells = []
-        for lab, (rr, nn, gm) in entry.items():
-            cells.append(f"{lab}: r {_fmt(rr, 2)} (n={nn:,}), GF {_fmt(gm, 2)}")
-        while len(cells) < 2:
-            cells.append("n/a")
-        return cells[0], cells[1]
-
-    L.append("## Scenarios 2-8 conditioned on the GF target")
-    L.append("")
-    L.append("The same contexts as the hit/miss tables below, but scored against the "
-             "continuous break GF instead of the noisy outcome. Each context is split into two "
-             "subgroups; within each we report the leakage-safe `developing_gf` -> break-GF "
-             "predictability `r` (n) and the mean break GF. A context helps aiming if `r` rises "
-             "in one subgroup (aim is more predictable there) or the mean GF shifts (the "
-             "opponent dodges to a different place).")
-    L.append("")
-    L.append("| Opponent | side | Scenario | subgroup A | subgroup B |")
-    L.append("|---|---|---|---|---|")
-    for r in results:
-        for side, table, scn in (("off", r.gctx_off, gctx_off_scn),
-                                 ("def", r.gctx_def, gctx_def_scn)):
-            for key, name in scn:
-                a, b = _gc_cells(table.get(key))
-                L.append(f"| `{r.opponent}` | {side} | {name} | {a} | {b} |")
-    L.append("")
-    L.append("> Read across each row: similar `r` and mean GF in both subgroups means the "
-             "context adds nothing to aiming; a gap means it carries exploitable structure. "
-             "These mirror the hit/miss proposals below, which test the same axes against the "
-             "~10%-noise-floor outcome label.")
-    L.append("")
-
     # ---- Secondary: gun-heat phase (hit/miss, Wilson CI + lift) ----
     def _rate_ci(kn):
         k, n = kn
@@ -1284,12 +1098,9 @@ def build_report(run_dir: Path, results: list[OpponentResult], val: Validation,
     # ---- Further scenarios (static proposals) ----
     L.append("## Further scenarios to explore (other dimensions)")
     L.append("")
-    L.append("Ten more sequence framings on dimensions not exercised by S1-S5. Scenarios 1-8 "
-             "are now **computed above** (the multi-lag GF model and the GF-context tables, plus "
-             "the hit/miss tables); this list is retained as the catalogue of axes and channels. "
-             "`[existing]` = minable from the current CSVs (done above); `[synthetic]` = needs "
-             "new / interventional battles (9-10, still deferred). Each names a new axis and the "
-             "data channel that feeds it.")
+    L.append("Ten more sequence framings on dimensions not exercised by S1-S5. `[existing]` = "
+             "minable from the current CSVs now; `[synthetic]` = needs new / interventional "
+             "battles. Each names a new axis and the data channel that feeds it.")
     L.append("")
     L.append("1. **GF sign-sequence aiming model** `[existing]`. Predict the *next* break GF "
              "(sign or bin) from the last 2-3 break GFs in the round. Puts C8's lag-1 "
@@ -1421,8 +1232,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         res.def_marg_kn, res.def_cold_kn, res.def_hot_kn = (dmk, dmn), (dck, dcn), (dhk, dhn)
         res.gf_off = gf_predictability(off)
         res.gf_def = gf_predictability(dfn)
-        gc = gf_context(off, dfn)
-        res.gctx_off, res.gctx_def = gc["off"], gc["def"]
         if len(off):
             res.off_best_rate, res.off_best_share, res.off_best_label = best_cell(off)
         for f in list(SEQ_FEATURES) + list(BASE_FEATURES):
