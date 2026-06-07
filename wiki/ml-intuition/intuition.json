@@ -1,0 +1,193 @@
+{
+  "schema": "intuition-sidecar/1",
+  "run_dir": "pipeline/build/battle-csv-producer/1780763098676-1780763098676",
+  "seed": 1234567,
+  "opponents": [
+    "aaa.r.ScalarR",
+    "cz.zamboch.Autopilot",
+    "jk.mega.DrussGT",
+    "kc.mega.BeepBoop",
+    "rsalesc.mega.Knight",
+    "voidious.Diamond"
+  ],
+  "g1_scoreboard": [
+    {
+      "opponent": "aaa.r.ScalarR",
+      "n": 13787,
+      "floor_analytic": 0.099229,
+      "floor_engine": 0.005443,
+      "floor_n": 3114,
+      "hero_analytic": 0.075869,
+      "hero_engine": 0.07906,
+      "headon": 0.110757,
+      "best_static": 0.113803,
+      "best_static_gf": -0.042553,
+      "quant_bound": 1.0,
+      "hero_ci_lo": 0.071566,
+      "hero_ci_hi": 0.080408
+    },
+    {
+      "opponent": "cz.zamboch.Autopilot",
+      "n": 1619,
+      "floor_analytic": 0.366029,
+      "floor_engine": 0.047393,
+      "floor_n": 418,
+      "hero_analytic": 0.141445,
+      "hero_engine": 0.242125,
+      "headon": 0.18777,
+      "best_static": 0.192094,
+      "best_static_gf": -0.042553,
+      "quant_bound": 1.0,
+      "hero_ci_lo": 0.125318,
+      "hero_ci_hi": 0.15927
+    },
+    {
+      "opponent": "jk.mega.DrussGT",
+      "n": 11107,
+      "floor_analytic": 0.126234,
+      "floor_engine": 0.01312,
+      "floor_n": 2432,
+      "hero_analytic": 0.085892,
+      "hero_engine": 0.091114,
+      "headon": 0.127307,
+      "best_static": 0.127307,
+      "best_static_gf": -0.0,
+      "quant_bound": 1.0,
+      "hero_ci_lo": 0.080823,
+      "hero_ci_hi": 0.091247
+    },
+    {
+      "opponent": "kc.mega.BeepBoop",
+      "n": 17254,
+      "floor_analytic": 0.079574,
+      "floor_engine": 0.005056,
+      "floor_n": 1973,
+      "hero_analytic": 0.072505,
+      "hero_engine": 0.065028,
+      "headon": 0.095456,
+      "best_static": 0.107685,
+      "best_static_gf": 0.170213,
+      "quant_bound": 1.0,
+      "hero_ci_lo": 0.06873,
+      "hero_ci_hi": 0.07647
+    },
+    {
+      "opponent": "rsalesc.mega.Knight",
+      "n": 13624,
+      "floor_analytic": 0.090571,
+      "floor_engine": 0.006935,
+      "floor_n": 2153,
+      "hero_analytic": 0.08052,
+      "hero_engine": 0.104888,
+      "headon": 0.111127,
+      "best_static": 0.111935,
+      "best_static_gf": -0.042553,
+      "quant_bound": 1.0,
+      "hero_ci_lo": 0.076068,
+      "hero_ci_hi": 0.085208
+    },
+    {
+      "opponent": "voidious.Diamond",
+      "n": 9454,
+      "floor_analytic": 0.082858,
+      "floor_engine": 0.007433,
+      "floor_n": 2281,
+      "hero_analytic": 0.076899,
+      "hero_engine": 0.085149,
+      "headon": 0.107256,
+      "best_static": 0.10842,
+      "best_static_gf": 0.042553,
+      "quant_bound": 1.0,
+      "hero_ci_lo": 0.071698,
+      "hero_ci_hi": 0.082443
+    }
+  ],
+  "h1_fingerprints": [
+    {
+      "opponent": "aaa.r.ScalarR",
+      "n": 13787,
+      "mean_distance": 494.047418,
+      "gf_peak": -0.085106,
+      "gf_entropy_bits": 5.516506,
+      "hero_hit": 0.075869,
+      "hit_us": 0.115895,
+      "kl_adapt": 0.038477,
+      "typ_power": 0.25256
+    },
+    {
+      "opponent": "cz.zamboch.Autopilot",
+      "n": 1619,
+      "mean_distance": 431.288392,
+      "gf_peak": -0.0,
+      "gf_entropy_bits": 5.23834,
+      "hero_hit": 0.141445,
+      "hit_us": 0.060358,
+      "kl_adapt": 0.277138,
+      "typ_power": 1.637076
+    },
+    {
+      "opponent": "jk.mega.DrussGT",
+      "n": 11107,
+      "mean_distance": 533.336185,
+      "gf_peak": -0.0,
+      "gf_entropy_bits": 5.478998,
+      "hero_hit": 0.085892,
+      "hit_us": 0.083473,
+      "kl_adapt": 0.549807,
+      "typ_power": 0.357102
+    },
+    {
+      "opponent": "kc.mega.BeepBoop",
+      "n": 17254,
+      "mean_distance": 532.615274,
+      "gf_peak": -0.12766,
+      "gf_entropy_bits": 5.488992,
+      "hero_hit": 0.072505,
+      "hit_us": 0.100101,
+      "kl_adapt": 0.01876,
+      "typ_power": 0.202413
+    },
+    {
+      "opponent": "rsalesc.mega.Knight",
+      "n": 13624,
+      "mean_distance": 518.625847,
+      "gf_peak": -0.0,
+      "gf_entropy_bits": 5.477487,
+      "hero_hit": 0.08052,
+      "hit_us": 0.081976,
+      "kl_adapt": 0.036714,
+      "typ_power": 0.265993
+    },
+    {
+      "opponent": "voidious.Diamond",
+      "n": 9454,
+      "mean_distance": 542.237183,
+      "gf_peak": -0.0,
+      "gf_entropy_bits": 5.480652,
+      "hero_hit": 0.076899,
+      "hit_us": 0.097949,
+      "kl_adapt": 0.035261,
+      "typ_power": 0.360493
+    }
+  ],
+  "i1_readiness": [
+    {
+      "task": "gf_regression",
+      "label": "our_break_gf",
+      "label_budget_waves": 87768,
+      "ready": true
+    },
+    {
+      "task": "hit_no_hit",
+      "label": "canonical_analytic_hit",
+      "label_budget_waves": 87768,
+      "ready": true
+    },
+    {
+      "task": "movement_surf",
+      "label": "their_break_gf/their_hit_us",
+      "label_budget_waves": 55597,
+      "ready": true
+    }
+  ]
+}
