@@ -1,6 +1,6 @@
 # BattleLoopTest Drift Report
 
-Generated: 2026-06-05 17:28:02  
+Generated: 2026-06-08 09:35:35  
 Opponents: 55
 
 Drift is reported per validation layer and, where available, per feature/channel. `N/A` means the metric was undefined (no samples).
@@ -9,61 +9,61 @@ Drift is reported per validation layer and, where available, per feature/channel
 
 | Opponent | Seed | Rounds | Win | Score ratio | Hit rate |
 |---|---:|---:|---:|---:|---:|
-| kc.mega.BeepBoop vs kc.mega.BeepBoop | 1780672070255 | 50 | 64% (32/50) | 1.49 (3006/2021) | NaN% |
-| test.SittingDuck | 1780672561904 | 50 | 100% (50/50) | 9043.00 (9043/0) | NaN% |
-| test.Aggressive | 1780672572335 | 50 | 100% (50/50) | 11.82 (8050/681) | NaN% |
-| sample.Fire | 1780672577481 | 50 | 100% (50/50) | 17.65 (9017/511) | NaN% |
-| sample.Walls | 1780672586919 | 50 | 100% (50/50) | 24.42 (7667/314) | NaN% |
-| sample.Crazy | 1780672598388 | 50 | 100% (50/50) | 33.50 (8175/244) | NaN% |
-| kc.mega.BeepBoop | 1780672610618 | 50 | 0% (0/50) | 0.02 (123/7779) | NaN% |
-| aaa.r.ScalarR | 1780672627107 | 50 | 0% (0/50) | 0.05 (380/7620) | NaN% |
-| jk.mega.DrussGT | 1780672648866 | 50 | 0% (0/50) | 0.04 (263/7190) | NaN% |
-| voidious.Diamond | 1780672663700 | 50 | 0% (0/50) | 0.04 (306/7773) | NaN% |
-| rsalesc.mega.Knight | 1780672679643 | 50 | 0% (0/50) | 0.05 (384/7698) | NaN% |
-| rsalesc.roborio.Roborio | 1780672697665 | 50 | 2% (1/50) | 0.10 (786/7881) | NaN% |
-| lxx.Tomcat | 1780672713750 | 50 | 0% (0/50) | 0.05 (402/7862) | NaN% |
-| cb.fire.Firestarter | 1780672727603 | 50 | 0% (0/50) | 0.08 (638/7823) | NaN% |
-| xander.cat.XanderCat | 1780672743129 | 50 | 0% (0/50) | 0.07 (286/4028) | NaN% |
-| oog.mega.saguaro.Saguaro | 1780672777179 | 50 | 0% (0/50) | 0.06 (439/7956) | NaN% |
-| dsekercioglu.mega.Raven | 1780672807069 | 50 | 0% (0/50) | 0.04 (315/8011) | NaN% |
-| kc.serpent.WaveSerpent | 1780672817247 | 50 | 0% (0/50) | 0.07 (559/8039) | NaN% |
-| voidious.Dookious | 1780672833057 | 50 | 0% (0/50) | 0.07 (555/7988) | NaN% |
-| darkcanuck.Pris | 1780672845006 | 50 | 2% (1/50) | 0.09 (734/8107) | NaN% |
-| abc.Shadow | 1780672862311 | 50 | 0% (0/50) | 0.11 (885/8192) | NaN% |
-| dsekercioglu.mega.WhiteFang | 1780672869116 | 50 | 0% (0/50) | 0.05 (429/7916) | NaN% |
-| mn.Combat | 1780672879612 | 50 | 0% (0/50) | 0.07 (542/7739) | NaN% |
-| gh.GresSuffurd | 1780672896500 | 50 | 0% (0/50) | 0.08 (610/7693) | NaN% |
-| cs.Nene | 1780672905675 | 50 | 0% (0/50) | 0.05 (404/7963) | NaN% |
-| jk.melee.Neuromancer | 1780672921428 | 50 | 0% (0/50) | 0.05 (348/7583) | NaN% |
-| tjk.deBroglie | 1780672931797 | 50 | 0% (0/50) | 0.13 (1052/8092) | NaN% |
-| mue.Ascendant | 1780672941006 | 50 | 0% (0/50) | 0.06 (498/7853) | NaN% |
-| davidalves.Phoenix | 1780672949285 | 50 | 0% (0/50) | 0.06 (464/7985) | NaN% |
-| zyx.mega.YersiniaPestis | 1780672958847 | 50 | 0% (0/50) | 0.07 (598/8008) | NaN% |
-| darkcanuck.Holden | 1780672972521 | 50 | 0% (0/50) | 0.10 (798/8137) | NaN% |
-| Krabb.sliNk.Garm | 1780672988765 | 50 | 0% (0/50) | 0.06 (442/7743) | NaN% |
-| pez.rumble.CassiusClay | 1780673007377 | 50 | 0% (0/50) | 0.07 (555/7880) | NaN% |
-| jk.precise.Wintermute | 1780673017875 | 50 | 0% (0/50) | 0.06 (515/8138) | NaN% |
-| fromHell.BlackBox | 1780673029894 | 50 | 0% (0/50) | 0.07 (564/8182) | NaN% |
-| axeBots.SilverSurfer | 1780673039810 | 50 | 0% (0/50) | 0.10 (758/7878) | NaN% |
-| florent.XSeries.X2 | 1780673054433 | 50 | 0% (0/50) | 0.08 (599/7769) | NaN% |
-| ar.horizon.Horizon | 1780673077377 | 50 | 0% (0/50) | 0.09 (698/7869) | NaN% |
-| florent.test.Toad | 1780673089292 | 50 | 0% (0/50) | 0.06 (487/8123) | NaN% |
-| pulsar.PulsarMax | 1780673111230 | 50 | 0% (0/50) | 0.07 (519/7653) | NaN% |
-| sheldor.mini.Foilist | 1780673130097 | 50 | 2% (1/50) | 0.11 (848/7415) | NaN% |
-| cjm.chalk.Chalk | 1780673146373 | 50 | 0% (0/50) | 0.07 (571/7903) | NaN% |
-| cb.Domogled | 1780673183742 | 50 | 0% (0/50) | 0.08 (572/7608) | NaN% |
-| cs.s2.Seraphim | 1780673194674 | 50 | 0% (0/50) | 0.07 (551/7665) | NaN% |
-| ags.Midboss | 1780673204667 | 50 | 0% (0/50) | 0.08 (653/8070) | NaN% |
-| dft.Cardigan | 1780673214687 | 50 | 0% (0/50) | 0.07 (526/7918) | NaN% |
-| kc.serpent.Hydra | 1780673224043 | 50 | 0% (0/50) | 0.07 (529/8043) | NaN% |
-| pez.rumble.Ali | 1780673230145 | 50 | 0% (0/50) | 0.08 (630/7833) | NaN% |
-| davidalves.Firebird | 1780673235374 | 50 | 0% (0/50) | 0.08 (624/7852) | NaN% |
-| wcsv.Engineer.Engineer | 1780673241559 | 50 | 0% (0/50) | 0.08 (587/7793) | NaN% |
-| wcsv.PowerHouse.PowerHouse | 1780673246240 | 50 | 0% (0/50) | 0.08 (614/7958) | NaN% |
-| fromHell.CHCl3 | 1780673250468 | 50 | 0% (0/50) | 0.10 (804/8180) | NaN% |
-| dft.Cyanide | 1780673254563 | 50 | 0% (0/50) | 0.08 (635/7649) | NaN% |
-| jk.mini.CunobelinDC | 1780673262911 | 50 | 0% (0/50) | 0.08 (594/7824) | NaN% |
-| ags.rougedc.RougeDC | 1780673274104 | 50 | 2% (1/50) | 0.09 (733/7871) | NaN% |
+| kc.mega.BeepBoop vs kc.mega.BeepBoop | 1780903878567 | 5 | 60% (3/5) | 1.51 (307/203) | NaN% |
+| test.SittingDuck | 1780903912948 | 5 | 100% (5/5) | 900.00 (900/0) | 89.9% |
+| test.Aggressive | 1780903918618 | 5 | 100% (5/5) | 5.55 (827/149) | 75.0% |
+| sample.Fire | 1780903922979 | 5 | 100% (5/5) | 110.38 (883/8) | 92.6% |
+| sample.Walls | 1780903927668 | 5 | 100% (5/5) | 13.24 (675/51) | 28.3% |
+| sample.Crazy | 1780903932813 | 5 | 100% (5/5) | 27.82 (779/28) | 25.0% |
+| kc.mega.BeepBoop | 1780903937927 | 5 | 0% (0/5) | 0.05 (36/753) | 4.6% |
+| aaa.r.ScalarR | 1780903944174 | 5 | 0% (0/5) | 0.07 (52/743) | 7.9% |
+| jk.mega.DrussGT | 1780903952289 | 5 | 0% (0/5) | 0.09 (61/677) | 5.3% |
+| voidious.Diamond | 1780903958361 | 5 | 0% (0/5) | 0.13 (102/792) | 12.2% |
+| rsalesc.mega.Knight | 1780903964002 | 5 | 0% (0/5) | 0.10 (74/754) | 8.2% |
+| rsalesc.roborio.Roborio | 1780903970627 | 5 | 0% (0/5) | 0.13 (99/762) | 12.2% |
+| lxx.Tomcat | 1780903976900 | 5 | 0% (0/5) | 0.15 (119/800) | 12.9% |
+| cb.fire.Firestarter | 1780903981743 | 5 | 0% (0/5) | 0.05 (33/729) | 5.0% |
+| xander.cat.XanderCat | 1780903987448 | 5 | 0% (0/5) | 0.08 (30/372) | 0.8% |
+| oog.mega.saguaro.Saguaro | 1780903995316 | 5 | 0% (0/5) | 0.07 (53/787) | 5.2% |
+| dsekercioglu.mega.Raven | 1780904003677 | 5 | 0% (0/5) | 0.04 (28/754) | 8.1% |
+| kc.serpent.WaveSerpent | 1780904008716 | 5 | 0% (0/5) | 0.07 (61/823) | 14.9% |
+| voidious.Dookious | 1780904013615 | 5 | 0% (0/5) | 0.08 (66/823) | 16.1% |
+| darkcanuck.Pris | 1780904018329 | 5 | 0% (0/5) | 0.08 (67/799) | 12.0% |
+| abc.Shadow | 1780904023999 | 5 | 0% (0/5) | 0.23 (195/859) | 19.2% |
+| dsekercioglu.mega.WhiteFang | 1780904028160 | 5 | 0% (0/5) | 0.09 (71/781) | 9.6% |
+| mn.Combat | 1780904032569 | 5 | 0% (0/5) | 0.06 (48/759) | 7.6% |
+| gh.GresSuffurd | 1780904036094 | 5 | 0% (0/5) | 0.08 (65/778) | 10.1% |
+| cs.Nene | 1780904040392 | 5 | 0% (0/5) | 0.05 (42/781) | 8.2% |
+| jk.melee.Neuromancer | 1780904045452 | 5 | 0% (0/5) | 0.08 (61/730) | 8.5% |
+| tjk.deBroglie | 1780904051255 | 5 | 0% (0/5) | 0.13 (108/801) | 13.1% |
+| mue.Ascendant | 1780904055598 | 5 | 0% (0/5) | 0.10 (78/802) | 9.2% |
+| davidalves.Phoenix | 1780904059371 | 5 | 0% (0/5) | 0.08 (61/750) | 9.3% |
+| zyx.mega.YersiniaPestis | 1780904063295 | 5 | 0% (0/5) | 0.15 (122/793) | 13.4% |
+| darkcanuck.Holden | 1780904066588 | 5 | 0% (0/5) | 0.10 (77/792) | 12.8% |
+| Krabb.sliNk.Garm | 1780904069975 | 5 | 0% (0/5) | 0.04 (31/756) | 6.0% |
+| pez.rumble.CassiusClay | 1780904073088 | 5 | 0% (0/5) | 0.07 (53/751) | 5.8% |
+| jk.precise.Wintermute | 1780904075848 | 5 | 0% (0/5) | 0.05 (42/764) | 8.0% |
+| fromHell.BlackBox | 1780904078744 | 5 | 0% (0/5) | 0.12 (102/817) | 14.6% |
+| axeBots.SilverSurfer | 1780904081108 | 5 | 0% (0/5) | 0.09 (72/781) | 10.2% |
+| florent.XSeries.X2 | 1780904083752 | 5 | 0% (0/5) | 0.12 (95/799) | 10.2% |
+| ar.horizon.Horizon | 1780904086835 | 5 | 0% (0/5) | 0.10 (72/728) | 7.5% |
+| florent.test.Toad | 1780904090165 | 5 | 0% (0/5) | 0.07 (55/769) | 8.6% |
+| pulsar.PulsarMax | 1780904092812 | 5 | 0% (0/5) | 0.10 (79/754) | 9.5% |
+| sheldor.mini.Foilist | 1780904095859 | 5 | 0% (0/5) | 0.08 (56/746) | 6.3% |
+| cjm.chalk.Chalk | 1780904098657 | 5 | 0% (0/5) | 0.09 (67/766) | 11.1% |
+| cb.Domogled | 1780904101548 | 5 | 0% (0/5) | 0.13 (85/676) | 7.9% |
+| cs.s2.Seraphim | 1780904104683 | 5 | 0% (0/5) | 0.10 (81/792) | 9.7% |
+| ags.Midboss | 1780904107309 | 5 | 0% (0/5) | 0.07 (54/782) | 12.2% |
+| dft.Cardigan | 1780904109989 | 5 | 0% (0/5) | 0.21 (170/817) | 15.8% |
+| kc.serpent.Hydra | 1780904112195 | 5 | 0% (0/5) | 0.10 (81/798) | 13.2% |
+| pez.rumble.Ali | 1780904114809 | 5 | 0% (0/5) | 0.07 (57/768) | 8.0% |
+| davidalves.Firebird | 1780904117211 | 5 | 0% (0/5) | 0.11 (79/734) | 11.0% |
+| wcsv.Engineer.Engineer | 1780904120238 | 5 | 0% (0/5) | 0.13 (101/779) | 12.7% |
+| wcsv.PowerHouse.PowerHouse | 1780904122673 | 5 | 0% (0/5) | 0.15 (126/824) | 16.3% |
+| fromHell.CHCl3 | 1780904125066 | 5 | 0% (0/5) | 0.14 (117/808) | 12.2% |
+| dft.Cyanide | 1780904127498 | 5 | 0% (0/5) | 0.08 (61/779) | 9.8% |
+| jk.mini.CunobelinDC | 1780904129893 | 5 | 0% (0/5) | 0.12 (96/777) | 11.5% |
+| ags.rougedc.RougeDC | 1780904132710 | 5 | 0% (0/5) | 0.16 (127/808) | 15.4% |
 
 ## Layer 0 — IDebugProperty Fidelity
 
@@ -72,275 +72,124 @@ Observer-vs-live debug-property match, every feature, every tick.
 | Opponent | Checks | Mismatches | Unexpected | Waived scan-timing | Match rate |
 |---|---:|---:|---:|---:|---:|
 | kc.mega.BeepBoop vs kc.mega.BeepBoop | 0 | 0 | 0 | 0 | N/A |
-| test.SittingDuck | 11562656 | 0 | 0 | 0 | 100.000% |
-| test.Aggressive | 4919635 | 0 | 0 | 0 | 100.000% |
-| sample.Fire | 11041898 | 0 | 0 | 0 | 100.000% |
-| sample.Walls | 13181210 | 0 | 0 | 0 | 100.000% |
-| sample.Crazy | 14057316 | 0 | 0 | 0 | 100.000% |
-| kc.mega.BeepBoop | 9338427 | 0 | 0 | 0 | 100.000% |
-| aaa.r.ScalarR | 12887448 | 0 | 0 | 0 | 100.000% |
-| jk.mega.DrussGT | 13783490 | 0 | 0 | 0 | 100.000% |
-| voidious.Diamond | 10009244 | 0 | 0 | 0 | 100.000% |
-| rsalesc.mega.Knight | 9815512 | 0 | 0 | 0 | 100.000% |
-| rsalesc.roborio.Roborio | 9946174 | 0 | 0 | 0 | 100.000% |
-| lxx.Tomcat | 8172745 | 0 | 0 | 0 | 100.000% |
-| cb.fire.Firestarter | 10480183 | 0 | 0 | 0 | 100.000% |
-| xander.cat.XanderCat | 37192204 | 0 | 0 | 0 | 100.000% |
-| oog.mega.saguaro.Saguaro | 8691312 | 0 | 0 | 0 | 100.000% |
-| dsekercioglu.mega.Raven | 7413252 | 0 | 0 | 0 | 100.000% |
-| kc.serpent.WaveSerpent | 8927653 | 0 | 0 | 0 | 100.000% |
-| voidious.Dookious | 8132201 | 0 | 0 | 0 | 100.000% |
-| darkcanuck.Pris | 7205471 | 0 | 0 | 0 | 100.000% |
-| abc.Shadow | 5309605 | 0 | 0 | 0 | 100.000% |
-| dsekercioglu.mega.WhiteFang | 8275946 | 0 | 0 | 0 | 100.000% |
-| mn.Combat | 10432093 | 18584 | 18583 | 1 | 99.822% |
-| gh.GresSuffurd | 11830959 | 0 | 0 | 0 | 100.000% |
-| cs.Nene | 6910491 | 50 | 48 | 2 | 99.999% |
-| jk.melee.Neuromancer | 11993296 | 0 | 0 | 0 | 100.000% |
-| tjk.deBroglie | 5435885 | 0 | 0 | 0 | 100.000% |
-| mue.Ascendant | 6417145 | 0 | 0 | 0 | 100.000% |
-| davidalves.Phoenix | 6850270 | 0 | 0 | 0 | 100.000% |
-| zyx.mega.YersiniaPestis | 7925834 | 0 | 0 | 0 | 100.000% |
-| darkcanuck.Holden | 6652184 | 0 | 0 | 0 | 100.000% |
-| Krabb.sliNk.Garm | 11129769 | 323 | 321 | 2 | 99.997% |
-| pez.rumble.CassiusClay | 7138061 | 0 | 0 | 0 | 100.000% |
-| jk.precise.Wintermute | 6481804 | 1 | 0 | 1 | 100.000% |
-| fromHell.BlackBox | 6733643 | 0 | 0 | 0 | 100.000% |
-| axeBots.SilverSurfer | 6983438 | 272 | 271 | 1 | 99.996% |
-| florent.XSeries.X2 | 10399291 | 0 | 0 | 0 | 100.000% |
-| ar.horizon.Horizon | 8710044 | 0 | 0 | 0 | 100.000% |
-| florent.test.Toad | 7267393 | 19355 | 19353 | 2 | 99.734% |
-| pulsar.PulsarMax | 12590830 | 0 | 0 | 0 | 100.000% |
-| sheldor.mini.Foilist | 15473563 | 0 | 0 | 0 | 100.000% |
-| cjm.chalk.Chalk | 9880080 | 1640 | 1637 | 3 | 99.983% |
-| cb.Domogled | 11652452 | 0 | 0 | 0 | 100.000% |
-| cs.s2.Seraphim | 9929549 | 0 | 0 | 0 | 100.000% |
-| ags.Midboss | 7224952 | 0 | 0 | 0 | 100.000% |
-| dft.Cardigan | 7763840 | 0 | 0 | 0 | 100.000% |
-| kc.serpent.Hydra | 7924532 | 18 | 15 | 3 | 100.000% |
-| pez.rumble.Ali | 7575029 | 0 | 0 | 0 | 100.000% |
-| davidalves.Firebird | 8773849 | 0 | 0 | 0 | 100.000% |
-| wcsv.Engineer.Engineer | 8279222 | 0 | 0 | 0 | 100.000% |
-| wcsv.PowerHouse.PowerHouse | 6774411 | 0 | 0 | 0 | 100.000% |
-| fromHell.CHCl3 | 6942229 | 0 | 0 | 0 | 100.000% |
-| dft.Cyanide | 12113031 | 0 | 0 | 0 | 100.000% |
-| jk.mini.CunobelinDC | 12275949 | 0 | 0 | 0 | 100.000% |
-| ags.rougedc.RougeDC | 7242851 | 0 | 0 | 0 | 100.000% |
+| test.SittingDuck | 1532203 | 0 | 0 | 0 | 100.000% |
+| test.Aggressive | 461839 | 0 | 0 | 0 | 100.000% |
+| sample.Fire | 944567 | 0 | 0 | 0 | 100.000% |
+| sample.Walls | 1627173 | 0 | 0 | 0 | 100.000% |
+| sample.Crazy | 1597477 | 0 | 0 | 0 | 100.000% |
+| kc.mega.BeepBoop | 1186825 | 0 | 0 | 0 | 100.000% |
+| aaa.r.ScalarR | 1621177 | 0 | 0 | 0 | 100.000% |
+| jk.mega.DrussGT | 1924231 | 0 | 0 | 0 | 100.000% |
+| voidious.Diamond | 1349292 | 0 | 0 | 0 | 100.000% |
+| rsalesc.mega.Knight | 1398419 | 0 | 0 | 0 | 100.000% |
+| rsalesc.roborio.Roborio | 1653555 | 0 | 0 | 0 | 100.000% |
+| lxx.Tomcat | 691943 | 0 | 0 | 0 | 100.000% |
+| cb.fire.Firestarter | 1326173 | 0 | 0 | 0 | 100.000% |
+| xander.cat.XanderCat | 4437882 | 0 | 0 | 0 | 100.000% |
+| oog.mega.saguaro.Saguaro | 883132 | 0 | 0 | 0 | 100.000% |
+| dsekercioglu.mega.Raven | 1054431 | 0 | 0 | 0 | 100.000% |
+| kc.serpent.WaveSerpent | 853589 | 0 | 0 | 0 | 100.000% |
+| voidious.Dookious | 755642 | 0 | 0 | 0 | 100.000% |
+| darkcanuck.Pris | 1139404 | 0 | 0 | 0 | 100.000% |
+| abc.Shadow | 498947 | 0 | 0 | 0 | 100.000% |
+| dsekercioglu.mega.WhiteFang | 936442 | 0 | 0 | 0 | 100.000% |
+| mn.Combat | 1306944 | 0 | 0 | 0 | 100.000% |
+| gh.GresSuffurd | 1253260 | 0 | 0 | 0 | 100.000% |
+| cs.Nene | 784119 | 0 | 0 | 0 | 100.000% |
+| jk.melee.Neuromancer | 1803032 | 0 | 0 | 0 | 100.000% |
+| tjk.deBroglie | 860195 | 0 | 0 | 0 | 100.000% |
+| mue.Ascendant | 660783 | 0 | 0 | 0 | 100.000% |
+| davidalves.Phoenix | 1492092 | 0 | 0 | 0 | 100.000% |
+| zyx.mega.YersiniaPestis | 1096191 | 0 | 0 | 0 | 100.000% |
+| darkcanuck.Holden | 724606 | 0 | 0 | 0 | 100.000% |
+| Krabb.sliNk.Garm | 1235930 | 0 | 0 | 0 | 100.000% |
+| pez.rumble.CassiusClay | 795868 | 0 | 0 | 0 | 100.000% |
+| jk.precise.Wintermute | 1229250 | 0 | 0 | 0 | 100.000% |
+| fromHell.BlackBox | 787325 | 0 | 0 | 0 | 100.000% |
+| axeBots.SilverSurfer | 1004733 | 0 | 0 | 0 | 100.000% |
+| florent.XSeries.X2 | 1153939 | 0 | 0 | 0 | 100.000% |
+| ar.horizon.Horizon | 1688889 | 0 | 0 | 0 | 100.000% |
+| florent.test.Toad | 912766 | 0 | 0 | 0 | 100.000% |
+| pulsar.PulsarMax | 1668420 | 0 | 0 | 0 | 100.000% |
+| sheldor.mini.Foilist | 1387025 | 0 | 0 | 0 | 100.000% |
+| cjm.chalk.Chalk | 1614510 | 0 | 0 | 0 | 100.000% |
+| cb.Domogled | 2230403 | 0 | 0 | 0 | 100.000% |
+| cs.s2.Seraphim | 1011023 | 0 | 0 | 0 | 100.000% |
+| ags.Midboss | 783545 | 0 | 0 | 0 | 100.000% |
+| dft.Cardigan | 390105 | 0 | 0 | 0 | 100.000% |
+| kc.serpent.Hydra | 1025582 | 0 | 0 | 0 | 100.000% |
+| pez.rumble.Ali | 784535 | 0 | 0 | 0 | 100.000% |
+| davidalves.Firebird | 1494534 | 0 | 0 | 0 | 100.000% |
+| wcsv.Engineer.Engineer | 963738 | 0 | 0 | 0 | 100.000% |
+| wcsv.PowerHouse.PowerHouse | 815524 | 0 | 0 | 0 | 100.000% |
+| fromHell.CHCl3 | 699280 | 0 | 0 | 0 | 100.000% |
+| dft.Cyanide | 852305 | 0 | 0 | 0 | 100.000% |
+| jk.mini.CunobelinDC | 1520078 | 0 | 0 | 0 | 100.000% |
+| ags.rougedc.RougeDC | 953011 | 0 | 0 | 0 | 100.000% |
 
 ### Layer 0 — drift by feature
 
-| Opponent | Feature | Checks | Mismatches |
-|---|---|---:|---:|
-| mn.Combat | TICKS_SINCE_SCAN | 17245 | 2 |
-| mn.Combat | THEIR_HIT_US | 17245 | 27 |
-| mn.Combat | OUR_FIRE_DISTANCE | 17245 | 1 |
-| mn.Combat | OUR_FIRE_LATERAL_VELOCITY | 17245 | 1 |
-| mn.Combat | OUR_FIRE_ADVANCING_VELOCITY | 17245 | 1 |
-| mn.Combat | OUR_FIRE_BEARING_ABSOLUTE | 17245 | 1 |
-| mn.Combat | OUR_FIRE_X | 17245 | 1 |
-| mn.Combat | OUR_FIRE_Y | 17245 | 1 |
-| mn.Combat | OUR_FIRE_OPPONENT_X | 17245 | 1 |
-| mn.Combat | OUR_FIRE_OPPONENT_Y | 17245 | 1 |
-| mn.Combat | OUR_FIRE_POWER | 17245 | 1 |
-| mn.Combat | OUR_FIRE_TICK | 17245 | 1 |
-| mn.Combat | OUR_FIRE_BULLET_ID | 17245 | 1 |
-| mn.Combat | OUR_FIRE_AIM_GF | 17245 | 1 |
-| mn.Combat | OUR_FIRE_IS_REAL | 17245 | 1 |
-| mn.Combat | OUR_AIM_X | 17245 | 1 |
-| mn.Combat | OUR_AIM_Y | 17245 | 1 |
-| mn.Combat | OUR_AIM_OPPONENT_X | 17245 | 1 |
-| mn.Combat | OUR_AIM_OPPONENT_Y | 17245 | 1 |
-| mn.Combat | OUR_AIM_DISTANCE | 17245 | 1 |
-| mn.Combat | OUR_AIM_BEARING_ABSOLUTE | 17245 | 1 |
-| mn.Combat | OUR_BREAK_TICK | 17245 | 27 |
-| mn.Combat | OUR_BREAK_GF | 17245 | 27 |
-| mn.Combat | OUR_BREAK_BEARING_OFFSET | 17245 | 27 |
-| mn.Combat | OUR_BREAK_OPPONENT_X | 17245 | 26 |
-| mn.Combat | OUR_BREAK_OPPONENT_Y | 17245 | 26 |
-| mn.Combat | (wave-column drift) | — | 18403 |
-| cs.Nene | TICKS_SINCE_SCAN | 13306 | 2 |
-| cs.Nene | THEIR_AIM_X | 13306 | 12 |
-| cs.Nene | THEIR_AIM_Y | 13306 | 12 |
-| cs.Nene | THEIR_AIM_DISTANCE | 13306 | 12 |
-| cs.Nene | THEIR_AIM_BEARING | 13306 | 12 |
-| Krabb.sliNk.Garm | TICKS_SINCE_SCAN | 18881 | 3 |
-| Krabb.sliNk.Garm | PREV_SCAN_OPPONENT_ENERGY | 18881 | 1 |
-| Krabb.sliNk.Garm | OPPONENT_BULLET_ENERGY_GAIN | 18881 | 2 |
-| Krabb.sliNk.Garm | THEIR_GUN_HEAT | 18881 | 13 |
-| Krabb.sliNk.Garm | THEIR_ENERGY_DROP_ADJUSTED | 18881 | 1 |
-| Krabb.sliNk.Garm | THEIR_FIRE_TICK | 18881 | 14 |
-| Krabb.sliNk.Garm | THEIR_FIRE_X | 18881 | 14 |
-| Krabb.sliNk.Garm | THEIR_FIRE_Y | 18881 | 14 |
-| Krabb.sliNk.Garm | THEIR_BULLET_SPEED | 18881 | 14 |
-| Krabb.sliNk.Garm | THEIR_FIRE_BEARING | 18881 | 14 |
-| Krabb.sliNk.Garm | THEIR_FIRE_DISTANCE | 18881 | 14 |
-| Krabb.sliNk.Garm | THEIR_FIRE_OUR_X | 18881 | 14 |
-| Krabb.sliNk.Garm | THEIR_FIRE_OUR_Y | 18881 | 14 |
-| Krabb.sliNk.Garm | THEIR_AIM_X | 18881 | 14 |
-| Krabb.sliNk.Garm | THEIR_AIM_Y | 18881 | 14 |
-| Krabb.sliNk.Garm | THEIR_AIM_OUR_X | 18881 | 14 |
-| Krabb.sliNk.Garm | THEIR_AIM_OUR_Y | 18881 | 14 |
-| Krabb.sliNk.Garm | THEIR_AIM_DISTANCE | 18881 | 14 |
-| Krabb.sliNk.Garm | THEIR_AIM_BEARING | 18881 | 14 |
-| Krabb.sliNk.Garm | THEIR_BREAK_TICK | 18881 | 18 |
-| Krabb.sliNk.Garm | THEIR_BREAK_OUR_X | 18881 | 18 |
-| Krabb.sliNk.Garm | THEIR_BREAK_OUR_Y | 18881 | 18 |
-| Krabb.sliNk.Garm | THEIR_BREAK_GF | 18881 | 18 |
-| Krabb.sliNk.Garm | THEIR_BREAK_BEARING_OFFSET | 18881 | 18 |
-| Krabb.sliNk.Garm | THEIR_HIT_US | 18881 | 17 |
-| jk.precise.Wintermute | TICKS_SINCE_SCAN | 12433 | 1 |
-| axeBots.SilverSurfer | TICKS_SINCE_SCAN | 13640 | 2 |
-| axeBots.SilverSurfer | THEIR_FIRE_X | 13640 | 17 |
-| axeBots.SilverSurfer | THEIR_FIRE_Y | 13640 | 17 |
-| axeBots.SilverSurfer | THEIR_FIRE_BEARING | 13640 | 17 |
-| axeBots.SilverSurfer | THEIR_FIRE_DISTANCE | 13640 | 17 |
-| axeBots.SilverSurfer | THEIR_AIM_X | 13640 | 17 |
-| axeBots.SilverSurfer | THEIR_AIM_Y | 13640 | 17 |
-| axeBots.SilverSurfer | THEIR_AIM_OUR_X | 13640 | 17 |
-| axeBots.SilverSurfer | THEIR_AIM_OUR_Y | 13640 | 17 |
-| axeBots.SilverSurfer | THEIR_AIM_DISTANCE | 13640 | 17 |
-| axeBots.SilverSurfer | THEIR_AIM_BEARING | 13640 | 17 |
-| axeBots.SilverSurfer | THEIR_BREAK_TICK | 13640 | 20 |
-| axeBots.SilverSurfer | THEIR_BREAK_OUR_X | 13640 | 20 |
-| axeBots.SilverSurfer | THEIR_BREAK_OUR_Y | 13640 | 20 |
-| axeBots.SilverSurfer | THEIR_BREAK_GF | 13640 | 20 |
-| axeBots.SilverSurfer | THEIR_BREAK_BEARING_OFFSET | 13640 | 20 |
-| florent.test.Toad | TICKS_SINCE_SCAN | 15991 | 3 |
-| florent.test.Toad | PREV_SCAN_OPPONENT_ENERGY | 15991 | 1 |
-| florent.test.Toad | THEIR_GUN_HEAT | 15991 | 31 |
-| florent.test.Toad | THEIR_ENERGY_DROP_ADJUSTED | 15991 | 1 |
-| florent.test.Toad | THEIR_FIRE_TICK | 15991 | 32 |
-| florent.test.Toad | THEIR_FIRE_X | 15991 | 17 |
-| florent.test.Toad | THEIR_FIRE_Y | 15991 | 17 |
-| florent.test.Toad | THEIR_FIRE_BEARING | 15991 | 32 |
-| florent.test.Toad | THEIR_FIRE_DISTANCE | 15991 | 32 |
-| florent.test.Toad | THEIR_FIRE_OUR_X | 15991 | 32 |
-| florent.test.Toad | THEIR_FIRE_OUR_Y | 15991 | 32 |
-| florent.test.Toad | THEIR_AIM_X | 15991 | 32 |
-| florent.test.Toad | THEIR_AIM_Y | 15991 | 32 |
-| florent.test.Toad | THEIR_AIM_OUR_X | 15991 | 32 |
-| florent.test.Toad | THEIR_AIM_OUR_Y | 15991 | 32 |
-| florent.test.Toad | THEIR_AIM_DISTANCE | 15991 | 32 |
-| florent.test.Toad | THEIR_AIM_BEARING | 15991 | 32 |
-| florent.test.Toad | THEIR_BREAK_TICK | 15991 | 28 |
-| florent.test.Toad | THEIR_BREAK_OUR_X | 15991 | 28 |
-| florent.test.Toad | THEIR_BREAK_OUR_Y | 15991 | 28 |
-| florent.test.Toad | THEIR_BREAK_GF | 15991 | 28 |
-| florent.test.Toad | THEIR_BREAK_BEARING_OFFSET | 15991 | 28 |
-| florent.test.Toad | THEIR_HIT_US | 15991 | 28 |
-| florent.test.Toad | OUR_FIRE_DISTANCE | 15991 | 1 |
-| florent.test.Toad | OUR_FIRE_LATERAL_VELOCITY | 15991 | 1 |
-| florent.test.Toad | OUR_FIRE_ADVANCING_VELOCITY | 15991 | 1 |
-| florent.test.Toad | OUR_FIRE_BEARING_ABSOLUTE | 15991 | 1 |
-| florent.test.Toad | OUR_FIRE_X | 15991 | 1 |
-| florent.test.Toad | OUR_FIRE_Y | 15991 | 1 |
-| florent.test.Toad | OUR_FIRE_OPPONENT_X | 15991 | 1 |
-| florent.test.Toad | OUR_FIRE_OPPONENT_Y | 15991 | 1 |
-| florent.test.Toad | OUR_FIRE_POWER | 15991 | 1 |
-| florent.test.Toad | OUR_FIRE_TICK | 15991 | 1 |
-| florent.test.Toad | OUR_FIRE_BULLET_ID | 15991 | 1 |
-| florent.test.Toad | OUR_FIRE_AIM_GF | 15991 | 1 |
-| florent.test.Toad | OUR_FIRE_IS_REAL | 15991 | 1 |
-| florent.test.Toad | OUR_AIM_X | 15991 | 1 |
-| florent.test.Toad | OUR_AIM_Y | 15991 | 1 |
-| florent.test.Toad | OUR_AIM_OPPONENT_X | 15991 | 1 |
-| florent.test.Toad | OUR_AIM_OPPONENT_Y | 15991 | 1 |
-| florent.test.Toad | OUR_AIM_DISTANCE | 15991 | 1 |
-| florent.test.Toad | OUR_AIM_BEARING_ABSOLUTE | 15991 | 1 |
-| florent.test.Toad | OUR_BREAK_TICK | 15991 | 19 |
-| florent.test.Toad | OUR_BREAK_GF | 15991 | 19 |
-| florent.test.Toad | OUR_BREAK_BEARING_OFFSET | 15991 | 19 |
-| florent.test.Toad | OUR_BREAK_OPPONENT_X | 15991 | 19 |
-| florent.test.Toad | OUR_BREAK_OPPONENT_Y | 15991 | 19 |
-| florent.test.Toad | OUR_BREAK_HIT | 15991 | 17 |
-| florent.test.Toad | (wave-column drift) | — | 18634 |
-| cjm.chalk.Chalk | TICKS_SINCE_SCAN | 16211 | 6 |
-| cjm.chalk.Chalk | PREV_SCAN_OPPONENT_ENERGY | 16211 | 3 |
-| cjm.chalk.Chalk | THEIR_GUN_HEAT | 16211 | 50 |
-| cjm.chalk.Chalk | THEIR_ENERGY_DROP_ADJUSTED | 16211 | 3 |
-| cjm.chalk.Chalk | THEIR_FIRE_TICK | 16211 | 83 |
-| cjm.chalk.Chalk | THEIR_FIRE_X | 16211 | 70 |
-| cjm.chalk.Chalk | THEIR_FIRE_Y | 16211 | 70 |
-| cjm.chalk.Chalk | THEIR_FIRE_BEARING | 16211 | 83 |
-| cjm.chalk.Chalk | THEIR_FIRE_DISTANCE | 16211 | 83 |
-| cjm.chalk.Chalk | THEIR_FIRE_OUR_X | 16211 | 83 |
-| cjm.chalk.Chalk | THEIR_FIRE_OUR_Y | 16211 | 83 |
-| cjm.chalk.Chalk | THEIR_AIM_X | 16211 | 83 |
-| cjm.chalk.Chalk | THEIR_AIM_Y | 16211 | 83 |
-| cjm.chalk.Chalk | THEIR_AIM_OUR_X | 16211 | 83 |
-| cjm.chalk.Chalk | THEIR_AIM_OUR_Y | 16211 | 83 |
-| cjm.chalk.Chalk | THEIR_AIM_DISTANCE | 16211 | 83 |
-| cjm.chalk.Chalk | THEIR_AIM_BEARING | 16211 | 83 |
-| cjm.chalk.Chalk | THEIR_BREAK_TICK | 16211 | 89 |
-| cjm.chalk.Chalk | THEIR_BREAK_OUR_X | 16211 | 89 |
-| cjm.chalk.Chalk | THEIR_BREAK_OUR_Y | 16211 | 89 |
-| cjm.chalk.Chalk | THEIR_BREAK_GF | 16211 | 89 |
-| cjm.chalk.Chalk | THEIR_BREAK_BEARING_OFFSET | 16211 | 89 |
-| cjm.chalk.Chalk | THEIR_HIT_US | 16211 | 80 |
-| kc.serpent.Hydra | TICKS_SINCE_SCAN | 14223 | 1 |
-| kc.serpent.Hydra | OPPONENT_BULLET_ENERGY_GAIN | 14223 | 2 |
-| kc.serpent.Hydra | THEIR_ENERGY_DROP_ADJUSTED | 14223 | 1 |
-| kc.serpent.Hydra | THEIR_HIT_US | 14223 | 14 |
+All features matched exactly across all opponents.
 
 ## Layer 1 — Spatial Fidelity
 
 | Opponent | Checks | Mismatches | Match rate |
 |---|---:|---:|---:|
-| kc.mega.BeepBoop vs kc.mega.BeepBoop | 12999420 | 0 | 100.000% |
-| test.SittingDuck | 640794 | 0 | 100.000% |
-| test.Aggressive | 446101 | 0 | 100.000% |
-| sample.Fire | 629888 | 0 | 100.000% |
-| sample.Walls | 830642 | 0 | 100.000% |
-| sample.Crazy | 1007456 | 0 | 100.000% |
-| kc.mega.BeepBoop | 773490 | 0 | 100.000% |
-| aaa.r.ScalarR | 937004 | 0 | 100.000% |
-| jk.mega.DrussGT | 975840 | 0 | 100.000% |
-| voidious.Diamond | 776454 | 0 | 100.000% |
-| rsalesc.mega.Knight | 781147 | 0 | 100.000% |
-| rsalesc.roborio.Roborio | 784244 | 0 | 100.000% |
-| lxx.Tomcat | 684570 | 0 | 100.000% |
-| cb.fire.Firestarter | 792471 | 0 | 100.000% |
-| xander.cat.XanderCat | 2175196 | 0 | 100.000% |
-| oog.mega.saguaro.Saguaro | 714514 | 0 | 100.000% |
-| dsekercioglu.mega.Raven | 659680 | 0 | 100.000% |
-| kc.serpent.WaveSerpent | 722190 | 0 | 100.000% |
-| voidious.Dookious | 687268 | 0 | 100.000% |
-| darkcanuck.Pris | 708776 | 0 | 100.000% |
-| abc.Shadow | 564395 | 0 | 100.000% |
-| dsekercioglu.mega.WhiteFang | 707256 | 0 | 100.000% |
-| mn.Combat | 798988 | 0 | 100.000% |
-| gh.GresSuffurd | 881182 | 0 | 100.000% |
-| cs.Nene | 649230 | 0 | 100.000% |
-| jk.melee.Neuromancer | 834860 | 0 | 100.000% |
-| tjk.deBroglie | 613662 | 0 | 100.000% |
-| mue.Ascendant | 639008 | 0 | 100.000% |
-| davidalves.Phoenix | 646114 | 0 | 100.000% |
-| zyx.mega.YersiniaPestis | 705204 | 0 | 100.000% |
-| darkcanuck.Holden | 650902 | 0 | 100.000% |
-| Krabb.sliNk.Garm | 861156 | 0 | 100.000% |
-| pez.rumble.CassiusClay | 676856 | 0 | 100.000% |
-| jk.precise.Wintermute | 615980 | 0 | 100.000% |
-| fromHell.BlackBox | 688066 | 0 | 100.000% |
-| axeBots.SilverSurfer | 661922 | 0 | 100.000% |
-| florent.XSeries.X2 | 829312 | 0 | 100.000% |
-| ar.horizon.Horizon | 745978 | 0 | 100.000% |
-| florent.test.Toad | 751298 | 0 | 100.000% |
-| pulsar.PulsarMax | 935256 | 0 | 100.000% |
-| sheldor.mini.Foilist | 972458 | 0 | 100.000% |
-| cjm.chalk.Chalk | 760380 | 0 | 100.000% |
-| cb.Domogled | 859712 | 0 | 100.000% |
-| cs.s2.Seraphim | 807310 | 0 | 100.000% |
-| ags.Midboss | 670358 | 0 | 100.000% |
-| dft.Cardigan | 696920 | 0 | 100.000% |
-| kc.serpent.Hydra | 684038 | 0 | 100.000% |
-| pez.rumble.Ali | 694792 | 0 | 100.000% |
-| davidalves.Firebird | 751260 | 0 | 100.000% |
-| wcsv.Engineer.Engineer | 748030 | 0 | 100.000% |
-| wcsv.PowerHouse.PowerHouse | 652308 | 0 | 100.000% |
-| fromHell.CHCl3 | 670890 | 0 | 100.000% |
-| dft.Cyanide | 907801 | 0 | 100.000% |
-| jk.mini.CunobelinDC | 852758 | 0 | 100.000% |
-| ags.rougedc.RougeDC | 673854 | 0 | 100.000% |
+| kc.mega.BeepBoop vs kc.mega.BeepBoop | 1203707 | 0 | 100.000% |
+| test.SittingDuck | 69445 | 0 | 100.000% |
+| test.Aggressive | 41553 | 0 | 100.000% |
+| sample.Fire | 54739 | 0 | 100.000% |
+| sample.Walls | 98059 | 0 | 100.000% |
+| sample.Crazy | 106647 | 0 | 100.000% |
+| kc.mega.BeepBoop | 86355 | 0 | 100.000% |
+| aaa.r.ScalarR | 106343 | 0 | 100.000% |
+| jk.mega.DrussGT | 125799 | 0 | 100.000% |
+| voidious.Diamond | 94753 | 0 | 100.000% |
+| rsalesc.mega.Knight | 99617 | 0 | 100.000% |
+| rsalesc.roborio.Roborio | 110599 | 0 | 100.000% |
+| lxx.Tomcat | 68001 | 0 | 100.000% |
+| cb.fire.Firestarter | 94297 | 0 | 100.000% |
+| xander.cat.XanderCat | 220305 | 0 | 100.000% |
+| oog.mega.saguaro.Saguaro | 85861 | 0 | 100.000% |
+| dsekercioglu.mega.Raven | 82707 | 0 | 100.000% |
+| kc.serpent.WaveSerpent | 69939 | 0 | 100.000% |
+| voidious.Dookious | 66215 | 0 | 100.000% |
+| darkcanuck.Pris | 91789 | 0 | 100.000% |
+| abc.Shadow | 55670 | 0 | 100.000% |
+| dsekercioglu.mega.WhiteFang | 79401 | 0 | 100.000% |
+| mn.Combat | 96121 | 0 | 100.000% |
+| gh.GresSuffurd | 90041 | 0 | 100.000% |
+| cs.Nene | 71535 | 0 | 100.000% |
+| jk.melee.Neuromancer | 109649 | 0 | 100.000% |
+| tjk.deBroglie | 74043 | 0 | 100.000% |
+| mue.Ascendant | 65873 | 0 | 100.000% |
+| davidalves.Phoenix | 104253 | 0 | 100.000% |
+| zyx.mega.YersiniaPestis | 91295 | 0 | 100.000% |
+| darkcanuck.Holden | 66139 | 0 | 100.000% |
+| Krabb.sliNk.Garm | 90383 | 0 | 100.000% |
+| pez.rumble.CassiusClay | 73055 | 0 | 100.000% |
+| jk.precise.Wintermute | 91675 | 0 | 100.000% |
+| fromHell.BlackBox | 69939 | 0 | 100.000% |
+| axeBots.SilverSurfer | 84379 | 0 | 100.000% |
+| florent.XSeries.X2 | 89091 | 0 | 100.000% |
+| ar.horizon.Horizon | 109459 | 0 | 100.000% |
+| florent.test.Toad | 75829 | 0 | 100.000% |
+| pulsar.PulsarMax | 115007 | 0 | 100.000% |
+| sheldor.mini.Foilist | 95551 | 0 | 100.000% |
+| cjm.chalk.Chalk | 101897 | 0 | 100.000% |
+| cb.Domogled | 134045 | 0 | 100.000% |
+| cs.s2.Seraphim | 80085 | 0 | 100.000% |
+| ags.Midboss | 69749 | 0 | 100.000% |
+| dft.Cardigan | 45600 | 0 | 100.000% |
+| kc.serpent.Hydra | 81681 | 0 | 100.000% |
+| pez.rumble.Ali | 73511 | 0 | 100.000% |
+| davidalves.Firebird | 104671 | 0 | 100.000% |
+| wcsv.Engineer.Engineer | 81985 | 0 | 100.000% |
+| wcsv.PowerHouse.PowerHouse | 71535 | 0 | 100.000% |
+| fromHell.CHCl3 | 69255 | 0 | 100.000% |
+| dft.Cyanide | 72827 | 0 | 100.000% |
+| jk.mini.CunobelinDC | 96843 | 0 | 100.000% |
+| ags.rougedc.RougeDC | 81035 | 0 | 100.000% |
 
 ### Layer 1 — drift by feature
 
@@ -352,61 +201,61 @@ Autopilot's observed opponent-damage vs god-view, accumulated over the battle. `
 
 | Opponent | Ticks | Scanned ticks | Missed scans % | Mismatch ticks | Total abs drift |
 |---|---:|---:|---:|---:|---:|
-| kc.mega.BeepBoop vs kc.mega.BeepBoop | 338414 | 338388 | 0.0% | 1829 | 1062.0469 |
-| test.SittingDuck | 12900 | 12895 | 0.0% | 0 | 0.0000 |
-| test.Aggressive | 7889 | 7881 | 0.1% | 1 | 2.5000 |
-| sample.Fire | 12658 | 12653 | 0.0% | 0 | 0.0000 |
-| sample.Walls | 17926 | 17922 | 0.0% | 8 | 4.0000 |
-| sample.Crazy | 22591 | 22583 | 0.0% | 4 | 2.0000 |
-| kc.mega.BeepBoop | 16484 | 16477 | 0.0% | 15 | 8.6113 |
-| aaa.r.ScalarR | 20784 | 20778 | 0.0% | 6 | 3.2374 |
-| jk.mega.DrussGT | 21824 | 21815 | 0.0% | 0 | 0.0000 |
-| voidious.Diamond | 16551 | 16548 | 0.0% | 0 | 0.0000 |
-| rsalesc.mega.Knight | 16687 | 16681 | 0.0% | 0 | 0.0000 |
-| rsalesc.roborio.Roborio | 16758 | 16748 | 0.1% | 0 | 0.0000 |
-| lxx.Tomcat | 14128 | 14121 | 0.0% | 0 | 0.0000 |
-| cb.fire.Firestarter | 16983 | 16980 | 0.0% | 3 | 1.2500 |
-| xander.cat.XanderCat | 53359 | 53352 | 0.0% | 0 | 0.0000 |
-| oog.mega.saguaro.Saguaro | 14943 | 14935 | 0.1% | 0 | 0.0000 |
-| dsekercioglu.mega.Raven | 13482 | 13475 | 0.1% | 4 | 2.0000 |
-| kc.serpent.WaveSerpent | 15088 | 15087 | 0.0% | 0 | 0.0000 |
-| voidious.Dookious | 14218 | 14213 | 0.0% | 0 | 0.0000 |
-| darkcanuck.Pris | 14771 | 14758 | 0.1% | 0 | 0.0000 |
-| abc.Shadow | 11029 | 11025 | 0.0% | 1 | 0.5000 |
-| dsekercioglu.mega.WhiteFang | 14723 | 14719 | 0.0% | 0 | 0.0000 |
-| mn.Combat | 17113 | 17105 | 0.0% | 18 | 9.0000 |
-| gh.GresSuffurd | 19300 | 19298 | 0.0% | 0 | 0.0000 |
-| cs.Nene | 13187 | 13178 | 0.1% | 0 | 0.0000 |
-| jk.melee.Neuromancer | 18083 | 18077 | 0.0% | 0 | 0.0000 |
-| tjk.deBroglie | 12272 | 12266 | 0.0% | 0 | 0.0000 |
-| mue.Ascendant | 12920 | 12916 | 0.0% | 19 | 8.1025 |
-| davidalves.Phoenix | 13126 | 13118 | 0.1% | 0 | 0.0000 |
-| zyx.mega.YersiniaPestis | 14656 | 14653 | 0.0% | 2 | 9.5000 |
-| darkcanuck.Holden | 13270 | 13262 | 0.1% | 0 | 0.0000 |
-| Krabb.sliNk.Garm | 18772 | 18764 | 0.0% | 1 | 0.5000 |
-| pez.rumble.CassiusClay | 13893 | 13890 | 0.0% | 0 | 0.0000 |
-| jk.precise.Wintermute | 12324 | 12319 | 0.0% | 1 | 0.5000 |
-| fromHell.BlackBox | 14228 | 14220 | 0.1% | 1 | 0.5000 |
-| axeBots.SilverSurfer | 13524 | 13520 | 0.0% | 0 | 0.0000 |
-| florent.XSeries.X2 | 17942 | 17934 | 0.0% | 1 | 0.1250 |
-| ar.horizon.Horizon | 15730 | 15722 | 0.1% | 0 | 0.0000 |
-| florent.test.Toad | 15892 | 15886 | 0.0% | 1 | 0.2500 |
-| pulsar.PulsarMax | 20755 | 20746 | 0.0% | 1 | 0.5000 |
-| sheldor.mini.Foilist | 21687 | 21685 | 0.0% | 0 | 0.0000 |
-| cjm.chalk.Chalk | 16120 | 16080 | 0.2% | 0 | 0.0000 |
-| cb.Domogled | 18737 | 18732 | 0.0% | 9 | 4.1875 |
-| cs.s2.Seraphim | 17353 | 17347 | 0.0% | 0 | 0.0000 |
-| ags.Midboss | 13760 | 13755 | 0.0% | 2 | 1.0000 |
-| dft.Cardigan | 14430 | 14422 | 0.1% | 8 | 4.4989 |
-| kc.serpent.Hydra | 14123 | 14116 | 0.0% | 0 | 0.0000 |
-| pez.rumble.Ali | 14397 | 14393 | 0.0% | 0 | 0.0000 |
-| davidalves.Firebird | 15853 | 15847 | 0.0% | 1 | 0.5000 |
-| wcsv.Engineer.Engineer | 15773 | 15770 | 0.0% | 0 | 0.0000 |
-| wcsv.PowerHouse.PowerHouse | 13286 | 13278 | 0.1% | 0 | 0.0000 |
-| fromHell.CHCl3 | 13785 | 13778 | 0.1% | 0 | 0.0000 |
-| dft.Cyanide | 20045 | 20039 | 0.0% | 0 | 0.0000 |
-| jk.mini.CunobelinDC | 18565 | 18560 | 0.0% | 0 | 0.0000 |
-| ags.rougedc.RougeDC | 13854 | 13852 | 0.0% | 0 | 0.0000 |
+| kc.mega.BeepBoop vs kc.mega.BeepBoop | 31298 | 31296 | 0.0% | 168 | 99.2972 |
+| test.SittingDuck | 1437 | 1436 | 0.1% | 0 | 0.0000 |
+| test.Aggressive | 704 | 703 | 0.1% | 0 | 0.0000 |
+| sample.Fire | 1052 | 1052 | 0.0% | 0 | 0.0000 |
+| sample.Walls | 2189 | 2188 | 0.0% | 1 | 0.5000 |
+| sample.Crazy | 2416 | 2416 | 0.0% | 0 | 0.0000 |
+| kc.mega.BeepBoop | 1881 | 1880 | 0.1% | 7 | 2.8613 |
+| aaa.r.ScalarR | 2411 | 2411 | 0.0% | 0 | 0.0000 |
+| jk.mega.DrussGT | 2922 | 2921 | 0.0% | 0 | 0.0000 |
+| voidious.Diamond | 2098 | 2098 | 0.0% | 0 | 0.0000 |
+| rsalesc.mega.Knight | 2223 | 2223 | 0.0% | 0 | 0.0000 |
+| rsalesc.roborio.Roborio | 2515 | 2515 | 0.0% | 0 | 0.0000 |
+| lxx.Tomcat | 1402 | 1402 | 0.0% | 0 | 0.0000 |
+| cb.fire.Firestarter | 2094 | 2094 | 0.0% | 0 | 0.0000 |
+| xander.cat.XanderCat | 5408 | 5407 | 0.0% | 0 | 0.0000 |
+| oog.mega.saguaro.Saguaro | 1869 | 1869 | 0.0% | 2 | 1.2000 |
+| dsekercioglu.mega.Raven | 1787 | 1787 | 0.0% | 1 | 0.5000 |
+| kc.serpent.WaveSerpent | 1455 | 1454 | 0.1% | 0 | 0.0000 |
+| voidious.Dookious | 1358 | 1357 | 0.1% | 0 | 0.0000 |
+| darkcanuck.Pris | 2024 | 2022 | 0.1% | 2 | 1.2000 |
+| abc.Shadow | 1149 | 1149 | 0.0% | 0 | 0.0000 |
+| dsekercioglu.mega.WhiteFang | 1699 | 1699 | 0.0% | 2 | 1.0000 |
+| mn.Combat | 2149 | 2149 | 0.0% | 3 | 1.6000 |
+| gh.GresSuffurd | 1980 | 1979 | 0.1% | 0 | 0.0000 |
+| cs.Nene | 1492 | 1489 | 0.2% | 0 | 0.0000 |
+| jk.melee.Neuromancer | 2501 | 2500 | 0.0% | 0 | 0.0000 |
+| tjk.deBroglie | 1554 | 1554 | 0.0% | 0 | 0.0000 |
+| mue.Ascendant | 1340 | 1339 | 0.1% | 4 | 2.3898 |
+| davidalves.Phoenix | 2358 | 2356 | 0.1% | 0 | 0.0000 |
+| zyx.mega.YersiniaPestis | 2002 | 2002 | 0.0% | 0 | 0.0000 |
+| darkcanuck.Holden | 1356 | 1356 | 0.0% | 0 | 0.0000 |
+| Krabb.sliNk.Garm | 1988 | 1988 | 0.0% | 0 | 0.0000 |
+| pez.rumble.CassiusClay | 1535 | 1532 | 0.2% | 0 | 0.0000 |
+| jk.precise.Wintermute | 2023 | 2021 | 0.1% | 0 | 0.0000 |
+| fromHell.BlackBox | 1445 | 1445 | 0.0% | 0 | 0.0000 |
+| axeBots.SilverSurfer | 1831 | 1831 | 0.0% | 0 | 0.0000 |
+| florent.XSeries.X2 | 1963 | 1961 | 0.1% | 2 | 1.2000 |
+| ar.horizon.Horizon | 2489 | 2489 | 0.0% | 0 | 0.0000 |
+| florent.test.Toad | 1609 | 1609 | 0.0% | 0 | 0.0000 |
+| pulsar.PulsarMax | 2634 | 2634 | 0.0% | 1 | 0.6000 |
+| sheldor.mini.Foilist | 2121 | 2121 | 0.0% | 0 | 0.0000 |
+| cjm.chalk.Chalk | 2299 | 2296 | 0.1% | 0 | 0.0000 |
+| cb.Domogled | 3141 | 3141 | 0.0% | 0 | 0.0000 |
+| cs.s2.Seraphim | 1724 | 1723 | 0.1% | 0 | 0.0000 |
+| ags.Midboss | 1441 | 1441 | 0.0% | 0 | 0.0000 |
+| dft.Cardigan | 888 | 887 | 0.1% | 1 | 0.5000 |
+| kc.serpent.Hydra | 1759 | 1759 | 0.0% | 0 | 0.0000 |
+| pez.rumble.Ali | 1555 | 1553 | 0.1% | 0 | 0.0000 |
+| davidalves.Firebird | 2367 | 2366 | 0.0% | 0 | 0.0000 |
+| wcsv.Engineer.Engineer | 1773 | 1773 | 0.0% | 0 | 0.0000 |
+| wcsv.PowerHouse.PowerHouse | 1499 | 1498 | 0.1% | 0 | 0.0000 |
+| fromHell.CHCl3 | 1433 | 1432 | 0.1% | 0 | 0.0000 |
+| dft.Cyanide | 1526 | 1526 | 0.0% | 0 | 0.0000 |
+| jk.mini.CunobelinDC | 2161 | 2160 | 0.0% | 0 | 0.0000 |
+| ags.rougedc.RougeDC | 1746 | 1745 | 0.1% | 0 | 0.0000 |
 
 ### Layer 2 — channels (events, drift incidents, totals)
 
@@ -414,803 +263,749 @@ Autopilot's observed opponent-damage vs god-view, accumulated over the battle. `
 
 | Opponent | Channel | GV events | Obs events | Drift incidents | GV total | Obs total | Abs drift |
 |---|---|---:|---:|---:|---:|---:|---:|
-| kc.mega.BeepBoop vs kc.mega.BeepBoop | ourBulletDmg(on opp) | 1968 | 1968 | 0 | 884.1874 | 884.1874 | 0.0000 |
-| kc.mega.BeepBoop vs kc.mega.BeepBoop | oppBulletGain(from us) | 1992 | 1992 | 0 | 723.1350 | 723.1350 | 0.0000 |
-| kc.mega.BeepBoop vs kc.mega.BeepBoop | oppWallDmg | 2 | 1831 | 1829 | 4.3750 | 1066.4219 | 1062.0469 |
-| test.SittingDuck | ourBulletDmg(on opp) | 821 | 821 | 0 | 5156.8402 | 5156.8402 | 0.0000 |
-| test.SittingDuck | ramDmg(on opp) | 71 | 71 | 0 | 42.6000 | 42.6000 | 0.0000 |
-| test.Aggressive | ourBulletDmg(on opp) | 331 | 331 | 0 | 4383.6324 | 4383.6324 | 0.0000 |
-| test.Aggressive | oppBulletGain(from us) | 32 | 32 | 0 | 192.0000 | 192.0000 | 0.0000 |
-| test.Aggressive | ramDmg(on opp) | 304 | 304 | 0 | 276.6000 | 276.6000 | 0.0000 |
-| test.Aggressive | oppWallDmg | 22 | 21 | 1 | 65.5000 | 63.0000 | 2.5000 |
-| sample.Fire | ourBulletDmg(on opp) | 799 | 799 | 0 | 5201.9837 | 5201.9837 | 0.0000 |
-| sample.Fire | oppBulletGain(from us) | 121 | 121 | 0 | 399.9951 | 399.9951 | 0.0000 |
-| sample.Fire | ramDmg(on opp) | 60 | 60 | 0 | 36.0000 | 36.0000 | 0.0000 |
-| sample.Walls | ourBulletDmg(on opp) | 398 | 398 | 0 | 4249.8357 | 4249.8357 | 0.0000 |
-| sample.Walls | oppBulletGain(from us) | 38 | 38 | 0 | 224.7860 | 224.7860 | 0.0000 |
-| sample.Walls | ramDmg(on opp) | 5 | 5 | 0 | 3.6000 | 3.6000 | 0.0000 |
-| sample.Walls | oppWallDmg | 204 | 212 | 8 | 610.5000 | 614.5000 | 4.0000 |
-| sample.Crazy | ourBulletDmg(on opp) | 342 | 342 | 0 | 4241.9979 | 4241.9979 | 0.0000 |
-| sample.Crazy | oppBulletGain(from us) | 55 | 55 | 0 | 165.0000 | 165.0000 | 0.0000 |
-| sample.Crazy | ramDmg(on opp) | 383 | 383 | 0 | 238.8000 | 238.8000 | 0.0000 |
-| sample.Crazy | oppWallDmg | 286 | 286 | 4 | 814.5000 | 814.5000 | 2.0000 |
-| kc.mega.BeepBoop | ourBulletDmg(on opp) | 18 | 18 | 0 | 120.8859 | 120.8859 | 0.0000 |
-| kc.mega.BeepBoop | oppBulletGain(from us) | 358 | 358 | 0 | 2432.1000 | 2432.1000 | 0.0000 |
-| kc.mega.BeepBoop | ramDmg(on opp) | 2 | 2 | 0 | 1.2000 | 1.2000 | 0.0000 |
-| kc.mega.BeepBoop | oppWallDmg | 2 | 17 | 15 | 6.0000 | 14.6113 | 8.6113 |
-| aaa.r.ScalarR | ourBulletDmg(on opp) | 80 | 80 | 0 | 379.8918 | 379.8918 | 0.0000 |
-| aaa.r.ScalarR | oppBulletGain(from us) | 502 | 502 | 0 | 2555.7000 | 2555.7000 | 0.0000 |
-| aaa.r.ScalarR | oppWallDmg | 0 | 6 | 6 | 0.0000 | 3.2374 | 3.2374 |
-| jk.mega.DrussGT | ourBulletDmg(on opp) | 48 | 48 | 0 | 262.8435 | 262.8435 | 0.0000 |
-| jk.mega.DrussGT | oppBulletGain(from us) | 312 | 312 | 0 | 2130.4500 | 2130.4500 | 0.0000 |
-| jk.mega.DrussGT | oppWallDmg | 1 | 1 | 0 | 3.0000 | 3.0000 | 0.0000 |
-| voidious.Diamond | ourBulletDmg(on opp) | 58 | 58 | 0 | 302.0430 | 302.0430 | 0.0000 |
-| voidious.Diamond | oppBulletGain(from us) | 443 | 443 | 0 | 2512.7826 | 2512.7826 | 0.0000 |
-| voidious.Diamond | ramDmg(on opp) | 3 | 3 | 0 | 1.8000 | 1.8000 | 0.0000 |
-| rsalesc.mega.Knight | ourBulletDmg(on opp) | 64 | 64 | 0 | 398.0648 | 398.0648 | 0.0000 |
-| rsalesc.mega.Knight | oppBulletGain(from us) | 307 | 307 | 0 | 2378.2473 | 2378.2473 | 0.0000 |
+| kc.mega.BeepBoop vs kc.mega.BeepBoop | ourBulletDmg(on opp) | 186 | 186 | 0 | 116.1200 | 116.1200 | 0.0000 |
+| kc.mega.BeepBoop vs kc.mega.BeepBoop | oppBulletGain(from us) | 175 | 175 | 0 | 57.8250 | 57.8250 | 0.0000 |
+| kc.mega.BeepBoop vs kc.mega.BeepBoop | oppWallDmg | 0 | 168 | 168 | 0.0000 | 99.2972 | 99.2972 |
+| test.SittingDuck | ourBulletDmg(on opp) | 89 | 89 | 0 | 511.5626 | 511.5626 | 0.0000 |
+| test.Aggressive | ourBulletDmg(on opp) | 30 | 30 | 0 | 357.2861 | 357.2861 | 0.0000 |
+| test.Aggressive | oppBulletGain(from us) | 3 | 3 | 0 | 18.0000 | 18.0000 | 0.0000 |
+| test.Aggressive | ramDmg(on opp) | 101 | 101 | 0 | 116.4000 | 116.4000 | 0.0000 |
+| sample.Fire | ourBulletDmg(on opp) | 63 | 63 | 0 | 497.8236 | 497.8236 | 0.0000 |
+| sample.Fire | oppBulletGain(from us) | 2 | 2 | 0 | 6.0000 | 6.0000 | 0.0000 |
+| sample.Walls | ourBulletDmg(on opp) | 41 | 41 | 0 | 363.2435 | 363.2435 | 0.0000 |
+| sample.Walls | oppBulletGain(from us) | 7 | 7 | 0 | 42.0000 | 42.0000 | 0.0000 |
+| sample.Walls | ramDmg(on opp) | 1 | 1 | 0 | 1.2000 | 1.2000 | 0.0000 |
+| sample.Walls | oppWallDmg | 23 | 24 | 1 | 69.0000 | 69.5000 | 0.5000 |
+| sample.Crazy | ourBulletDmg(on opp) | 38 | 38 | 0 | 430.0781 | 430.0781 | 0.0000 |
+| sample.Crazy | oppBulletGain(from us) | 6 | 6 | 0 | 18.0000 | 18.0000 | 0.0000 |
+| sample.Crazy | ramDmg(on opp) | 3 | 3 | 0 | 1.8000 | 1.8000 | 0.0000 |
+| sample.Crazy | oppWallDmg | 32 | 32 | 0 | 91.0000 | 91.0000 | 0.0000 |
+| kc.mega.BeepBoop | ourBulletDmg(on opp) | 5 | 5 | 0 | 35.5196 | 35.5196 | 0.0000 |
+| kc.mega.BeepBoop | oppBulletGain(from us) | 40 | 40 | 0 | 240.0000 | 240.0000 | 0.0000 |
+| kc.mega.BeepBoop | oppWallDmg | 0 | 7 | 7 | 0.0000 | 2.8613 | 2.8613 |
+| aaa.r.ScalarR | ourBulletDmg(on opp) | 13 | 13 | 0 | 52.0000 | 52.0000 | 0.0000 |
+| aaa.r.ScalarR | oppBulletGain(from us) | 51 | 51 | 0 | 240.4500 | 240.4500 | 0.0000 |
+| jk.mega.DrussGT | ourBulletDmg(on opp) | 10 | 10 | 0 | 60.7337 | 60.7337 | 0.0000 |
+| jk.mega.DrussGT | oppBulletGain(from us) | 32 | 32 | 0 | 192.1500 | 192.1500 | 0.0000 |
+| voidious.Diamond | ourBulletDmg(on opp) | 16 | 16 | 0 | 102.0131 | 102.0131 | 0.0000 |
+| voidious.Diamond | oppBulletGain(from us) | 45 | 45 | 0 | 256.9130 | 256.9130 | 0.0000 |
+| rsalesc.mega.Knight | ourBulletDmg(on opp) | 12 | 12 | 0 | 88.4276 | 88.4276 | 0.0000 |
+| rsalesc.mega.Knight | oppBulletGain(from us) | 39 | 39 | 0 | 239.3994 | 239.3994 | 0.0000 |
 | rsalesc.mega.Knight | ramDmg(on opp) | 1 | 1 | 0 | 0.6000 | 0.6000 | 0.0000 |
-| rsalesc.mega.Knight | oppWallDmg | 3 | 3 | 0 | 8.5000 | 8.5000 | 0.0000 |
-| rsalesc.roborio.Roborio | ourBulletDmg(on opp) | 115 | 115 | 0 | 711.4845 | 711.4845 | 0.0000 |
-| rsalesc.roborio.Roborio | oppBulletGain(from us) | 321 | 321 | 0 | 2500.3488 | 2500.3488 | 0.0000 |
-| rsalesc.roborio.Roborio | oppWallDmg | 3 | 3 | 0 | 9.0000 | 9.0000 | 0.0000 |
-| lxx.Tomcat | ourBulletDmg(on opp) | 57 | 57 | 0 | 402.2525 | 402.2525 | 0.0000 |
-| lxx.Tomcat | oppBulletGain(from us) | 439 | 439 | 0 | 2539.9961 | 2539.9961 | 0.0000 |
-| lxx.Tomcat | oppWallDmg | 2 | 2 | 0 | 5.0000 | 5.0000 | 0.0000 |
-| cb.fire.Firestarter | ourBulletDmg(on opp) | 98 | 98 | 0 | 637.7940 | 637.7940 | 0.0000 |
-| cb.fire.Firestarter | oppBulletGain(from us) | 435 | 435 | 0 | 2531.6612 | 2531.6612 | 0.0000 |
-| cb.fire.Firestarter | oppWallDmg | 1 | 4 | 3 | 1.3750 | 2.6250 | 1.2500 |
-| xander.cat.XanderCat | ourBulletDmg(on opp) | 22 | 22 | 0 | 263.3206 | 263.3206 | 0.0000 |
-| xander.cat.XanderCat | oppBulletGain(from us) | 128 | 128 | 0 | 523.6407 | 523.6407 | 0.0000 |
-| xander.cat.XanderCat | ramDmg(on opp) | 19 | 19 | 0 | 11.4000 | 11.4000 | 0.0000 |
-| xander.cat.XanderCat | oppWallDmg | 1 | 1 | 0 | 3.0000 | 3.0000 | 0.0000 |
-| oog.mega.saguaro.Saguaro | ourBulletDmg(on opp) | 78 | 78 | 0 | 439.2352 | 439.2352 | 0.0000 |
-| oog.mega.saguaro.Saguaro | oppBulletGain(from us) | 332 | 332 | 0 | 2484.6336 | 2484.6336 | 0.0000 |
-| oog.mega.saguaro.Saguaro | ramDmg(on opp) | 2 | 2 | 0 | 1.2000 | 1.2000 | 0.0000 |
-| oog.mega.saguaro.Saguaro | oppWallDmg | 19 | 19 | 0 | 37.2500 | 37.2500 | 0.0000 |
-| dsekercioglu.mega.Raven | ourBulletDmg(on opp) | 66 | 66 | 0 | 313.8972 | 313.8972 | 0.0000 |
-| dsekercioglu.mega.Raven | oppBulletGain(from us) | 301 | 301 | 0 | 2584.8000 | 2584.8000 | 0.0000 |
-| dsekercioglu.mega.Raven | ramDmg(on opp) | 1 | 1 | 0 | 0.6000 | 0.6000 | 0.0000 |
-| dsekercioglu.mega.Raven | oppWallDmg | 0 | 4 | 4 | 0.0000 | 2.0000 | 2.0000 |
-| kc.serpent.WaveSerpent | ourBulletDmg(on opp) | 86 | 86 | 0 | 557.9133 | 557.9133 | 0.0000 |
-| kc.serpent.WaveSerpent | oppBulletGain(from us) | 361 | 361 | 0 | 2581.0793 | 2581.0793 | 0.0000 |
-| kc.serpent.WaveSerpent | ramDmg(on opp) | 1 | 1 | 0 | 0.6000 | 0.6000 | 0.0000 |
-| kc.serpent.WaveSerpent | oppWallDmg | 1 | 1 | 0 | 3.0000 | 3.0000 | 0.0000 |
-| voidious.Dookious | ourBulletDmg(on opp) | 89 | 89 | 0 | 555.4124 | 555.4124 | 0.0000 |
-| voidious.Dookious | oppBulletGain(from us) | 306 | 306 | 0 | 2510.8043 | 2510.8043 | 0.0000 |
-| darkcanuck.Pris | ourBulletDmg(on opp) | 84 | 84 | 0 | 647.3007 | 647.3007 | 0.0000 |
-| darkcanuck.Pris | oppBulletGain(from us) | 433 | 433 | 0 | 2646.6182 | 2646.6182 | 0.0000 |
-| darkcanuck.Pris | ramDmg(on opp) | 9 | 9 | 0 | 5.4000 | 5.4000 | 0.0000 |
-| abc.Shadow | ourBulletDmg(on opp) | 77 | 77 | 0 | 807.1871 | 807.1871 | 0.0000 |
-| abc.Shadow | oppBulletGain(from us) | 432 | 432 | 0 | 2624.3955 | 2624.3955 | 0.0000 |
-| abc.Shadow | ramDmg(on opp) | 65 | 65 | 0 | 69.0000 | 69.0000 | 0.0000 |
-| abc.Shadow | oppWallDmg | 0 | 1 | 1 | 0.0000 | 0.5000 | 0.5000 |
-| dsekercioglu.mega.WhiteFang | ourBulletDmg(on opp) | 78 | 78 | 0 | 428.7942 | 428.7942 | 0.0000 |
-| dsekercioglu.mega.WhiteFang | oppBulletGain(from us) | 426 | 426 | 0 | 2575.5553 | 2575.5553 | 0.0000 |
-| mn.Combat | ourBulletDmg(on opp) | 98 | 98 | 0 | 541.8521 | 541.8521 | 0.0000 |
-| mn.Combat | oppBulletGain(from us) | 441 | 441 | 0 | 2504.1000 | 2504.1000 | 0.0000 |
-| mn.Combat | oppWallDmg | 4 | 22 | 18 | 12.0000 | 21.0000 | 9.0000 |
-| gh.GresSuffurd | ourBulletDmg(on opp) | 107 | 107 | 0 | 608.4256 | 608.4256 | 0.0000 |
-| gh.GresSuffurd | oppBulletGain(from us) | 431 | 431 | 0 | 2416.9500 | 2416.9500 | 0.0000 |
-| gh.GresSuffurd | ramDmg(on opp) | 1 | 1 | 0 | 0.6000 | 0.6000 | 0.0000 |
-| cs.Nene | ourBulletDmg(on opp) | 57 | 57 | 0 | 402.7919 | 402.7919 | 0.0000 |
-| cs.Nene | oppBulletGain(from us) | 443 | 443 | 0 | 2596.5436 | 2596.5436 | 0.0000 |
-| cs.Nene | ramDmg(on opp) | 2 | 2 | 0 | 1.2000 | 1.2000 | 0.0000 |
-| jk.melee.Neuromancer | ourBulletDmg(on opp) | 76 | 76 | 0 | 347.8331 | 347.8331 | 0.0000 |
-| jk.melee.Neuromancer | oppBulletGain(from us) | 519 | 519 | 0 | 2447.8266 | 2447.8266 | 0.0000 |
-| tjk.deBroglie | ourBulletDmg(on opp) | 101 | 101 | 0 | 1051.2572 | 1051.2572 | 0.0000 |
-| tjk.deBroglie | oppBulletGain(from us) | 437 | 437 | 0 | 2611.1423 | 2611.1423 | 0.0000 |
-| tjk.deBroglie | ramDmg(on opp) | 1 | 1 | 0 | 0.6000 | 0.6000 | 0.0000 |
-| tjk.deBroglie | oppWallDmg | 16 | 16 | 0 | 36.0833 | 36.0833 | 0.0000 |
-| mue.Ascendant | ourBulletDmg(on opp) | 58 | 58 | 0 | 498.2428 | 498.2428 | 0.0000 |
-| mue.Ascendant | oppBulletGain(from us) | 446 | 446 | 0 | 2550.9573 | 2550.9573 | 0.0000 |
-| mue.Ascendant | oppWallDmg | 4 | 23 | 19 | 8.3606 | 16.4630 | 8.1025 |
-| davidalves.Phoenix | ourBulletDmg(on opp) | 65 | 65 | 0 | 447.4845 | 447.4845 | 0.0000 |
-| davidalves.Phoenix | oppBulletGain(from us) | 367 | 367 | 0 | 2544.1932 | 2544.1932 | 0.0000 |
-| davidalves.Phoenix | ramDmg(on opp) | 14 | 14 | 0 | 8.4000 | 8.4000 | 0.0000 |
-| davidalves.Phoenix | oppWallDmg | 1 | 1 | 0 | 3.0000 | 3.0000 | 0.0000 |
-| zyx.mega.YersiniaPestis | ourBulletDmg(on opp) | 101 | 101 | 0 | 598.0317 | 598.0317 | 0.0000 |
-| zyx.mega.YersiniaPestis | oppBulletGain(from us) | 326 | 326 | 1 | 2528.4823 | 2537.4823 | 9.0000 |
-| zyx.mega.YersiniaPestis | oppWallDmg | 2 | 3 | 1 | 5.0000 | 5.5000 | 0.5000 |
-| darkcanuck.Holden | ourBulletDmg(on opp) | 100 | 100 | 0 | 794.0930 | 794.0930 | 0.0000 |
-| darkcanuck.Holden | oppBulletGain(from us) | 439 | 439 | 0 | 2621.4382 | 2621.4382 | 0.0000 |
-| darkcanuck.Holden | ramDmg(on opp) | 7 | 7 | 0 | 4.2000 | 4.2000 | 0.0000 |
-| darkcanuck.Holden | oppWallDmg | 1 | 1 | 0 | 3.0000 | 3.0000 | 0.0000 |
-| Krabb.sliNk.Garm | ourBulletDmg(on opp) | 91 | 91 | 0 | 442.1083 | 442.1083 | 0.0000 |
-| Krabb.sliNk.Garm | oppBulletGain(from us) | 398 | 398 | 0 | 2427.1852 | 2427.1852 | 0.0000 |
-| Krabb.sliNk.Garm | ramDmg(on opp) | 4 | 4 | 0 | 2.4000 | 2.4000 | 0.0000 |
-| Krabb.sliNk.Garm | oppWallDmg | 0 | 1 | 1 | 0.0000 | 0.5000 | 0.5000 |
-| pez.rumble.CassiusClay | ourBulletDmg(on opp) | 69 | 69 | 0 | 546.3155 | 546.3155 | 0.0000 |
-| pez.rumble.CassiusClay | oppBulletGain(from us) | 330 | 330 | 0 | 2449.6852 | 2449.6852 | 0.0000 |
-| pez.rumble.CassiusClay | ramDmg(on opp) | 7 | 7 | 0 | 4.2000 | 4.2000 | 0.0000 |
-| pez.rumble.CassiusClay | oppWallDmg | 3 | 3 | 0 | 9.0000 | 9.0000 | 0.0000 |
-| jk.precise.Wintermute | ourBulletDmg(on opp) | 72 | 72 | 0 | 502.7685 | 502.7685 | 0.0000 |
-| jk.precise.Wintermute | oppBulletGain(from us) | 300 | 300 | 0 | 2627.3494 | 2627.3494 | 0.0000 |
-| jk.precise.Wintermute | ramDmg(on opp) | 10 | 10 | 0 | 7.2000 | 7.2000 | 0.0000 |
-| jk.precise.Wintermute | oppWallDmg | 1 | 2 | 1 | 2.5000 | 3.0000 | 0.5000 |
-| fromHell.BlackBox | ourBulletDmg(on opp) | 77 | 77 | 0 | 553.6614 | 553.6614 | 0.0000 |
-| fromHell.BlackBox | oppBulletGain(from us) | 467 | 467 | 0 | 2704.9473 | 2704.9473 | 0.0000 |
-| fromHell.BlackBox | ramDmg(on opp) | 12 | 12 | 0 | 7.8000 | 7.8000 | 0.0000 |
-| fromHell.BlackBox | oppWallDmg | 1 | 2 | 1 | 3.0000 | 3.5000 | 0.5000 |
-| axeBots.SilverSurfer | ourBulletDmg(on opp) | 74 | 74 | 0 | 751.8253 | 751.8253 | 0.0000 |
-| axeBots.SilverSurfer | oppBulletGain(from us) | 314 | 314 | 0 | 2440.8490 | 2440.8490 | 0.0000 |
-| axeBots.SilverSurfer | ramDmg(on opp) | 5 | 5 | 0 | 3.0000 | 3.0000 | 0.0000 |
+| rsalesc.roborio.Roborio | ourBulletDmg(on opp) | 18 | 18 | 0 | 98.7434 | 98.7434 | 0.0000 |
+| rsalesc.roborio.Roborio | oppBulletGain(from us) | 47 | 47 | 0 | 252.9000 | 252.9000 | 0.0000 |
+| lxx.Tomcat | ourBulletDmg(on opp) | 11 | 11 | 0 | 118.8262 | 118.8262 | 0.0000 |
+| lxx.Tomcat | oppBulletGain(from us) | 46 | 46 | 0 | 256.1014 | 256.1014 | 0.0000 |
+| lxx.Tomcat | oppWallDmg | 1 | 1 | 0 | 3.0000 | 3.0000 | 0.0000 |
+| cb.fire.Firestarter | ourBulletDmg(on opp) | 7 | 7 | 0 | 33.3663 | 33.3663 | 0.0000 |
+| cb.fire.Firestarter | oppBulletGain(from us) | 39 | 39 | 0 | 223.7667 | 223.7667 | 0.0000 |
+| xander.cat.XanderCat | ourBulletDmg(on opp) | 3 | 3 | 0 | 30.4755 | 30.4755 | 0.0000 |
+| xander.cat.XanderCat | oppBulletGain(from us) | 11 | 11 | 0 | 37.3200 | 37.3200 | 0.0000 |
+| oog.mega.saguaro.Saguaro | ourBulletDmg(on opp) | 5 | 5 | 0 | 52.6329 | 52.6329 | 0.0000 |
+| oog.mega.saguaro.Saguaro | oppBulletGain(from us) | 39 | 39 | 0 | 237.7500 | 237.7500 | 0.0000 |
+| oog.mega.saguaro.Saguaro | ramDmg(on opp) | 2 | 0 | 2 | 1.2000 | 0.0000 | 1.2000 |
+| dsekercioglu.mega.Raven | ourBulletDmg(on opp) | 7 | 7 | 0 | 28.0000 | 28.0000 | 0.0000 |
+| dsekercioglu.mega.Raven | oppBulletGain(from us) | 40 | 40 | 0 | 236.0678 | 236.0678 | 0.0000 |
+| dsekercioglu.mega.Raven | oppWallDmg | 0 | 1 | 1 | 0.0000 | 0.5000 | 0.5000 |
+| kc.serpent.WaveSerpent | ourBulletDmg(on opp) | 13 | 13 | 0 | 60.5600 | 60.5600 | 0.0000 |
+| kc.serpent.WaveSerpent | oppBulletGain(from us) | 45 | 45 | 0 | 272.7861 | 272.7861 | 0.0000 |
+| voidious.Dookious | ourBulletDmg(on opp) | 13 | 13 | 0 | 65.5952 | 65.5952 | 0.0000 |
+| voidious.Dookious | oppBulletGain(from us) | 37 | 37 | 0 | 270.3000 | 270.3000 | 0.0000 |
+| darkcanuck.Pris | ourBulletDmg(on opp) | 14 | 14 | 0 | 66.6492 | 66.6492 | 0.0000 |
+| darkcanuck.Pris | oppBulletGain(from us) | 41 | 41 | 0 | 248.7467 | 248.7467 | 0.0000 |
+| darkcanuck.Pris | ramDmg(on opp) | 2 | 0 | 2 | 1.2000 | 0.0000 | 1.2000 |
+| abc.Shadow | ourBulletDmg(on opp) | 13 | 13 | 0 | 171.1305 | 171.1305 | 0.0000 |
+| abc.Shadow | oppBulletGain(from us) | 38 | 38 | 0 | 258.9932 | 258.9932 | 0.0000 |
+| abc.Shadow | ramDmg(on opp) | 20 | 20 | 0 | 20.4000 | 20.4000 | 0.0000 |
+| dsekercioglu.mega.WhiteFang | ourBulletDmg(on opp) | 9 | 9 | 0 | 70.0426 | 70.0426 | 0.0000 |
+| dsekercioglu.mega.WhiteFang | oppBulletGain(from us) | 42 | 42 | 0 | 246.0809 | 246.0809 | 0.0000 |
+| dsekercioglu.mega.WhiteFang | ramDmg(on opp) | 1 | 1 | 0 | 0.6000 | 0.6000 | 0.0000 |
+| dsekercioglu.mega.WhiteFang | oppWallDmg | 1 | 3 | 2 | 3.0000 | 4.0000 | 1.0000 |
+| mn.Combat | ourBulletDmg(on opp) | 10 | 10 | 0 | 47.8438 | 47.8438 | 0.0000 |
+| mn.Combat | oppBulletGain(from us) | 42 | 42 | 0 | 232.8000 | 232.8000 | 0.0000 |
+| mn.Combat | ramDmg(on opp) | 1 | 0 | 1 | 0.6000 | 0.0000 | 0.6000 |
+| mn.Combat | oppWallDmg | 0 | 2 | 2 | 0.0000 | 1.0000 | 1.0000 |
+| gh.GresSuffurd | ourBulletDmg(on opp) | 13 | 13 | 0 | 65.3922 | 65.3922 | 0.0000 |
+| gh.GresSuffurd | oppBulletGain(from us) | 44 | 44 | 0 | 250.2000 | 250.2000 | 0.0000 |
+| cs.Nene | ourBulletDmg(on opp) | 7 | 7 | 0 | 41.7630 | 41.7630 | 0.0000 |
+| cs.Nene | oppBulletGain(from us) | 44 | 44 | 0 | 257.3524 | 257.3524 | 0.0000 |
+| jk.melee.Neuromancer | ourBulletDmg(on opp) | 14 | 14 | 0 | 61.0297 | 61.0297 | 0.0000 |
+| jk.melee.Neuromancer | oppBulletGain(from us) | 47 | 47 | 0 | 227.1640 | 227.1640 | 0.0000 |
+| tjk.deBroglie | ourBulletDmg(on opp) | 14 | 14 | 0 | 108.4962 | 108.4962 | 0.0000 |
+| tjk.deBroglie | oppBulletGain(from us) | 42 | 42 | 0 | 256.2646 | 256.2646 | 0.0000 |
+| mue.Ascendant | ourBulletDmg(on opp) | 7 | 7 | 0 | 78.0645 | 78.0645 | 0.0000 |
+| mue.Ascendant | oppBulletGain(from us) | 44 | 44 | 0 | 257.3133 | 257.3133 | 0.0000 |
+| mue.Ascendant | oppWallDmg | 3 | 7 | 4 | 9.0000 | 11.3898 | 2.3898 |
+| davidalves.Phoenix | ourBulletDmg(on opp) | 15 | 15 | 0 | 60.9494 | 60.9494 | 0.0000 |
+| davidalves.Phoenix | oppBulletGain(from us) | 40 | 40 | 0 | 230.1461 | 230.1461 | 0.0000 |
+| zyx.mega.YersiniaPestis | ourBulletDmg(on opp) | 17 | 17 | 0 | 120.6737 | 120.6737 | 0.0000 |
+| zyx.mega.YersiniaPestis | oppBulletGain(from us) | 41 | 41 | 0 | 251.8150 | 251.8150 | 0.0000 |
+| zyx.mega.YersiniaPestis | ramDmg(on opp) | 1 | 1 | 0 | 0.6000 | 0.6000 | 0.0000 |
+| darkcanuck.Holden | ourBulletDmg(on opp) | 12 | 12 | 0 | 77.3754 | 77.3754 | 0.0000 |
+| darkcanuck.Holden | oppBulletGain(from us) | 39 | 39 | 0 | 249.1575 | 249.1575 | 0.0000 |
+| Krabb.sliNk.Garm | ourBulletDmg(on opp) | 7 | 7 | 0 | 30.5721 | 30.5721 | 0.0000 |
+| Krabb.sliNk.Garm | oppBulletGain(from us) | 38 | 38 | 0 | 233.8463 | 233.8463 | 0.0000 |
+| pez.rumble.CassiusClay | ourBulletDmg(on opp) | 6 | 6 | 0 | 53.2676 | 53.2676 | 0.0000 |
+| pez.rumble.CassiusClay | oppBulletGain(from us) | 32 | 32 | 0 | 234.3000 | 234.3000 | 0.0000 |
+| jk.precise.Wintermute | ourBulletDmg(on opp) | 10 | 10 | 0 | 41.8945 | 41.8945 | 0.0000 |
+| jk.precise.Wintermute | oppBulletGain(from us) | 39 | 39 | 0 | 243.0000 | 243.0000 | 0.0000 |
+| fromHell.BlackBox | ourBulletDmg(on opp) | 13 | 13 | 0 | 102.1993 | 102.1993 | 0.0000 |
+| fromHell.BlackBox | oppBulletGain(from us) | 45 | 45 | 0 | 267.2356 | 267.2356 | 0.0000 |
+| axeBots.SilverSurfer | ourBulletDmg(on opp) | 11 | 11 | 0 | 72.4731 | 72.4731 | 0.0000 |
+| axeBots.SilverSurfer | oppBulletGain(from us) | 39 | 39 | 0 | 239.7901 | 239.7901 | 0.0000 |
 | axeBots.SilverSurfer | oppWallDmg | 1 | 1 | 0 | 3.0000 | 3.0000 | 0.0000 |
-| florent.XSeries.X2 | ourBulletDmg(on opp) | 89 | 89 | 0 | 598.7539 | 598.7539 | 0.0000 |
-| florent.XSeries.X2 | oppBulletGain(from us) | 306 | 306 | 0 | 2370.7147 | 2370.7147 | 0.0000 |
-| florent.XSeries.X2 | ramDmg(on opp) | 6 | 6 | 0 | 3.6000 | 3.6000 | 0.0000 |
-| florent.XSeries.X2 | oppWallDmg | 4 | 5 | 1 | 10.0000 | 10.1250 | 0.1250 |
-| ar.horizon.Horizon | ourBulletDmg(on opp) | 107 | 107 | 0 | 690.5002 | 690.5002 | 0.0000 |
-| ar.horizon.Horizon | oppBulletGain(from us) | 411 | 411 | 0 | 2549.3085 | 2549.3085 | 0.0000 |
-| ar.horizon.Horizon | ramDmg(on opp) | 6 | 6 | 0 | 3.6000 | 3.6000 | 0.0000 |
-| florent.test.Toad | ourBulletDmg(on opp) | 71 | 71 | 0 | 486.7987 | 486.7987 | 0.0000 |
-| florent.test.Toad | oppBulletGain(from us) | 308 | 308 | 0 | 2583.1543 | 2583.1543 | 0.0000 |
-| florent.test.Toad | ramDmg(on opp) | 6 | 6 | 0 | 3.6000 | 3.6000 | 0.0000 |
-| florent.test.Toad | oppWallDmg | 6 | 7 | 1 | 16.8750 | 17.1250 | 0.2500 |
-| pulsar.PulsarMax | ourBulletDmg(on opp) | 92 | 92 | 0 | 515.7046 | 515.7046 | 0.0000 |
-| pulsar.PulsarMax | oppBulletGain(from us) | 391 | 391 | 0 | 2355.2165 | 2355.2165 | 0.0000 |
-| pulsar.PulsarMax | ramDmg(on opp) | 12 | 12 | 0 | 7.2000 | 7.2000 | 0.0000 |
-| pulsar.PulsarMax | oppWallDmg | 1 | 2 | 1 | 3.0000 | 3.5000 | 0.5000 |
-| sheldor.mini.Foilist | ourBulletDmg(on opp) | 141 | 141 | 0 | 773.0314 | 773.0314 | 0.0000 |
-| sheldor.mini.Foilist | oppBulletGain(from us) | 375 | 375 | 0 | 2310.3988 | 2310.3988 | 0.0000 |
-| sheldor.mini.Foilist | oppWallDmg | 11 | 11 | 0 | 32.0000 | 32.0000 | 0.0000 |
-| cjm.chalk.Chalk | ourBulletDmg(on opp) | 103 | 103 | 0 | 570.9625 | 570.9625 | 0.0000 |
-| cjm.chalk.Chalk | oppBulletGain(from us) | 357 | 357 | 0 | 2521.5940 | 2521.5940 | 0.0000 |
-| cjm.chalk.Chalk | ramDmg(on opp) | 1 | 1 | 0 | 0.6000 | 0.6000 | 0.0000 |
-| cjm.chalk.Chalk | oppWallDmg | 3 | 3 | 0 | 9.0000 | 9.0000 | 0.0000 |
-| cb.Domogled | ourBulletDmg(on opp) | 93 | 93 | 0 | 570.4591 | 570.4591 | 0.0000 |
-| cb.Domogled | oppBulletGain(from us) | 369 | 369 | 0 | 2359.8397 | 2359.8397 | 0.0000 |
-| cb.Domogled | ramDmg(on opp) | 1 | 1 | 0 | 0.6000 | 0.6000 | 0.0000 |
-| cb.Domogled | oppWallDmg | 0 | 9 | 9 | 0.0000 | 4.1875 | 4.1875 |
-| cs.s2.Seraphim | ourBulletDmg(on opp) | 91 | 91 | 0 | 551.0420 | 551.0420 | 0.0000 |
-| cs.s2.Seraphim | oppBulletGain(from us) | 426 | 426 | 0 | 2432.1000 | 2432.1000 | 0.0000 |
-| cs.s2.Seraphim | ramDmg(on opp) | 1 | 1 | 0 | 0.6000 | 0.6000 | 0.0000 |
-| cs.s2.Seraphim | oppWallDmg | 1 | 1 | 0 | 2.5000 | 2.5000 | 0.0000 |
-| ags.Midboss | ourBulletDmg(on opp) | 96 | 96 | 0 | 652.8975 | 652.8975 | 0.0000 |
-| ags.Midboss | oppBulletGain(from us) | 416 | 416 | 0 | 2628.0000 | 2628.0000 | 0.0000 |
-| ags.Midboss | oppWallDmg | 3 | 5 | 2 | 7.5000 | 8.5000 | 1.0000 |
-| dft.Cardigan | ourBulletDmg(on opp) | 78 | 78 | 0 | 515.6977 | 515.6977 | 0.0000 |
-| dft.Cardigan | oppBulletGain(from us) | 399 | 399 | 0 | 2539.9383 | 2539.9383 | 0.0000 |
-| dft.Cardigan | ramDmg(on opp) | 11 | 11 | 0 | 7.2000 | 7.2000 | 0.0000 |
-| dft.Cardigan | oppWallDmg | 28 | 36 | 8 | 72.2394 | 76.7383 | 4.4989 |
-| kc.serpent.Hydra | ourBulletDmg(on opp) | 87 | 87 | 0 | 528.9650 | 528.9650 | 0.0000 |
-| kc.serpent.Hydra | oppBulletGain(from us) | 375 | 375 | 0 | 2577.7239 | 2577.7239 | 0.0000 |
-| kc.serpent.Hydra | oppWallDmg | 2 | 2 | 0 | 6.0000 | 6.0000 | 0.0000 |
-| pez.rumble.Ali | ourBulletDmg(on opp) | 82 | 82 | 0 | 626.5823 | 626.5823 | 0.0000 |
-| pez.rumble.Ali | oppBulletGain(from us) | 439 | 439 | 0 | 2507.4458 | 2507.4458 | 0.0000 |
-| pez.rumble.Ali | ramDmg(on opp) | 4 | 4 | 0 | 2.4000 | 2.4000 | 0.0000 |
-| pez.rumble.Ali | oppWallDmg | 3 | 3 | 0 | 8.5000 | 8.5000 | 0.0000 |
-| davidalves.Firebird | ourBulletDmg(on opp) | 96 | 96 | 0 | 623.2966 | 623.2966 | 0.0000 |
-| davidalves.Firebird | oppBulletGain(from us) | 362 | 362 | 0 | 2470.5414 | 2470.5414 | 0.0000 |
-| davidalves.Firebird | ramDmg(on opp) | 1 | 1 | 0 | 0.6000 | 0.6000 | 0.0000 |
-| davidalves.Firebird | oppWallDmg | 4 | 5 | 1 | 10.0000 | 10.5000 | 0.5000 |
-| wcsv.Engineer.Engineer | ourBulletDmg(on opp) | 86 | 86 | 0 | 586.7139 | 586.7139 | 0.0000 |
-| wcsv.Engineer.Engineer | oppBulletGain(from us) | 410 | 410 | 0 | 2465.1246 | 2465.1246 | 0.0000 |
-| wcsv.PowerHouse.PowerHouse | ourBulletDmg(on opp) | 83 | 83 | 0 | 614.4879 | 614.4879 | 0.0000 |
-| wcsv.PowerHouse.PowerHouse | oppBulletGain(from us) | 396 | 396 | 0 | 2547.6474 | 2547.6474 | 0.0000 |
-| fromHell.CHCl3 | ourBulletDmg(on opp) | 97 | 97 | 0 | 781.3294 | 781.3294 | 0.0000 |
-| fromHell.CHCl3 | oppBulletGain(from us) | 467 | 467 | 0 | 2700.5886 | 2700.5886 | 0.0000 |
-| fromHell.CHCl3 | ramDmg(on opp) | 19 | 19 | 0 | 11.4000 | 11.4000 | 0.0000 |
-| fromHell.CHCl3 | oppWallDmg | 6 | 6 | 0 | 18.0000 | 18.0000 | 0.0000 |
-| dft.Cyanide | ourBulletDmg(on opp) | 112 | 112 | 0 | 635.2575 | 635.2575 | 0.0000 |
-| dft.Cyanide | oppBulletGain(from us) | 411 | 411 | 0 | 2452.2592 | 2452.2592 | 0.0000 |
-| dft.Cyanide | oppWallDmg | 1 | 1 | 0 | 1.0000 | 1.0000 | 0.0000 |
-| jk.mini.CunobelinDC | ourBulletDmg(on opp) | 101 | 101 | 0 | 593.6344 | 593.6344 | 0.0000 |
-| jk.mini.CunobelinDC | oppBulletGain(from us) | 433 | 433 | 0 | 2521.1483 | 2521.1483 | 0.0000 |
-| jk.mini.CunobelinDC | oppWallDmg | 4 | 4 | 0 | 10.0000 | 10.0000 | 0.0000 |
-| ags.rougedc.RougeDC | ourBulletDmg(on opp) | 95 | 95 | 0 | 611.9737 | 611.9737 | 0.0000 |
-| ags.rougedc.RougeDC | oppBulletGain(from us) | 363 | 363 | 0 | 2467.1448 | 2467.1448 | 0.0000 |
-| ags.rougedc.RougeDC | ramDmg(on opp) | 53 | 53 | 0 | 61.8000 | 61.8000 | 0.0000 |
-| ags.rougedc.RougeDC | oppWallDmg | 2 | 2 | 0 | 5.5000 | 5.5000 | 0.0000 |
+| florent.XSeries.X2 | ourBulletDmg(on opp) | 13 | 13 | 0 | 94.9529 | 94.9529 | 0.0000 |
+| florent.XSeries.X2 | oppBulletGain(from us) | 37 | 37 | 0 | 247.2000 | 247.2000 | 0.0000 |
+| florent.XSeries.X2 | ramDmg(on opp) | 2 | 0 | 2 | 1.2000 | 0.0000 | 1.2000 |
+| ar.horizon.Horizon | ourBulletDmg(on opp) | 12 | 12 | 0 | 72.0000 | 72.0000 | 0.0000 |
+| ar.horizon.Horizon | oppBulletGain(from us) | 39 | 39 | 0 | 223.9130 | 223.9130 | 0.0000 |
+| florent.test.Toad | ourBulletDmg(on opp) | 9 | 9 | 0 | 55.2278 | 55.2278 | 0.0000 |
+| florent.test.Toad | oppBulletGain(from us) | 32 | 32 | 0 | 241.8000 | 241.8000 | 0.0000 |
+| pulsar.PulsarMax | ourBulletDmg(on opp) | 17 | 17 | 0 | 79.2624 | 79.2624 | 0.0000 |
+| pulsar.PulsarMax | oppBulletGain(from us) | 41 | 41 | 0 | 232.1202 | 232.1202 | 0.0000 |
+| pulsar.PulsarMax | ramDmg(on opp) | 1 | 0 | 1 | 0.6000 | 0.0000 | 0.6000 |
+| sheldor.mini.Foilist | ourBulletDmg(on opp) | 9 | 9 | 0 | 55.5923 | 55.5923 | 0.0000 |
+| sheldor.mini.Foilist | oppBulletGain(from us) | 36 | 36 | 0 | 224.4704 | 224.4704 | 0.0000 |
+| cjm.chalk.Chalk | ourBulletDmg(on opp) | 16 | 16 | 0 | 66.5841 | 66.5841 | 0.0000 |
+| cjm.chalk.Chalk | oppBulletGain(from us) | 45 | 45 | 0 | 244.9500 | 244.9500 | 0.0000 |
+| cb.Domogled | ourBulletDmg(on opp) | 17 | 17 | 0 | 85.2878 | 85.2878 | 0.0000 |
+| cb.Domogled | oppBulletGain(from us) | 59 | 59 | 0 | 194.1565 | 194.1565 | 0.0000 |
+| cs.s2.Seraphim | ourBulletDmg(on opp) | 11 | 11 | 0 | 80.7405 | 80.7405 | 0.0000 |
+| cs.s2.Seraphim | oppBulletGain(from us) | 45 | 45 | 0 | 255.4500 | 255.4500 | 0.0000 |
+| ags.Midboss | ourBulletDmg(on opp) | 10 | 10 | 0 | 54.0317 | 54.0317 | 0.0000 |
+| ags.Midboss | oppBulletGain(from us) | 43 | 43 | 0 | 260.1000 | 260.1000 | 0.0000 |
+| dft.Cardigan | ourBulletDmg(on opp) | 8 | 8 | 0 | 98.8580 | 98.8580 | 0.0000 |
+| dft.Cardigan | oppBulletGain(from us) | 32 | 32 | 0 | 243.4534 | 243.4534 | 0.0000 |
+| dft.Cardigan | ramDmg(on opp) | 58 | 58 | 0 | 45.0000 | 45.0000 | 0.0000 |
+| dft.Cardigan | oppWallDmg | 1 | 2 | 1 | 2.4990 | 2.9990 | 0.5000 |
+| kc.serpent.Hydra | ourBulletDmg(on opp) | 15 | 15 | 0 | 80.6511 | 80.6511 | 0.0000 |
+| kc.serpent.Hydra | oppBulletGain(from us) | 46 | 46 | 0 | 263.6947 | 263.6947 | 0.0000 |
+| pez.rumble.Ali | ourBulletDmg(on opp) | 8 | 8 | 0 | 56.8819 | 56.8819 | 0.0000 |
+| pez.rumble.Ali | oppBulletGain(from us) | 43 | 43 | 0 | 239.4510 | 239.4510 | 0.0000 |
+| pez.rumble.Ali | oppWallDmg | 2 | 2 | 0 | 5.5000 | 5.5000 | 0.0000 |
+| davidalves.Firebird | ourBulletDmg(on opp) | 16 | 16 | 0 | 79.1749 | 79.1749 | 0.0000 |
+| davidalves.Firebird | oppBulletGain(from us) | 38 | 38 | 0 | 223.5311 | 223.5311 | 0.0000 |
+| wcsv.Engineer.Engineer | ourBulletDmg(on opp) | 15 | 15 | 0 | 101.3695 | 101.3695 | 0.0000 |
+| wcsv.Engineer.Engineer | oppBulletGain(from us) | 42 | 42 | 0 | 251.2354 | 251.2354 | 0.0000 |
+| wcsv.PowerHouse.PowerHouse | ourBulletDmg(on opp) | 16 | 16 | 0 | 126.4466 | 126.4466 | 0.0000 |
+| wcsv.PowerHouse.PowerHouse | oppBulletGain(from us) | 45 | 45 | 0 | 267.2843 | 267.2843 | 0.0000 |
+| fromHell.CHCl3 | ourBulletDmg(on opp) | 11 | 11 | 0 | 116.6699 | 116.6699 | 0.0000 |
+| fromHell.CHCl3 | oppBulletGain(from us) | 48 | 48 | 0 | 267.6886 | 267.6886 | 0.0000 |
+| dft.Cyanide | ourBulletDmg(on opp) | 8 | 8 | 0 | 61.0621 | 61.0621 | 0.0000 |
+| dft.Cyanide | oppBulletGain(from us) | 37 | 37 | 0 | 246.5853 | 246.5853 | 0.0000 |
+| jk.mini.CunobelinDC | ourBulletDmg(on opp) | 15 | 15 | 0 | 96.2455 | 96.2455 | 0.0000 |
+| jk.mini.CunobelinDC | oppBulletGain(from us) | 43 | 43 | 0 | 244.6500 | 244.6500 | 0.0000 |
+| ags.rougedc.RougeDC | ourBulletDmg(on opp) | 17 | 17 | 0 | 126.5814 | 126.5814 | 0.0000 |
+| ags.rougedc.RougeDC | oppBulletGain(from us) | 42 | 42 | 0 | 263.5973 | 263.5973 | 0.0000 |
 
 ## Layer 3 — Incoming-Fire Detection
 
 | Opponent | GV fires | Detected | Rate | Pos MAE | Power MAE | Latency | Angle MAE (rad) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| kc.mega.BeepBoop vs kc.mega.BeepBoop | 30072 | 29790 | 99.1% | 0.0000 | 0.0001 | 0.00 | 0.1794 |
+| kc.mega.BeepBoop vs kc.mega.BeepBoop | 2786 | 2776 | 99.6% | 0.0000 | 0.0015 | 0.00 | 0.1763 |
 | test.SittingDuck | 0 | 0 | N/A | N/A | N/A | N/A | N/A |
-| test.Aggressive | 416 | 415 | 99.8% | 0.0000 | 0.0005 | 0.00 | 0.9242 |
-| sample.Fire | 332 | 332 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.0453 |
-| sample.Walls | 349 | 349 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.0313 |
-| sample.Crazy | 224 | 224 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.1070 |
-| kc.mega.BeepBoop | 1059 | 1059 | 100.0% | 0.0000 | 0.0020 | 0.00 | 0.3715 |
-| aaa.r.ScalarR | 1422 | 1422 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3406 |
-| jk.mega.DrussGT | 1435 | 1435 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.2885 |
-| voidious.Diamond | 1111 | 1111 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3783 |
-| rsalesc.mega.Knight | 1009 | 1010 | 100.1% | 0.0000 | 0.0000 | 0.00 | 0.4736 |
-| rsalesc.roborio.Roborio | 897 | 897 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4947 |
-| lxx.Tomcat | 931 | 931 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3503 |
-| cb.fire.Firestarter | 1092 | 1092 | 100.0% | 0.0000 | 0.0013 | 0.00 | 0.3840 |
-| xander.cat.XanderCat | 3973 | 3973 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.0400 |
-| oog.mega.saguaro.Saguaro | 893 | 892 | 99.9% | 0.0000 | 0.0017 | 0.00 | 0.4067 |
-| dsekercioglu.mega.Raven | 787 | 787 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4930 |
-| kc.serpent.WaveSerpent | 940 | 940 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4080 |
-| voidious.Dookious | 826 | 826 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.5179 |
-| darkcanuck.Pris | 918 | 918 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3868 |
-| abc.Shadow | 698 | 698 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3705 |
-| dsekercioglu.mega.WhiteFang | 957 | 957 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4391 |
-| mn.Combat | 1148 | 1148 | 100.0% | 0.0000 | 0.0009 | 0.00 | 0.4075 |
-| gh.GresSuffurd | 1296 | 1296 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4117 |
-| cs.Nene | 867 | 867 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3962 |
-| jk.melee.Neuromancer | 1265 | 1265 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3226 |
-| tjk.deBroglie | 791 | 791 | 100.0% | 0.0000 | 0.0019 | 0.00 | 0.4202 |
-| mue.Ascendant | 845 | 845 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4051 |
-| davidalves.Phoenix | 768 | 768 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4566 |
-| zyx.mega.YersiniaPestis | 892 | 892 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4960 |
-| darkcanuck.Holden | 812 | 812 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3875 |
-| Krabb.sliNk.Garm | 1237 | 1237 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4121 |
-| pez.rumble.CassiusClay | 798 | 798 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4589 |
-| jk.precise.Wintermute | 718 | 718 | 100.0% | 0.0000 | 0.0021 | 0.00 | 0.4712 |
-| fromHell.BlackBox | 917 | 917 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4166 |
-| axeBots.SilverSurfer | 772 | 772 | 100.0% | 0.0104 | 0.0000 | 0.00 | 0.4297 |
-| florent.XSeries.X2 | 1022 | 1022 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3672 |
-| ar.horizon.Horizon | 1015 | 1015 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3988 |
-| florent.test.Toad | 904 | 904 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4303 |
-| pulsar.PulsarMax | 1331 | 1331 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3848 |
-| sheldor.mini.Foilist | 1469 | 1468 | 99.9% | 0.0000 | 0.0000 | 0.00 | 0.3147 |
-| cjm.chalk.Chalk | 970 | 969 | 99.9% | 0.0000 | 0.0000 | 0.00 | 0.3984 |
-| cb.Domogled | 1181 | 1181 | 100.0% | 0.0000 | 0.0007 | 0.00 | 0.3812 |
-| cs.s2.Seraphim | 1170 | 1170 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4282 |
-| ags.Midboss | 872 | 872 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4817 |
-| dft.Cardigan | 894 | 894 | 100.0% | 0.0000 | 0.0011 | 0.00 | 0.4143 |
-| kc.serpent.Hydra | 883 | 883 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4391 |
-| pez.rumble.Ali | 933 | 933 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3942 |
-| davidalves.Firebird | 939 | 939 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4643 |
-| wcsv.Engineer.Engineer | 981 | 981 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4167 |
-| wcsv.PowerHouse.PowerHouse | 797 | 797 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4362 |
-| fromHell.CHCl3 | 895 | 895 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4105 |
-| dft.Cyanide | 1221 | 1221 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3809 |
-| jk.mini.CunobelinDC | 1258 | 1258 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3419 |
-| ags.rougedc.RougeDC | 864 | 864 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4980 |
+| test.Aggressive | 37 | 37 | 100.0% | 0.0000 | 0.0000 | 0.00 | 1.0330 |
+| sample.Fire | 16 | 16 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.0607 |
+| sample.Walls | 73 | 73 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.0264 |
+| sample.Crazy | 27 | 27 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.0672 |
+| kc.mega.BeepBoop | 124 | 124 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4515 |
+| aaa.r.ScalarR | 167 | 167 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3306 |
+| jk.mega.DrussGT | 204 | 204 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.2152 |
+| voidious.Diamond | 144 | 144 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3285 |
+| rsalesc.mega.Knight | 147 | 148 | 100.7% | 0.0000 | 0.0000 | 0.00 | 0.4484 |
+| rsalesc.roborio.Roborio | 168 | 168 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3820 |
+| lxx.Tomcat | 94 | 94 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3951 |
+| cb.fire.Firestarter | 137 | 137 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3924 |
+| xander.cat.XanderCat | 400 | 400 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.0271 |
+| oog.mega.saguaro.Saguaro | 120 | 120 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4142 |
+| dsekercioglu.mega.Raven | 121 | 121 | 100.0% | 0.0000 | 0.0041 | 0.00 | 0.3073 |
+| kc.serpent.WaveSerpent | 94 | 94 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3820 |
+| voidious.Dookious | 82 | 82 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.5178 |
+| darkcanuck.Pris | 124 | 124 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3348 |
+| abc.Shadow | 72 | 72 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3467 |
+| dsekercioglu.mega.WhiteFang | 110 | 110 | 100.0% | 0.0000 | 0.0091 | 0.00 | 0.4370 |
+| mn.Combat | 146 | 146 | 100.0% | 0.0000 | 0.0034 | 0.00 | 0.4681 |
+| gh.GresSuffurd | 133 | 133 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4234 |
+| cs.Nene | 98 | 98 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4006 |
+| jk.melee.Neuromancer | 175 | 175 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.2989 |
+| tjk.deBroglie | 102 | 102 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4088 |
+| mue.Ascendant | 87 | 87 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3798 |
+| davidalves.Phoenix | 152 | 152 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4185 |
+| zyx.mega.YersiniaPestis | 134 | 134 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3795 |
+| darkcanuck.Holden | 84 | 84 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3812 |
+| Krabb.sliNk.Garm | 130 | 130 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4000 |
+| pez.rumble.CassiusClay | 92 | 92 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4501 |
+| jk.precise.Wintermute | 136 | 136 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4010 |
+| fromHell.BlackBox | 95 | 95 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4330 |
+| axeBots.SilverSurfer | 111 | 111 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3943 |
+| florent.XSeries.X2 | 110 | 110 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3311 |
+| ar.horizon.Horizon | 173 | 173 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3492 |
+| florent.test.Toad | 98 | 98 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4730 |
+| pulsar.PulsarMax | 175 | 175 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3752 |
+| sheldor.mini.Foilist | 143 | 143 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3377 |
+| cjm.chalk.Chalk | 153 | 153 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.2994 |
+| cb.Domogled | 231 | 231 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3055 |
+| cs.s2.Seraphim | 116 | 116 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3811 |
+| ags.Midboss | 93 | 93 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4493 |
+| dft.Cardigan | 50 | 50 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4915 |
+| kc.serpent.Hydra | 116 | 116 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4130 |
+| pez.rumble.Ali | 101 | 101 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3965 |
+| davidalves.Firebird | 151 | 151 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4078 |
+| wcsv.Engineer.Engineer | 111 | 111 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4312 |
+| wcsv.PowerHouse.PowerHouse | 93 | 93 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4142 |
+| fromHell.CHCl3 | 96 | 96 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.3946 |
+| dft.Cyanide | 100 | 100 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4402 |
+| jk.mini.CunobelinDC | 149 | 149 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.2452 |
+| ags.rougedc.RougeDC | 111 | 111 | 100.0% | 0.0000 | 0.0000 | 0.00 | 0.4781 |
 
 ### Layer 3 — their-fire fields
 
 | Opponent | Feature | Checks | Mismatches | MAE | Max err |
 |---|---|---:|---:|---:|---:|
-| kc.mega.BeepBoop vs kc.mega.BeepBoop | THEIR_FIRE_POWER | 29783 | 32 | 0.0001 | 0.1000 |
-| kc.mega.BeepBoop vs kc.mega.BeepBoop | THEIR_FIRE_TICK | 29783 | 0 | 0.0000 | 0.0000 |
-| kc.mega.BeepBoop vs kc.mega.BeepBoop | THEIR_FIRE_X | 29783 | 0 | 0.0000 | 0.0000 |
-| kc.mega.BeepBoop vs kc.mega.BeepBoop | THEIR_FIRE_Y | 29783 | 0 | 0.0000 | 0.0000 |
-| kc.mega.BeepBoop vs kc.mega.BeepBoop | THEIR_BULLET_SPEED | 29783 | 32 | 0.0003 | 0.3000 |
-| kc.mega.BeepBoop vs kc.mega.BeepBoop | THEIR_FIRE_BEARING | 29783 | 27027 | 0.0084 | 0.0392 |
-| kc.mega.BeepBoop vs kc.mega.BeepBoop | THEIR_FIRE_DISTANCE | 29783 | 27014 | 0.7001 | 7.8540 |
-| kc.mega.BeepBoop vs kc.mega.BeepBoop | THEIR_FIRE_OUR_X | 29783 | 25450 | 2.4941 | 8.0000 |
-| kc.mega.BeepBoop vs kc.mega.BeepBoop | THEIR_FIRE_OUR_Y | 29783 | 24732 | 3.4289 | 8.0000 |
-| test.Aggressive | THEIR_FIRE_POWER | 415 | 1 | 0.0005 | 0.2000 |
-| test.Aggressive | THEIR_FIRE_TICK | 415 | 0 | 0.0000 | 0.0000 |
-| test.Aggressive | THEIR_FIRE_X | 415 | 0 | 0.0000 | 0.0000 |
-| test.Aggressive | THEIR_FIRE_Y | 415 | 0 | 0.0000 | 0.0000 |
-| test.Aggressive | THEIR_BULLET_SPEED | 415 | 1 | 0.0014 | 0.6000 |
-| test.Aggressive | THEIR_FIRE_BEARING | 415 | 389 | 0.0316 | 0.1596 |
-| test.Aggressive | THEIR_FIRE_DISTANCE | 415 | 389 | 3.8118 | 7.8850 |
-| test.Aggressive | THEIR_FIRE_OUR_X | 415 | 389 | 4.5136 | 7.9998 |
-| test.Aggressive | THEIR_FIRE_OUR_Y | 415 | 389 | 4.5461 | 7.9999 |
-| sample.Fire | THEIR_FIRE_POWER | 332 | 0 | 0.0000 | 0.0000 |
-| sample.Fire | THEIR_FIRE_TICK | 332 | 0 | 0.0000 | 0.0000 |
-| sample.Fire | THEIR_FIRE_X | 332 | 0 | 0.0000 | 0.0000 |
-| sample.Fire | THEIR_FIRE_Y | 332 | 0 | 0.0000 | 0.0000 |
-| sample.Fire | THEIR_BULLET_SPEED | 332 | 0 | 0.0000 | 0.0000 |
-| sample.Fire | THEIR_FIRE_BEARING | 332 | 230 | 0.0158 | 0.0811 |
-| sample.Fire | THEIR_FIRE_DISTANCE | 332 | 230 | 1.0156 | 6.7989 |
-| sample.Fire | THEIR_FIRE_OUR_X | 332 | 230 | 3.1091 | 7.9999 |
-| sample.Fire | THEIR_FIRE_OUR_Y | 332 | 230 | 3.1381 | 8.0000 |
-| sample.Walls | THEIR_FIRE_POWER | 349 | 0 | 0.0000 | 0.0000 |
-| sample.Walls | THEIR_FIRE_TICK | 349 | 0 | 0.0000 | 0.0000 |
-| sample.Walls | THEIR_FIRE_X | 349 | 0 | 0.0000 | 0.0000 |
-| sample.Walls | THEIR_FIRE_Y | 349 | 0 | 0.0000 | 0.0000 |
-| sample.Walls | THEIR_BULLET_SPEED | 349 | 0 | 0.0000 | 0.0000 |
-| sample.Walls | THEIR_FIRE_BEARING | 349 | 337 | 0.0265 | 0.1678 |
-| sample.Walls | THEIR_FIRE_DISTANCE | 349 | 337 | 2.6739 | 4.1906 |
-| sample.Walls | THEIR_FIRE_OUR_X | 349 | 337 | 4.6382 | 7.9998 |
-| sample.Walls | THEIR_FIRE_OUR_Y | 349 | 337 | 4.1049 | 7.9983 |
-| sample.Crazy | THEIR_FIRE_POWER | 222 | 1 | 0.0000 | 0.0032 |
-| sample.Crazy | THEIR_FIRE_TICK | 222 | 0 | 0.0000 | 0.0000 |
-| sample.Crazy | THEIR_FIRE_X | 222 | 0 | 0.0000 | 0.0000 |
-| sample.Crazy | THEIR_FIRE_Y | 222 | 0 | 0.0000 | 0.0000 |
-| sample.Crazy | THEIR_BULLET_SPEED | 222 | 1 | 0.0000 | 0.0097 |
-| sample.Crazy | THEIR_FIRE_BEARING | 222 | 206 | 0.0317 | 0.1906 |
-| sample.Crazy | THEIR_FIRE_DISTANCE | 222 | 206 | 2.6568 | 6.3779 |
-| sample.Crazy | THEIR_FIRE_OUR_X | 222 | 206 | 3.5564 | 8.0000 |
-| sample.Crazy | THEIR_FIRE_OUR_Y | 222 | 206 | 4.5714 | 8.0000 |
-| kc.mega.BeepBoop | THEIR_FIRE_POWER | 1059 | 4 | 0.0020 | 1.0000 |
-| kc.mega.BeepBoop | THEIR_FIRE_TICK | 1059 | 0 | 0.0000 | 0.0000 |
-| kc.mega.BeepBoop | THEIR_FIRE_X | 1059 | 0 | 0.0000 | 0.0000 |
-| kc.mega.BeepBoop | THEIR_FIRE_Y | 1059 | 0 | 0.0000 | 0.0000 |
-| kc.mega.BeepBoop | THEIR_BULLET_SPEED | 1059 | 4 | 0.0060 | 3.0000 |
-| kc.mega.BeepBoop | THEIR_FIRE_BEARING | 1059 | 984 | 0.0141 | 0.0919 |
-| kc.mega.BeepBoop | THEIR_FIRE_DISTANCE | 1059 | 984 | 2.0761 | 6.1614 |
-| kc.mega.BeepBoop | THEIR_FIRE_OUR_X | 1059 | 984 | 3.7944 | 7.9999 |
-| kc.mega.BeepBoop | THEIR_FIRE_OUR_Y | 1059 | 984 | 4.6718 | 7.9998 |
-| aaa.r.ScalarR | THEIR_FIRE_POWER | 1422 | 0 | 0.0000 | 0.0000 |
-| aaa.r.ScalarR | THEIR_FIRE_TICK | 1422 | 0 | 0.0000 | 0.0000 |
-| aaa.r.ScalarR | THEIR_FIRE_X | 1422 | 0 | 0.0000 | 0.0000 |
-| aaa.r.ScalarR | THEIR_FIRE_Y | 1422 | 0 | 0.0000 | 0.0000 |
-| aaa.r.ScalarR | THEIR_BULLET_SPEED | 1422 | 0 | 0.0000 | 0.0000 |
-| aaa.r.ScalarR | THEIR_FIRE_BEARING | 1422 | 1347 | 0.0138 | 0.0547 |
-| aaa.r.ScalarR | THEIR_FIRE_DISTANCE | 1422 | 1347 | 1.9074 | 7.2955 |
-| aaa.r.ScalarR | THEIR_FIRE_OUR_X | 1422 | 1347 | 3.6111 | 8.0000 |
-| aaa.r.ScalarR | THEIR_FIRE_OUR_Y | 1422 | 1347 | 4.9531 | 7.9999 |
-| jk.mega.DrussGT | THEIR_FIRE_POWER | 1435 | 0 | 0.0000 | 0.0000 |
-| jk.mega.DrussGT | THEIR_FIRE_TICK | 1435 | 0 | 0.0000 | 0.0000 |
-| jk.mega.DrussGT | THEIR_FIRE_X | 1435 | 0 | 0.0000 | 0.0000 |
-| jk.mega.DrussGT | THEIR_FIRE_Y | 1435 | 0 | 0.0000 | 0.0000 |
-| jk.mega.DrussGT | THEIR_BULLET_SPEED | 1435 | 0 | 0.0000 | 0.0000 |
-| jk.mega.DrussGT | THEIR_FIRE_BEARING | 1435 | 1238 | 0.0135 | 0.0972 |
-| jk.mega.DrussGT | THEIR_FIRE_DISTANCE | 1435 | 1238 | 1.3146 | 7.9631 |
-| jk.mega.DrussGT | THEIR_FIRE_OUR_X | 1435 | 1238 | 3.3531 | 8.0000 |
-| jk.mega.DrussGT | THEIR_FIRE_OUR_Y | 1435 | 1238 | 4.4566 | 8.0000 |
-| voidious.Diamond | THEIR_FIRE_POWER | 1111 | 0 | 0.0000 | 0.0000 |
-| voidious.Diamond | THEIR_FIRE_TICK | 1111 | 0 | 0.0000 | 0.0000 |
-| voidious.Diamond | THEIR_FIRE_X | 1111 | 0 | 0.0000 | 0.0000 |
-| voidious.Diamond | THEIR_FIRE_Y | 1111 | 0 | 0.0000 | 0.0000 |
-| voidious.Diamond | THEIR_BULLET_SPEED | 1111 | 0 | 0.0000 | 0.0000 |
-| voidious.Diamond | THEIR_FIRE_BEARING | 1111 | 1050 | 0.0154 | 0.0564 |
-| voidious.Diamond | THEIR_FIRE_DISTANCE | 1111 | 1050 | 1.7053 | 5.7980 |
-| voidious.Diamond | THEIR_FIRE_OUR_X | 1111 | 1050 | 3.8007 | 8.0000 |
-| voidious.Diamond | THEIR_FIRE_OUR_Y | 1111 | 1050 | 4.8102 | 8.0000 |
-| rsalesc.mega.Knight | THEIR_FIRE_POWER | 1009 | 0 | 0.0000 | 0.0000 |
-| rsalesc.mega.Knight | THEIR_FIRE_TICK | 1009 | 0 | 0.0000 | 0.0000 |
-| rsalesc.mega.Knight | THEIR_FIRE_X | 1009 | 0 | 0.0000 | 0.0000 |
-| rsalesc.mega.Knight | THEIR_FIRE_Y | 1009 | 0 | 0.0000 | 0.0000 |
-| rsalesc.mega.Knight | THEIR_BULLET_SPEED | 1009 | 0 | 0.0000 | 0.0000 |
-| rsalesc.mega.Knight | THEIR_FIRE_BEARING | 1009 | 956 | 0.0169 | 0.1846 |
-| rsalesc.mega.Knight | THEIR_FIRE_DISTANCE | 1009 | 956 | 1.4643 | 6.7835 |
-| rsalesc.mega.Knight | THEIR_FIRE_OUR_X | 1009 | 956 | 3.6943 | 8.0000 |
-| rsalesc.mega.Knight | THEIR_FIRE_OUR_Y | 1009 | 956 | 4.8529 | 8.0000 |
-| rsalesc.roborio.Roborio | THEIR_FIRE_POWER | 897 | 0 | 0.0000 | 0.0000 |
-| rsalesc.roborio.Roborio | THEIR_FIRE_TICK | 897 | 0 | 0.0000 | 0.0000 |
-| rsalesc.roborio.Roborio | THEIR_FIRE_X | 897 | 0 | 0.0000 | 0.0000 |
-| rsalesc.roborio.Roborio | THEIR_FIRE_Y | 897 | 0 | 0.0000 | 0.0000 |
-| rsalesc.roborio.Roborio | THEIR_BULLET_SPEED | 897 | 0 | 0.0000 | 0.0000 |
-| rsalesc.roborio.Roborio | THEIR_FIRE_BEARING | 897 | 861 | 0.0174 | 0.1175 |
-| rsalesc.roborio.Roborio | THEIR_FIRE_DISTANCE | 897 | 861 | 1.5290 | 7.4031 |
-| rsalesc.roborio.Roborio | THEIR_FIRE_OUR_X | 897 | 861 | 4.4116 | 7.9999 |
-| rsalesc.roborio.Roborio | THEIR_FIRE_OUR_Y | 897 | 861 | 4.5177 | 8.0000 |
-| lxx.Tomcat | THEIR_FIRE_POWER | 931 | 0 | 0.0000 | 0.0000 |
-| lxx.Tomcat | THEIR_FIRE_TICK | 931 | 0 | 0.0000 | 0.0000 |
-| lxx.Tomcat | THEIR_FIRE_X | 931 | 0 | 0.0000 | 0.0000 |
-| lxx.Tomcat | THEIR_FIRE_Y | 931 | 0 | 0.0000 | 0.0000 |
-| lxx.Tomcat | THEIR_BULLET_SPEED | 931 | 0 | 0.0000 | 0.0000 |
-| lxx.Tomcat | THEIR_FIRE_BEARING | 931 | 888 | 0.0179 | 0.0911 |
-| lxx.Tomcat | THEIR_FIRE_DISTANCE | 931 | 888 | 1.8818 | 7.9836 |
-| lxx.Tomcat | THEIR_FIRE_OUR_X | 931 | 888 | 3.6121 | 7.9999 |
-| lxx.Tomcat | THEIR_FIRE_OUR_Y | 931 | 888 | 5.1238 | 8.0000 |
-| cb.fire.Firestarter | THEIR_FIRE_POWER | 1092 | 1 | 0.0013 | 1.3750 |
-| cb.fire.Firestarter | THEIR_FIRE_TICK | 1092 | 0 | 0.0000 | 0.0000 |
-| cb.fire.Firestarter | THEIR_FIRE_X | 1092 | 0 | 0.0000 | 0.0000 |
-| cb.fire.Firestarter | THEIR_FIRE_Y | 1092 | 0 | 0.0000 | 0.0000 |
-| cb.fire.Firestarter | THEIR_BULLET_SPEED | 1092 | 1 | 0.0038 | 4.1250 |
-| cb.fire.Firestarter | THEIR_FIRE_BEARING | 1092 | 1048 | 0.0163 | 0.0769 |
-| cb.fire.Firestarter | THEIR_FIRE_DISTANCE | 1092 | 1048 | 2.0318 | 7.7559 |
-| cb.fire.Firestarter | THEIR_FIRE_OUR_X | 1092 | 1048 | 3.8391 | 8.0000 |
-| cb.fire.Firestarter | THEIR_FIRE_OUR_Y | 1092 | 1048 | 4.8626 | 8.0000 |
-| xander.cat.XanderCat | THEIR_FIRE_POWER | 3973 | 0 | 0.0000 | 0.0000 |
-| xander.cat.XanderCat | THEIR_FIRE_TICK | 3973 | 0 | 0.0000 | 0.0000 |
-| xander.cat.XanderCat | THEIR_FIRE_X | 3973 | 0 | 0.0000 | 0.0000 |
-| xander.cat.XanderCat | THEIR_FIRE_Y | 3973 | 0 | 0.0000 | 0.0000 |
-| xander.cat.XanderCat | THEIR_BULLET_SPEED | 3973 | 0 | 0.0000 | 0.0000 |
-| xander.cat.XanderCat | THEIR_FIRE_BEARING | 3973 | 3617 | 0.0154 | 0.1620 |
-| xander.cat.XanderCat | THEIR_FIRE_DISTANCE | 3973 | 3616 | 0.8542 | 6.3093 |
-| xander.cat.XanderCat | THEIR_FIRE_OUR_X | 3973 | 3617 | 3.3787 | 8.0000 |
-| xander.cat.XanderCat | THEIR_FIRE_OUR_Y | 3973 | 3617 | 4.7893 | 8.0000 |
-| oog.mega.saguaro.Saguaro | THEIR_FIRE_POWER | 892 | 1 | 0.0017 | 1.5000 |
-| oog.mega.saguaro.Saguaro | THEIR_FIRE_TICK | 892 | 0 | 0.0000 | 0.0000 |
-| oog.mega.saguaro.Saguaro | THEIR_FIRE_X | 892 | 0 | 0.0000 | 0.0000 |
-| oog.mega.saguaro.Saguaro | THEIR_FIRE_Y | 892 | 0 | 0.0000 | 0.0000 |
-| oog.mega.saguaro.Saguaro | THEIR_BULLET_SPEED | 892 | 1 | 0.0050 | 4.5000 |
-| oog.mega.saguaro.Saguaro | THEIR_FIRE_BEARING | 892 | 868 | 0.0177 | 0.0690 |
-| oog.mega.saguaro.Saguaro | THEIR_FIRE_DISTANCE | 892 | 868 | 2.0086 | 7.3585 |
-| oog.mega.saguaro.Saguaro | THEIR_FIRE_OUR_X | 892 | 868 | 3.9897 | 8.0000 |
-| oog.mega.saguaro.Saguaro | THEIR_FIRE_OUR_Y | 892 | 867 | 4.6722 | 8.0000 |
-| dsekercioglu.mega.Raven | THEIR_FIRE_POWER | 787 | 0 | 0.0000 | 0.0000 |
-| dsekercioglu.mega.Raven | THEIR_FIRE_TICK | 787 | 0 | 0.0000 | 0.0000 |
-| dsekercioglu.mega.Raven | THEIR_FIRE_X | 787 | 0 | 0.0000 | 0.0000 |
-| dsekercioglu.mega.Raven | THEIR_FIRE_Y | 787 | 0 | 0.0000 | 0.0000 |
-| dsekercioglu.mega.Raven | THEIR_BULLET_SPEED | 787 | 0 | 0.0000 | 0.0000 |
-| dsekercioglu.mega.Raven | THEIR_FIRE_BEARING | 787 | 753 | 0.0175 | 0.1435 |
-| dsekercioglu.mega.Raven | THEIR_FIRE_DISTANCE | 787 | 753 | 1.0333 | 7.9854 |
-| dsekercioglu.mega.Raven | THEIR_FIRE_OUR_X | 787 | 753 | 3.8508 | 7.9999 |
-| dsekercioglu.mega.Raven | THEIR_FIRE_OUR_Y | 787 | 753 | 4.7965 | 8.0000 |
-| kc.serpent.WaveSerpent | THEIR_FIRE_POWER | 940 | 0 | 0.0000 | 0.0000 |
-| kc.serpent.WaveSerpent | THEIR_FIRE_TICK | 940 | 0 | 0.0000 | 0.0000 |
-| kc.serpent.WaveSerpent | THEIR_FIRE_X | 940 | 0 | 0.0000 | 0.0000 |
-| kc.serpent.WaveSerpent | THEIR_FIRE_Y | 940 | 0 | 0.0000 | 0.0000 |
-| kc.serpent.WaveSerpent | THEIR_BULLET_SPEED | 940 | 0 | 0.0000 | 0.0000 |
-| kc.serpent.WaveSerpent | THEIR_FIRE_BEARING | 940 | 893 | 0.0167 | 0.1759 |
-| kc.serpent.WaveSerpent | THEIR_FIRE_DISTANCE | 940 | 893 | 1.3131 | 7.5340 |
-| kc.serpent.WaveSerpent | THEIR_FIRE_OUR_X | 940 | 893 | 3.7313 | 8.0000 |
-| kc.serpent.WaveSerpent | THEIR_FIRE_OUR_Y | 940 | 893 | 4.8225 | 8.0000 |
-| voidious.Dookious | THEIR_FIRE_POWER | 826 | 0 | 0.0000 | 0.0000 |
-| voidious.Dookious | THEIR_FIRE_TICK | 826 | 0 | 0.0000 | 0.0000 |
-| voidious.Dookious | THEIR_FIRE_X | 826 | 0 | 0.0000 | 0.0000 |
-| voidious.Dookious | THEIR_FIRE_Y | 826 | 0 | 0.0000 | 0.0000 |
-| voidious.Dookious | THEIR_BULLET_SPEED | 826 | 0 | 0.0000 | 0.0000 |
-| voidious.Dookious | THEIR_FIRE_BEARING | 826 | 786 | 0.0179 | 0.0860 |
-| voidious.Dookious | THEIR_FIRE_DISTANCE | 826 | 786 | 1.4904 | 7.9376 |
-| voidious.Dookious | THEIR_FIRE_OUR_X | 826 | 786 | 3.9593 | 8.0000 |
-| voidious.Dookious | THEIR_FIRE_OUR_Y | 826 | 786 | 4.9251 | 8.0000 |
-| darkcanuck.Pris | THEIR_FIRE_POWER | 918 | 0 | 0.0000 | 0.0000 |
-| darkcanuck.Pris | THEIR_FIRE_TICK | 918 | 0 | 0.0000 | 0.0000 |
-| darkcanuck.Pris | THEIR_FIRE_X | 918 | 0 | 0.0000 | 0.0000 |
-| darkcanuck.Pris | THEIR_FIRE_Y | 918 | 0 | 0.0000 | 0.0000 |
-| darkcanuck.Pris | THEIR_BULLET_SPEED | 918 | 0 | 0.0000 | 0.0000 |
-| darkcanuck.Pris | THEIR_FIRE_BEARING | 918 | 878 | 0.0200 | 0.1337 |
-| darkcanuck.Pris | THEIR_FIRE_DISTANCE | 918 | 878 | 1.0783 | 5.9562 |
-| darkcanuck.Pris | THEIR_FIRE_OUR_X | 918 | 878 | 3.3441 | 8.0000 |
-| darkcanuck.Pris | THEIR_FIRE_OUR_Y | 918 | 878 | 5.0949 | 8.0000 |
-| abc.Shadow | THEIR_FIRE_POWER | 698 | 0 | 0.0000 | 0.0000 |
-| abc.Shadow | THEIR_FIRE_TICK | 698 | 0 | 0.0000 | 0.0000 |
-| abc.Shadow | THEIR_FIRE_X | 698 | 0 | 0.0000 | 0.0000 |
-| abc.Shadow | THEIR_FIRE_Y | 698 | 0 | 0.0000 | 0.0000 |
-| abc.Shadow | THEIR_BULLET_SPEED | 698 | 0 | 0.0000 | 0.0000 |
-| abc.Shadow | THEIR_FIRE_BEARING | 698 | 667 | 0.0260 | 0.2030 |
-| abc.Shadow | THEIR_FIRE_DISTANCE | 698 | 667 | 1.7798 | 7.8964 |
-| abc.Shadow | THEIR_FIRE_OUR_X | 698 | 667 | 3.9677 | 7.9998 |
-| abc.Shadow | THEIR_FIRE_OUR_Y | 698 | 667 | 4.8064 | 8.0000 |
-| dsekercioglu.mega.WhiteFang | THEIR_FIRE_POWER | 957 | 0 | 0.0000 | 0.0000 |
-| dsekercioglu.mega.WhiteFang | THEIR_FIRE_TICK | 957 | 0 | 0.0000 | 0.0000 |
-| dsekercioglu.mega.WhiteFang | THEIR_FIRE_X | 957 | 0 | 0.0000 | 0.0000 |
-| dsekercioglu.mega.WhiteFang | THEIR_FIRE_Y | 957 | 0 | 0.0000 | 0.0000 |
-| dsekercioglu.mega.WhiteFang | THEIR_BULLET_SPEED | 957 | 0 | 0.0000 | 0.0000 |
-| dsekercioglu.mega.WhiteFang | THEIR_FIRE_BEARING | 957 | 926 | 0.0180 | 0.1302 |
-| dsekercioglu.mega.WhiteFang | THEIR_FIRE_DISTANCE | 957 | 926 | 1.3483 | 7.5989 |
-| dsekercioglu.mega.WhiteFang | THEIR_FIRE_OUR_X | 957 | 926 | 3.5856 | 8.0000 |
-| dsekercioglu.mega.WhiteFang | THEIR_FIRE_OUR_Y | 957 | 926 | 5.2621 | 8.0000 |
-| mn.Combat | THEIR_FIRE_POWER | 1148 | 2 | 0.0009 | 0.5000 |
-| mn.Combat | THEIR_FIRE_TICK | 1148 | 0 | 0.0000 | 0.0000 |
-| mn.Combat | THEIR_FIRE_X | 1148 | 0 | 0.0000 | 0.0000 |
-| mn.Combat | THEIR_FIRE_Y | 1148 | 0 | 0.0000 | 0.0000 |
-| mn.Combat | THEIR_BULLET_SPEED | 1148 | 2 | 0.0026 | 1.5000 |
-| mn.Combat | THEIR_FIRE_BEARING | 1148 | 1099 | 0.0165 | 0.0646 |
-| mn.Combat | THEIR_FIRE_DISTANCE | 1148 | 1099 | 1.6437 | 7.6445 |
-| mn.Combat | THEIR_FIRE_OUR_X | 1148 | 1099 | 3.8261 | 8.0000 |
-| mn.Combat | THEIR_FIRE_OUR_Y | 1148 | 1099 | 4.9319 | 8.0000 |
-| gh.GresSuffurd | THEIR_FIRE_POWER | 1296 | 0 | 0.0000 | 0.0000 |
-| gh.GresSuffurd | THEIR_FIRE_TICK | 1296 | 0 | 0.0000 | 0.0000 |
-| gh.GresSuffurd | THEIR_FIRE_X | 1296 | 0 | 0.0000 | 0.0000 |
-| gh.GresSuffurd | THEIR_FIRE_Y | 1296 | 0 | 0.0000 | 0.0000 |
-| gh.GresSuffurd | THEIR_BULLET_SPEED | 1296 | 0 | 0.0000 | 0.0000 |
-| gh.GresSuffurd | THEIR_FIRE_BEARING | 1296 | 1248 | 0.0160 | 0.0584 |
-| gh.GresSuffurd | THEIR_FIRE_DISTANCE | 1296 | 1248 | 1.6718 | 7.2975 |
-| gh.GresSuffurd | THEIR_FIRE_OUR_X | 1296 | 1248 | 3.7326 | 8.0000 |
-| gh.GresSuffurd | THEIR_FIRE_OUR_Y | 1296 | 1248 | 5.0561 | 7.9998 |
-| cs.Nene | THEIR_FIRE_POWER | 867 | 0 | 0.0000 | 0.0000 |
-| cs.Nene | THEIR_FIRE_TICK | 867 | 0 | 0.0000 | 0.0000 |
-| cs.Nene | THEIR_FIRE_X | 867 | 0 | 0.0000 | 0.0000 |
-| cs.Nene | THEIR_FIRE_Y | 867 | 0 | 0.0000 | 0.0000 |
-| cs.Nene | THEIR_BULLET_SPEED | 867 | 0 | 0.0000 | 0.0000 |
-| cs.Nene | THEIR_FIRE_BEARING | 867 | 817 | 0.0194 | 0.1044 |
-| cs.Nene | THEIR_FIRE_DISTANCE | 867 | 817 | 1.3451 | 7.9399 |
-| cs.Nene | THEIR_FIRE_OUR_X | 867 | 817 | 3.5297 | 7.9996 |
-| cs.Nene | THEIR_FIRE_OUR_Y | 867 | 817 | 5.0261 | 8.0000 |
-| jk.melee.Neuromancer | THEIR_FIRE_POWER | 1265 | 0 | 0.0000 | 0.0000 |
-| jk.melee.Neuromancer | THEIR_FIRE_TICK | 1265 | 0 | 0.0000 | 0.0000 |
-| jk.melee.Neuromancer | THEIR_FIRE_X | 1265 | 0 | 0.0000 | 0.0000 |
-| jk.melee.Neuromancer | THEIR_FIRE_Y | 1265 | 0 | 0.0000 | 0.0000 |
-| jk.melee.Neuromancer | THEIR_BULLET_SPEED | 1265 | 0 | 0.0000 | 0.0000 |
-| jk.melee.Neuromancer | THEIR_FIRE_BEARING | 1265 | 1198 | 0.0146 | 0.0803 |
-| jk.melee.Neuromancer | THEIR_FIRE_DISTANCE | 1265 | 1198 | 2.1607 | 7.7865 |
-| jk.melee.Neuromancer | THEIR_FIRE_OUR_X | 1265 | 1198 | 3.9034 | 8.0000 |
-| jk.melee.Neuromancer | THEIR_FIRE_OUR_Y | 1265 | 1198 | 4.7322 | 8.0000 |
-| tjk.deBroglie | THEIR_FIRE_POWER | 791 | 1 | 0.0019 | 1.5000 |
-| tjk.deBroglie | THEIR_FIRE_TICK | 791 | 0 | 0.0000 | 0.0000 |
-| tjk.deBroglie | THEIR_FIRE_X | 791 | 0 | 0.0000 | 0.0000 |
-| tjk.deBroglie | THEIR_FIRE_Y | 791 | 0 | 0.0000 | 0.0000 |
-| tjk.deBroglie | THEIR_BULLET_SPEED | 791 | 1 | 0.0057 | 4.5000 |
-| tjk.deBroglie | THEIR_FIRE_BEARING | 791 | 738 | 0.0260 | 0.1469 |
-| tjk.deBroglie | THEIR_FIRE_DISTANCE | 791 | 738 | 2.0154 | 5.0217 |
-| tjk.deBroglie | THEIR_FIRE_OUR_X | 791 | 738 | 4.1952 | 7.9995 |
-| tjk.deBroglie | THEIR_FIRE_OUR_Y | 791 | 738 | 4.6105 | 8.0000 |
-| mue.Ascendant | THEIR_FIRE_POWER | 845 | 1 | 0.0000 | 0.0088 |
-| mue.Ascendant | THEIR_FIRE_TICK | 845 | 0 | 0.0000 | 0.0000 |
-| mue.Ascendant | THEIR_FIRE_X | 845 | 0 | 0.0000 | 0.0000 |
-| mue.Ascendant | THEIR_FIRE_Y | 845 | 0 | 0.0000 | 0.0000 |
-| mue.Ascendant | THEIR_BULLET_SPEED | 845 | 1 | 0.0000 | 0.0265 |
-| mue.Ascendant | THEIR_FIRE_BEARING | 845 | 798 | 0.0221 | 0.0949 |
-| mue.Ascendant | THEIR_FIRE_DISTANCE | 845 | 798 | 1.1394 | 6.2307 |
-| mue.Ascendant | THEIR_FIRE_OUR_X | 845 | 798 | 4.0621 | 7.9998 |
-| mue.Ascendant | THEIR_FIRE_OUR_Y | 845 | 798 | 4.6277 | 8.0000 |
-| davidalves.Phoenix | THEIR_FIRE_POWER | 768 | 0 | 0.0000 | 0.0000 |
-| davidalves.Phoenix | THEIR_FIRE_TICK | 768 | 0 | 0.0000 | 0.0000 |
-| davidalves.Phoenix | THEIR_FIRE_X | 768 | 0 | 0.0000 | 0.0000 |
-| davidalves.Phoenix | THEIR_FIRE_Y | 768 | 0 | 0.0000 | 0.0000 |
-| davidalves.Phoenix | THEIR_BULLET_SPEED | 768 | 0 | 0.0000 | 0.0000 |
-| davidalves.Phoenix | THEIR_FIRE_BEARING | 768 | 725 | 0.0205 | 0.1926 |
-| davidalves.Phoenix | THEIR_FIRE_DISTANCE | 768 | 725 | 1.0538 | 7.9641 |
-| davidalves.Phoenix | THEIR_FIRE_OUR_X | 768 | 725 | 3.4605 | 8.0000 |
-| davidalves.Phoenix | THEIR_FIRE_OUR_Y | 768 | 725 | 5.1329 | 8.0000 |
-| zyx.mega.YersiniaPestis | THEIR_FIRE_POWER | 892 | 0 | 0.0000 | 0.0000 |
-| zyx.mega.YersiniaPestis | THEIR_FIRE_TICK | 892 | 0 | 0.0000 | 0.0000 |
-| zyx.mega.YersiniaPestis | THEIR_FIRE_X | 892 | 0 | 0.0000 | 0.0000 |
-| zyx.mega.YersiniaPestis | THEIR_FIRE_Y | 892 | 0 | 0.0000 | 0.0000 |
-| zyx.mega.YersiniaPestis | THEIR_BULLET_SPEED | 892 | 0 | 0.0000 | 0.0000 |
-| zyx.mega.YersiniaPestis | THEIR_FIRE_BEARING | 892 | 859 | 0.0187 | 0.1912 |
-| zyx.mega.YersiniaPestis | THEIR_FIRE_DISTANCE | 892 | 859 | 1.4498 | 7.6590 |
-| zyx.mega.YersiniaPestis | THEIR_FIRE_OUR_X | 892 | 859 | 3.8821 | 7.9999 |
-| zyx.mega.YersiniaPestis | THEIR_FIRE_OUR_Y | 892 | 859 | 4.9311 | 8.0000 |
-| darkcanuck.Holden | THEIR_FIRE_POWER | 812 | 0 | 0.0000 | 0.0000 |
-| darkcanuck.Holden | THEIR_FIRE_TICK | 812 | 0 | 0.0000 | 0.0000 |
-| darkcanuck.Holden | THEIR_FIRE_X | 812 | 0 | 0.0000 | 0.0000 |
-| darkcanuck.Holden | THEIR_FIRE_Y | 812 | 0 | 0.0000 | 0.0000 |
-| darkcanuck.Holden | THEIR_BULLET_SPEED | 812 | 0 | 0.0000 | 0.0000 |
-| darkcanuck.Holden | THEIR_FIRE_BEARING | 812 | 777 | 0.0217 | 0.1183 |
-| darkcanuck.Holden | THEIR_FIRE_DISTANCE | 812 | 777 | 1.2576 | 6.6633 |
-| darkcanuck.Holden | THEIR_FIRE_OUR_X | 812 | 777 | 3.4583 | 8.0000 |
-| darkcanuck.Holden | THEIR_FIRE_OUR_Y | 812 | 777 | 5.0516 | 8.0000 |
-| Krabb.sliNk.Garm | THEIR_FIRE_POWER | 1237 | 0 | 0.0000 | 0.0000 |
-| Krabb.sliNk.Garm | THEIR_FIRE_TICK | 1237 | 0 | 0.0000 | 0.0000 |
-| Krabb.sliNk.Garm | THEIR_FIRE_X | 1237 | 0 | 0.0000 | 0.0000 |
-| Krabb.sliNk.Garm | THEIR_FIRE_Y | 1237 | 0 | 0.0000 | 0.0000 |
-| Krabb.sliNk.Garm | THEIR_BULLET_SPEED | 1237 | 0 | 0.0000 | 0.0000 |
-| Krabb.sliNk.Garm | THEIR_FIRE_BEARING | 1237 | 1171 | 0.0160 | 0.1001 |
-| Krabb.sliNk.Garm | THEIR_FIRE_DISTANCE | 1237 | 1171 | 1.6566 | 7.5537 |
-| Krabb.sliNk.Garm | THEIR_FIRE_OUR_X | 1237 | 1170 | 4.0053 | 7.9999 |
-| Krabb.sliNk.Garm | THEIR_FIRE_OUR_Y | 1237 | 1171 | 4.7758 | 8.0000 |
-| pez.rumble.CassiusClay | THEIR_FIRE_POWER | 798 | 0 | 0.0000 | 0.0000 |
-| pez.rumble.CassiusClay | THEIR_FIRE_TICK | 798 | 0 | 0.0000 | 0.0000 |
-| pez.rumble.CassiusClay | THEIR_FIRE_X | 798 | 0 | 0.0000 | 0.0000 |
-| pez.rumble.CassiusClay | THEIR_FIRE_Y | 798 | 0 | 0.0000 | 0.0000 |
-| pez.rumble.CassiusClay | THEIR_BULLET_SPEED | 798 | 0 | 0.0000 | 0.0000 |
-| pez.rumble.CassiusClay | THEIR_FIRE_BEARING | 798 | 773 | 0.0206 | 0.1903 |
-| pez.rumble.CassiusClay | THEIR_FIRE_DISTANCE | 798 | 773 | 1.4799 | 7.9245 |
-| pez.rumble.CassiusClay | THEIR_FIRE_OUR_X | 798 | 773 | 4.0918 | 8.0000 |
-| pez.rumble.CassiusClay | THEIR_FIRE_OUR_Y | 798 | 773 | 4.7654 | 8.0000 |
-| jk.precise.Wintermute | THEIR_FIRE_POWER | 718 | 1 | 0.0021 | 1.5000 |
-| jk.precise.Wintermute | THEIR_FIRE_TICK | 718 | 0 | 0.0000 | 0.0000 |
-| jk.precise.Wintermute | THEIR_FIRE_X | 718 | 0 | 0.0000 | 0.0000 |
-| jk.precise.Wintermute | THEIR_FIRE_Y | 718 | 0 | 0.0000 | 0.0000 |
-| jk.precise.Wintermute | THEIR_BULLET_SPEED | 718 | 1 | 0.0063 | 4.5000 |
-| jk.precise.Wintermute | THEIR_FIRE_BEARING | 718 | 678 | 0.0192 | 0.1438 |
-| jk.precise.Wintermute | THEIR_FIRE_DISTANCE | 718 | 678 | 1.3880 | 7.8951 |
-| jk.precise.Wintermute | THEIR_FIRE_OUR_X | 718 | 678 | 4.0132 | 8.0000 |
-| jk.precise.Wintermute | THEIR_FIRE_OUR_Y | 718 | 678 | 4.6249 | 7.9997 |
-| fromHell.BlackBox | THEIR_FIRE_POWER | 917 | 0 | 0.0000 | 0.0000 |
-| fromHell.BlackBox | THEIR_FIRE_TICK | 917 | 0 | 0.0000 | 0.0000 |
-| fromHell.BlackBox | THEIR_FIRE_X | 917 | 0 | 0.0000 | 0.0000 |
-| fromHell.BlackBox | THEIR_FIRE_Y | 917 | 0 | 0.0000 | 0.0000 |
-| fromHell.BlackBox | THEIR_BULLET_SPEED | 917 | 0 | 0.0000 | 0.0000 |
-| fromHell.BlackBox | THEIR_FIRE_BEARING | 917 | 877 | 0.0185 | 0.1208 |
-| fromHell.BlackBox | THEIR_FIRE_DISTANCE | 917 | 877 | 0.7436 | 7.6726 |
-| fromHell.BlackBox | THEIR_FIRE_OUR_X | 917 | 877 | 3.1971 | 8.0000 |
-| fromHell.BlackBox | THEIR_FIRE_OUR_Y | 917 | 877 | 5.3152 | 8.0000 |
-| axeBots.SilverSurfer | THEIR_FIRE_POWER | 772 | 0 | 0.0000 | 0.0000 |
-| axeBots.SilverSurfer | THEIR_FIRE_TICK | 772 | 0 | 0.0000 | 0.0000 |
-| axeBots.SilverSurfer | THEIR_FIRE_X | 772 | 1 | 0.0023 | 1.7398 |
-| axeBots.SilverSurfer | THEIR_FIRE_Y | 772 | 1 | 0.0101 | 7.8085 |
-| axeBots.SilverSurfer | THEIR_BULLET_SPEED | 772 | 0 | 0.0000 | 0.0000 |
-| axeBots.SilverSurfer | THEIR_FIRE_BEARING | 772 | 741 | 0.0224 | 0.1134 |
-| axeBots.SilverSurfer | THEIR_FIRE_DISTANCE | 772 | 741 | 2.1548 | 7.5497 |
-| axeBots.SilverSurfer | THEIR_FIRE_OUR_X | 772 | 741 | 3.8700 | 8.0000 |
-| axeBots.SilverSurfer | THEIR_FIRE_OUR_Y | 772 | 741 | 5.0464 | 8.0000 |
-| florent.XSeries.X2 | THEIR_FIRE_POWER | 1022 | 0 | 0.0000 | 0.0000 |
-| florent.XSeries.X2 | THEIR_FIRE_TICK | 1022 | 0 | 0.0000 | 0.0000 |
-| florent.XSeries.X2 | THEIR_FIRE_X | 1022 | 0 | 0.0000 | 0.0000 |
-| florent.XSeries.X2 | THEIR_FIRE_Y | 1022 | 0 | 0.0000 | 0.0000 |
-| florent.XSeries.X2 | THEIR_BULLET_SPEED | 1022 | 0 | 0.0000 | 0.0000 |
-| florent.XSeries.X2 | THEIR_FIRE_BEARING | 1022 | 995 | 0.0175 | 0.1080 |
-| florent.XSeries.X2 | THEIR_FIRE_DISTANCE | 1022 | 995 | 2.1183 | 7.6199 |
-| florent.XSeries.X2 | THEIR_FIRE_OUR_X | 1022 | 995 | 4.1284 | 8.0000 |
-| florent.XSeries.X2 | THEIR_FIRE_OUR_Y | 1022 | 995 | 4.9183 | 8.0000 |
-| ar.horizon.Horizon | THEIR_FIRE_POWER | 1015 | 0 | 0.0000 | 0.0000 |
-| ar.horizon.Horizon | THEIR_FIRE_TICK | 1015 | 0 | 0.0000 | 0.0000 |
-| ar.horizon.Horizon | THEIR_FIRE_X | 1015 | 0 | 0.0000 | 0.0000 |
-| ar.horizon.Horizon | THEIR_FIRE_Y | 1015 | 0 | 0.0000 | 0.0000 |
-| ar.horizon.Horizon | THEIR_BULLET_SPEED | 1015 | 0 | 0.0000 | 0.0000 |
-| ar.horizon.Horizon | THEIR_FIRE_BEARING | 1015 | 959 | 0.0190 | 0.1878 |
-| ar.horizon.Horizon | THEIR_FIRE_DISTANCE | 1015 | 959 | 1.5218 | 7.4411 |
-| ar.horizon.Horizon | THEIR_FIRE_OUR_X | 1015 | 959 | 3.8269 | 8.0000 |
-| ar.horizon.Horizon | THEIR_FIRE_OUR_Y | 1015 | 959 | 4.6511 | 8.0000 |
-| florent.test.Toad | THEIR_FIRE_POWER | 904 | 0 | 0.0000 | 0.0000 |
-| florent.test.Toad | THEIR_FIRE_TICK | 904 | 0 | 0.0000 | 0.0000 |
-| florent.test.Toad | THEIR_FIRE_X | 904 | 0 | 0.0000 | 0.0000 |
-| florent.test.Toad | THEIR_FIRE_Y | 904 | 0 | 0.0000 | 0.0000 |
-| florent.test.Toad | THEIR_BULLET_SPEED | 904 | 0 | 0.0000 | 0.0000 |
-| florent.test.Toad | THEIR_FIRE_BEARING | 904 | 832 | 0.0182 | 0.1081 |
-| florent.test.Toad | THEIR_FIRE_DISTANCE | 904 | 832 | 1.7851 | 6.3518 |
-| florent.test.Toad | THEIR_FIRE_OUR_X | 904 | 832 | 3.9432 | 7.9998 |
-| florent.test.Toad | THEIR_FIRE_OUR_Y | 904 | 832 | 4.5064 | 7.9999 |
-| pulsar.PulsarMax | THEIR_FIRE_POWER | 1331 | 0 | 0.0000 | 0.0000 |
-| pulsar.PulsarMax | THEIR_FIRE_TICK | 1331 | 0 | 0.0000 | 0.0000 |
-| pulsar.PulsarMax | THEIR_FIRE_X | 1331 | 0 | 0.0000 | 0.0000 |
-| pulsar.PulsarMax | THEIR_FIRE_Y | 1331 | 0 | 0.0000 | 0.0000 |
-| pulsar.PulsarMax | THEIR_BULLET_SPEED | 1331 | 0 | 0.0000 | 0.0000 |
-| pulsar.PulsarMax | THEIR_FIRE_BEARING | 1331 | 1304 | 0.0164 | 0.1691 |
-| pulsar.PulsarMax | THEIR_FIRE_DISTANCE | 1331 | 1304 | 1.9807 | 7.9940 |
-| pulsar.PulsarMax | THEIR_FIRE_OUR_X | 1331 | 1304 | 4.1179 | 8.0000 |
-| pulsar.PulsarMax | THEIR_FIRE_OUR_Y | 1331 | 1304 | 4.8459 | 8.0000 |
-| sheldor.mini.Foilist | THEIR_FIRE_POWER | 1468 | 0 | 0.0000 | 0.0000 |
-| sheldor.mini.Foilist | THEIR_FIRE_TICK | 1468 | 0 | 0.0000 | 0.0000 |
-| sheldor.mini.Foilist | THEIR_FIRE_X | 1468 | 0 | 0.0000 | 0.0000 |
-| sheldor.mini.Foilist | THEIR_FIRE_Y | 1468 | 0 | 0.0000 | 0.0000 |
-| sheldor.mini.Foilist | THEIR_BULLET_SPEED | 1468 | 0 | 0.0000 | 0.0000 |
-| sheldor.mini.Foilist | THEIR_FIRE_BEARING | 1468 | 1383 | 0.0140 | 0.0810 |
-| sheldor.mini.Foilist | THEIR_FIRE_DISTANCE | 1468 | 1383 | 2.3966 | 7.6516 |
-| sheldor.mini.Foilist | THEIR_FIRE_OUR_X | 1468 | 1383 | 4.0847 | 8.0000 |
-| sheldor.mini.Foilist | THEIR_FIRE_OUR_Y | 1468 | 1383 | 4.5599 | 8.0000 |
-| cjm.chalk.Chalk | THEIR_FIRE_POWER | 968 | 0 | 0.0000 | 0.0000 |
-| cjm.chalk.Chalk | THEIR_FIRE_TICK | 968 | 0 | 0.0000 | 0.0000 |
-| cjm.chalk.Chalk | THEIR_FIRE_X | 968 | 0 | 0.0000 | 0.0000 |
-| cjm.chalk.Chalk | THEIR_FIRE_Y | 968 | 0 | 0.0000 | 0.0000 |
-| cjm.chalk.Chalk | THEIR_BULLET_SPEED | 968 | 0 | 0.0000 | 0.0000 |
-| cjm.chalk.Chalk | THEIR_FIRE_BEARING | 968 | 918 | 0.0160 | 0.0722 |
-| cjm.chalk.Chalk | THEIR_FIRE_DISTANCE | 968 | 918 | 1.8704 | 6.6638 |
-| cjm.chalk.Chalk | THEIR_FIRE_OUR_X | 968 | 918 | 4.1229 | 8.0000 |
-| cjm.chalk.Chalk | THEIR_FIRE_OUR_Y | 968 | 918 | 4.5653 | 8.0000 |
-| cb.Domogled | THEIR_FIRE_POWER | 1181 | 2 | 0.0007 | 0.5000 |
-| cb.Domogled | THEIR_FIRE_TICK | 1181 | 0 | 0.0000 | 0.0000 |
-| cb.Domogled | THEIR_FIRE_X | 1181 | 0 | 0.0000 | 0.0000 |
-| cb.Domogled | THEIR_FIRE_Y | 1181 | 0 | 0.0000 | 0.0000 |
-| cb.Domogled | THEIR_BULLET_SPEED | 1181 | 2 | 0.0021 | 1.5000 |
-| cb.Domogled | THEIR_FIRE_BEARING | 1181 | 1142 | 0.0165 | 0.1107 |
-| cb.Domogled | THEIR_FIRE_DISTANCE | 1181 | 1142 | 2.2317 | 7.9559 |
-| cb.Domogled | THEIR_FIRE_OUR_X | 1181 | 1142 | 3.9154 | 8.0000 |
-| cb.Domogled | THEIR_FIRE_OUR_Y | 1181 | 1142 | 4.9773 | 7.9999 |
-| cs.s2.Seraphim | THEIR_FIRE_POWER | 1170 | 0 | 0.0000 | 0.0000 |
-| cs.s2.Seraphim | THEIR_FIRE_TICK | 1170 | 0 | 0.0000 | 0.0000 |
-| cs.s2.Seraphim | THEIR_FIRE_X | 1170 | 0 | 0.0000 | 0.0000 |
-| cs.s2.Seraphim | THEIR_FIRE_Y | 1170 | 0 | 0.0000 | 0.0000 |
-| cs.s2.Seraphim | THEIR_BULLET_SPEED | 1170 | 0 | 0.0000 | 0.0000 |
-| cs.s2.Seraphim | THEIR_FIRE_BEARING | 1170 | 1127 | 0.0181 | 0.1291 |
-| cs.s2.Seraphim | THEIR_FIRE_DISTANCE | 1170 | 1127 | 1.5585 | 7.0330 |
-| cs.s2.Seraphim | THEIR_FIRE_OUR_X | 1170 | 1127 | 4.0134 | 8.0000 |
-| cs.s2.Seraphim | THEIR_FIRE_OUR_Y | 1170 | 1127 | 4.6503 | 8.0000 |
-| ags.Midboss | THEIR_FIRE_POWER | 872 | 0 | 0.0000 | 0.0000 |
-| ags.Midboss | THEIR_FIRE_TICK | 872 | 0 | 0.0000 | 0.0000 |
-| ags.Midboss | THEIR_FIRE_X | 872 | 0 | 0.0000 | 0.0000 |
-| ags.Midboss | THEIR_FIRE_Y | 872 | 0 | 0.0000 | 0.0000 |
-| ags.Midboss | THEIR_BULLET_SPEED | 872 | 0 | 0.0000 | 0.0000 |
-| ags.Midboss | THEIR_FIRE_BEARING | 872 | 834 | 0.0187 | 0.0721 |
-| ags.Midboss | THEIR_FIRE_DISTANCE | 872 | 834 | 0.9702 | 7.3028 |
-| ags.Midboss | THEIR_FIRE_OUR_X | 872 | 834 | 3.8728 | 8.0000 |
-| ags.Midboss | THEIR_FIRE_OUR_Y | 872 | 834 | 4.8536 | 8.0000 |
-| dft.Cardigan | THEIR_FIRE_POWER | 894 | 2 | 0.0011 | 1.0004 |
-| dft.Cardigan | THEIR_FIRE_TICK | 894 | 0 | 0.0000 | 0.0000 |
-| dft.Cardigan | THEIR_FIRE_X | 894 | 0 | 0.0000 | 0.0000 |
-| dft.Cardigan | THEIR_FIRE_Y | 894 | 0 | 0.0000 | 0.0000 |
-| dft.Cardigan | THEIR_BULLET_SPEED | 894 | 2 | 0.0034 | 3.0012 |
-| dft.Cardigan | THEIR_FIRE_BEARING | 894 | 847 | 0.0188 | 0.0967 |
-| dft.Cardigan | THEIR_FIRE_DISTANCE | 894 | 847 | 1.5318 | 7.9922 |
-| dft.Cardigan | THEIR_FIRE_OUR_X | 894 | 847 | 3.7893 | 8.0000 |
-| dft.Cardigan | THEIR_FIRE_OUR_Y | 894 | 847 | 4.8306 | 8.0000 |
-| kc.serpent.Hydra | THEIR_FIRE_POWER | 883 | 0 | 0.0000 | 0.0000 |
-| kc.serpent.Hydra | THEIR_FIRE_TICK | 883 | 0 | 0.0000 | 0.0000 |
-| kc.serpent.Hydra | THEIR_FIRE_X | 883 | 0 | 0.0000 | 0.0000 |
-| kc.serpent.Hydra | THEIR_FIRE_Y | 883 | 0 | 0.0000 | 0.0000 |
-| kc.serpent.Hydra | THEIR_BULLET_SPEED | 883 | 0 | 0.0000 | 0.0000 |
-| kc.serpent.Hydra | THEIR_FIRE_BEARING | 883 | 847 | 0.0173 | 0.0668 |
-| kc.serpent.Hydra | THEIR_FIRE_DISTANCE | 883 | 847 | 1.1993 | 7.5596 |
-| kc.serpent.Hydra | THEIR_FIRE_OUR_X | 883 | 847 | 3.5759 | 8.0000 |
-| kc.serpent.Hydra | THEIR_FIRE_OUR_Y | 883 | 847 | 5.0145 | 8.0000 |
-| pez.rumble.Ali | THEIR_FIRE_POWER | 933 | 0 | 0.0000 | 0.0000 |
-| pez.rumble.Ali | THEIR_FIRE_TICK | 933 | 0 | 0.0000 | 0.0000 |
-| pez.rumble.Ali | THEIR_FIRE_X | 933 | 0 | 0.0000 | 0.0000 |
-| pez.rumble.Ali | THEIR_FIRE_Y | 933 | 0 | 0.0000 | 0.0000 |
-| pez.rumble.Ali | THEIR_BULLET_SPEED | 933 | 0 | 0.0000 | 0.0000 |
-| pez.rumble.Ali | THEIR_FIRE_BEARING | 933 | 866 | 0.0203 | 0.1029 |
-| pez.rumble.Ali | THEIR_FIRE_DISTANCE | 933 | 866 | 1.5806 | 7.8380 |
-| pez.rumble.Ali | THEIR_FIRE_OUR_X | 933 | 866 | 3.9264 | 8.0000 |
-| pez.rumble.Ali | THEIR_FIRE_OUR_Y | 933 | 866 | 4.6156 | 8.0000 |
-| davidalves.Firebird | THEIR_FIRE_POWER | 939 | 0 | 0.0000 | 0.0000 |
-| davidalves.Firebird | THEIR_FIRE_TICK | 939 | 0 | 0.0000 | 0.0000 |
-| davidalves.Firebird | THEIR_FIRE_X | 939 | 0 | 0.0000 | 0.0000 |
-| davidalves.Firebird | THEIR_FIRE_Y | 939 | 0 | 0.0000 | 0.0000 |
-| davidalves.Firebird | THEIR_BULLET_SPEED | 939 | 0 | 0.0000 | 0.0000 |
-| davidalves.Firebird | THEIR_FIRE_BEARING | 939 | 908 | 0.0193 | 0.1199 |
-| davidalves.Firebird | THEIR_FIRE_DISTANCE | 939 | 908 | 1.1884 | 5.6022 |
-| davidalves.Firebird | THEIR_FIRE_OUR_X | 939 | 908 | 3.4208 | 8.0000 |
-| davidalves.Firebird | THEIR_FIRE_OUR_Y | 939 | 908 | 5.3388 | 8.0000 |
-| wcsv.Engineer.Engineer | THEIR_FIRE_POWER | 981 | 0 | 0.0000 | 0.0000 |
-| wcsv.Engineer.Engineer | THEIR_FIRE_TICK | 981 | 0 | 0.0000 | 0.0000 |
-| wcsv.Engineer.Engineer | THEIR_FIRE_X | 981 | 0 | 0.0000 | 0.0000 |
-| wcsv.Engineer.Engineer | THEIR_FIRE_Y | 981 | 0 | 0.0000 | 0.0000 |
-| wcsv.Engineer.Engineer | THEIR_BULLET_SPEED | 981 | 0 | 0.0000 | 0.0000 |
-| wcsv.Engineer.Engineer | THEIR_FIRE_BEARING | 981 | 928 | 0.0190 | 0.0848 |
-| wcsv.Engineer.Engineer | THEIR_FIRE_DISTANCE | 981 | 928 | 1.1584 | 7.6824 |
-| wcsv.Engineer.Engineer | THEIR_FIRE_OUR_X | 981 | 928 | 3.9083 | 8.0000 |
-| wcsv.Engineer.Engineer | THEIR_FIRE_OUR_Y | 981 | 928 | 4.7987 | 8.0000 |
-| wcsv.PowerHouse.PowerHouse | THEIR_FIRE_POWER | 797 | 0 | 0.0000 | 0.0000 |
-| wcsv.PowerHouse.PowerHouse | THEIR_FIRE_TICK | 797 | 0 | 0.0000 | 0.0000 |
-| wcsv.PowerHouse.PowerHouse | THEIR_FIRE_X | 797 | 0 | 0.0000 | 0.0000 |
-| wcsv.PowerHouse.PowerHouse | THEIR_FIRE_Y | 797 | 0 | 0.0000 | 0.0000 |
-| wcsv.PowerHouse.PowerHouse | THEIR_BULLET_SPEED | 797 | 0 | 0.0000 | 0.0000 |
-| wcsv.PowerHouse.PowerHouse | THEIR_FIRE_BEARING | 797 | 755 | 0.0209 | 0.1228 |
-| wcsv.PowerHouse.PowerHouse | THEIR_FIRE_DISTANCE | 797 | 755 | 1.4179 | 7.2333 |
-| wcsv.PowerHouse.PowerHouse | THEIR_FIRE_OUR_X | 797 | 755 | 4.0424 | 8.0000 |
-| wcsv.PowerHouse.PowerHouse | THEIR_FIRE_OUR_Y | 797 | 755 | 4.7177 | 8.0000 |
-| fromHell.CHCl3 | THEIR_FIRE_POWER | 895 | 0 | 0.0000 | 0.0000 |
-| fromHell.CHCl3 | THEIR_FIRE_TICK | 895 | 0 | 0.0000 | 0.0000 |
-| fromHell.CHCl3 | THEIR_FIRE_X | 895 | 0 | 0.0000 | 0.0000 |
-| fromHell.CHCl3 | THEIR_FIRE_Y | 895 | 0 | 0.0000 | 0.0000 |
-| fromHell.CHCl3 | THEIR_BULLET_SPEED | 895 | 0 | 0.0000 | 0.0000 |
-| fromHell.CHCl3 | THEIR_FIRE_BEARING | 895 | 832 | 0.0203 | 0.1561 |
-| fromHell.CHCl3 | THEIR_FIRE_DISTANCE | 895 | 832 | 0.9687 | 7.4003 |
-| fromHell.CHCl3 | THEIR_FIRE_OUR_X | 895 | 832 | 3.6556 | 8.0000 |
-| fromHell.CHCl3 | THEIR_FIRE_OUR_Y | 895 | 832 | 4.6341 | 8.0000 |
-| dft.Cyanide | THEIR_FIRE_POWER | 1221 | 0 | 0.0000 | 0.0000 |
-| dft.Cyanide | THEIR_FIRE_TICK | 1221 | 0 | 0.0000 | 0.0000 |
-| dft.Cyanide | THEIR_FIRE_X | 1221 | 0 | 0.0000 | 0.0000 |
-| dft.Cyanide | THEIR_FIRE_Y | 1221 | 0 | 0.0000 | 0.0000 |
-| dft.Cyanide | THEIR_BULLET_SPEED | 1221 | 0 | 0.0000 | 0.0000 |
-| dft.Cyanide | THEIR_FIRE_BEARING | 1221 | 1179 | 0.0156 | 0.0752 |
-| dft.Cyanide | THEIR_FIRE_DISTANCE | 1221 | 1179 | 2.0403 | 7.6711 |
-| dft.Cyanide | THEIR_FIRE_OUR_X | 1221 | 1179 | 4.0484 | 8.0000 |
-| dft.Cyanide | THEIR_FIRE_OUR_Y | 1221 | 1179 | 4.7340 | 8.0000 |
-| jk.mini.CunobelinDC | THEIR_FIRE_POWER | 1258 | 0 | 0.0000 | 0.0000 |
-| jk.mini.CunobelinDC | THEIR_FIRE_TICK | 1258 | 0 | 0.0000 | 0.0000 |
-| jk.mini.CunobelinDC | THEIR_FIRE_X | 1258 | 0 | 0.0000 | 0.0000 |
-| jk.mini.CunobelinDC | THEIR_FIRE_Y | 1258 | 0 | 0.0000 | 0.0000 |
-| jk.mini.CunobelinDC | THEIR_BULLET_SPEED | 1258 | 0 | 0.0000 | 0.0000 |
-| jk.mini.CunobelinDC | THEIR_FIRE_BEARING | 1258 | 1189 | 0.0141 | 0.0833 |
-| jk.mini.CunobelinDC | THEIR_FIRE_DISTANCE | 1258 | 1189 | 2.2516 | 7.7630 |
-| jk.mini.CunobelinDC | THEIR_FIRE_OUR_X | 1258 | 1189 | 4.1001 | 8.0000 |
-| jk.mini.CunobelinDC | THEIR_FIRE_OUR_Y | 1258 | 1189 | 4.6883 | 8.0000 |
-| ags.rougedc.RougeDC | THEIR_FIRE_POWER | 864 | 0 | 0.0000 | 0.0000 |
-| ags.rougedc.RougeDC | THEIR_FIRE_TICK | 864 | 0 | 0.0000 | 0.0000 |
-| ags.rougedc.RougeDC | THEIR_FIRE_X | 864 | 0 | 0.0000 | 0.0000 |
-| ags.rougedc.RougeDC | THEIR_FIRE_Y | 864 | 0 | 0.0000 | 0.0000 |
-| ags.rougedc.RougeDC | THEIR_BULLET_SPEED | 864 | 0 | 0.0000 | 0.0000 |
-| ags.rougedc.RougeDC | THEIR_FIRE_BEARING | 864 | 819 | 0.0187 | 0.0841 |
-| ags.rougedc.RougeDC | THEIR_FIRE_DISTANCE | 864 | 819 | 1.2517 | 7.9885 |
-| ags.rougedc.RougeDC | THEIR_FIRE_OUR_X | 864 | 819 | 3.8901 | 8.0000 |
-| ags.rougedc.RougeDC | THEIR_FIRE_OUR_Y | 864 | 819 | 4.8803 | 8.0000 |
+| kc.mega.BeepBoop vs kc.mega.BeepBoop | THEIR_FIRE_POWER | 2758 | 42 | 0.0015 | 0.1000 |
+| kc.mega.BeepBoop vs kc.mega.BeepBoop | THEIR_FIRE_TICK | 2758 | 0 | 0.0000 | 0.0000 |
+| kc.mega.BeepBoop vs kc.mega.BeepBoop | THEIR_FIRE_X | 2758 | 0 | 0.0000 | 0.0000 |
+| kc.mega.BeepBoop vs kc.mega.BeepBoop | THEIR_FIRE_Y | 2758 | 0 | 0.0000 | 0.0000 |
+| kc.mega.BeepBoop vs kc.mega.BeepBoop | THEIR_BULLET_SPEED | 2758 | 42 | 0.0046 | 0.3000 |
+| kc.mega.BeepBoop vs kc.mega.BeepBoop | THEIR_FIRE_BEARING | 2758 | 2477 | 0.0081 | 0.0183 |
+| kc.mega.BeepBoop vs kc.mega.BeepBoop | THEIR_FIRE_DISTANCE | 2758 | 2476 | 0.6406 | 6.9620 |
+| kc.mega.BeepBoop vs kc.mega.BeepBoop | THEIR_FIRE_OUR_X | 2758 | 2361 | 2.4394 | 8.0000 |
+| kc.mega.BeepBoop vs kc.mega.BeepBoop | THEIR_FIRE_OUR_Y | 2758 | 2289 | 3.3525 | 8.0000 |
+| test.Aggressive | THEIR_FIRE_POWER | 37 | 0 | 0.0000 | 0.0000 |
+| test.Aggressive | THEIR_FIRE_TICK | 37 | 0 | 0.0000 | 0.0000 |
+| test.Aggressive | THEIR_FIRE_X | 37 | 0 | 0.0000 | 0.0000 |
+| test.Aggressive | THEIR_FIRE_Y | 37 | 0 | 0.0000 | 0.0000 |
+| test.Aggressive | THEIR_BULLET_SPEED | 37 | 0 | 0.0000 | 0.0000 |
+| test.Aggressive | THEIR_FIRE_BEARING | 37 | 32 | 0.0318 | 0.1417 |
+| test.Aggressive | THEIR_FIRE_DISTANCE | 37 | 32 | 3.0313 | 7.5850 |
+| test.Aggressive | THEIR_FIRE_OUR_X | 37 | 32 | 4.2006 | 7.9988 |
+| test.Aggressive | THEIR_FIRE_OUR_Y | 37 | 32 | 4.4502 | 7.9629 |
+| sample.Fire | THEIR_FIRE_POWER | 16 | 0 | 0.0000 | 0.0000 |
+| sample.Fire | THEIR_FIRE_TICK | 16 | 0 | 0.0000 | 0.0000 |
+| sample.Fire | THEIR_FIRE_X | 16 | 0 | 0.0000 | 0.0000 |
+| sample.Fire | THEIR_FIRE_Y | 16 | 0 | 0.0000 | 0.0000 |
+| sample.Fire | THEIR_BULLET_SPEED | 16 | 0 | 0.0000 | 0.0000 |
+| sample.Fire | THEIR_FIRE_BEARING | 16 | 11 | 0.0213 | 0.0636 |
+| sample.Fire | THEIR_FIRE_DISTANCE | 16 | 11 | 0.7962 | 4.1478 |
+| sample.Fire | THEIR_FIRE_OUR_X | 16 | 11 | 2.4887 | 7.8626 |
+| sample.Fire | THEIR_FIRE_OUR_Y | 16 | 11 | 3.8496 | 7.9874 |
+| sample.Walls | THEIR_FIRE_POWER | 73 | 0 | 0.0000 | 0.0000 |
+| sample.Walls | THEIR_FIRE_TICK | 73 | 0 | 0.0000 | 0.0000 |
+| sample.Walls | THEIR_FIRE_X | 73 | 0 | 0.0000 | 0.0000 |
+| sample.Walls | THEIR_FIRE_Y | 73 | 0 | 0.0000 | 0.0000 |
+| sample.Walls | THEIR_BULLET_SPEED | 73 | 0 | 0.0000 | 0.0000 |
+| sample.Walls | THEIR_FIRE_BEARING | 73 | 73 | 0.0232 | 0.0872 |
+| sample.Walls | THEIR_FIRE_DISTANCE | 73 | 73 | 2.4545 | 6.0873 |
+| sample.Walls | THEIR_FIRE_OUR_X | 73 | 73 | 5.2645 | 7.9945 |
+| sample.Walls | THEIR_FIRE_OUR_Y | 73 | 73 | 3.6798 | 8.0000 |
+| sample.Crazy | THEIR_FIRE_POWER | 27 | 0 | 0.0000 | 0.0000 |
+| sample.Crazy | THEIR_FIRE_TICK | 27 | 0 | 0.0000 | 0.0000 |
+| sample.Crazy | THEIR_FIRE_X | 27 | 0 | 0.0000 | 0.0000 |
+| sample.Crazy | THEIR_FIRE_Y | 27 | 0 | 0.0000 | 0.0000 |
+| sample.Crazy | THEIR_BULLET_SPEED | 27 | 0 | 0.0000 | 0.0000 |
+| sample.Crazy | THEIR_FIRE_BEARING | 27 | 26 | 0.0265 | 0.0745 |
+| sample.Crazy | THEIR_FIRE_DISTANCE | 27 | 26 | 2.2031 | 5.4802 |
+| sample.Crazy | THEIR_FIRE_OUR_X | 27 | 26 | 4.4773 | 7.9986 |
+| sample.Crazy | THEIR_FIRE_OUR_Y | 27 | 26 | 3.5053 | 7.8849 |
+| kc.mega.BeepBoop | THEIR_FIRE_POWER | 124 | 0 | 0.0000 | 0.0000 |
+| kc.mega.BeepBoop | THEIR_FIRE_TICK | 124 | 0 | 0.0000 | 0.0000 |
+| kc.mega.BeepBoop | THEIR_FIRE_X | 124 | 0 | 0.0000 | 0.0000 |
+| kc.mega.BeepBoop | THEIR_FIRE_Y | 124 | 0 | 0.0000 | 0.0000 |
+| kc.mega.BeepBoop | THEIR_BULLET_SPEED | 124 | 0 | 0.0000 | 0.0000 |
+| kc.mega.BeepBoop | THEIR_FIRE_BEARING | 124 | 124 | 0.0164 | 0.0396 |
+| kc.mega.BeepBoop | THEIR_FIRE_DISTANCE | 124 | 124 | 1.6947 | 7.9858 |
+| kc.mega.BeepBoop | THEIR_FIRE_OUR_X | 124 | 124 | 3.8899 | 7.9995 |
+| kc.mega.BeepBoop | THEIR_FIRE_OUR_Y | 124 | 124 | 5.2862 | 7.9974 |
+| aaa.r.ScalarR | THEIR_FIRE_POWER | 167 | 0 | 0.0000 | 0.0000 |
+| aaa.r.ScalarR | THEIR_FIRE_TICK | 167 | 0 | 0.0000 | 0.0000 |
+| aaa.r.ScalarR | THEIR_FIRE_X | 167 | 0 | 0.0000 | 0.0000 |
+| aaa.r.ScalarR | THEIR_FIRE_Y | 167 | 0 | 0.0000 | 0.0000 |
+| aaa.r.ScalarR | THEIR_BULLET_SPEED | 167 | 0 | 0.0000 | 0.0000 |
+| aaa.r.ScalarR | THEIR_FIRE_BEARING | 167 | 147 | 0.0129 | 0.0227 |
+| aaa.r.ScalarR | THEIR_FIRE_DISTANCE | 167 | 147 | 1.9639 | 4.0510 |
+| aaa.r.ScalarR | THEIR_FIRE_OUR_X | 167 | 147 | 4.5634 | 7.9997 |
+| aaa.r.ScalarR | THEIR_FIRE_OUR_Y | 167 | 147 | 3.8709 | 7.9865 |
+| jk.mega.DrussGT | THEIR_FIRE_POWER | 204 | 0 | 0.0000 | 0.0000 |
+| jk.mega.DrussGT | THEIR_FIRE_TICK | 204 | 0 | 0.0000 | 0.0000 |
+| jk.mega.DrussGT | THEIR_FIRE_X | 204 | 0 | 0.0000 | 0.0000 |
+| jk.mega.DrussGT | THEIR_FIRE_Y | 204 | 0 | 0.0000 | 0.0000 |
+| jk.mega.DrussGT | THEIR_BULLET_SPEED | 204 | 0 | 0.0000 | 0.0000 |
+| jk.mega.DrussGT | THEIR_FIRE_BEARING | 204 | 189 | 0.0154 | 0.0691 |
+| jk.mega.DrussGT | THEIR_FIRE_DISTANCE | 204 | 189 | 1.1918 | 4.1131 |
+| jk.mega.DrussGT | THEIR_FIRE_OUR_X | 204 | 189 | 3.4462 | 7.9987 |
+| jk.mega.DrussGT | THEIR_FIRE_OUR_Y | 204 | 189 | 5.1016 | 7.9998 |
+| voidious.Diamond | THEIR_FIRE_POWER | 144 | 0 | 0.0000 | 0.0000 |
+| voidious.Diamond | THEIR_FIRE_TICK | 144 | 0 | 0.0000 | 0.0000 |
+| voidious.Diamond | THEIR_FIRE_X | 144 | 0 | 0.0000 | 0.0000 |
+| voidious.Diamond | THEIR_FIRE_Y | 144 | 0 | 0.0000 | 0.0000 |
+| voidious.Diamond | THEIR_BULLET_SPEED | 144 | 0 | 0.0000 | 0.0000 |
+| voidious.Diamond | THEIR_FIRE_BEARING | 144 | 141 | 0.0153 | 0.0350 |
+| voidious.Diamond | THEIR_FIRE_DISTANCE | 144 | 141 | 1.8506 | 4.0785 |
+| voidious.Diamond | THEIR_FIRE_OUR_X | 144 | 141 | 3.4386 | 7.9998 |
+| voidious.Diamond | THEIR_FIRE_OUR_Y | 144 | 141 | 5.0816 | 7.9971 |
+| rsalesc.mega.Knight | THEIR_FIRE_POWER | 147 | 0 | 0.0000 | 0.0000 |
+| rsalesc.mega.Knight | THEIR_FIRE_TICK | 147 | 0 | 0.0000 | 0.0000 |
+| rsalesc.mega.Knight | THEIR_FIRE_X | 147 | 0 | 0.0000 | 0.0000 |
+| rsalesc.mega.Knight | THEIR_FIRE_Y | 147 | 0 | 0.0000 | 0.0000 |
+| rsalesc.mega.Knight | THEIR_BULLET_SPEED | 147 | 0 | 0.0000 | 0.0000 |
+| rsalesc.mega.Knight | THEIR_FIRE_BEARING | 147 | 141 | 0.0164 | 0.1458 |
+| rsalesc.mega.Knight | THEIR_FIRE_DISTANCE | 147 | 141 | 1.8345 | 6.8241 |
+| rsalesc.mega.Knight | THEIR_FIRE_OUR_X | 147 | 141 | 3.6874 | 7.9929 |
+| rsalesc.mega.Knight | THEIR_FIRE_OUR_Y | 147 | 141 | 4.8686 | 7.9997 |
+| rsalesc.roborio.Roborio | THEIR_FIRE_POWER | 168 | 0 | 0.0000 | 0.0000 |
+| rsalesc.roborio.Roborio | THEIR_FIRE_TICK | 168 | 0 | 0.0000 | 0.0000 |
+| rsalesc.roborio.Roborio | THEIR_FIRE_X | 168 | 0 | 0.0000 | 0.0000 |
+| rsalesc.roborio.Roborio | THEIR_FIRE_Y | 168 | 0 | 0.0000 | 0.0000 |
+| rsalesc.roborio.Roborio | THEIR_BULLET_SPEED | 168 | 0 | 0.0000 | 0.0000 |
+| rsalesc.roborio.Roborio | THEIR_FIRE_BEARING | 168 | 163 | 0.0146 | 0.0320 |
+| rsalesc.roborio.Roborio | THEIR_FIRE_DISTANCE | 168 | 163 | 1.8194 | 5.3078 |
+| rsalesc.roborio.Roborio | THEIR_FIRE_OUR_X | 168 | 162 | 3.7971 | 7.9958 |
+| rsalesc.roborio.Roborio | THEIR_FIRE_OUR_Y | 168 | 163 | 4.9572 | 7.9996 |
+| lxx.Tomcat | THEIR_FIRE_POWER | 94 | 0 | 0.0000 | 0.0000 |
+| lxx.Tomcat | THEIR_FIRE_TICK | 94 | 0 | 0.0000 | 0.0000 |
+| lxx.Tomcat | THEIR_FIRE_X | 94 | 0 | 0.0000 | 0.0000 |
+| lxx.Tomcat | THEIR_FIRE_Y | 94 | 0 | 0.0000 | 0.0000 |
+| lxx.Tomcat | THEIR_BULLET_SPEED | 94 | 0 | 0.0000 | 0.0000 |
+| lxx.Tomcat | THEIR_FIRE_BEARING | 94 | 86 | 0.0273 | 0.1123 |
+| lxx.Tomcat | THEIR_FIRE_DISTANCE | 94 | 86 | 2.3316 | 6.7845 |
+| lxx.Tomcat | THEIR_FIRE_OUR_X | 94 | 86 | 3.9934 | 7.9998 |
+| lxx.Tomcat | THEIR_FIRE_OUR_Y | 94 | 86 | 4.6489 | 7.9996 |
+| cb.fire.Firestarter | THEIR_FIRE_POWER | 137 | 0 | 0.0000 | 0.0000 |
+| cb.fire.Firestarter | THEIR_FIRE_TICK | 137 | 0 | 0.0000 | 0.0000 |
+| cb.fire.Firestarter | THEIR_FIRE_X | 137 | 0 | 0.0000 | 0.0000 |
+| cb.fire.Firestarter | THEIR_FIRE_Y | 137 | 0 | 0.0000 | 0.0000 |
+| cb.fire.Firestarter | THEIR_BULLET_SPEED | 137 | 0 | 0.0000 | 0.0000 |
+| cb.fire.Firestarter | THEIR_FIRE_BEARING | 137 | 131 | 0.0152 | 0.0333 |
+| cb.fire.Firestarter | THEIR_FIRE_DISTANCE | 137 | 131 | 1.6691 | 4.0854 |
+| cb.fire.Firestarter | THEIR_FIRE_OUR_X | 137 | 131 | 4.4135 | 8.0000 |
+| cb.fire.Firestarter | THEIR_FIRE_OUR_Y | 137 | 131 | 3.9895 | 7.9996 |
+| xander.cat.XanderCat | THEIR_FIRE_POWER | 400 | 0 | 0.0000 | 0.0000 |
+| xander.cat.XanderCat | THEIR_FIRE_TICK | 400 | 0 | 0.0000 | 0.0000 |
+| xander.cat.XanderCat | THEIR_FIRE_X | 400 | 0 | 0.0000 | 0.0000 |
+| xander.cat.XanderCat | THEIR_FIRE_Y | 400 | 0 | 0.0000 | 0.0000 |
+| xander.cat.XanderCat | THEIR_BULLET_SPEED | 400 | 0 | 0.0000 | 0.0000 |
+| xander.cat.XanderCat | THEIR_FIRE_BEARING | 400 | 295 | 0.0109 | 0.0812 |
+| xander.cat.XanderCat | THEIR_FIRE_DISTANCE | 400 | 295 | 1.3433 | 6.7910 |
+| xander.cat.XanderCat | THEIR_FIRE_OUR_X | 400 | 295 | 3.5231 | 7.9939 |
+| xander.cat.XanderCat | THEIR_FIRE_OUR_Y | 400 | 295 | 3.1795 | 7.9999 |
+| oog.mega.saguaro.Saguaro | THEIR_FIRE_POWER | 120 | 0 | 0.0000 | 0.0000 |
+| oog.mega.saguaro.Saguaro | THEIR_FIRE_TICK | 120 | 0 | 0.0000 | 0.0000 |
+| oog.mega.saguaro.Saguaro | THEIR_FIRE_X | 120 | 0 | 0.0000 | 0.0000 |
+| oog.mega.saguaro.Saguaro | THEIR_FIRE_Y | 120 | 0 | 0.0000 | 0.0000 |
+| oog.mega.saguaro.Saguaro | THEIR_BULLET_SPEED | 120 | 0 | 0.0000 | 0.0000 |
+| oog.mega.saguaro.Saguaro | THEIR_FIRE_BEARING | 120 | 117 | 0.0217 | 0.0827 |
+| oog.mega.saguaro.Saguaro | THEIR_FIRE_DISTANCE | 120 | 117 | 1.6877 | 4.1864 |
+| oog.mega.saguaro.Saguaro | THEIR_FIRE_OUR_X | 120 | 117 | 4.2134 | 7.9984 |
+| oog.mega.saguaro.Saguaro | THEIR_FIRE_OUR_Y | 120 | 117 | 4.8207 | 7.9998 |
+| dsekercioglu.mega.Raven | THEIR_FIRE_POWER | 121 | 1 | 0.0041 | 0.5000 |
+| dsekercioglu.mega.Raven | THEIR_FIRE_TICK | 121 | 0 | 0.0000 | 0.0000 |
+| dsekercioglu.mega.Raven | THEIR_FIRE_X | 121 | 0 | 0.0000 | 0.0000 |
+| dsekercioglu.mega.Raven | THEIR_FIRE_Y | 121 | 0 | 0.0000 | 0.0000 |
+| dsekercioglu.mega.Raven | THEIR_BULLET_SPEED | 121 | 1 | 0.0124 | 1.5000 |
+| dsekercioglu.mega.Raven | THEIR_FIRE_BEARING | 121 | 104 | 0.0147 | 0.0667 |
+| dsekercioglu.mega.Raven | THEIR_FIRE_DISTANCE | 121 | 104 | 0.5196 | 5.1418 |
+| dsekercioglu.mega.Raven | THEIR_FIRE_OUR_X | 121 | 104 | 3.7548 | 8.0000 |
+| dsekercioglu.mega.Raven | THEIR_FIRE_OUR_Y | 121 | 104 | 3.2697 | 7.9902 |
+| kc.serpent.WaveSerpent | THEIR_FIRE_POWER | 94 | 0 | 0.0000 | 0.0000 |
+| kc.serpent.WaveSerpent | THEIR_FIRE_TICK | 94 | 0 | 0.0000 | 0.0000 |
+| kc.serpent.WaveSerpent | THEIR_FIRE_X | 94 | 0 | 0.0000 | 0.0000 |
+| kc.serpent.WaveSerpent | THEIR_FIRE_Y | 94 | 0 | 0.0000 | 0.0000 |
+| kc.serpent.WaveSerpent | THEIR_BULLET_SPEED | 94 | 0 | 0.0000 | 0.0000 |
+| kc.serpent.WaveSerpent | THEIR_FIRE_BEARING | 94 | 93 | 0.0176 | 0.0584 |
+| kc.serpent.WaveSerpent | THEIR_FIRE_DISTANCE | 94 | 93 | 0.8621 | 4.0439 |
+| kc.serpent.WaveSerpent | THEIR_FIRE_OUR_X | 94 | 93 | 4.1846 | 7.9990 |
+| kc.serpent.WaveSerpent | THEIR_FIRE_OUR_Y | 94 | 93 | 4.7689 | 7.9994 |
+| voidious.Dookious | THEIR_FIRE_POWER | 82 | 0 | 0.0000 | 0.0000 |
+| voidious.Dookious | THEIR_FIRE_TICK | 82 | 0 | 0.0000 | 0.0000 |
+| voidious.Dookious | THEIR_FIRE_X | 82 | 0 | 0.0000 | 0.0000 |
+| voidious.Dookious | THEIR_FIRE_Y | 82 | 0 | 0.0000 | 0.0000 |
+| voidious.Dookious | THEIR_BULLET_SPEED | 82 | 0 | 0.0000 | 0.0000 |
+| voidious.Dookious | THEIR_FIRE_BEARING | 82 | 82 | 0.0184 | 0.0549 |
+| voidious.Dookious | THEIR_FIRE_DISTANCE | 82 | 82 | 0.9656 | 7.7617 |
+| voidious.Dookious | THEIR_FIRE_OUR_X | 82 | 82 | 3.8397 | 7.9997 |
+| voidious.Dookious | THEIR_FIRE_OUR_Y | 82 | 82 | 5.3797 | 7.9974 |
+| darkcanuck.Pris | THEIR_FIRE_POWER | 124 | 0 | 0.0000 | 0.0000 |
+| darkcanuck.Pris | THEIR_FIRE_TICK | 124 | 0 | 0.0000 | 0.0000 |
+| darkcanuck.Pris | THEIR_FIRE_X | 124 | 0 | 0.0000 | 0.0000 |
+| darkcanuck.Pris | THEIR_FIRE_Y | 124 | 0 | 0.0000 | 0.0000 |
+| darkcanuck.Pris | THEIR_BULLET_SPEED | 124 | 0 | 0.0000 | 0.0000 |
+| darkcanuck.Pris | THEIR_FIRE_BEARING | 124 | 119 | 0.0173 | 0.0643 |
+| darkcanuck.Pris | THEIR_FIRE_DISTANCE | 124 | 119 | 1.2493 | 4.1109 |
+| darkcanuck.Pris | THEIR_FIRE_OUR_X | 124 | 119 | 3.0698 | 7.9769 |
+| darkcanuck.Pris | THEIR_FIRE_OUR_Y | 124 | 119 | 5.2472 | 7.9998 |
+| abc.Shadow | THEIR_FIRE_POWER | 72 | 0 | 0.0000 | 0.0000 |
+| abc.Shadow | THEIR_FIRE_TICK | 72 | 0 | 0.0000 | 0.0000 |
+| abc.Shadow | THEIR_FIRE_X | 72 | 0 | 0.0000 | 0.0000 |
+| abc.Shadow | THEIR_FIRE_Y | 72 | 0 | 0.0000 | 0.0000 |
+| abc.Shadow | THEIR_BULLET_SPEED | 72 | 0 | 0.0000 | 0.0000 |
+| abc.Shadow | THEIR_FIRE_BEARING | 72 | 70 | 0.0388 | 0.1856 |
+| abc.Shadow | THEIR_FIRE_DISTANCE | 72 | 70 | 2.0165 | 7.1068 |
+| abc.Shadow | THEIR_FIRE_OUR_X | 72 | 70 | 5.0211 | 7.9785 |
+| abc.Shadow | THEIR_FIRE_OUR_Y | 72 | 70 | 4.2779 | 8.0000 |
+| dsekercioglu.mega.WhiteFang | THEIR_FIRE_POWER | 110 | 1 | 0.0091 | 1.0000 |
+| dsekercioglu.mega.WhiteFang | THEIR_FIRE_TICK | 110 | 0 | 0.0000 | 0.0000 |
+| dsekercioglu.mega.WhiteFang | THEIR_FIRE_X | 110 | 0 | 0.0000 | 0.0000 |
+| dsekercioglu.mega.WhiteFang | THEIR_FIRE_Y | 110 | 0 | 0.0000 | 0.0000 |
+| dsekercioglu.mega.WhiteFang | THEIR_BULLET_SPEED | 110 | 1 | 0.0273 | 3.0000 |
+| dsekercioglu.mega.WhiteFang | THEIR_FIRE_BEARING | 110 | 107 | 0.0186 | 0.0499 |
+| dsekercioglu.mega.WhiteFang | THEIR_FIRE_DISTANCE | 110 | 107 | 0.9551 | 4.4214 |
+| dsekercioglu.mega.WhiteFang | THEIR_FIRE_OUR_X | 110 | 107 | 2.9582 | 7.8649 |
+| dsekercioglu.mega.WhiteFang | THEIR_FIRE_OUR_Y | 110 | 107 | 5.7997 | 8.0000 |
+| mn.Combat | THEIR_FIRE_POWER | 146 | 1 | 0.0034 | 0.5000 |
+| mn.Combat | THEIR_FIRE_TICK | 146 | 0 | 0.0000 | 0.0000 |
+| mn.Combat | THEIR_FIRE_X | 146 | 0 | 0.0000 | 0.0000 |
+| mn.Combat | THEIR_FIRE_Y | 146 | 0 | 0.0000 | 0.0000 |
+| mn.Combat | THEIR_BULLET_SPEED | 146 | 1 | 0.0103 | 1.5000 |
+| mn.Combat | THEIR_FIRE_BEARING | 146 | 140 | 0.0157 | 0.0271 |
+| mn.Combat | THEIR_FIRE_DISTANCE | 146 | 140 | 1.2611 | 4.0805 |
+| mn.Combat | THEIR_FIRE_OUR_X | 146 | 140 | 3.4947 | 7.9498 |
+| mn.Combat | THEIR_FIRE_OUR_Y | 146 | 140 | 5.3546 | 7.9994 |
+| gh.GresSuffurd | THEIR_FIRE_POWER | 133 | 0 | 0.0000 | 0.0000 |
+| gh.GresSuffurd | THEIR_FIRE_TICK | 133 | 0 | 0.0000 | 0.0000 |
+| gh.GresSuffurd | THEIR_FIRE_X | 133 | 0 | 0.0000 | 0.0000 |
+| gh.GresSuffurd | THEIR_FIRE_Y | 133 | 0 | 0.0000 | 0.0000 |
+| gh.GresSuffurd | THEIR_BULLET_SPEED | 133 | 0 | 0.0000 | 0.0000 |
+| gh.GresSuffurd | THEIR_FIRE_BEARING | 133 | 128 | 0.0154 | 0.0319 |
+| gh.GresSuffurd | THEIR_FIRE_DISTANCE | 133 | 128 | 1.5082 | 7.3019 |
+| gh.GresSuffurd | THEIR_FIRE_OUR_X | 133 | 128 | 3.6488 | 7.9999 |
+| gh.GresSuffurd | THEIR_FIRE_OUR_Y | 133 | 128 | 5.2713 | 7.9993 |
+| cs.Nene | THEIR_FIRE_POWER | 98 | 0 | 0.0000 | 0.0000 |
+| cs.Nene | THEIR_FIRE_TICK | 98 | 0 | 0.0000 | 0.0000 |
+| cs.Nene | THEIR_FIRE_X | 98 | 0 | 0.0000 | 0.0000 |
+| cs.Nene | THEIR_FIRE_Y | 98 | 0 | 0.0000 | 0.0000 |
+| cs.Nene | THEIR_BULLET_SPEED | 98 | 0 | 0.0000 | 0.0000 |
+| cs.Nene | THEIR_FIRE_BEARING | 98 | 97 | 0.0193 | 0.0502 |
+| cs.Nene | THEIR_FIRE_DISTANCE | 98 | 97 | 1.2342 | 7.9901 |
+| cs.Nene | THEIR_FIRE_OUR_X | 98 | 97 | 3.5848 | 7.9999 |
+| cs.Nene | THEIR_FIRE_OUR_Y | 98 | 97 | 5.3781 | 7.9999 |
+| jk.melee.Neuromancer | THEIR_FIRE_POWER | 175 | 0 | 0.0000 | 0.0000 |
+| jk.melee.Neuromancer | THEIR_FIRE_TICK | 175 | 0 | 0.0000 | 0.0000 |
+| jk.melee.Neuromancer | THEIR_FIRE_X | 175 | 0 | 0.0000 | 0.0000 |
+| jk.melee.Neuromancer | THEIR_FIRE_Y | 175 | 0 | 0.0000 | 0.0000 |
+| jk.melee.Neuromancer | THEIR_BULLET_SPEED | 175 | 0 | 0.0000 | 0.0000 |
+| jk.melee.Neuromancer | THEIR_FIRE_BEARING | 175 | 173 | 0.0138 | 0.0255 |
+| jk.melee.Neuromancer | THEIR_FIRE_DISTANCE | 175 | 173 | 2.1475 | 4.0731 |
+| jk.melee.Neuromancer | THEIR_FIRE_OUR_X | 175 | 173 | 4.0365 | 7.9982 |
+| jk.melee.Neuromancer | THEIR_FIRE_OUR_Y | 175 | 173 | 4.8807 | 7.9968 |
+| tjk.deBroglie | THEIR_FIRE_POWER | 102 | 0 | 0.0000 | 0.0000 |
+| tjk.deBroglie | THEIR_FIRE_TICK | 102 | 0 | 0.0000 | 0.0000 |
+| tjk.deBroglie | THEIR_FIRE_X | 102 | 0 | 0.0000 | 0.0000 |
+| tjk.deBroglie | THEIR_FIRE_Y | 102 | 0 | 0.0000 | 0.0000 |
+| tjk.deBroglie | THEIR_BULLET_SPEED | 102 | 0 | 0.0000 | 0.0000 |
+| tjk.deBroglie | THEIR_FIRE_BEARING | 102 | 101 | 0.0224 | 0.0788 |
+| tjk.deBroglie | THEIR_FIRE_DISTANCE | 102 | 101 | 1.5870 | 5.1338 |
+| tjk.deBroglie | THEIR_FIRE_OUR_X | 102 | 101 | 4.2672 | 7.9995 |
+| tjk.deBroglie | THEIR_FIRE_OUR_Y | 102 | 101 | 5.1273 | 7.9997 |
+| mue.Ascendant | THEIR_FIRE_POWER | 87 | 0 | 0.0000 | 0.0000 |
+| mue.Ascendant | THEIR_FIRE_TICK | 87 | 0 | 0.0000 | 0.0000 |
+| mue.Ascendant | THEIR_FIRE_X | 87 | 0 | 0.0000 | 0.0000 |
+| mue.Ascendant | THEIR_FIRE_Y | 87 | 0 | 0.0000 | 0.0000 |
+| mue.Ascendant | THEIR_BULLET_SPEED | 87 | 0 | 0.0000 | 0.0000 |
+| mue.Ascendant | THEIR_FIRE_BEARING | 87 | 86 | 0.0232 | 0.1054 |
+| mue.Ascendant | THEIR_FIRE_DISTANCE | 87 | 86 | 1.1437 | 6.5657 |
+| mue.Ascendant | THEIR_FIRE_OUR_X | 87 | 86 | 3.6399 | 7.9640 |
+| mue.Ascendant | THEIR_FIRE_OUR_Y | 87 | 86 | 5.5777 | 7.9997 |
+| davidalves.Phoenix | THEIR_FIRE_POWER | 152 | 0 | 0.0000 | 0.0000 |
+| davidalves.Phoenix | THEIR_FIRE_TICK | 152 | 0 | 0.0000 | 0.0000 |
+| davidalves.Phoenix | THEIR_FIRE_X | 152 | 0 | 0.0000 | 0.0000 |
+| davidalves.Phoenix | THEIR_FIRE_Y | 152 | 0 | 0.0000 | 0.0000 |
+| davidalves.Phoenix | THEIR_BULLET_SPEED | 152 | 0 | 0.0000 | 0.0000 |
+| davidalves.Phoenix | THEIR_FIRE_BEARING | 152 | 150 | 0.0156 | 0.0307 |
+| davidalves.Phoenix | THEIR_FIRE_DISTANCE | 152 | 150 | 1.5872 | 4.0932 |
+| davidalves.Phoenix | THEIR_FIRE_OUR_X | 152 | 150 | 3.8129 | 7.9997 |
+| davidalves.Phoenix | THEIR_FIRE_OUR_Y | 152 | 150 | 5.1237 | 7.9998 |
+| zyx.mega.YersiniaPestis | THEIR_FIRE_POWER | 134 | 0 | 0.0000 | 0.0000 |
+| zyx.mega.YersiniaPestis | THEIR_FIRE_TICK | 134 | 0 | 0.0000 | 0.0000 |
+| zyx.mega.YersiniaPestis | THEIR_FIRE_X | 134 | 0 | 0.0000 | 0.0000 |
+| zyx.mega.YersiniaPestis | THEIR_FIRE_Y | 134 | 0 | 0.0000 | 0.0000 |
+| zyx.mega.YersiniaPestis | THEIR_BULLET_SPEED | 134 | 0 | 0.0000 | 0.0000 |
+| zyx.mega.YersiniaPestis | THEIR_FIRE_BEARING | 134 | 131 | 0.0203 | 0.1062 |
+| zyx.mega.YersiniaPestis | THEIR_FIRE_DISTANCE | 134 | 131 | 1.4536 | 4.0758 |
+| zyx.mega.YersiniaPestis | THEIR_FIRE_OUR_X | 134 | 131 | 3.8414 | 7.9990 |
+| zyx.mega.YersiniaPestis | THEIR_FIRE_OUR_Y | 134 | 131 | 5.1278 | 7.9983 |
+| darkcanuck.Holden | THEIR_FIRE_POWER | 84 | 0 | 0.0000 | 0.0000 |
+| darkcanuck.Holden | THEIR_FIRE_TICK | 84 | 0 | 0.0000 | 0.0000 |
+| darkcanuck.Holden | THEIR_FIRE_X | 84 | 0 | 0.0000 | 0.0000 |
+| darkcanuck.Holden | THEIR_FIRE_Y | 84 | 0 | 0.0000 | 0.0000 |
+| darkcanuck.Holden | THEIR_BULLET_SPEED | 84 | 0 | 0.0000 | 0.0000 |
+| darkcanuck.Holden | THEIR_FIRE_BEARING | 84 | 75 | 0.0226 | 0.1069 |
+| darkcanuck.Holden | THEIR_FIRE_DISTANCE | 84 | 75 | 1.1798 | 5.5095 |
+| darkcanuck.Holden | THEIR_FIRE_OUR_X | 84 | 75 | 3.4582 | 7.9998 |
+| darkcanuck.Holden | THEIR_FIRE_OUR_Y | 84 | 75 | 4.4994 | 7.9996 |
+| Krabb.sliNk.Garm | THEIR_FIRE_POWER | 130 | 0 | 0.0000 | 0.0000 |
+| Krabb.sliNk.Garm | THEIR_FIRE_TICK | 130 | 0 | 0.0000 | 0.0000 |
+| Krabb.sliNk.Garm | THEIR_FIRE_X | 130 | 0 | 0.0000 | 0.0000 |
+| Krabb.sliNk.Garm | THEIR_FIRE_Y | 130 | 0 | 0.0000 | 0.0000 |
+| Krabb.sliNk.Garm | THEIR_BULLET_SPEED | 130 | 0 | 0.0000 | 0.0000 |
+| Krabb.sliNk.Garm | THEIR_FIRE_BEARING | 130 | 130 | 0.0162 | 0.0286 |
+| Krabb.sliNk.Garm | THEIR_FIRE_DISTANCE | 130 | 130 | 1.5132 | 4.0909 |
+| Krabb.sliNk.Garm | THEIR_FIRE_OUR_X | 130 | 130 | 4.3680 | 7.9971 |
+| Krabb.sliNk.Garm | THEIR_FIRE_OUR_Y | 130 | 130 | 4.9308 | 7.9982 |
+| pez.rumble.CassiusClay | THEIR_FIRE_POWER | 92 | 0 | 0.0000 | 0.0000 |
+| pez.rumble.CassiusClay | THEIR_FIRE_TICK | 92 | 0 | 0.0000 | 0.0000 |
+| pez.rumble.CassiusClay | THEIR_FIRE_X | 92 | 0 | 0.0000 | 0.0000 |
+| pez.rumble.CassiusClay | THEIR_FIRE_Y | 92 | 0 | 0.0000 | 0.0000 |
+| pez.rumble.CassiusClay | THEIR_BULLET_SPEED | 92 | 0 | 0.0000 | 0.0000 |
+| pez.rumble.CassiusClay | THEIR_FIRE_BEARING | 92 | 91 | 0.0240 | 0.1812 |
+| pez.rumble.CassiusClay | THEIR_FIRE_DISTANCE | 92 | 91 | 1.4915 | 6.6672 |
+| pez.rumble.CassiusClay | THEIR_FIRE_OUR_X | 92 | 91 | 4.0474 | 7.9996 |
+| pez.rumble.CassiusClay | THEIR_FIRE_OUR_Y | 92 | 91 | 5.2871 | 8.0000 |
+| jk.precise.Wintermute | THEIR_FIRE_POWER | 136 | 0 | 0.0000 | 0.0000 |
+| jk.precise.Wintermute | THEIR_FIRE_TICK | 136 | 0 | 0.0000 | 0.0000 |
+| jk.precise.Wintermute | THEIR_FIRE_X | 136 | 0 | 0.0000 | 0.0000 |
+| jk.precise.Wintermute | THEIR_FIRE_Y | 136 | 0 | 0.0000 | 0.0000 |
+| jk.precise.Wintermute | THEIR_BULLET_SPEED | 136 | 0 | 0.0000 | 0.0000 |
+| jk.precise.Wintermute | THEIR_FIRE_BEARING | 136 | 129 | 0.0150 | 0.0300 |
+| jk.precise.Wintermute | THEIR_FIRE_DISTANCE | 136 | 129 | 0.8080 | 4.1040 |
+| jk.precise.Wintermute | THEIR_FIRE_OUR_X | 136 | 129 | 2.8182 | 7.9912 |
+| jk.precise.Wintermute | THEIR_FIRE_OUR_Y | 136 | 129 | 5.4692 | 8.0000 |
+| fromHell.BlackBox | THEIR_FIRE_POWER | 95 | 0 | 0.0000 | 0.0000 |
+| fromHell.BlackBox | THEIR_FIRE_TICK | 95 | 0 | 0.0000 | 0.0000 |
+| fromHell.BlackBox | THEIR_FIRE_X | 95 | 0 | 0.0000 | 0.0000 |
+| fromHell.BlackBox | THEIR_FIRE_Y | 95 | 0 | 0.0000 | 0.0000 |
+| fromHell.BlackBox | THEIR_BULLET_SPEED | 95 | 0 | 0.0000 | 0.0000 |
+| fromHell.BlackBox | THEIR_FIRE_BEARING | 95 | 93 | 0.0206 | 0.0616 |
+| fromHell.BlackBox | THEIR_FIRE_DISTANCE | 95 | 93 | 1.0666 | 4.1225 |
+| fromHell.BlackBox | THEIR_FIRE_OUR_X | 95 | 93 | 3.6812 | 7.9998 |
+| fromHell.BlackBox | THEIR_FIRE_OUR_Y | 95 | 93 | 5.4040 | 7.9976 |
+| axeBots.SilverSurfer | THEIR_FIRE_POWER | 111 | 0 | 0.0000 | 0.0000 |
+| axeBots.SilverSurfer | THEIR_FIRE_TICK | 111 | 0 | 0.0000 | 0.0000 |
+| axeBots.SilverSurfer | THEIR_FIRE_X | 111 | 0 | 0.0000 | 0.0000 |
+| axeBots.SilverSurfer | THEIR_FIRE_Y | 111 | 0 | 0.0000 | 0.0000 |
+| axeBots.SilverSurfer | THEIR_BULLET_SPEED | 111 | 0 | 0.0000 | 0.0000 |
+| axeBots.SilverSurfer | THEIR_FIRE_BEARING | 111 | 103 | 0.0179 | 0.0640 |
+| axeBots.SilverSurfer | THEIR_FIRE_DISTANCE | 111 | 103 | 1.0431 | 6.6613 |
+| axeBots.SilverSurfer | THEIR_FIRE_OUR_X | 111 | 103 | 4.1138 | 7.9979 |
+| axeBots.SilverSurfer | THEIR_FIRE_OUR_Y | 111 | 103 | 4.1713 | 7.9998 |
+| florent.XSeries.X2 | THEIR_FIRE_POWER | 110 | 0 | 0.0000 | 0.0000 |
+| florent.XSeries.X2 | THEIR_FIRE_TICK | 110 | 0 | 0.0000 | 0.0000 |
+| florent.XSeries.X2 | THEIR_FIRE_X | 110 | 0 | 0.0000 | 0.0000 |
+| florent.XSeries.X2 | THEIR_FIRE_Y | 110 | 0 | 0.0000 | 0.0000 |
+| florent.XSeries.X2 | THEIR_BULLET_SPEED | 110 | 0 | 0.0000 | 0.0000 |
+| florent.XSeries.X2 | THEIR_FIRE_BEARING | 110 | 96 | 0.0157 | 0.0543 |
+| florent.XSeries.X2 | THEIR_FIRE_DISTANCE | 110 | 96 | 1.6296 | 7.5356 |
+| florent.XSeries.X2 | THEIR_FIRE_OUR_X | 110 | 96 | 3.6246 | 8.0000 |
+| florent.XSeries.X2 | THEIR_FIRE_OUR_Y | 110 | 96 | 4.3543 | 7.9967 |
+| ar.horizon.Horizon | THEIR_FIRE_POWER | 173 | 0 | 0.0000 | 0.0000 |
+| ar.horizon.Horizon | THEIR_FIRE_TICK | 173 | 0 | 0.0000 | 0.0000 |
+| ar.horizon.Horizon | THEIR_FIRE_X | 173 | 0 | 0.0000 | 0.0000 |
+| ar.horizon.Horizon | THEIR_FIRE_Y | 173 | 0 | 0.0000 | 0.0000 |
+| ar.horizon.Horizon | THEIR_BULLET_SPEED | 173 | 0 | 0.0000 | 0.0000 |
+| ar.horizon.Horizon | THEIR_FIRE_BEARING | 173 | 170 | 0.0148 | 0.0642 |
+| ar.horizon.Horizon | THEIR_FIRE_DISTANCE | 173 | 170 | 2.4349 | 4.1857 |
+| ar.horizon.Horizon | THEIR_FIRE_OUR_X | 173 | 170 | 3.4609 | 7.9837 |
+| ar.horizon.Horizon | THEIR_FIRE_OUR_Y | 173 | 170 | 5.5251 | 7.9998 |
+| florent.test.Toad | THEIR_FIRE_POWER | 98 | 0 | 0.0000 | 0.0000 |
+| florent.test.Toad | THEIR_FIRE_TICK | 98 | 0 | 0.0000 | 0.0000 |
+| florent.test.Toad | THEIR_FIRE_X | 98 | 0 | 0.0000 | 0.0000 |
+| florent.test.Toad | THEIR_FIRE_Y | 98 | 0 | 0.0000 | 0.0000 |
+| florent.test.Toad | THEIR_BULLET_SPEED | 98 | 0 | 0.0000 | 0.0000 |
+| florent.test.Toad | THEIR_FIRE_BEARING | 98 | 96 | 0.0197 | 0.0911 |
+| florent.test.Toad | THEIR_FIRE_DISTANCE | 98 | 96 | 2.1814 | 5.8938 |
+| florent.test.Toad | THEIR_FIRE_OUR_X | 98 | 96 | 3.4815 | 7.9991 |
+| florent.test.Toad | THEIR_FIRE_OUR_Y | 98 | 96 | 5.7175 | 8.0000 |
+| pulsar.PulsarMax | THEIR_FIRE_POWER | 175 | 0 | 0.0000 | 0.0000 |
+| pulsar.PulsarMax | THEIR_FIRE_TICK | 175 | 0 | 0.0000 | 0.0000 |
+| pulsar.PulsarMax | THEIR_FIRE_X | 175 | 0 | 0.0000 | 0.0000 |
+| pulsar.PulsarMax | THEIR_FIRE_Y | 175 | 0 | 0.0000 | 0.0000 |
+| pulsar.PulsarMax | THEIR_BULLET_SPEED | 175 | 0 | 0.0000 | 0.0000 |
+| pulsar.PulsarMax | THEIR_FIRE_BEARING | 175 | 173 | 0.0157 | 0.0231 |
+| pulsar.PulsarMax | THEIR_FIRE_DISTANCE | 175 | 173 | 1.3752 | 6.4453 |
+| pulsar.PulsarMax | THEIR_FIRE_OUR_X | 175 | 173 | 3.6931 | 7.9907 |
+| pulsar.PulsarMax | THEIR_FIRE_OUR_Y | 175 | 173 | 5.4478 | 7.9998 |
+| sheldor.mini.Foilist | THEIR_FIRE_POWER | 143 | 0 | 0.0000 | 0.0000 |
+| sheldor.mini.Foilist | THEIR_FIRE_TICK | 143 | 0 | 0.0000 | 0.0000 |
+| sheldor.mini.Foilist | THEIR_FIRE_X | 143 | 0 | 0.0000 | 0.0000 |
+| sheldor.mini.Foilist | THEIR_FIRE_Y | 143 | 0 | 0.0000 | 0.0000 |
+| sheldor.mini.Foilist | THEIR_BULLET_SPEED | 143 | 0 | 0.0000 | 0.0000 |
+| sheldor.mini.Foilist | THEIR_FIRE_BEARING | 143 | 137 | 0.0156 | 0.0513 |
+| sheldor.mini.Foilist | THEIR_FIRE_DISTANCE | 143 | 137 | 2.1475 | 4.8834 |
+| sheldor.mini.Foilist | THEIR_FIRE_OUR_X | 143 | 137 | 4.5098 | 7.9987 |
+| sheldor.mini.Foilist | THEIR_FIRE_OUR_Y | 143 | 137 | 4.3461 | 7.9999 |
+| cjm.chalk.Chalk | THEIR_FIRE_POWER | 153 | 0 | 0.0000 | 0.0000 |
+| cjm.chalk.Chalk | THEIR_FIRE_TICK | 153 | 0 | 0.0000 | 0.0000 |
+| cjm.chalk.Chalk | THEIR_FIRE_X | 153 | 0 | 0.0000 | 0.0000 |
+| cjm.chalk.Chalk | THEIR_FIRE_Y | 153 | 0 | 0.0000 | 0.0000 |
+| cjm.chalk.Chalk | THEIR_BULLET_SPEED | 153 | 0 | 0.0000 | 0.0000 |
+| cjm.chalk.Chalk | THEIR_FIRE_BEARING | 153 | 139 | 0.0120 | 0.0225 |
+| cjm.chalk.Chalk | THEIR_FIRE_DISTANCE | 153 | 139 | 1.7877 | 5.1283 |
+| cjm.chalk.Chalk | THEIR_FIRE_OUR_X | 153 | 139 | 4.2026 | 7.9999 |
+| cjm.chalk.Chalk | THEIR_FIRE_OUR_Y | 153 | 139 | 3.4425 | 7.9941 |
+| cb.Domogled | THEIR_FIRE_POWER | 231 | 0 | 0.0000 | 0.0000 |
+| cb.Domogled | THEIR_FIRE_TICK | 231 | 0 | 0.0000 | 0.0000 |
+| cb.Domogled | THEIR_FIRE_X | 231 | 0 | 0.0000 | 0.0000 |
+| cb.Domogled | THEIR_FIRE_Y | 231 | 0 | 0.0000 | 0.0000 |
+| cb.Domogled | THEIR_BULLET_SPEED | 231 | 0 | 0.0000 | 0.0000 |
+| cb.Domogled | THEIR_FIRE_BEARING | 231 | 218 | 0.0137 | 0.0742 |
+| cb.Domogled | THEIR_FIRE_DISTANCE | 231 | 218 | 2.2182 | 4.4154 |
+| cb.Domogled | THEIR_FIRE_OUR_X | 231 | 218 | 4.2750 | 7.9984 |
+| cb.Domogled | THEIR_FIRE_OUR_Y | 231 | 218 | 4.0765 | 7.9985 |
+| cs.s2.Seraphim | THEIR_FIRE_POWER | 116 | 0 | 0.0000 | 0.0000 |
+| cs.s2.Seraphim | THEIR_FIRE_TICK | 116 | 0 | 0.0000 | 0.0000 |
+| cs.s2.Seraphim | THEIR_FIRE_X | 116 | 0 | 0.0000 | 0.0000 |
+| cs.s2.Seraphim | THEIR_FIRE_Y | 116 | 0 | 0.0000 | 0.0000 |
+| cs.s2.Seraphim | THEIR_BULLET_SPEED | 116 | 0 | 0.0000 | 0.0000 |
+| cs.s2.Seraphim | THEIR_FIRE_BEARING | 116 | 109 | 0.0175 | 0.0525 |
+| cs.s2.Seraphim | THEIR_FIRE_DISTANCE | 116 | 109 | 1.6126 | 4.9541 |
+| cs.s2.Seraphim | THEIR_FIRE_OUR_X | 116 | 109 | 3.7434 | 7.9994 |
+| cs.s2.Seraphim | THEIR_FIRE_OUR_Y | 116 | 109 | 4.9559 | 8.0000 |
+| ags.Midboss | THEIR_FIRE_POWER | 93 | 0 | 0.0000 | 0.0000 |
+| ags.Midboss | THEIR_FIRE_TICK | 93 | 0 | 0.0000 | 0.0000 |
+| ags.Midboss | THEIR_FIRE_X | 93 | 0 | 0.0000 | 0.0000 |
+| ags.Midboss | THEIR_FIRE_Y | 93 | 0 | 0.0000 | 0.0000 |
+| ags.Midboss | THEIR_BULLET_SPEED | 93 | 0 | 0.0000 | 0.0000 |
+| ags.Midboss | THEIR_FIRE_BEARING | 93 | 91 | 0.0190 | 0.0487 |
+| ags.Midboss | THEIR_FIRE_DISTANCE | 93 | 91 | 1.3210 | 4.1367 |
+| ags.Midboss | THEIR_FIRE_OUR_X | 93 | 91 | 3.1435 | 7.9945 |
+| ags.Midboss | THEIR_FIRE_OUR_Y | 93 | 91 | 5.2968 | 8.0000 |
+| dft.Cardigan | THEIR_FIRE_POWER | 50 | 0 | 0.0000 | 0.0000 |
+| dft.Cardigan | THEIR_FIRE_TICK | 50 | 0 | 0.0000 | 0.0000 |
+| dft.Cardigan | THEIR_FIRE_X | 50 | 0 | 0.0000 | 0.0000 |
+| dft.Cardigan | THEIR_FIRE_Y | 50 | 0 | 0.0000 | 0.0000 |
+| dft.Cardigan | THEIR_BULLET_SPEED | 50 | 0 | 0.0000 | 0.0000 |
+| dft.Cardigan | THEIR_FIRE_BEARING | 50 | 44 | 0.0267 | 0.1124 |
+| dft.Cardigan | THEIR_FIRE_DISTANCE | 50 | 44 | 2.2333 | 5.9251 |
+| dft.Cardigan | THEIR_FIRE_OUR_X | 50 | 44 | 4.1142 | 8.0000 |
+| dft.Cardigan | THEIR_FIRE_OUR_Y | 50 | 44 | 4.3709 | 7.9996 |
+| kc.serpent.Hydra | THEIR_FIRE_POWER | 116 | 0 | 0.0000 | 0.0000 |
+| kc.serpent.Hydra | THEIR_FIRE_TICK | 116 | 0 | 0.0000 | 0.0000 |
+| kc.serpent.Hydra | THEIR_FIRE_X | 116 | 0 | 0.0000 | 0.0000 |
+| kc.serpent.Hydra | THEIR_FIRE_Y | 116 | 0 | 0.0000 | 0.0000 |
+| kc.serpent.Hydra | THEIR_BULLET_SPEED | 116 | 0 | 0.0000 | 0.0000 |
+| kc.serpent.Hydra | THEIR_FIRE_BEARING | 116 | 113 | 0.0172 | 0.0421 |
+| kc.serpent.Hydra | THEIR_FIRE_DISTANCE | 116 | 113 | 0.9796 | 4.0991 |
+| kc.serpent.Hydra | THEIR_FIRE_OUR_X | 116 | 113 | 2.9111 | 7.9988 |
+| kc.serpent.Hydra | THEIR_FIRE_OUR_Y | 116 | 113 | 5.7480 | 7.9989 |
+| pez.rumble.Ali | THEIR_FIRE_POWER | 101 | 0 | 0.0000 | 0.0000 |
+| pez.rumble.Ali | THEIR_FIRE_TICK | 101 | 0 | 0.0000 | 0.0000 |
+| pez.rumble.Ali | THEIR_FIRE_X | 101 | 0 | 0.0000 | 0.0000 |
+| pez.rumble.Ali | THEIR_FIRE_Y | 101 | 0 | 0.0000 | 0.0000 |
+| pez.rumble.Ali | THEIR_BULLET_SPEED | 101 | 0 | 0.0000 | 0.0000 |
+| pez.rumble.Ali | THEIR_FIRE_BEARING | 101 | 93 | 0.0194 | 0.0588 |
+| pez.rumble.Ali | THEIR_FIRE_DISTANCE | 101 | 93 | 1.3936 | 4.6796 |
+| pez.rumble.Ali | THEIR_FIRE_OUR_X | 101 | 93 | 4.1026 | 8.0000 |
+| pez.rumble.Ali | THEIR_FIRE_OUR_Y | 101 | 93 | 4.2821 | 7.9902 |
+| davidalves.Firebird | THEIR_FIRE_POWER | 151 | 0 | 0.0000 | 0.0000 |
+| davidalves.Firebird | THEIR_FIRE_TICK | 151 | 0 | 0.0000 | 0.0000 |
+| davidalves.Firebird | THEIR_FIRE_X | 151 | 0 | 0.0000 | 0.0000 |
+| davidalves.Firebird | THEIR_FIRE_Y | 151 | 0 | 0.0000 | 0.0000 |
+| davidalves.Firebird | THEIR_BULLET_SPEED | 151 | 0 | 0.0000 | 0.0000 |
+| davidalves.Firebird | THEIR_FIRE_BEARING | 151 | 147 | 0.0165 | 0.0700 |
+| davidalves.Firebird | THEIR_FIRE_DISTANCE | 151 | 147 | 1.6206 | 4.5989 |
+| davidalves.Firebird | THEIR_FIRE_OUR_X | 151 | 147 | 3.6650 | 7.9983 |
+| davidalves.Firebird | THEIR_FIRE_OUR_Y | 151 | 147 | 4.8962 | 7.9999 |
+| wcsv.Engineer.Engineer | THEIR_FIRE_POWER | 111 | 0 | 0.0000 | 0.0000 |
+| wcsv.Engineer.Engineer | THEIR_FIRE_TICK | 111 | 0 | 0.0000 | 0.0000 |
+| wcsv.Engineer.Engineer | THEIR_FIRE_X | 111 | 0 | 0.0000 | 0.0000 |
+| wcsv.Engineer.Engineer | THEIR_FIRE_Y | 111 | 0 | 0.0000 | 0.0000 |
+| wcsv.Engineer.Engineer | THEIR_BULLET_SPEED | 111 | 0 | 0.0000 | 0.0000 |
+| wcsv.Engineer.Engineer | THEIR_FIRE_BEARING | 111 | 109 | 0.0196 | 0.0407 |
+| wcsv.Engineer.Engineer | THEIR_FIRE_DISTANCE | 111 | 109 | 1.6040 | 4.2443 |
+| wcsv.Engineer.Engineer | THEIR_FIRE_OUR_X | 111 | 109 | 4.1859 | 7.9959 |
+| wcsv.Engineer.Engineer | THEIR_FIRE_OUR_Y | 111 | 109 | 4.9221 | 8.0000 |
+| wcsv.PowerHouse.PowerHouse | THEIR_FIRE_POWER | 93 | 0 | 0.0000 | 0.0000 |
+| wcsv.PowerHouse.PowerHouse | THEIR_FIRE_TICK | 93 | 0 | 0.0000 | 0.0000 |
+| wcsv.PowerHouse.PowerHouse | THEIR_FIRE_X | 93 | 0 | 0.0000 | 0.0000 |
+| wcsv.PowerHouse.PowerHouse | THEIR_FIRE_Y | 93 | 0 | 0.0000 | 0.0000 |
+| wcsv.PowerHouse.PowerHouse | THEIR_BULLET_SPEED | 93 | 0 | 0.0000 | 0.0000 |
+| wcsv.PowerHouse.PowerHouse | THEIR_FIRE_BEARING | 93 | 84 | 0.0179 | 0.0512 |
+| wcsv.PowerHouse.PowerHouse | THEIR_FIRE_DISTANCE | 93 | 84 | 1.0901 | 4.1044 |
+| wcsv.PowerHouse.PowerHouse | THEIR_FIRE_OUR_X | 93 | 84 | 3.8517 | 8.0000 |
+| wcsv.PowerHouse.PowerHouse | THEIR_FIRE_OUR_Y | 93 | 84 | 4.4008 | 7.9999 |
+| fromHell.CHCl3 | THEIR_FIRE_POWER | 96 | 0 | 0.0000 | 0.0000 |
+| fromHell.CHCl3 | THEIR_FIRE_TICK | 96 | 0 | 0.0000 | 0.0000 |
+| fromHell.CHCl3 | THEIR_FIRE_X | 96 | 0 | 0.0000 | 0.0000 |
+| fromHell.CHCl3 | THEIR_FIRE_Y | 96 | 0 | 0.0000 | 0.0000 |
+| fromHell.CHCl3 | THEIR_BULLET_SPEED | 96 | 0 | 0.0000 | 0.0000 |
+| fromHell.CHCl3 | THEIR_FIRE_BEARING | 96 | 90 | 0.0241 | 0.1029 |
+| fromHell.CHCl3 | THEIR_FIRE_DISTANCE | 96 | 90 | 1.3053 | 7.6169 |
+| fromHell.CHCl3 | THEIR_FIRE_OUR_X | 96 | 90 | 4.0618 | 7.9935 |
+| fromHell.CHCl3 | THEIR_FIRE_OUR_Y | 96 | 90 | 4.5300 | 7.9946 |
+| dft.Cyanide | THEIR_FIRE_POWER | 100 | 0 | 0.0000 | 0.0000 |
+| dft.Cyanide | THEIR_FIRE_TICK | 100 | 0 | 0.0000 | 0.0000 |
+| dft.Cyanide | THEIR_FIRE_X | 100 | 0 | 0.0000 | 0.0000 |
+| dft.Cyanide | THEIR_FIRE_Y | 100 | 0 | 0.0000 | 0.0000 |
+| dft.Cyanide | THEIR_BULLET_SPEED | 100 | 0 | 0.0000 | 0.0000 |
+| dft.Cyanide | THEIR_FIRE_BEARING | 100 | 97 | 0.0207 | 0.0832 |
+| dft.Cyanide | THEIR_FIRE_DISTANCE | 100 | 97 | 1.9997 | 4.2026 |
+| dft.Cyanide | THEIR_FIRE_OUR_X | 100 | 97 | 4.0325 | 7.9989 |
+| dft.Cyanide | THEIR_FIRE_OUR_Y | 100 | 97 | 5.3308 | 8.0000 |
+| jk.mini.CunobelinDC | THEIR_FIRE_POWER | 149 | 0 | 0.0000 | 0.0000 |
+| jk.mini.CunobelinDC | THEIR_FIRE_TICK | 149 | 0 | 0.0000 | 0.0000 |
+| jk.mini.CunobelinDC | THEIR_FIRE_X | 149 | 0 | 0.0000 | 0.0000 |
+| jk.mini.CunobelinDC | THEIR_FIRE_Y | 149 | 0 | 0.0000 | 0.0000 |
+| jk.mini.CunobelinDC | THEIR_BULLET_SPEED | 149 | 0 | 0.0000 | 0.0000 |
+| jk.mini.CunobelinDC | THEIR_FIRE_BEARING | 149 | 122 | 0.0132 | 0.0578 |
+| jk.mini.CunobelinDC | THEIR_FIRE_DISTANCE | 149 | 122 | 2.3996 | 7.4769 |
+| jk.mini.CunobelinDC | THEIR_FIRE_OUR_X | 149 | 122 | 3.1848 | 7.9870 |
+| jk.mini.CunobelinDC | THEIR_FIRE_OUR_Y | 149 | 122 | 4.5459 | 7.9982 |
+| ags.rougedc.RougeDC | THEIR_FIRE_POWER | 111 | 0 | 0.0000 | 0.0000 |
+| ags.rougedc.RougeDC | THEIR_FIRE_TICK | 111 | 0 | 0.0000 | 0.0000 |
+| ags.rougedc.RougeDC | THEIR_FIRE_X | 111 | 0 | 0.0000 | 0.0000 |
+| ags.rougedc.RougeDC | THEIR_FIRE_Y | 111 | 0 | 0.0000 | 0.0000 |
+| ags.rougedc.RougeDC | THEIR_BULLET_SPEED | 111 | 0 | 0.0000 | 0.0000 |
+| ags.rougedc.RougeDC | THEIR_FIRE_BEARING | 111 | 109 | 0.0201 | 0.0482 |
+| ags.rougedc.RougeDC | THEIR_FIRE_DISTANCE | 111 | 109 | 1.3117 | 4.1668 |
+| ags.rougedc.RougeDC | THEIR_FIRE_OUR_X | 111 | 109 | 3.4151 | 8.0000 |
+| ags.rougedc.RougeDC | THEIR_FIRE_OUR_Y | 111 | 109 | 5.7518 | 7.9977 |
 
 ## Layer 4 — GF Precision (autopilot)
 
 | Opponent | Comparisons | MAE | Max err | Wave match | Break-tick MAE |
 |---|---:|---:|---:|---:|---:|
-| kc.mega.BeepBoop vs kc.mega.BeepBoop | 2642 | 0.531491 | 1.954187 | 8.8% | 3190.48 |
-| test.SittingDuck | 784 | 0.000000 | 0.000000 | 100.0% | 0.00 |
-| test.Aggressive | 383 | 0.754500 | 1.934211 | 100.0% | 0.00 |
-| sample.Fire | 766 | 0.000000 | 0.000000 | 100.0% | 0.00 |
-| sample.Walls | 1074 | 0.960321 | 1.991016 | 100.0% | 0.00 |
-| sample.Crazy | 1356 | 0.879427 | 1.931362 | 100.0% | 0.00 |
-| kc.mega.BeepBoop | 843 | 0.742100 | 1.963975 | 100.0% | 0.01 |
-| aaa.r.ScalarR | 1232 | 0.765028 | 1.938143 | 100.0% | 0.01 |
-| jk.mega.DrussGT | 1382 | 0.594176 | 1.981632 | 99.7% | 0.01 |
-| voidious.Diamond | 968 | 0.739508 | 1.967916 | 99.9% | 0.02 |
-| rsalesc.mega.Knight | 1004 | 0.784543 | 1.978638 | 100.0% | 0.00 |
-| rsalesc.roborio.Roborio | 1006 | 0.727304 | 1.986922 | 100.0% | 0.01 |
-| lxx.Tomcat | 809 | 0.770728 | 1.964163 | 100.0% | 0.00 |
-| cb.fire.Firestarter | 1019 | 0.843201 | 1.974561 | 100.0% | 0.01 |
-| xander.cat.XanderCat | 3860 | 0.019876 | 1.931317 | 100.0% | 0.01 |
-| oog.mega.saguaro.Saguaro | 796 | 0.673705 | 1.982090 | 100.0% | 0.01 |
-| dsekercioglu.mega.Raven | 772 | 0.777472 | 1.988972 | 100.0% | 0.01 |
-| kc.serpent.WaveSerpent | 905 | 0.673222 | 1.979914 | 100.0% | 0.01 |
-| voidious.Dookious | 845 | 0.689674 | 1.947562 | 100.0% | 0.02 |
-| darkcanuck.Pris | 775 | 0.665996 | 1.978227 | 100.0% | 0.03 |
-| abc.Shadow | 613 | 0.733859 | 1.927728 | 99.8% | 0.02 |
-| dsekercioglu.mega.WhiteFang | 870 | 0.749348 | 1.959454 | 100.0% | 0.01 |
-| mn.Combat | 1060 | 0.677410 | 1.989118 | 100.0% | 0.02 |
-| gh.GresSuffurd | 1195 | 0.709269 | 1.980439 | 99.7% | 0.02 |
-| cs.Nene | 739 | 0.676809 | 1.961791 | 99.9% | 0.03 |
-| jk.melee.Neuromancer | 1108 | 0.737659 | 1.969121 | 99.7% | 0.01 |
-| tjk.deBroglie | 665 | 0.744978 | 1.920521 | 99.8% | 0.02 |
-| mue.Ascendant | 737 | 0.855445 | 1.985868 | 100.0% | 0.02 |
-| davidalves.Phoenix | 746 | 0.808251 | 1.984717 | 99.7% | 0.00 |
-| zyx.mega.YersiniaPestis | 850 | 0.641875 | 1.931432 | 99.9% | 0.01 |
-| darkcanuck.Holden | 756 | 0.637841 | 1.976086 | 100.0% | 0.02 |
-| Krabb.sliNk.Garm | 1121 | 0.775475 | 1.976138 | 100.0% | 0.02 |
-| pez.rumble.CassiusClay | 805 | 0.758435 | 1.958405 | 99.8% | 0.02 |
-| jk.precise.Wintermute | 684 | 0.748744 | 1.970350 | 99.6% | 0.00 |
-| fromHell.BlackBox | 731 | 0.793090 | 1.974972 | 100.0% | 0.03 |
-| axeBots.SilverSurfer | 750 | 0.782139 | 1.956377 | 100.0% | 0.01 |
-| florent.XSeries.X2 | 1063 | 0.812162 | 1.977015 | 100.0% | 0.02 |
-| ar.horizon.Horizon | 936 | 0.742002 | 1.965760 | 100.0% | 0.01 |
-| florent.test.Toad | 708 | 0.851725 | 1.978798 | 100.0% | 0.02 |
-| pulsar.PulsarMax | 1254 | 0.832514 | 1.990155 | 100.0% | 0.01 |
-| sheldor.mini.Foilist | 1391 | 0.749004 | 1.978971 | 99.9% | 0.00 |
-| cjm.chalk.Chalk | 972 | 0.735135 | 1.980820 | 100.0% | 0.05 |
-| cb.Domogled | 1112 | 0.781552 | 1.974263 | 99.9% | 0.01 |
-| cs.s2.Seraphim | 1061 | 0.656152 | 1.978692 | 99.8% | 0.02 |
-| ags.Midboss | 800 | 0.689233 | 1.967263 | 99.9% | 0.01 |
-| dft.Cardigan | 804 | 0.735132 | 1.951755 | 100.0% | 0.01 |
-| kc.serpent.Hydra | 840 | 0.677984 | 1.955116 | 100.0% | 0.03 |
-| pez.rumble.Ali | 833 | 0.766546 | 1.983920 | 99.6% | 0.02 |
-| davidalves.Firebird | 941 | 0.837550 | 1.986152 | 100.0% | 0.01 |
-| wcsv.Engineer.Engineer | 934 | 0.723717 | 1.962570 | 99.9% | 0.02 |
-| wcsv.PowerHouse.PowerHouse | 755 | 0.679340 | 1.964250 | 99.9% | 0.01 |
-| fromHell.CHCl3 | 769 | 0.822318 | 1.961833 | 100.0% | 0.01 |
-| dft.Cyanide | 1155 | 0.811408 | 1.983986 | 100.0% | 0.02 |
-| jk.mini.CunobelinDC | 1105 | 0.776748 | 1.972540 | 100.0% | 0.01 |
-| ags.rougedc.RougeDC | 795 | 0.692290 | 1.952309 | 99.9% | 0.02 |
+| kc.mega.BeepBoop vs kc.mega.BeepBoop | 604 | 0.544706 | 1.778407 | 21.9% | 2499.47 |
+| test.SittingDuck | 88 | 0.000000 | 0.000000 | 100.0% | 0.00 |
+| test.Aggressive | 35 | 0.839520 | 1.930121 | 100.0% | 0.00 |
+| sample.Fire | 59 | 0.000000 | 0.000000 | 100.0% | 0.00 |
+| sample.Walls | 138 | 1.025969 | 1.990458 | 100.0% | 0.00 |
+| sample.Crazy | 145 | 0.805367 | 1.901448 | 100.0% | 0.00 |
+| kc.mega.BeepBoop | 114 | 0.760840 | 1.918709 | 100.0% | 0.00 |
+| aaa.r.ScalarR | 149 | 0.803897 | 1.903362 | 100.0% | 0.00 |
+| jk.mega.DrussGT | 197 | 0.356490 | 1.903591 | 100.0% | 0.01 |
+| voidious.Diamond | 124 | 0.656639 | 1.906606 | 100.0% | 0.03 |
+| rsalesc.mega.Knight | 136 | 0.831081 | 1.965482 | 100.0% | 0.02 |
+| rsalesc.roborio.Roborio | 160 | 0.575216 | 1.970370 | 100.0% | 0.00 |
+| lxx.Tomcat | 74 | 0.906062 | 1.896186 | 100.0% | 0.14 |
+| cb.fire.Firestarter | 127 | 0.791741 | 1.970285 | 100.0% | 0.04 |
+| xander.cat.XanderCat | 388 | 0.016570 | 1.579014 | 100.0% | 0.01 |
+| oog.mega.saguaro.Saguaro | 91 | 0.777572 | 1.941154 | 100.0% | 0.04 |
+| dsekercioglu.mega.Raven | 108 | 0.666605 | 1.880622 | 100.0% | 0.00 |
+| kc.serpent.WaveSerpent | 87 | 0.776885 | 1.861785 | 100.0% | 0.00 |
+| voidious.Dookious | 79 | 0.639447 | 1.804584 | 100.0% | 0.00 |
+| darkcanuck.Pris | 115 | 0.636271 | 1.987719 | 100.0% | 0.03 |
+| abc.Shadow | 63 | 0.710527 | 1.890782 | 100.0% | 0.00 |
+| dsekercioglu.mega.WhiteFang | 101 | 0.676874 | 1.939675 | 100.0% | 0.00 |
+| mn.Combat | 135 | 0.675136 | 1.941979 | 100.0% | 0.08 |
+| gh.GresSuffurd | 124 | 0.642428 | 1.979329 | 100.0% | 0.00 |
+| cs.Nene | 83 | 0.783471 | 1.933980 | 100.0% | 0.00 |
+| jk.melee.Neuromancer | 161 | 0.659420 | 1.912390 | 100.0% | 0.00 |
+| tjk.deBroglie | 95 | 0.742035 | 1.931514 | 100.0% | 0.00 |
+| mue.Ascendant | 75 | 0.860287 | 1.965390 | 100.0% | 0.00 |
+| davidalves.Phoenix | 149 | 0.780974 | 1.975382 | 100.0% | 0.00 |
+| zyx.mega.YersiniaPestis | 115 | 0.746900 | 1.894023 | 100.0% | 0.03 |
+| darkcanuck.Holden | 80 | 0.603242 | 1.981204 | 100.0% | 0.00 |
+| Krabb.sliNk.Garm | 121 | 0.706554 | 1.927549 | 100.0% | 0.00 |
+| pez.rumble.CassiusClay | 92 | 0.700516 | 1.952042 | 100.0% | 0.00 |
+| jk.precise.Wintermute | 121 | 0.943205 | 1.962294 | 100.0% | 0.00 |
+| fromHell.BlackBox | 84 | 0.771351 | 1.930428 | 100.0% | 0.00 |
+| axeBots.SilverSurfer | 110 | 0.682370 | 1.869230 | 100.0% | 0.14 |
+| florent.XSeries.X2 | 117 | 0.788495 | 1.977286 | 100.0% | 0.07 |
+| ar.horizon.Horizon | 159 | 0.656965 | 1.944887 | 100.0% | 0.00 |
+| florent.test.Toad | 92 | 0.881928 | 1.973319 | 100.0% | 0.00 |
+| pulsar.PulsarMax | 167 | 0.743878 | 1.978455 | 100.0% | 0.02 |
+| sheldor.mini.Foilist | 131 | 0.826466 | 1.972560 | 100.0% | 0.04 |
+| cjm.chalk.Chalk | 146 | 0.609465 | 1.960609 | 100.0% | 0.01 |
+| cb.Domogled | 201 | 0.815300 | 1.966860 | 100.0% | 0.04 |
+| cs.s2.Seraphim | 101 | 0.673721 | 1.965419 | 100.0% | 0.01 |
+| ags.Midboss | 86 | 0.881796 | 1.928611 | 100.0% | 0.00 |
+| dft.Cardigan | 44 | 0.775700 | 1.701476 | 100.0% | 0.00 |
+| kc.serpent.Hydra | 107 | 0.713857 | 1.798594 | 100.0% | 0.00 |
+| pez.rumble.Ali | 89 | 0.840757 | 1.961479 | 100.0% | 0.02 |
+| davidalves.Firebird | 152 | 0.694976 | 1.937919 | 99.3% | 0.00 |
+| wcsv.Engineer.Engineer | 107 | 0.869251 | 1.907395 | 100.0% | 0.01 |
+| wcsv.PowerHouse.PowerHouse | 89 | 0.857321 | 1.959322 | 100.0% | 0.00 |
+| fromHell.CHCl3 | 79 | 1.013742 | 1.976238 | 98.8% | 0.09 |
+| dft.Cyanide | 90 | 0.795756 | 1.912949 | 100.0% | 0.00 |
+| jk.mini.CunobelinDC | 127 | 0.782224 | 1.966555 | 100.0% | 0.02 |
+| ags.rougedc.RougeDC | 103 | 0.745954 | 1.974774 | 100.0% | 0.00 |
 

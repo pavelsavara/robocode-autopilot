@@ -168,15 +168,18 @@ final class BattleLoopTest {
         // --- Score + hit metrics (computed before any baseline assertion) ---
         double winRate = result.getWinRate();
         double scoreRatio = result.getScoreRatio();
-        double hitRate = csvEnabled ? computeHitRate(waveLines) : Double.NaN;
+        // Hit rate straight from the Robocode control-API turn snapshots (works
+        // even when CSV output is disabled).
+        double hitRate = result.getHitRate();
         System.out.println(String.format("Win rate: %.1f%% (%d/%d)", winRate * 100,
                 result.getOurFirsts(), result.getTotalRounds()));
         System.out.println(String.format("Score ratio: %.2f (%d/%d)", scoreRatio,
                 result.getOurScore(), result.getOpponentScore()));
-        if (csvEnabled) {
-            System.out.println(String.format("Hit rate: %.1f%%", hitRate * 100));
+        if (Double.isNaN(hitRate)) {
+            System.out.println("Hit rate: N/A (no bullets fired)");
         } else {
-            System.out.println("Hit rate: N/A (CSV disabled)");
+            System.out.println(String.format("Hit rate: %.1f%% (%d/%d)", hitRate * 100,
+                    result.getBulletsHit(), result.getBulletsFired()));
         }
 
         // Capture this opponent's full layer/feature drift snapshot for the markdown
@@ -186,9 +189,7 @@ final class BattleLoopTest {
                 hitRate, validator, layer0));
 
         assertScoreBaseline(opponent, winRate, scoreRatio, result.getTotalRounds());
-        if (csvEnabled) {
-            assertHitRateBaseline(opponent, hitRate);
-        }
+        assertHitRateBaseline(opponent, hitRate);
 
         // --- PipelineValidator: spatial accuracy ---
         assertSpatialFidelity(validator);
@@ -405,48 +406,6 @@ final class BattleLoopTest {
                 assertTrue(hitRate >= 0.7, "vs SittingDuck: hit rate should be >= 70%, was " + hitRate);
                 break;
         }
-    }
-
-    // --- Compute hit rate from autopilot-waves.csv lines (real bullets only) ---
-    private double computeHitRate(List<String> lines) {
-        if (lines.size() < 2)
-            return 0;
-        String header = lines.get(0);
-        String[] cols = header.split(",");
-        int hitIdx = -1;
-        int isRealIdx = -1;
-        for (int i = 0; i < cols.length; i++) {
-            if ("our_break_hit".equals(cols[i].trim())) {
-                hitIdx = i;
-            } else if ("our_fire_is_real".equals(cols[i].trim())) {
-                isRealIdx = i;
-            }
-        }
-        if (hitIdx < 0)
-            return 0;
-
-        int hits = 0;
-        int total = 0;
-        for (int i = 1; i < lines.size(); i++) {
-            String[] parts = lines.get(i).split(",");
-            // Skip virtual bullet rows
-            if (isRealIdx >= 0 && isRealIdx < parts.length) {
-                String realVal = parts[isRealIdx].trim();
-                if (!"1.0".equals(realVal) && !"1".equals(realVal)) {
-                    continue;
-                }
-            }
-            if (hitIdx < parts.length) {
-                String val = parts[hitIdx].trim();
-                if (!val.isEmpty() && !"NaN".equals(val)) {
-                    total++;
-                    if (Double.parseDouble(val) >= 1.0) {
-                        hits++;
-                    }
-                }
-            }
-        }
-        return total > 0 ? (double) hits / total : 0;
     }
 
     private static List<String> readLines(File file) {

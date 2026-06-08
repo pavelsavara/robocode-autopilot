@@ -8,9 +8,16 @@ import robocode.control.RobocodeEngine;
 import robocode.control.RobotSpecification;
 import robocode.control.events.BattleAdaptor;
 import robocode.control.events.BattleCompletedEvent;
+import robocode.control.events.TurnEndedEvent;
+import robocode.control.snapshot.BulletState;
+import robocode.control.snapshot.IBulletSnapshot;
+import robocode.control.snapshot.IRobotSnapshot;
+import robocode.control.snapshot.ITurnSnapshot;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Headless battle runner using PipelineOrchestrator.
@@ -32,6 +39,8 @@ public final class BattleRunner {
         private int opponentScore;
         private int ourFirsts;
         private int totalRounds;
+        private int bulletsFired;
+        private int bulletsHit;
 
         BattleResult(PipelineOrchestrator orchestrator) {
             this.orchestrator = orchestrator;
@@ -63,6 +72,23 @@ public final class BattleRunner {
 
         public double getScoreRatio() {
             return opponentScore > 0 ? (double) ourScore / opponentScore : ourScore;
+        }
+
+        public int getBulletsFired() {
+            return bulletsFired;
+        }
+
+        public int getBulletsHit() {
+            return bulletsHit;
+        }
+
+        /**
+         * Fraction of our fired bullets that hit the opponent, computed directly
+         * from the Robocode control-API turn snapshots (independent of CSV output).
+         * Returns {@code NaN} when no bullets were fired.
+         */
+        public double getHitRate() {
+            return bulletsFired > 0 ? (double) bulletsHit / bulletsFired : Double.NaN;
         }
     }
 
@@ -190,6 +216,56 @@ public final class BattleRunner {
             }
         });
 
+        // Control-API hit-rate listener: counts our fired bullets and how many
+        // reach HIT_VICTIM (rising edge), straight from the turn snapshots. Works
+        // even when CSV output is disabled.
+        final String hitRateToken = simpleName(robotA);
+        engine.addBattleListener(new BattleAdaptor() {
+            private final Map<Long, BulletState> prevStates = new HashMap<>();
+            private int ourIndex = -1;
+            private int currentRound = -1;
+
+            @Override
+            public void onTurnEnded(TurnEndedEvent event) {
+                ITurnSnapshot snap = event.getTurnSnapshot();
+                if (snap == null) {
+                    return;
+                }
+                // Bullet ids reset each round; flush the prev-state map at round
+                // boundaries so a fresh bullet is counted as fired.
+                if (snap.getRound() != currentRound) {
+                    currentRound = snap.getRound();
+                    prevStates.clear();
+                }
+                if (ourIndex < 0) {
+                    for (IRobotSnapshot r : snap.getRobots()) {
+                        String n = r.getName();
+                        if (n != null && n.contains(hitRateToken)) {
+                            ourIndex = r.getRobotIndex();
+                            break;
+                        }
+                    }
+                }
+                for (IBulletSnapshot b : snap.getBullets()) {
+                    if (b.getOwnerIndex() != ourIndex) {
+                        continue;
+                    }
+                    long key = bulletKey(b);
+                    BulletState prev = prevStates.get(key);
+                    if (prev == null) {
+                        result.bulletsFired++;
+                    }
+                    if (b.getState() == BulletState.HIT_VICTIM && (prev == null || !isTerminalBulletState(prev))) {
+                        result.bulletsHit++;
+                    }
+                }
+                prevStates.clear();
+                for (IBulletSnapshot b : snap.getBullets()) {
+                    prevStates.put(bulletKey(b), b.getState());
+                }
+            }
+        });
+
         try {
             String robotFilter = robotA + "," + robotB;
             RobotSpecification[] robots = engine.getLocalRepository(robotFilter);
@@ -243,6 +319,24 @@ public final class BattleRunner {
         return result;
     }
 
+    /** Simple class name from a fully-qualified name (used to match snapshot robot names). */
+    private static String simpleName(String fqn) {
+        int dot = fqn.lastIndexOf('.');
+        return dot >= 0 ? fqn.substring(dot + 1) : fqn;
+    }
+
+    /** Collision-free key packing the owner index and bullet id. */
+    private static long bulletKey(IBulletSnapshot bullet) {
+        return (((long) bullet.getOwnerIndex()) << 32) | (bullet.getBulletId() & 0xFFFFFFFFL);
+    }
+
+    /** A bullet state from which a bullet no longer transitions (terminal). */
+    private static boolean isTerminalBulletState(BulletState state) {
+        return state == BulletState.HIT_VICTIM
+                || state == BulletState.HIT_WALL
+                || state == BulletState.HIT_BULLET;
+    }
+
     public static void main(String[] args) {
         String robotJar = System.getProperty("robot.jar");
         int rounds = Integer.parseInt(System.getProperty("battle.rounds", "10"));
@@ -292,6 +386,8 @@ public final class BattleRunner {
                 result.getWinRate() * 100, result.getOurFirsts(), result.getTotalRounds());
         System.out.printf("Score ratio: %.2f (%d/%d)%n",
                 result.getScoreRatio(), result.getOurScore(), result.getOpponentScore());
+        System.out.printf("Hit rate: %.1f%% (%d/%d)%n",
+                result.getHitRate() * 100, result.getBulletsHit(), result.getBulletsFired());
 
         if (result.orchestrator().validator() != null) {
             result.orchestrator().validator().printSummary();
