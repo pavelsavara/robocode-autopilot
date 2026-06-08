@@ -152,7 +152,7 @@ final class OurWaveTrackerTest {
 
         VcsStore vcs = wb.getVcsStore();
         int zeroBin = GuessFactor.gfToBinIndex(0, GuessFactor.NUM_BINS);
-        assertTrue(vcs.getCount(1, 0, zeroBin) > 0);
+        assertTrue(vcs.getCount(1, 0, 0.0, zeroBin) > 0);
 
         assertFalse(Double.isNaN(wb.getFeature(Feature.OUR_BREAK_GF)));
         assertEquals(0, wb.getFeature(Feature.OUR_BREAK_GF), 0.1);
@@ -259,7 +259,7 @@ final class OurWaveTrackerTest {
 
         // VCS should NOT have been incremented
         int zeroBin = GuessFactor.gfToBinIndex(0, GuessFactor.NUM_BINS);
-        assertEquals(0, vcs.getCount(1, 0, zeroBin));
+        assertEquals(0, vcs.getCount(1, 0, 0.0, zeroBin));
     }
 
     @Test
@@ -381,6 +381,7 @@ final class OurWaveTrackerTest {
         wb.setFeature(Feature.OUR_AIM_OPPONENT_Y, 505);
         wb.setFeature(Feature.OUR_AIM_DISTANCE, 210);
         wb.setFeature(Feature.OUR_AIM_BEARING_ABSOLUTE, 0.05);
+        wb.setFeature(Feature.OUR_AIM_LAG1_GF, 0.42);
 
         wb.process();
 
@@ -391,14 +392,17 @@ final class OurWaveTrackerTest {
         assertEquals(505, wb.getOurWave(0, OurWaveColumn.AIM_OPPONENT_Y), 1e-9);
         assertEquals(210, wb.getOurWave(0, OurWaveColumn.AIM_DISTANCE), 1e-9);
         assertEquals(0.05, wb.getOurWave(0, OurWaveColumn.AIM_BEARING_ABSOLUTE), 1e-9);
+        assertEquals(0.42, wb.getOurWave(0, OurWaveColumn.AIM_LAG1_GF), 1e-9);
 
         // Virtual slot 1 shares the same aim geometry (same shooter snapshot).
         assertEquals(390, wb.getOurWave(1, OurWaveColumn.AIM_X), 1e-9);
         assertEquals(210, wb.getOurWave(1, OurWaveColumn.AIM_DISTANCE), 1e-9);
+        assertEquals(0.42, wb.getOurWave(1, OurWaveColumn.AIM_LAG1_GF), 1e-9);
 
         // Staging cleared after processing.
         assertTrue(Double.isNaN(wb.getFeature(Feature.OUR_AIM_X)));
         assertTrue(Double.isNaN(wb.getFeature(Feature.OUR_AIM_DISTANCE)));
         assertTrue(Double.isNaN(wb.getFeature(Feature.OUR_AIM_BEARING_ABSOLUTE)));
+        assertTrue(Double.isNaN(wb.getFeature(Feature.OUR_AIM_LAG1_GF)));
     }
 }

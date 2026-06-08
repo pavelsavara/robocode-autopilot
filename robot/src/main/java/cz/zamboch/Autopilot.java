@@ -454,6 +454,13 @@ public final class Autopilot extends AdvancedRobot {
         wb.setFeature(Feature.OUR_AIM_OPPONENT_Y, aimOppY);
         wb.setFeature(Feature.OUR_AIM_DISTANCE, Math.sqrt(aimDx * aimDx + aimDy * aimDy));
         wb.setFeature(Feature.OUR_AIM_BEARING_ABSOLUTE, Math.atan2(aimDx, aimDy));
+
+        // Lag-1 dodge context: developing GF of the most-recent in-flight real
+        // wave at the aim-time opponent position. Computed via the shared
+        // OurWaveTracker helper so the recorded feature exactly matches the value
+        // the gun binned with this tick. NaN when no wave is in flight.
+        wb.setFeature(Feature.OUR_AIM_LAG1_GF,
+                OurWaveTracker.computeLag1Gf(wb, aimOppX, aimOppY));
     }
 
 }

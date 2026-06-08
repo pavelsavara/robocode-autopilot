@@ -245,6 +245,12 @@ final class GodViewWaveResolver {
         double aimTargetY = firerWb.getScanFeatureAtOrBeforeTick(Feature.OPPONENT_Y, aimTick);
 
         PerPerspective pp = persp[ctx.perspectiveIndex()];
+        // Lag-1 dodge context: developing GF of the most-recent still-active real
+        // wave (last element of activeWaves) at the opponent's aim-time position.
+        if (!pp.activeWaves.isEmpty()) {
+            Wave prev = pp.activeWaves.get(pp.activeWaves.size() - 1).wave;
+            wave.lag1Gf = prev.computeGuessFactor(aimTargetX, aimTargetY);
+        }
         pp.activeWaves.add(new TrackedWave(wave, bullet.getBulletId(),
                 distance, latVel, advVel, power,
                 opponent.getX(), opponent.getY(), bulletHeading,
@@ -290,16 +296,17 @@ final class GodViewWaveResolver {
         wb.setFeature(Feature.OUR_AIM_OPPONENT_Y, tw.aimTargetY);
         wb.setFeature(Feature.OUR_AIM_DISTANCE, aimDistance);
         wb.setFeature(Feature.OUR_AIM_BEARING_ABSOLUTE, aimBearing);
+        wb.setFeature(Feature.OUR_AIM_LAG1_GF, w.lag1Gf);
 
         // Compute aim GF from ModelSelector or raw VCS at fire time
         ModelSelector selector = wb.getModelSelector();
         double aimGf = 0.0;
         if (selector != null) {
-            aimGf = selector.predictForAim(tw.fireDistance, tw.fireLateralVelocity);
+            aimGf = selector.predictForAim(tw.fireDistance, tw.fireLateralVelocity, w.lag1Gf);
         } else {
             VcsStore vcs = wb.getVcsStore();
             if (vcs != null) {
-                int bestBin = vcs.getBestBin(w.distanceSegment, w.latVelSegment);
+                int bestBin = vcs.getBestBin(w.distanceSegment, w.latVelSegment, w.lag1Gf);
                 aimGf = GuessFactor.binIndexToGf(bestBin, GuessFactor.NUM_BINS);
             }
         }
@@ -320,13 +327,15 @@ final class GodViewWaveResolver {
                 // Update VCS store (common to both paths)
                 VcsStore vcs = wb.getVcsStore();
                 if (vcs != null) {
-                    vcs.increment(tw.wave.distanceSegment, tw.wave.latVelSegment, binIndex);
+                    vcs.increment(tw.wave.distanceSegment, tw.wave.latVelSegment,
+                            tw.wave.lag1Gf, binIndex);
                 }
 
                 // Update model selector if present
                 ModelSelector selector = wb.getModelSelector();
                 if (selector != null) {
-                    selector.recordPipelineUpdate(tw.wave.distanceSegment, tw.wave.latVelSegment, gf);
+                    selector.recordPipelineUpdate(tw.wave.distanceSegment, tw.wave.latVelSegment,
+                            tw.wave.lag1Gf, gf);
                 }
 
                 wb.setFeature(Feature.OUR_BREAK_TICK, currentTick);

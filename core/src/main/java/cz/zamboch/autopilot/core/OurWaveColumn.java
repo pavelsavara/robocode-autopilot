@@ -34,6 +34,9 @@ public enum OurWaveColumn {
     AIM_OPPONENT_Y,
     AIM_DISTANCE,
     AIM_BEARING_ABSOLUTE,
+    // Lag-1 dodge-context developing guess factor captured at aim time — see
+    // Feature.OUR_AIM_LAG1_GF. VcsStore bins this raw GF into a lag-1 slice.
+    AIM_LAG1_GF,
     BREAK_TICK,
     BREAK_GF,
     BREAK_BEARING_OFFSET,

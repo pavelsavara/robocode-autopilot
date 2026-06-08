@@ -42,9 +42,10 @@ public final class ModelSelector {
      *
      * @param distance current distance to opponent
      * @param latVel   current lateral velocity of opponent
+     * @param lag1Gf   lag-1 dodge-context developing GF of the most-recent in-flight wave
      * @return predicted GF from the best model
      */
-    public double predictForAim(double distance, double latVel) {
+    public double predictForAim(double distance, double latVel, double lag1Gf) {
         int best = bestModelIndex();
         // For now, only VCS-style models support this simple predict.
         // Future models that need full wave context will override differently.
@@ -54,7 +55,7 @@ public final class ModelSelector {
             int distSeg = GuessFactor.distanceSegment(distance);
             int latVelSeg = GuessFactor.lateralVelocitySegment(
                     Double.isNaN(latVel) ? 0 : latVel);
-            int bestBin = vcs.getBestBin(distSeg, latVelSeg);
+            int bestBin = vcs.getBestBin(distSeg, latVelSeg, lag1Gf);
             return GuessFactor.binIndexToGf(bestBin, GuessFactor.NUM_BINS);
         }
         // Fallback: head-on
@@ -141,13 +142,13 @@ public final class ModelSelector {
      * Records each model's prediction error without calling update() (the
      * pipeline handles VCS increment directly).
      */
-    public void recordPipelineUpdate(int distSeg, int latVelSeg, double breakGf) {
+    public void recordPipelineUpdate(int distSeg, int latVelSeg, double lag1Gf, double breakGf) {
         for (int i = 0; i < models.length; i++) {
             IOnlineModel model = models[i];
             double predicted;
             if (model instanceof VcsStore) {
                 VcsStore vcs = (VcsStore) model;
-                int bestBin = vcs.getBestBin(distSeg, latVelSeg);
+                int bestBin = vcs.getBestBin(distSeg, latVelSeg, lag1Gf);
                 predicted = GuessFactor.binIndexToGf(bestBin, GuessFactor.NUM_BINS);
             } else {
                 predicted = 0.0;

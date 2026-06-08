@@ -101,6 +101,10 @@ public enum Feature {
     OUR_AIM_OPPONENT_Y(FileType.OUR_WAVES),
     OUR_AIM_DISTANCE(FileType.OUR_WAVES),
     OUR_AIM_BEARING_ABSOLUTE(FileType.OUR_WAVES),
+    // Lag-1 dodge context: the developing guess factor of the most-recent still
+    // active real wave, evaluated against the opponent position at aim time. The
+    // VcsStore bins this raw GF into a lag-1 slice; here it flows as a plain GF.
+    OUR_AIM_LAG1_GF(FileType.OUR_WAVES),
 
     // --- Our gun waves: break-time features (set at wave resolution) ---
     OUR_BREAK_TICK(FileType.OUR_WAVES),

@@ -9,6 +9,10 @@ public final class GuessFactor {
     public static final int ZERO_BIN = NUM_BINS / 2; // 15
     public static final int DISTANCE_SEGMENTS = 5;
     public static final int LAT_VEL_SEGMENTS = 5;
+    /** Lag-1 dodge-context segments (coarse sign of the developing GF). */
+    public static final int LAG1_SEGMENTS = 3;
+    /** Threshold separating the center (no-context) lag-1 segment from the signed ones. */
+    private static final double LAG1_THRESHOLD = 0.15;
 
     private GuessFactor() {
     }
@@ -75,6 +79,37 @@ public final class GuessFactor {
     /** Direction sign: +1 if lateral velocity >= 0 (CW), -1 otherwise (CCW). */
     public static int direction(double lateralVelocity) {
         return lateralVelocity >= 0 ? 1 : -1;
+    }
+
+    /**
+     * Lag-1 dodge-context segment index [0, {@link #LAG1_SEGMENTS}-1] from the
+     * developing GF of the most-recent in-flight wave. Coarse 3-level sign split:
+     * 0 = developing toward negative GF, 1 = center / no context, 2 = positive.
+     * A NaN developing GF (no active prior wave) maps to the center segment.
+     */
+    public static int lag1Segment(double developingGf) {
+        if (Double.isNaN(developingGf)) {
+            return 1;
+        }
+        if (developingGf < -LAG1_THRESHOLD) {
+            return 0;
+        }
+        if (developingGf > LAG1_THRESHOLD) {
+            return 2;
+        }
+        return 1;
+    }
+
+    /**
+     * Recorded-convention guess factor of an in-flight wave evaluated against a
+     * target position — the "developing GF". Mirrors {@link Wave#computeGuessFactor}
+     * so the lag-1 dimension is consistent with how break GF is recorded.
+     */
+    public static double developingGuessFactor(double fireX, double fireY,
+            double fireBearing, double mea, int direction, double oppX, double oppY) {
+        double actualBearing = Math.atan2(oppX - fireX, oppY - fireY);
+        double angleOffset = RoboMath.normalRelativeAngle(actualBearing - fireBearing);
+        return guessFactor(angleOffset, mea, direction);
     }
 
 }

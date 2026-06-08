@@ -55,6 +55,7 @@ public final class OurWaveTracker implements IInGameFeatures {
             Feature.OUR_AIM_OPPONENT_Y,
             Feature.OUR_AIM_DISTANCE,
             Feature.OUR_AIM_BEARING_ABSOLUTE,
+            Feature.OUR_AIM_LAG1_GF,
             Feature.OPPONENT_X,
             Feature.OPPONENT_Y,
             Feature.TICK
@@ -115,16 +116,25 @@ public final class OurWaveTracker implements IInGameFeatures {
         double offset = 0;
         double aimGf = 0;
 
+        // Lag-1 dodge context: developing GF of the most-recent in-flight real
+        // wave, evaluated against the opponent position at aim time (the tick
+        // before this potential fire, T-1) — the freshest position the gun could
+        // react to. The VcsStore bins this raw GF into a lag-1 slice.
+        double tick = wb.getFeature(Feature.TICK);
+        double aimOppX = wb.getScanFeatureAtOrBeforeTick(Feature.OPPONENT_X, tick - 1.0);
+        double aimOppY = wb.getScanFeatureAtOrBeforeTick(Feature.OPPONENT_Y, tick - 1.0);
+        double lag1Gf = computeLag1Gf(wb, aimOppX, aimOppY);
+
         ModelSelector selector = wb.getModelSelector();
         if (selector != null) {
-            aimGf = selector.predictForAim(distance, Double.isNaN(latVel) ? 0 : latVel);
+            aimGf = selector.predictForAim(distance, Double.isNaN(latVel) ? 0 : latVel, lag1Gf);
             offset = aimGf * mea * direction;
         } else {
             VcsStore vcs = wb.getVcsStore();
             if (vcs != null) {
                 int distSeg = GuessFactor.distanceSegment(distance);
                 int latVelSeg = GuessFactor.lateralVelocitySegment(Double.isNaN(latVel) ? 0 : latVel);
-                int bestBin = vcs.getBestBin(distSeg, latVelSeg);
+                int bestBin = vcs.getBestBin(distSeg, latVelSeg, lag1Gf);
                 double bestGf = GuessFactor.binIndexToGf(bestBin, GuessFactor.NUM_BINS);
                 offset = bestGf * mea * direction;
                 aimGf = bestGf;
@@ -135,6 +145,45 @@ public final class OurWaveTracker implements IInGameFeatures {
         wb.setFeature(Feature.GUN_AIM_POWER, power);
         wb.setFeature(Feature.GUN_AIM_ANGLE, aimAngle);
         wb.setFeature(Feature.GUN_AIM_GF, aimGf);
+    }
+
+    /**
+     * Lag-1 dodge-context developing guess factor: the GF of the most-recent
+     * still-active real wave (the one with the highest fire tick) evaluated
+     * against the opponent position at {@code (oppX, oppY)}. Returns NaN when no
+     * active real wave exists or the position is unknown (the VcsStore bins NaN
+     * into the center slice). Public+static so the robot side can reproduce the
+     * exact same value when staging OUR_AIM_LAG1_GF.
+     */
+    public static double computeLag1Gf(Whiteboard wb, double oppX, double oppY) {
+        if (Double.isNaN(oppX) || Double.isNaN(oppY)) {
+            return Double.NaN;
+        }
+        int bestSlot = -1;
+        long bestTick = Long.MIN_VALUE;
+        for (int slot = 0; slot < Whiteboard.OUR_WAVE_CAPACITY; slot++) {
+            if (wb.getOurWaveState(slot) != Whiteboard.WAVE_ACTIVE) {
+                continue;
+            }
+            if (wb.getOurWave(slot, OurWaveColumn.IS_REAL) != 1.0) {
+                continue;
+            }
+            long ft = (long) wb.getOurWave(slot, OurWaveColumn.FIRE_TICK);
+            if (ft > bestTick) {
+                bestTick = ft;
+                bestSlot = slot;
+            }
+        }
+        if (bestSlot < 0) {
+            return Double.NaN;
+        }
+        double fireX = wb.getOurWave(bestSlot, OurWaveColumn.FIRE_X);
+        double fireY = wb.getOurWave(bestSlot, OurWaveColumn.FIRE_Y);
+        double fireBearing = wb.getOurWave(bestSlot, OurWaveColumn.FIRE_BEARING_ABSOLUTE);
+        double mea = wb.getOurWave(bestSlot, OurWaveColumn.FIRE_MEA);
+        int direction = (int) wb.getOurWave(bestSlot, OurWaveColumn.FIRE_DIRECTION);
+        return GuessFactor.developingGuessFactor(
+                fireX, fireY, fireBearing, mea, direction, oppX, oppY);
     }
 
     private void computeFireDerived(Whiteboard wb) {
@@ -178,6 +227,7 @@ public final class OurWaveTracker implements IInGameFeatures {
         double aimOppY = wb.getFeature(Feature.OUR_AIM_OPPONENT_Y);
         double aimDist = wb.getFeature(Feature.OUR_AIM_DISTANCE);
         double aimBearing = wb.getFeature(Feature.OUR_AIM_BEARING_ABSOLUTE);
+        double aimLag1Gf = wb.getFeature(Feature.OUR_AIM_LAG1_GF);
 
         if (Double.isNaN(fireX) || Double.isNaN(bearing) || Double.isNaN(bulletSpeed)) {
             return;
@@ -188,7 +238,7 @@ public final class OurWaveTracker implements IInGameFeatures {
         fillFireColumns(wb, slot, power, fireX, fireY, fireTick, bearing,
                 bulletSpeed, direction, distance, latVel, advVel, mea,
                 bulletId, oppX, oppY);
-        fillAimColumns(wb, slot, aimX, aimY, aimOppX, aimOppY, aimDist, aimBearing);
+        fillAimColumns(wb, slot, aimX, aimY, aimOppX, aimOppY, aimDist, aimBearing, aimLag1Gf);
         wb.setOurWave(slot, OurWaveColumn.AIM_GF, Double.isNaN(aimGf) ? 0.0 : aimGf);
         wb.setOurWave(slot, OurWaveColumn.IS_REAL, 1.0);
         wb.setOurWave(slot, OurWaveColumn.WAVE_ID, waveId(fireTick, 0));
@@ -201,7 +251,7 @@ public final class OurWaveTracker implements IInGameFeatures {
             fillFireColumns(wb, vSlot, power, fireX, fireY, fireTick, bearing,
                     bulletSpeed, direction, distance, latVel, advVel, mea,
                     0, oppX, oppY);
-            fillAimColumns(wb, vSlot, aimX, aimY, aimOppX, aimOppY, aimDist, aimBearing);
+            fillAimColumns(wb, vSlot, aimX, aimY, aimOppX, aimOppY, aimDist, aimBearing, aimLag1Gf);
             wb.setOurWave(vSlot, OurWaveColumn.AIM_GF, virtualGf);
             wb.setOurWave(vSlot, OurWaveColumn.IS_REAL, 0.0);
             wb.setOurWave(vSlot, OurWaveColumn.WAVE_ID, waveId(fireTick, i + 1));
@@ -231,6 +281,7 @@ public final class OurWaveTracker implements IInGameFeatures {
         wb.setFeature(Feature.OUR_AIM_OPPONENT_Y, Double.NaN);
         wb.setFeature(Feature.OUR_AIM_DISTANCE, Double.NaN);
         wb.setFeature(Feature.OUR_AIM_BEARING_ABSOLUTE, Double.NaN);
+        wb.setFeature(Feature.OUR_AIM_LAG1_GF, Double.NaN);
     }
 
     /**
@@ -265,13 +316,14 @@ public final class OurWaveTracker implements IInGameFeatures {
 
     private void fillAimColumns(Whiteboard wb, int slot,
             double aimX, double aimY, double aimOppX, double aimOppY,
-            double aimDistance, double aimBearing) {
+            double aimDistance, double aimBearing, double aimLag1Gf) {
         wb.setOurWave(slot, OurWaveColumn.AIM_X, aimX);
         wb.setOurWave(slot, OurWaveColumn.AIM_Y, aimY);
         wb.setOurWave(slot, OurWaveColumn.AIM_OPPONENT_X, aimOppX);
         wb.setOurWave(slot, OurWaveColumn.AIM_OPPONENT_Y, aimOppY);
         wb.setOurWave(slot, OurWaveColumn.AIM_DISTANCE, aimDistance);
         wb.setOurWave(slot, OurWaveColumn.AIM_BEARING_ABSOLUTE, aimBearing);
+        wb.setOurWave(slot, OurWaveColumn.AIM_LAG1_GF, aimLag1Gf);
     }
 
     private void resolveWaves(Whiteboard wb) {

@@ -97,11 +97,11 @@ final class ModelSelectorTest {
         int latVelSeg = GuessFactor.lateralVelocitySegment(5.0);
         int targetBin = 20;
         for (int i = 0; i < 10; i++) {
-            vcs.increment(distSeg, latVelSeg, targetBin);
+            vcs.increment(distSeg, latVelSeg, 0.0, targetBin);
         }
 
         ModelSelector sel = new ModelSelector(vcs);
-        double predicted = sel.predictForAim(400, 5.0);
+        double predicted = sel.predictForAim(400, 5.0, 0.0);
         double expected = GuessFactor.binIndexToGf(targetBin, GuessFactor.NUM_BINS);
         assertEquals(expected, predicted, 1e-9);
     }
@@ -112,7 +112,7 @@ final class ModelSelectorTest {
         ModelSelector sel = new ModelSelector(m1);
 
         // Break at 0.5 → error should be 0.5
-        sel.recordPipelineUpdate(0, 0, 0.5);
+        sel.recordPipelineUpdate(0, 0, 0.0, 0.5);
         assertEquals(0.5, sel.getAverageError(0), 1e-9);
     }
 

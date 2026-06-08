@@ -18,6 +18,12 @@ public final class Wave {
     public final int bulletId;
     /** Set to true when onBulletHit fires for this wave's bullet. */
     public boolean hit;
+    /**
+     * Lag-1 dodge-context developing guess factor captured at aim time (the raw
+     * GF of the most-recent in-flight wave). NaN means "no context"; the VcsStore
+     * bins it into the center slice. Set by the wave creator.
+     */
+    public double lag1Gf = Double.NaN;
 
     public Wave(double fireX, double fireY, long fireTick, double fireBearing,
             double bulletSpeed, int direction, int distanceSegment,
