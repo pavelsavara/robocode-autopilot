@@ -203,10 +203,13 @@ final class GodViewWaveResolver {
         double absoluteBearing = Math.atan2(dx, dy);
         double distance = Math.sqrt(dx * dx + dy * dy);
 
-        // Lateral velocity of opponent relative to our bearing
+        // Lateral/advancing velocity of the opponent in the CORE sign convention
+        // (ScanFeatures: relative to bearing-from-opponent = absBearing + PI), so the
+        // recorded OUR_FIRE_LATERAL_VELOCITY / DIRECTION match the live robot.
         double oppHeading = opponent.getBodyHeading();
         double oppVel = opponent.getVelocity();
-        double latVel = oppVel * Math.sin(oppHeading - absoluteBearing);
+        double relativeHeading = oppHeading - (absoluteBearing + Math.PI);
+        double latVel = oppVel * Math.sin(relativeHeading);
 
         int direction = GuessFactor.direction(latVel);
         int distSeg = GuessFactor.distanceSegment(distance);
@@ -227,7 +230,7 @@ final class GodViewWaveResolver {
         Wave wave = new Wave(fireX, fireY, fireTick, absoluteBearing,
                 bulletSpeed, direction, distSeg, latVelSeg);
 
-        double advVel = oppVel * Math.cos(oppHeading - absoluteBearing);
+        double advVel = oppVel * Math.cos(relativeHeading);
 
         // Aim-time positions: two ticks back from the detection tick D (= one tick
         // before the fire tick D-1). The god-view tick ring is seeded from the
@@ -305,15 +308,21 @@ final class GodViewWaveResolver {
         wb.setFeature(Feature.OUR_AIM_BEARING_ABSOLUTE, aimBearing);
         wb.setFeature(Feature.OUR_AIM_LAG1_GF, w.lag1Gf);
 
-        // Compute aim GF from ModelSelector or raw VCS at fire time
+        // Compute aim GF in the AIM-time frame (distance/latVel the gun keyed its
+        // prediction on at T-1), matching the live robot's computeGunAim so the
+        // reconstructed OUR_FIRE_AIM_GF equals what the live gun intended.
         ModelSelector selector = wb.getModelSelector();
         double aimGf = 0.0;
         if (selector != null) {
-            aimGf = selector.predictForAim(tw.fireDistance, tw.fireLateralVelocity, w.lag1Gf);
+            aimGf = selector.predictForAim(aimDistance, tw.aimLatVel, w.lag1Gf);
         } else {
             VcsStore vcs = wb.getVcsStore();
             if (vcs != null) {
-                int bestBin = vcs.getBestBin(w.distanceSegment, w.latVelSegment, w.lag1Gf);
+                int distSeg = Double.isNaN(aimDistance)
+                        ? w.distanceSegment : GuessFactor.distanceSegment(aimDistance);
+                int latVelSeg = Double.isNaN(tw.aimLatVel)
+                        ? w.latVelSegment : GuessFactor.lateralVelocitySegment(tw.aimLatVel);
+                int bestBin = vcs.getBestBin(distSeg, latVelSeg, w.lag1Gf);
                 aimGf = GuessFactor.binIndexToGf(bestBin, GuessFactor.NUM_BINS);
             }
         }

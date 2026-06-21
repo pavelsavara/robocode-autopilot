@@ -140,14 +140,37 @@ public final class RobotSideCsvObserver extends BattleAdaptor implements Closeab
             if (commands.isFired()) {
                 IBulletSnapshot bullet = freshBullet(prevCommandSnapshot, curr, pi);
                 if (bullet != null) {
-                    dejavuWaves[pi].add(DejavuWave.create(pi, commands, bullet,
-                            prevCommandSnapshot, prevPrevCommandSnapshot));
+                    DejavuWave wave = DejavuWave.create(pi, commands, bullet,
+                            prevCommandSnapshot, prevPrevCommandSnapshot);
+                    // Lag-1 dodge context: developing GF of the most-recent still
+                    // in-flight wave at the new wave's aim-time opponent position
+                    // (mirrors OurWaveTracker.computeLag1Gf).
+                    wave.values[OurWaveColumn.AIM_LAG1_GF.ordinal()] =
+                            lag1FromPriorWave(dejavuWaves[pi], wave);
+                    dejavuWaves[pi].add(wave);
                     pendingIncomingBulletIds[1 - pi].add(new IncomingBulletId(bullet));
                 }
             }
             updateDejavuBulletStates(pi, curr.getBullets());
             writeResolvedDejavuWaves(pi, curr);
         }
+    }
+
+    /**
+     * Lag-1 developing GF for a newly fired dejavu wave: the developing GF of the
+     * most-recent still-in-flight prior wave (same firer) evaluated at the new
+     * wave's aim-time opponent position. NaN when no prior wave is in flight.
+     */
+    private static double lag1FromPriorWave(List<DejavuWave> waves, DejavuWave next) {
+        for (int i = waves.size() - 1; i >= 0; i--) {
+            DejavuWave prior = waves.get(i);
+            if (!prior.resolved) {
+                double aimOppX = next.values[OurWaveColumn.AIM_OPPONENT_X.ordinal()];
+                double aimOppY = next.values[OurWaveColumn.AIM_OPPONENT_Y.ordinal()];
+                return prior.developingGf(aimOppX, aimOppY);
+            }
+        }
+        return Double.NaN;
     }
 
     private void writeRows(ObserverContext ctx) {
@@ -452,8 +475,12 @@ public final class RobotSideCsvObserver extends BattleAdaptor implements Closeab
             double dy = opponent.getY() - fireY;
             double fireBearing = Math.atan2(dx, dy);
             double distance = Math.hypot(dx, dy);
-            double latVel = opponent.getVelocity() * Math.sin(opponent.getBodyHeading() - fireBearing);
-            double advVel = opponent.getVelocity() * Math.cos(opponent.getBodyHeading() - fireBearing);
+            // CORE sign convention (ScanFeatures: relative to bearing-from-opponent =
+            // fireBearing + PI), so OUR_FIRE_LATERAL_VELOCITY / DIRECTION match the
+            // live robot and the core wave tracker.
+            double relativeHeading = opponent.getBodyHeading() - (fireBearing + Math.PI);
+            double latVel = opponent.getVelocity() * Math.sin(relativeHeading);
+            double advVel = opponent.getVelocity() * Math.cos(relativeHeading);
 
             DejavuWave wave = new DejavuWave(ownerIndex, bullet.getBulletId(), fireX, fireY,
                     fireTick, bulletSpeed, fireBearing);
@@ -485,10 +512,14 @@ public final class RobotSideCsvObserver extends BattleAdaptor implements Closeab
                 // GF=0 baseline (pre-aim convention): fire origin -> aim-time opponent.
                 wave.gfBaseline = Math.atan2(aimOpponent.getX() - fireX, aimOpponent.getY() - fireY);
                 wave.values[OurWaveColumn.AIM_DISTANCE.ordinal()] = Math.hypot(aimDx, aimDy);
-                // Aim-time lateral velocity (the gun's GF prediction frame).
+                // Aim-time lateral velocity (the gun's GF prediction frame), using the
+                // CORE sign convention (ScanFeatures: relative to bearing-from-opponent
+                // = absBearing + PI) so dejavu's direction/lag-1/break GF sign match the
+                // core wave tracker.
                 double aimBearingAbs = Math.atan2(aimDx, aimDy);
+                double aimBearingFromOpponent = aimBearingAbs + Math.PI;
                 wave.values[OurWaveColumn.AIM_LATERAL_VELOCITY.ordinal()] =
-                        aimOpponent.getVelocity() * Math.sin(aimOpponent.getBodyHeading() - aimBearingAbs);
+                        aimOpponent.getVelocity() * Math.sin(aimOpponent.getBodyHeading() - aimBearingFromOpponent);
                 wave.values[OurWaveColumn.AIM_BEARING_ABSOLUTE.ordinal()] = Math.atan2(aimDx, aimDy);
                 double aimBearing = wave.values[OurWaveColumn.AIM_BEARING_ABSOLUTE.ordinal()];
                 double aimOffset = RoboMath.normalRelativeAngle(bullet.getHeading() - aimBearing);
@@ -542,8 +573,15 @@ public final class RobotSideCsvObserver extends BattleAdaptor implements Closeab
             double baseBearing = Double.isNaN(gfBaseline) ? fireBearing : gfBaseline;
             double bearingOffset = RoboMath.normalRelativeAngle(actualBearing - baseBearing);
             double mea = GuessFactor.maxEscapeAngle(bulletSpeed);
+            // Aim-time direction (the GF sign the gun keyed on), fallback to the
+            // fire-time direction. Matches OurWaveTracker.aimDirection so dejavu's
+            // BREAK_GF uses the same directioned convention as the core wave tracker.
+            double aimLatVel = values[OurWaveColumn.AIM_LATERAL_VELOCITY.ordinal()];
+            int dir = Double.isNaN(aimLatVel)
+                    ? (int) values[OurWaveColumn.FIRE_DIRECTION.ordinal()]
+                    : GuessFactor.direction(aimLatVel);
             values[OurWaveColumn.BREAK_TICK.ordinal()] = tick;
-            values[OurWaveColumn.BREAK_GF.ordinal()] = mea != 0 ? Math.max(-1.0, Math.min(1.0, bearingOffset / mea)) : 0;
+            values[OurWaveColumn.BREAK_GF.ordinal()] = GuessFactor.guessFactor(bearingOffset, mea, dir);
             values[OurWaveColumn.BREAK_BEARING_OFFSET.ordinal()] = bearingOffset;
             values[OurWaveColumn.BREAK_OPPONENT_X.ordinal()] = opponent.getX();
             values[OurWaveColumn.BREAK_OPPONENT_Y.ordinal()] = opponent.getY();
@@ -556,6 +594,25 @@ public final class RobotSideCsvObserver extends BattleAdaptor implements Closeab
                 values[OurWaveColumn.BREAK_HIT.ordinal()] = 1.0;
             }
             resolved = true;
+        }
+
+        /**
+         * Developing guess factor of this still-in-flight wave evaluated at a target
+         * position, in the pre-aim baseline + aim-direction frame. Mirrors
+         * {@code OurWaveTracker.computeLag1Gf} so dejavu's AIM_LAG1_GF matches the
+         * core wave tracker for any firer.
+         */
+        double developingGf(double oppX, double oppY) {
+            if (Double.isNaN(oppX) || Double.isNaN(oppY)) {
+                return Double.NaN;
+            }
+            double base = Double.isNaN(gfBaseline) ? fireBearing : gfBaseline;
+            double aimLatVel = values[OurWaveColumn.AIM_LATERAL_VELOCITY.ordinal()];
+            int dir = Double.isNaN(aimLatVel)
+                    ? (int) values[OurWaveColumn.FIRE_DIRECTION.ordinal()]
+                    : GuessFactor.direction(aimLatVel);
+            double mea = GuessFactor.maxEscapeAngle(bulletSpeed);
+            return GuessFactor.developingGuessFactor(fireX, fireY, base, mea, dir, oppX, oppY);
         }
     }
 
