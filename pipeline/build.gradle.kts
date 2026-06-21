@@ -57,6 +57,7 @@ val seedVcsData = tasks.register<Copy>("seedVcsData") {
 tasks.register<Copy>("updateVcsData") {
     group = "robocode"
     description = "Promote VCS data learned during battleTest back to robot/data/vcs.dat for committing"
+    mustRunAfter("battleTest")
     val vcsStaged = layout.buildDirectory.file("battle-stage/.data/cz/zamboch/Autopilot.data/vcs.dat").get().asFile
     from(vcsStaged)
     into(project(":robot").projectDir.resolve("data"))
