@@ -453,6 +453,11 @@ public final class Autopilot extends AdvancedRobot {
         wb.setFeature(Feature.OUR_AIM_OPPONENT_X, aimOppX);
         wb.setFeature(Feature.OUR_AIM_OPPONENT_Y, aimOppY);
         wb.setFeature(Feature.OUR_AIM_DISTANCE, Math.sqrt(aimDx * aimDx + aimDy * aimDy));
+        // Aim-time lateral velocity: the value the gun keyed its GF prediction and
+        // sign on at T-1. Resolve/train read this so the realized GF stays in the
+        // same aim-time frame the gun predicted in.
+        wb.setFeature(Feature.OUR_AIM_LATERAL_VELOCITY,
+                wb.getScanFeatureAtOrBeforeTick(Feature.OPPONENT_LATERAL_VELOCITY, aimTick));
         wb.setFeature(Feature.OUR_AIM_BEARING_ABSOLUTE, Math.atan2(aimDx, aimDy));
 
         // Lag-1 dodge context: developing GF of the most-recent in-flight real

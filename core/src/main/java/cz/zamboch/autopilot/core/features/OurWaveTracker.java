@@ -37,6 +37,10 @@ public final class OurWaveTracker implements IInGameFeatures {
     private static final Feature[] DEPS = {
             Feature.DISTANCE,
             Feature.GUN_HEAT,
+            Feature.OUR_X,
+            Feature.OUR_Y,
+            Feature.OUR_HEADING,
+            Feature.OUR_VELOCITY,
             Feature.OPPONENT_BEARING_ABSOLUTE,
             Feature.OPPONENT_LATERAL_VELOCITY,
             Feature.OUR_FIRE_POWER,
@@ -54,6 +58,7 @@ public final class OurWaveTracker implements IInGameFeatures {
             Feature.OUR_AIM_OPPONENT_X,
             Feature.OUR_AIM_OPPONENT_Y,
             Feature.OUR_AIM_DISTANCE,
+            Feature.OUR_AIM_LATERAL_VELOCITY,
             Feature.OUR_AIM_BEARING_ABSOLUTE,
             Feature.OUR_AIM_LAG1_GF,
             Feature.OPPONENT_X,
@@ -141,10 +146,40 @@ public final class OurWaveTracker implements IInGameFeatures {
             }
         }
 
-        double aimAngle = absoluteBearing + offset;
+        double aimAngle = preAimBaseline(wb, absoluteBearing) + offset;
         wb.setFeature(Feature.GUN_AIM_POWER, power);
         wb.setFeature(Feature.GUN_AIM_ANGLE, aimAngle);
         wb.setFeature(Feature.GUN_AIM_GF, aimGf);
+    }
+
+    /**
+     * GF=0 baseline absolute bearing for gun aiming, pre-aimed for the fire tick.
+     * The gun is commanded at tick T-1 but the bullet leaves from our position at
+     * the fire tick T. Predict our T position from current (T-1) kinematics — this
+     * is deterministic because we own our movement — and take the bearing from
+     * there to the last-known opponent position. The GF offset is applied on top.
+     * <p>
+     * No opponent motion prediction is needed: the GF itself already encodes the
+     * opponent's movement during bullet flight, and the training side anchors GF
+     * to the same aim-time opponent reference (see {@link #gfBaseline}). When our
+     * kinematics or the opponent position are unknown (early ticks / radar gaps)
+     * this falls back to {@code currentBearing}, so behaviour is unchanged without
+     * data, and a stationary robot (velocity 0) is a no-op.
+     */
+    private static double preAimBaseline(Whiteboard wb, double currentBearing) {
+        double ourX = wb.getFeature(Feature.OUR_X);
+        double ourY = wb.getFeature(Feature.OUR_Y);
+        double ourHeading = wb.getFeature(Feature.OUR_HEADING);
+        double ourVel = wb.getFeature(Feature.OUR_VELOCITY);
+        double oppX = wb.getFeature(Feature.OPPONENT_X);
+        double oppY = wb.getFeature(Feature.OPPONENT_Y);
+        if (Double.isNaN(ourX) || Double.isNaN(ourY) || Double.isNaN(ourHeading)
+                || Double.isNaN(ourVel) || Double.isNaN(oppX) || Double.isNaN(oppY)) {
+            return currentBearing;
+        }
+        double predX = ourX + ourVel * Math.sin(ourHeading);
+        double predY = ourY + ourVel * Math.cos(ourHeading);
+        return Math.atan2(oppX - predX, oppY - predY);
     }
 
     /**
@@ -179,11 +214,44 @@ public final class OurWaveTracker implements IInGameFeatures {
         }
         double fireX = wb.getOurWave(bestSlot, OurWaveColumn.FIRE_X);
         double fireY = wb.getOurWave(bestSlot, OurWaveColumn.FIRE_Y);
-        double fireBearing = wb.getOurWave(bestSlot, OurWaveColumn.FIRE_BEARING_ABSOLUTE);
+        double fireBearing = gfBaseline(wb, bestSlot, fireX, fireY);
         double mea = wb.getOurWave(bestSlot, OurWaveColumn.FIRE_MEA);
-        int direction = (int) wb.getOurWave(bestSlot, OurWaveColumn.FIRE_DIRECTION);
+        int direction = aimDirection(wb, bestSlot);
         return GuessFactor.developingGuessFactor(
                 fireX, fireY, fireBearing, mea, direction, oppX, oppY);
+    }
+
+    /**
+     * GF sign direction for a wave slot from the aim-time lateral velocity (the
+     * value the gun keyed its GF sign on), so the realized GF sign matches the
+     * intended aim GF even when the opponent's lateral motion reverses between the
+     * aim tick (T-1) and the fire tick (T). Falls back to the recorded
+     * FIRE_DIRECTION when the aim-time lateral velocity is unavailable.
+     */
+    static int aimDirection(Whiteboard wb, int slot) {
+        double aimLatVel = wb.getOurWave(slot, OurWaveColumn.AIM_LATERAL_VELOCITY);
+        if (Double.isNaN(aimLatVel)) {
+            return (int) wb.getOurWave(slot, OurWaveColumn.FIRE_DIRECTION);
+        }
+        return GuessFactor.direction(aimLatVel);
+    }
+
+    /**
+     * GF=0 baseline bearing for a wave slot: from the fire origin (our position at
+     * the fire tick) to the aim-time opponent reference position (AIM_OPPONENT_X/Y,
+     * the last scan the gun could react to at T-1). This matches the pre-aim
+     * baseline {@link #preAimBaseline} used to point the gun, so the realized GF a
+     * wave resolves to is consistent with the GF the gun intended. Falls back to
+     * the recorded FIRE_BEARING_ABSOLUTE when the aim-time opponent position is
+     * unknown (e.g. synthetic waves staged directly in unit tests).
+     */
+    static double gfBaseline(Whiteboard wb, int slot, double fireX, double fireY) {
+        double aimOppX = wb.getOurWave(slot, OurWaveColumn.AIM_OPPONENT_X);
+        double aimOppY = wb.getOurWave(slot, OurWaveColumn.AIM_OPPONENT_Y);
+        if (Double.isNaN(aimOppX) || Double.isNaN(aimOppY)) {
+            return wb.getOurWave(slot, OurWaveColumn.FIRE_BEARING_ABSOLUTE);
+        }
+        return Math.atan2(aimOppX - fireX, aimOppY - fireY);
     }
 
     private void computeFireDerived(Whiteboard wb) {
@@ -226,6 +294,7 @@ public final class OurWaveTracker implements IInGameFeatures {
         double aimOppX = wb.getFeature(Feature.OUR_AIM_OPPONENT_X);
         double aimOppY = wb.getFeature(Feature.OUR_AIM_OPPONENT_Y);
         double aimDist = wb.getFeature(Feature.OUR_AIM_DISTANCE);
+        double aimLatVel = wb.getFeature(Feature.OUR_AIM_LATERAL_VELOCITY);
         double aimBearing = wb.getFeature(Feature.OUR_AIM_BEARING_ABSOLUTE);
         double aimLag1Gf = wb.getFeature(Feature.OUR_AIM_LAG1_GF);
 
@@ -238,7 +307,7 @@ public final class OurWaveTracker implements IInGameFeatures {
         fillFireColumns(wb, slot, power, fireX, fireY, fireTick, bearing,
                 bulletSpeed, direction, distance, latVel, advVel, mea,
                 bulletId, oppX, oppY);
-        fillAimColumns(wb, slot, aimX, aimY, aimOppX, aimOppY, aimDist, aimBearing, aimLag1Gf);
+        fillAimColumns(wb, slot, aimX, aimY, aimOppX, aimOppY, aimDist, aimLatVel, aimBearing, aimLag1Gf);
         wb.setOurWave(slot, OurWaveColumn.AIM_GF, Double.isNaN(aimGf) ? 0.0 : aimGf);
         wb.setOurWave(slot, OurWaveColumn.IS_REAL, 1.0);
         wb.setOurWave(slot, OurWaveColumn.WAVE_ID, waveId(fireTick, 0));
@@ -251,7 +320,7 @@ public final class OurWaveTracker implements IInGameFeatures {
             fillFireColumns(wb, vSlot, power, fireX, fireY, fireTick, bearing,
                     bulletSpeed, direction, distance, latVel, advVel, mea,
                     0, oppX, oppY);
-            fillAimColumns(wb, vSlot, aimX, aimY, aimOppX, aimOppY, aimDist, aimBearing, aimLag1Gf);
+            fillAimColumns(wb, vSlot, aimX, aimY, aimOppX, aimOppY, aimDist, aimLatVel, aimBearing, aimLag1Gf);
             wb.setOurWave(vSlot, OurWaveColumn.AIM_GF, virtualGf);
             wb.setOurWave(vSlot, OurWaveColumn.IS_REAL, 0.0);
             wb.setOurWave(vSlot, OurWaveColumn.WAVE_ID, waveId(fireTick, i + 1));
@@ -280,6 +349,7 @@ public final class OurWaveTracker implements IInGameFeatures {
         wb.setFeature(Feature.OUR_AIM_OPPONENT_X, Double.NaN);
         wb.setFeature(Feature.OUR_AIM_OPPONENT_Y, Double.NaN);
         wb.setFeature(Feature.OUR_AIM_DISTANCE, Double.NaN);
+        wb.setFeature(Feature.OUR_AIM_LATERAL_VELOCITY, Double.NaN);
         wb.setFeature(Feature.OUR_AIM_BEARING_ABSOLUTE, Double.NaN);
         wb.setFeature(Feature.OUR_AIM_LAG1_GF, Double.NaN);
     }
@@ -316,12 +386,13 @@ public final class OurWaveTracker implements IInGameFeatures {
 
     private void fillAimColumns(Whiteboard wb, int slot,
             double aimX, double aimY, double aimOppX, double aimOppY,
-            double aimDistance, double aimBearing, double aimLag1Gf) {
+            double aimDistance, double aimLatVel, double aimBearing, double aimLag1Gf) {
         wb.setOurWave(slot, OurWaveColumn.AIM_X, aimX);
         wb.setOurWave(slot, OurWaveColumn.AIM_Y, aimY);
         wb.setOurWave(slot, OurWaveColumn.AIM_OPPONENT_X, aimOppX);
         wb.setOurWave(slot, OurWaveColumn.AIM_OPPONENT_Y, aimOppY);
         wb.setOurWave(slot, OurWaveColumn.AIM_DISTANCE, aimDistance);
+        wb.setOurWave(slot, OurWaveColumn.AIM_LATERAL_VELOCITY, aimLatVel);
         wb.setOurWave(slot, OurWaveColumn.AIM_BEARING_ABSOLUTE, aimBearing);
         wb.setOurWave(slot, OurWaveColumn.AIM_LAG1_GF, aimLag1Gf);
     }
@@ -355,10 +426,12 @@ public final class OurWaveTracker implements IInGameFeatures {
             double distToTarget = Math.sqrt(dx * dx + dy * dy);
 
             if (distTravelled >= distToTarget) {
-                // Compute guess factor
-                double fireBearing = wb.getOurWave(slot, OurWaveColumn.FIRE_BEARING_ABSOLUTE);
+                // GF=0 baseline uses the pre-aim convention (fire origin -> aim-time
+                // opponent reference) and the aim-time direction so the realized GF
+                // the model learns matches the GF the gun intended at T-1.
+                double fireBearing = gfBaseline(wb, slot, fireX, fireY);
                 double mea = wb.getOurWave(slot, OurWaveColumn.FIRE_MEA);
-                int direction = (int) wb.getOurWave(slot, OurWaveColumn.FIRE_DIRECTION);
+                int direction = aimDirection(wb, slot);
 
                 double actualBearing = Math.atan2(dx, dy);
                 double angleOffset = RoboMath.normalRelativeAngle(actualBearing - fireBearing);

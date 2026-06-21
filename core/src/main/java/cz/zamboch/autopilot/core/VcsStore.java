@@ -116,8 +116,8 @@ public final class VcsStore implements IOnlineModel {
 
     @Override
     public double predict(Whiteboard wb, int slot) {
-        double distance = wb.getOurWave(slot, OurWaveColumn.FIRE_DISTANCE);
-        double latVel = wb.getOurWave(slot, OurWaveColumn.FIRE_LATERAL_VELOCITY);
+        double distance = aimOrFire(wb, slot, OurWaveColumn.AIM_DISTANCE, OurWaveColumn.FIRE_DISTANCE);
+        double latVel = aimOrFire(wb, slot, OurWaveColumn.AIM_LATERAL_VELOCITY, OurWaveColumn.FIRE_LATERAL_VELOCITY);
         int distSeg = GuessFactor.distanceSegment(distance);
         int latVelSeg = GuessFactor.lateralVelocitySegment(
                 Double.isNaN(latVel) ? 0 : latVel);
@@ -128,14 +128,25 @@ public final class VcsStore implements IOnlineModel {
 
     @Override
     public void update(Whiteboard wb, int slot, double breakGf) {
-        double distance = wb.getOurWave(slot, OurWaveColumn.FIRE_DISTANCE);
-        double latVel = wb.getOurWave(slot, OurWaveColumn.FIRE_LATERAL_VELOCITY);
+        double distance = aimOrFire(wb, slot, OurWaveColumn.AIM_DISTANCE, OurWaveColumn.FIRE_DISTANCE);
+        double latVel = aimOrFire(wb, slot, OurWaveColumn.AIM_LATERAL_VELOCITY, OurWaveColumn.FIRE_LATERAL_VELOCITY);
         int distSeg = GuessFactor.distanceSegment(distance);
         int latVelSeg = GuessFactor.lateralVelocitySegment(
                 Double.isNaN(latVel) ? 0 : latVel);
         double lag1Gf = wb.getOurWave(slot, OurWaveColumn.AIM_LAG1_GF);
         int binIndex = GuessFactor.gfToBinIndex(breakGf, GuessFactor.NUM_BINS);
         increment(distSeg, latVelSeg, lag1Gf, binIndex);
+    }
+
+    /**
+     * Read an aim-time wave column, falling back to the fire-time column when the
+     * aim-time value is unavailable (e.g. synthetic waves staged directly in unit
+     * tests). The gun predicts on aim-time segments, so training keys on them too.
+     */
+    private static double aimOrFire(Whiteboard wb, int slot,
+            OurWaveColumn aimCol, OurWaveColumn fireCol) {
+        double aim = wb.getOurWave(slot, aimCol);
+        return Double.isNaN(aim) ? wb.getOurWave(slot, fireCol) : aim;
     }
 
     @Override

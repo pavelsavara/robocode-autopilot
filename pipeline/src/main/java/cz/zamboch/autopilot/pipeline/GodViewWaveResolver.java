@@ -243,18 +243,24 @@ final class GodViewWaveResolver {
         double aimTick = firerWb.getFeature(Feature.TICK) - 2.0;
         double aimTargetX = firerWb.getScanFeatureAtOrBeforeTick(Feature.OPPONENT_X, aimTick);
         double aimTargetY = firerWb.getScanFeatureAtOrBeforeTick(Feature.OPPONENT_Y, aimTick);
+        double aimLatVel = firerWb.getScanFeatureAtOrBeforeTick(Feature.OPPONENT_LATERAL_VELOCITY, aimTick);
 
         PerPerspective pp = persp[ctx.perspectiveIndex()];
         // Lag-1 dodge context: developing GF of the most-recent still-active real
         // wave (last element of activeWaves) at the opponent's aim-time position.
         if (!pp.activeWaves.isEmpty()) {
-            Wave prev = pp.activeWaves.get(pp.activeWaves.size() - 1).wave;
-            wave.lag1Gf = prev.computeGuessFactor(aimTargetX, aimTargetY);
+            TrackedWave prevTw = pp.activeWaves.get(pp.activeWaves.size() - 1);
+            Wave prev = prevTw.wave;
+            double prevBase = gfBaseline(prevTw.aimTargetX, prevTw.aimTargetY,
+                    prev.fireX, prev.fireY, prev.fireBearing);
+            int prevDir = Double.isNaN(prevTw.aimLatVel)
+                    ? prev.direction : GuessFactor.direction(prevTw.aimLatVel);
+            wave.lag1Gf = prev.computeGuessFactor(aimTargetX, aimTargetY, prevBase, prevDir);
         }
         pp.activeWaves.add(new TrackedWave(wave, bullet.getBulletId(),
                 distance, latVel, advVel, power,
                 opponent.getX(), opponent.getY(), bulletHeading,
-                aimFirerX, aimFirerY, aimTargetX, aimTargetY));
+                aimFirerX, aimFirerY, aimTargetX, aimTargetY, aimLatVel));
         pp.lastFiredWave = pp.activeWaves.get(pp.activeWaves.size() - 1);
         pp.pendingFire = true;
         firedThisTick[ctx.perspectiveIndex()] = true;
@@ -295,6 +301,7 @@ final class GodViewWaveResolver {
         wb.setFeature(Feature.OUR_AIM_OPPONENT_X, tw.aimTargetX);
         wb.setFeature(Feature.OUR_AIM_OPPONENT_Y, tw.aimTargetY);
         wb.setFeature(Feature.OUR_AIM_DISTANCE, aimDistance);
+        wb.setFeature(Feature.OUR_AIM_LATERAL_VELOCITY, tw.aimLatVel);
         wb.setFeature(Feature.OUR_AIM_BEARING_ABSOLUTE, aimBearing);
         wb.setFeature(Feature.OUR_AIM_LAG1_GF, w.lag1Gf);
 
@@ -321,20 +328,32 @@ final class GodViewWaveResolver {
         while (it.hasNext()) {
             TrackedWave tw = it.next();
             if (tw.wave.hasReached(oppX, oppY, currentTick)) {
-                double gf = tw.wave.computeGuessFactor(oppX, oppY);
+                double baseBearing = gfBaseline(tw.aimTargetX, tw.aimTargetY,
+                        tw.wave.fireX, tw.wave.fireY, tw.wave.fireBearing);
+                int dir = Double.isNaN(tw.aimLatVel)
+                        ? tw.wave.direction : GuessFactor.direction(tw.aimLatVel);
+                double gf = tw.wave.computeGuessFactor(oppX, oppY, baseBearing, dir);
                 int binIndex = GuessFactor.gfToBinIndex(gf, GuessFactor.NUM_BINS);
+
+                // Train in the aim-time frame (segments the gun predicted on), so
+                // the promoted model matches the live online model.
+                double aimDist = Math.hypot(tw.aimTargetX - tw.aimFirerX,
+                        tw.aimTargetY - tw.aimFirerY);
+                int distSeg = Double.isNaN(aimDist)
+                        ? tw.wave.distanceSegment : GuessFactor.distanceSegment(aimDist);
+                int latVelSeg = Double.isNaN(tw.aimLatVel)
+                        ? tw.wave.latVelSegment : GuessFactor.lateralVelocitySegment(tw.aimLatVel);
 
                 // Update VCS store (common to both paths)
                 VcsStore vcs = wb.getVcsStore();
                 if (vcs != null) {
-                    vcs.increment(tw.wave.distanceSegment, tw.wave.latVelSegment,
-                            tw.wave.lag1Gf, binIndex);
+                    vcs.increment(distSeg, latVelSeg, tw.wave.lag1Gf, binIndex);
                 }
 
                 // Update model selector if present
                 ModelSelector selector = wb.getModelSelector();
                 if (selector != null) {
-                    selector.recordPipelineUpdate(tw.wave.distanceSegment, tw.wave.latVelSegment,
+                    selector.recordPipelineUpdate(distSeg, latVelSeg,
                             tw.wave.lag1Gf, gf);
                 }
 
@@ -344,7 +363,7 @@ final class GodViewWaveResolver {
                 double dx = oppX - tw.wave.fireX;
                 double dy = oppY - tw.wave.fireY;
                 double actualBearing = Math.atan2(dx, dy);
-                double angleOffset = RoboMath.normalRelativeAngle(actualBearing - tw.wave.fireBearing);
+                double angleOffset = RoboMath.normalRelativeAngle(actualBearing - baseBearing);
                 wb.setFeature(Feature.OUR_BREAK_BEARING_OFFSET, angleOffset);
                 wb.setFeature(Feature.OUR_BREAK_OPPONENT_X, oppX);
                 wb.setFeature(Feature.OUR_BREAK_OPPONENT_Y, oppY);
@@ -428,6 +447,20 @@ final class GodViewWaveResolver {
         peerWb.setFeature(Feature.THEIR_HIT_US, hit ? 1.0 : 0.0);
     }
 
+    /**
+     * GF=0 baseline bearing (pre-aim convention): from the fire origin to the
+     * aim-time opponent reference position, matching the live robot's pre-aim and
+     * {@code OurWaveTracker.gfBaseline}. Falls back to {@code fallbackBearing} (the
+     * recorded fire bearing) when the aim-time opponent position is unknown.
+     */
+    private static double gfBaseline(double aimOppX, double aimOppY,
+            double fireX, double fireY, double fallbackBearing) {
+        if (Double.isNaN(aimOppX) || Double.isNaN(aimOppY)) {
+            return fallbackBearing;
+        }
+        return Math.atan2(aimOppX - fireX, aimOppY - fireY);
+    }
+
     // --- Internal types ---
 
     private static final class PerPerspective {
@@ -452,10 +485,13 @@ final class GodViewWaveResolver {
         final double aimFirerY;
         final double aimTargetX;
         final double aimTargetY;
+        /** Opponent lateral velocity at aim time (the gun's GF prediction frame). */
+        final double aimLatVel;
 
         TrackedWave(Wave wave, int bulletId, double distance, double latVel,
                 double advVel, double power, double oppX, double oppY, double trueHeading,
-                double aimFirerX, double aimFirerY, double aimTargetX, double aimTargetY) {
+                double aimFirerX, double aimFirerY, double aimTargetX, double aimTargetY,
+                double aimLatVel) {
             this.wave = wave;
             this.bulletId = bulletId;
             this.fireDistance = distance;
@@ -469,6 +505,7 @@ final class GodViewWaveResolver {
             this.aimFirerY = aimFirerY;
             this.aimTargetX = aimTargetX;
             this.aimTargetY = aimTargetY;
+            this.aimLatVel = aimLatVel;
         }
     }
 }

@@ -68,11 +68,36 @@ public final class Wave {
      * wave reached them. Returns value in [-1, 1].
      */
     public double computeGuessFactor(double targetX, double targetY) {
+        return computeGuessFactor(targetX, targetY, fireBearing);
+    }
+
+    /**
+     * Compute the guess factor using an explicit GF=0 baseline bearing instead of
+     * {@link #fireBearing}. The pre-aim convention anchors the baseline at the
+     * fire origin pointing to the aim-time opponent reference, so the realized GF
+     * matches the GF the gun intended when it pre-aimed at T-1. Returns [-1, 1].
+     */
+    public double computeGuessFactor(double targetX, double targetY, double baseBearing) {
         double dx = targetX - fireX;
         double dy = targetY - fireY;
         // Angle to actual position (Robocode: 0=north, CW)
         double actualBearing = Math.atan2(dx, dy);
-        double angleOffset = RoboMath.normalRelativeAngle(actualBearing - fireBearing);
+        double angleOffset = RoboMath.normalRelativeAngle(actualBearing - baseBearing);
+        return GuessFactor.guessFactor(angleOffset, mea, direction);
+    }
+
+    /**
+     * Compute the guess factor with both an explicit GF=0 baseline bearing and an
+     * explicit direction (the aim-time direction the gun keyed its GF sign on), so
+     * the realized GF matches the intended aim GF even if the opponent's lateral
+     * motion reversed between aim and fire. Returns [-1, 1].
+     */
+    public double computeGuessFactor(double targetX, double targetY,
+            double baseBearing, int direction) {
+        double dx = targetX - fireX;
+        double dy = targetY - fireY;
+        double actualBearing = Math.atan2(dx, dy);
+        double angleOffset = RoboMath.normalRelativeAngle(actualBearing - baseBearing);
         return GuessFactor.guessFactor(angleOffset, mea, direction);
     }
 }

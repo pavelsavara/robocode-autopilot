@@ -100,6 +100,10 @@ public enum Feature {
     OUR_AIM_OPPONENT_X(FileType.OUR_WAVES),
     OUR_AIM_OPPONENT_Y(FileType.OUR_WAVES),
     OUR_AIM_DISTANCE(FileType.OUR_WAVES),
+    // Opponent lateral velocity at aim time (T-1) — the value the gun keyed its
+    // GF prediction and sign (direction) on. Stored so the wave resolves and the
+    // model trains in the same aim-time frame the gun predicted in.
+    OUR_AIM_LATERAL_VELOCITY(FileType.OUR_WAVES),
     OUR_AIM_BEARING_ABSOLUTE(FileType.OUR_WAVES),
     // Lag-1 dodge context: the developing guess factor of the most-recent still
     // active real wave, evaluated against the opponent position at aim time. The

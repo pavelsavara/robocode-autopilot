@@ -413,6 +413,13 @@ public final class RobotSideCsvObserver extends BattleAdaptor implements Closeab
         private final double fireTick;
         private final double bulletSpeed;
         private final double fireBearing;
+        /**
+         * GF=0 baseline (pre-aim convention): fire origin -> aim-time opponent
+         * reference. Matches the live robot's pre-aim and {@code OurWaveTracker
+         * .gfBaseline}. NaN until set in {@link #create} (no aim snapshot) — then
+         * {@link #resolve} falls back to {@link #fireBearing}.
+         */
+        private double gfBaseline = Double.NaN;
         private final double[] values = new double[OurWaveColumn.COUNT];
         private boolean hitVictim;
         private boolean resolved;
@@ -475,7 +482,13 @@ public final class RobotSideCsvObserver extends BattleAdaptor implements Closeab
                 wave.values[OurWaveColumn.AIM_Y.ordinal()] = aimSelf.getY();
                 wave.values[OurWaveColumn.AIM_OPPONENT_X.ordinal()] = aimOpponent.getX();
                 wave.values[OurWaveColumn.AIM_OPPONENT_Y.ordinal()] = aimOpponent.getY();
+                // GF=0 baseline (pre-aim convention): fire origin -> aim-time opponent.
+                wave.gfBaseline = Math.atan2(aimOpponent.getX() - fireX, aimOpponent.getY() - fireY);
                 wave.values[OurWaveColumn.AIM_DISTANCE.ordinal()] = Math.hypot(aimDx, aimDy);
+                // Aim-time lateral velocity (the gun's GF prediction frame).
+                double aimBearingAbs = Math.atan2(aimDx, aimDy);
+                wave.values[OurWaveColumn.AIM_LATERAL_VELOCITY.ordinal()] =
+                        aimOpponent.getVelocity() * Math.sin(aimOpponent.getBodyHeading() - aimBearingAbs);
                 wave.values[OurWaveColumn.AIM_BEARING_ABSOLUTE.ordinal()] = Math.atan2(aimDx, aimDy);
                 double aimBearing = wave.values[OurWaveColumn.AIM_BEARING_ABSOLUTE.ordinal()];
                 double aimOffset = RoboMath.normalRelativeAngle(bullet.getHeading() - aimBearing);
@@ -526,7 +539,8 @@ public final class RobotSideCsvObserver extends BattleAdaptor implements Closeab
             double dx = opponent.getX() - fireX;
             double dy = opponent.getY() - fireY;
             double actualBearing = Math.atan2(dx, dy);
-            double bearingOffset = RoboMath.normalRelativeAngle(actualBearing - fireBearing);
+            double baseBearing = Double.isNaN(gfBaseline) ? fireBearing : gfBaseline;
+            double bearingOffset = RoboMath.normalRelativeAngle(actualBearing - baseBearing);
             double mea = GuessFactor.maxEscapeAngle(bulletSpeed);
             values[OurWaveColumn.BREAK_TICK.ordinal()] = tick;
             values[OurWaveColumn.BREAK_GF.ordinal()] = mea != 0 ? Math.max(-1.0, Math.min(1.0, bearingOffset / mea)) : 0;
