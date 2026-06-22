@@ -314,7 +314,7 @@ final class GodViewWaveResolver {
         ModelSelector selector = wb.getModelSelector();
         double aimGf = 0.0;
         if (selector != null) {
-            aimGf = selector.predictForAim(aimDistance, tw.aimLatVel, w.lag1Gf, w.mea);
+            aimGf = selector.predictForAim(aimDistance, tw.aimLatVel, w.lag1Gf, w.mea, aimBearing);
         } else {
             VcsStore vcs = wb.getVcsStore();
             if (vcs != null) {
@@ -322,7 +322,7 @@ final class GodViewWaveResolver {
                         ? w.distanceSegment : GuessFactor.distanceSegment(aimDistance);
                 int latVelSeg = Double.isNaN(tw.aimLatVel)
                         ? w.latVelSegment : GuessFactor.lateralVelocitySegment(tw.aimLatVel);
-                int window = GuessFactor.gfBoxWindowBins(aimDistance, w.mea, GuessFactor.NUM_BINS);
+                int window = GuessFactor.gfBoxWindowBins(aimDistance, w.mea, GuessFactor.NUM_BINS, aimBearing);
                 int bestBin = vcs.getBestBinBoxed(distSeg, latVelSeg, w.lag1Gf, window);
                 aimGf = GuessFactor.binIndexToGf(bestBin, GuessFactor.NUM_BINS);
             }

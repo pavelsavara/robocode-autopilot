@@ -43,9 +43,12 @@ public final class ModelSelector {
      * @param distance current distance to opponent
      * @param latVel   current lateral velocity of opponent
      * @param lag1Gf   lag-1 dodge-context developing GF of the most-recent in-flight wave
+     * @param mea      max escape angle the gun keyed the GF on
+     * @param absBearing absolute bearing the bullet travels (for the non-rotating box width)
      * @return predicted GF from the best model
      */
-    public double predictForAim(double distance, double latVel, double lag1Gf, double mea) {
+    public double predictForAim(double distance, double latVel, double lag1Gf, double mea,
+            double absBearing) {
         int best = bestModelIndex();
         // For now, only VCS-style models support this simple predict.
         // Future models that need full wave context will override differently.
@@ -56,7 +59,7 @@ public final class ModelSelector {
             int latVelSeg = GuessFactor.lateralVelocitySegment(
                     Double.isNaN(latVel) ? 0 : latVel);
             // Aim where the bullet's hit band catches the most mass, not the raw mode.
-            int window = GuessFactor.gfBoxWindowBins(distance, mea, GuessFactor.NUM_BINS);
+            int window = GuessFactor.gfBoxWindowBins(distance, mea, GuessFactor.NUM_BINS, absBearing);
             int bestBin = vcs.getBestBinBoxed(distSeg, latVelSeg, lag1Gf, window);
             return GuessFactor.binIndexToGf(bestBin, GuessFactor.NUM_BINS);
         }

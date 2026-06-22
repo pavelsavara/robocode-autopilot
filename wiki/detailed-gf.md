@@ -1,7 +1,7 @@
 # Detailed GuessFactor Histogram — discreteness-artifact analysis
 
-- **Generated (UTC):** 2026-06-22 09:43:07Z
-- **Run directory:** `pipeline/build/intuition-run/1782120123832-1782120123832`
+- **Generated (UTC):** 2026-06-22 13:30:24Z
+- **Run directory:** `pipeline/build/intuition-run/1782133800396-1782133800396`
 - **Fine binning:** 2000 bins over [-1, 1] (reference grid: 47 bins)
 - **Self-play matchups excluded** from the pooled distributions.
 - **Per robot:** BeepBoop, Diamond, DrussGT, Knight, ScalarR (one line per robot; excluded as too naive: Autopilot).
@@ -33,43 +33,43 @@ Per-robot comb metrics (each robot's own gun):
 
 | Robot | N | Spikiness | GF=0 spike | Interior comb spikes | Interior mass | Mass @\|GF\|>0.98 |
 |---|---|---|---|---|---|---|
-| ScalarR | 32,198 | 50.8x | 3.7x | 0 | 0.00% | 3.96% |
-| DrussGT | 25,885 | 38.0x | 1.7x | 1 | 0.02% | 3.05% |
-| BeepBoop | 37,437 | 37.4x | 12.9x | 0 | 0.00% | 3.10% |
-| Knight | 30,704 | 34.8x | 20.1x | 0 | 0.00% | 2.85% |
-| Diamond | 18,945 | 45.6x | 45.6x | 0 | 0.00% | 3.07% |
+| ScalarR | 32,901 | 53.6x | 2.7x | 0 | 0.00% | 4.06% |
+| DrussGT | 26,013 | 46.5x | 10.6x | 0 | 0.00% | 3.87% |
+| BeepBoop | 36,260 | 40.2x | 12.5x | 0 | 0.00% | 3.12% |
+| Knight | 31,372 | 35.4x | 17.2x | 0 | 0.00% | 2.87% |
+| Diamond | 19,768 | 64.2x | 64.2x | 1 | 0.03% | 2.89% |
 
 Pooled across all robots:
 
 | Metric | Value |
 |---|---|
-| Resolved waves (N) | 145,169 |
+| Resolved waves (N) | 146,314 |
 | Fine bins | 2,000 (width 0.0010 GF) |
-| Occupied bins | 1,918 / 2,000 (95.9%) |
-| Tallest bin | 3,072 waves at GF=-0.9995 (2.12% of mass) |
-| Spikiness (tallest / median occupied) | 38.9x |
-| GF=0 spike height (/ median occupied) | 14.2x |
+| Occupied bins | 1,915 / 2,000 (95.8%) |
+| Tallest bin | 3,268 waves at GF=-0.9995 (2.23% of mass) |
+| Spikiness (tallest / median occupied) | 41.4x |
+| GF=0 spike height (/ median occupied) | 17.1x |
 | Comb spikes (>=5x local baseline) | 2 |
-| Mass inside comb spikes | 2.89% |
+| Mass inside comb spikes | 3.16% |
 | Interior comb spikes (excl. GF=0, +-1) | 0 |
 | Mass in interior comb spikes | 0.00% |
-| Mass at GF=0 (+-1 bin) | 0.86% |
-| Mass at extremes (|GF|>0.98) | 3.23% |
+| Mass at GF=0 (+-1 bin) | 0.99% |
+| Mass at extremes (|GF|>0.98) | 3.38% |
 
 Top spike bins (engine-favored GF positions):
 
 | Rank | GF center | Waves | % of mass |
 |---|---|---|---|
-| 1 | -0.9995 | 3,072 | 2.116% |
-| 2 | +0.0005 | 1,124 | 0.774% |
-| 3 | -0.1475 | 131 | 0.090% |
-| 4 | -0.1535 | 128 | 0.088% |
-| 5 | -0.1375 | 123 | 0.085% |
-| 6 | -0.1465 | 122 | 0.084% |
-| 7 | -0.0005 | 122 | 0.084% |
-| 8 | -0.0465 | 120 | 0.083% |
-| 9 | -0.5505 | 120 | 0.083% |
-| 10 | -0.3775 | 117 | 0.081% |
+| 1 | -0.9995 | 3,268 | 2.234% |
+| 2 | +0.0005 | 1,349 | 0.922% |
+| 3 | -0.2895 | 136 | 0.093% |
+| 4 | -0.1095 | 124 | 0.085% |
+| 5 | -0.1815 | 124 | 0.085% |
+| 6 | -0.3385 | 122 | 0.083% |
+| 7 | -0.3975 | 117 | 0.080% |
+| 8 | -0.1285 | 116 | 0.079% |
+| 9 | -0.1795 | 116 | 0.079% |
+| 10 | +0.0575 | 116 | 0.079% |
 
 ## Movement channel — `their_break_gf` (their-waves)
 
@@ -79,43 +79,43 @@ Per-robot comb metrics (each robot's own movement):
 
 | Robot | N | Spikiness | GF=0 spike | Interior comb spikes | Interior mass | Mass @\|GF\|>0.98 |
 |---|---|---|---|---|---|---|
-| ScalarR | 28,617 | 35.1x | 1.7x | 0 | 0.00% | 2.88% |
-| DrussGT | 24,422 | 39.1x | 8.6x | 0 | 0.00% | 3.28% |
-| BeepBoop | 33,450 | 29.9x | 2.1x | 1 | 0.01% | 2.52% |
-| Knight | 28,575 | 59.9x | 1.1x | 0 | 0.00% | 4.38% |
-| Diamond | 18,377 | 28.3x | 1.7x | 0 | 0.00% | 2.55% |
+| ScalarR | 29,712 | 32.5x | 1.4x | 0 | 0.00% | 2.78% |
+| DrussGT | 25,086 | 75.6x | 75.6x | 0 | 0.00% | 3.29% |
+| BeepBoop | 32,722 | 28.9x | 1.2x | 0 | 0.00% | 2.55% |
+| Knight | 29,068 | 56.1x | 1.3x | 0 | 0.00% | 4.37% |
+| Diamond | 19,277 | 38.2x | 1.7x | 2 | 0.06% | 3.16% |
 
 Pooled across all robots:
 
 | Metric | Value |
 |---|---|
-| Resolved waves (N) | 133,441 |
+| Resolved waves (N) | 135,865 |
 | Fine bins | 2,000 (width 0.0010 GF) |
-| Occupied bins | 1,917 / 2,000 (95.8%) |
-| Tallest bin | 2,755 waves at GF=-0.9995 (2.06% of mass) |
-| Spikiness (tallest / median occupied) | 37.7x |
-| GF=0 spike height (/ median occupied) | 2.6x |
-| Comb spikes (>=5x local baseline) | 1 |
-| Mass inside comb spikes | 2.06% |
+| Occupied bins | 1,915 / 2,000 (95.8%) |
+| Tallest bin | 2,880 waves at GF=-0.9995 (2.12% of mass) |
+| Spikiness (tallest / median occupied) | 38.9x |
+| GF=0 spike height (/ median occupied) | 14.3x |
+| Comb spikes (>=5x local baseline) | 2 |
+| Mass inside comb spikes | 2.90% |
 | Interior comb spikes (excl. GF=0, +-1) | 0 |
 | Mass in interior comb spikes | 0.00% |
-| Mass at GF=0 (+-1 bin) | 0.23% |
-| Mass at extremes (|GF|>0.98) | 3.14% |
+| Mass at GF=0 (+-1 bin) | 0.84% |
+| Mass at extremes (|GF|>0.98) | 3.21% |
 
 Top spike bins (engine-favored GF positions):
 
 | Rank | GF center | Waves | % of mass |
 |---|---|---|---|
-| 1 | -0.9995 | 2,755 | 2.065% |
-| 2 | +0.0005 | 191 | 0.143% |
-| 3 | -0.1475 | 119 | 0.089% |
-| 4 | -0.1535 | 118 | 0.088% |
-| 5 | -0.1375 | 117 | 0.088% |
-| 6 | -0.3785 | 114 | 0.085% |
-| 7 | -0.0465 | 113 | 0.085% |
-| 8 | -0.3775 | 112 | 0.084% |
-| 9 | -0.5505 | 111 | 0.083% |
-| 10 | -0.0005 | 111 | 0.083% |
+| 1 | -0.9995 | 2,880 | 2.120% |
+| 2 | +0.0005 | 1,059 | 0.779% |
+| 3 | -0.2895 | 122 | 0.090% |
+| 4 | -0.1815 | 113 | 0.083% |
+| 5 | -0.1985 | 113 | 0.083% |
+| 6 | -0.1845 | 111 | 0.082% |
+| 7 | -0.1795 | 111 | 0.082% |
+| 8 | -0.2945 | 110 | 0.081% |
+| 9 | -0.1095 | 110 | 0.081% |
+| 10 | -0.2255 | 110 | 0.081% |
 
 ## How to read this
 

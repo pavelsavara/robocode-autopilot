@@ -132,14 +132,14 @@ public final class OurWaveTracker implements IInGameFeatures {
 
         ModelSelector selector = wb.getModelSelector();
         if (selector != null) {
-            aimGf = selector.predictForAim(distance, Double.isNaN(latVel) ? 0 : latVel, lag1Gf, mea);
+            aimGf = selector.predictForAim(distance, Double.isNaN(latVel) ? 0 : latVel, lag1Gf, mea, absoluteBearing);
             offset = aimGf * mea * direction;
         } else {
             VcsStore vcs = wb.getVcsStore();
             if (vcs != null) {
                 int distSeg = GuessFactor.distanceSegment(distance);
                 int latVelSeg = GuessFactor.lateralVelocitySegment(Double.isNaN(latVel) ? 0 : latVel);
-                int window = GuessFactor.gfBoxWindowBins(distance, mea, GuessFactor.NUM_BINS);
+                int window = GuessFactor.gfBoxWindowBins(distance, mea, GuessFactor.NUM_BINS, absoluteBearing);
                 int bestBin = vcs.getBestBinBoxed(distSeg, latVelSeg, lag1Gf, window);
                 double bestGf = GuessFactor.binIndexToGf(bestBin, GuessFactor.NUM_BINS);
                 offset = bestGf * mea * direction;

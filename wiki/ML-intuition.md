@@ -4,11 +4,11 @@
 
 ## Run header
 
-- **Source run directory:** `pipeline/build/intuition-run/1782120123832-1782120123832`
-- **Generated (UTC):** 2026-06-22 09:35:12Z
+- **Source run directory:** `pipeline/build/intuition-run/1782133800396-1782133800396`
+- **Generated (UTC):** 2026-06-22 13:29:45Z
 - **Resolved producer contract:** full split (dejavu-waves + autopilot-waves)
 - **Assets directory:** `wiki/ml-intuition`
-- **Inventory:** 25 matchups · 5 distinct robots · 50 perspectives · 5 self-play matchups · 1272.2 MB of CSV
+- **Inventory:** 25 matchups · 5 distinct robots · 50 perspectives · 5 self-play matchups · 1084.4 MB of CSV
 - **Robots:** `aaa.r.ScalarR`, `jk.mega.DrussGT`, `kc.mega.BeepBoop`, `rsalesc.mega.Knight`, `voidious.Diamond`
 - **Self-play matchups (shown but excluded from cross-opponent aggregates):** `aaa.r.ScalarR__vs__aaa.r.ScalarR`, `jk.mega.DrussGT__vs__jk.mega.DrussGT`, `kc.mega.BeepBoop__vs__kc.mega.BeepBoop`, `rsalesc.mega.Knight__vs__rsalesc.mega.Knight`, `voidious.Diamond__vs__voidious.Diamond`
 
@@ -27,305 +27,305 @@ Per-perspective file presence, data-row count, and SHA-256 of each CSV. Two repo
 
 | Perspective | File | Present | Rows | Size | SHA-256 |
 |-------------|------|:-------:|-----:|-----:|---------|
-| `aaa.r.ScalarR__vs__aaa.r.ScalarR/Perspective0-aaa.r.ScalarR` | `ticks.csv` | ✓ | 49,073 | 8.6 MB | `78b2163fe35022788a4ad0165ce0c940278410929aa0dadd80aa72dc665c9f79` |
-| `aaa.r.ScalarR__vs__aaa.r.ScalarR/Perspective0-aaa.r.ScalarR` | `scan.csv` | ✓ | 48,457 | 12.9 MB | `f40752c99d571185ca2900e02197e39f1ee6b01cb3ea487ee727158f88d8f0cb` |
-| `aaa.r.ScalarR__vs__aaa.r.ScalarR/Perspective0-aaa.r.ScalarR` | `their-waves.csv` | ✓ | 3,718 | 1.4 MB | `78079b30296d433798f83bef6cab4341bf65c0025ac6d5c8cd82fe974978de7f` |
-| `aaa.r.ScalarR__vs__aaa.r.ScalarR/Perspective0-aaa.r.ScalarR` | `autopilot-waves.csv` | ✓ | 9,999 | 4.6 MB | `6977fe0fca15b383a500d595c119a986a86c4c527596e7da553c9bd408b8fad6` |
-| `aaa.r.ScalarR__vs__aaa.r.ScalarR/Perspective0-aaa.r.ScalarR` | `dejavu-waves.csv` | ✓ | 4,162 | 2.0 MB | `74912d1f281c44afede7e495791b2dc6319d530bdc36ba5d81f28ec8d3f19bc4` |
+| `aaa.r.ScalarR__vs__aaa.r.ScalarR/Perspective0-aaa.r.ScalarR` | `ticks.csv` | ✓ | 55,542 | 9.8 MB | `3064f7bfc71f6be746bb5e60d70c53910838289fd355ccdfae64b16cf57b27e3` |
+| `aaa.r.ScalarR__vs__aaa.r.ScalarR/Perspective0-aaa.r.ScalarR` | `scan.csv` | ✓ | 54,762 | 14.5 MB | `2fe448c22303c0df33e3537a1cb280c838491a86b212a35d0b39639a77a23a10` |
+| `aaa.r.ScalarR__vs__aaa.r.ScalarR/Perspective0-aaa.r.ScalarR` | `their-waves.csv` | ✓ | 4,205 | 1.6 MB | `0d0eef20e5f8a2ff34ed5bd9dfeb7409c61f7985d9b8791f91ce54a215897741` |
+| `aaa.r.ScalarR__vs__aaa.r.ScalarR/Perspective0-aaa.r.ScalarR` | `autopilot-waves.csv` | ✓ | 121 | 56.5 KB | `fb9da84e122e3e569d6c1fbd91cc820809f836f0c80df38915037ea8ae2f7a0d` |
+| `aaa.r.ScalarR__vs__aaa.r.ScalarR/Perspective0-aaa.r.ScalarR` | `dejavu-waves.csv` | ✓ | 4,762 | 2.3 MB | `d596b3cdd1bf2957b5aee6292561ea66bbbd26d076e4e2675f738a5fd407ec62` |
 | `aaa.r.ScalarR__vs__aaa.r.ScalarR/Perspective0-aaa.r.ScalarR` | `scores.csv` | ✓ | 1 | 0.1 KB | `443961fb34c81c422aa37a9f0d2b482cfa6914f7f3356be3ed8de559f52f2d17` |
-| `aaa.r.ScalarR__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `ticks.csv` | ✓ | 49,375 | 8.7 MB | `1d15d7eefd31f45618ae14e61962ca9f9834bd95c1dbc7d1436e4727dc9ae7f9` |
-| `aaa.r.ScalarR__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `scan.csv` | ✓ | 48,447 | 12.8 MB | `7916266edf5902f50cff9848145bfaa01f492a3cb6f0135d8edb4f0326380d1f` |
-| `aaa.r.ScalarR__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `their-waves.csv` | ✓ | 3,692 | 1.4 MB | `11d25faab51bd21c41d6f066f2a2628c681471139d512b42f758750f2e66452d` |
-| `aaa.r.ScalarR__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `autopilot-waves.csv` | ✓ | 10,175 | 4.7 MB | `a076ab76e8232e229a0c4aeaff8202792bef79dc058fd1bf704392f316eb495f` |
-| `aaa.r.ScalarR__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `dejavu-waves.csv` | ✓ | 4,199 | 2.0 MB | `2c5a25da976734a582ddc48a6f06de0ea538db07de9005b8067a9ccda1f3d860` |
+| `aaa.r.ScalarR__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `ticks.csv` | ✓ | 55,542 | 9.8 MB | `bf5cef6a3e4f5b213a0861c48bec928462a44c0ba478fbceb36547fd75d83574` |
+| `aaa.r.ScalarR__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `scan.csv` | ✓ | 54,760 | 14.5 MB | `97928a301c68deea92bf2c812f3ae452db17de8e34a9680aa861b16e61a5ec6d` |
+| `aaa.r.ScalarR__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `their-waves.csv` | ✓ | 4,200 | 1.6 MB | `ea63763868d42185106803092c4efc73e9cca8887a84f1bab637fec827fbd250` |
+| `aaa.r.ScalarR__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `autopilot-waves.csv` | ✓ | 154 | 71.9 KB | `d09ecc75ae9ee5d0c64528519878ea798a1e21b2d7c04aef284f67cea3810368` |
+| `aaa.r.ScalarR__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `dejavu-waves.csv` | ✓ | 4,763 | 2.3 MB | `b083ff462f5904523402c83e8c2c6bab7c5d0b53ab8ff2a036e6a1172165f006` |
 | `aaa.r.ScalarR__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `scores.csv` | ✓ | 1 | 0.1 KB | `c1acd5180eea5d58212692f914ea5fd1cbc01dc4f59e990a9c1219befb96d53d` |
-| `aaa.r.ScalarR__vs__jk.mega.DrussGT/Perspective0-aaa.r.ScalarR` | `ticks.csv` | ✓ | 44,420 | 7.9 MB | `9a17345cb949283dc642594600bed369971e158f45b993ca524158ab61f45b71` |
-| `aaa.r.ScalarR__vs__jk.mega.DrussGT/Perspective0-aaa.r.ScalarR` | `scan.csv` | ✓ | 43,041 | 11.1 MB | `1648c8608e28e5637e3cb33db2c7d71e6b79bc875e0a441f69385216260aa89b` |
-| `aaa.r.ScalarR__vs__jk.mega.DrussGT/Perspective0-aaa.r.ScalarR` | `their-waves.csv` | ✓ | 3,439 | 1.4 MB | `26b79f9402ee80c2577a56de52c359008a1ff98f2e18634eb1b84a2919785320` |
-| `aaa.r.ScalarR__vs__jk.mega.DrussGT/Perspective0-aaa.r.ScalarR` | `autopilot-waves.csv` | ✓ | 9,020 | 4.1 MB | `a5c2612d31e0078cc377bf82ec56f26fa44c8eee1839ec737941303a31dad962` |
-| `aaa.r.ScalarR__vs__jk.mega.DrussGT/Perspective0-aaa.r.ScalarR` | `dejavu-waves.csv` | ✓ | 3,747 | 1.8 MB | `9627a885fa0de302fb686d9716118478959d89ac242311e5ab4a93c68584c8d9` |
+| `aaa.r.ScalarR__vs__jk.mega.DrussGT/Perspective0-aaa.r.ScalarR` | `ticks.csv` | ✓ | 33,304 | 5.9 MB | `c6957dd4a599c7c990d67c6d7e26f81b6ccdb86ffb91157f5398e8e7ccbb2206` |
+| `aaa.r.ScalarR__vs__jk.mega.DrussGT/Perspective0-aaa.r.ScalarR` | `scan.csv` | ✓ | 32,236 | 8.3 MB | `f482fe24135407adba9f5f694a722a09c212f95a4b44d79a692d7f459124f2c9` |
+| `aaa.r.ScalarR__vs__jk.mega.DrussGT/Perspective0-aaa.r.ScalarR` | `their-waves.csv` | ✓ | 2,766 | 1.1 MB | `33e8c78a42ac8cab32929ed4f0d50a08f5a8113a141e13f9b5857c36b28fbc0b` |
+| `aaa.r.ScalarR__vs__jk.mega.DrussGT/Perspective0-aaa.r.ScalarR` | `autopilot-waves.csv` | ✓ | 176 | 81.9 KB | `c901d7849f38de94303572820bcb10d8be3f404608a810dcfece2ed07e990a50` |
+| `aaa.r.ScalarR__vs__jk.mega.DrussGT/Perspective0-aaa.r.ScalarR` | `dejavu-waves.csv` | ✓ | 2,796 | 1.3 MB | `e2b28dd4ba79f470e4e109a6d0c7e8178acf313cfcdec9c07b3cb69f25033681` |
 | `aaa.r.ScalarR__vs__jk.mega.DrussGT/Perspective0-aaa.r.ScalarR` | `scores.csv` | ✓ | 1 | 0.1 KB | `4384f35d8106237c2445ddc1652d68de98d25097f0fbbf84bcc82180780ad9a3` |
-| `aaa.r.ScalarR__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `ticks.csv` | ✓ | 43,212 | 7.3 MB | `8cce628ea9d74fd0afc2676e74f533c28533d2242c48cb0c57afe2fc13831640` |
-| `aaa.r.ScalarR__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `scan.csv` | ✓ | 43,034 | 11.5 MB | `94998ffbcdc690452252b669401973b1fbf84c60d5fb67748e6df04b80d0b68c` |
-| `aaa.r.ScalarR__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `their-waves.csv` | ✓ | 3,424 | 1.3 MB | `831e5f156800f385613dbc46a4390350907d326137f492cb255fb9ef7df8e821` |
-| `aaa.r.ScalarR__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `autopilot-waves.csv` | ✓ | 9,185 | 4.2 MB | `975be08f5a3fc5c69f6864c4da3935c1796ec9cac0fa580651540dcb24b94e49` |
-| `aaa.r.ScalarR__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `dejavu-waves.csv` | ✓ | 3,755 | 1.9 MB | `5c4b1b114a45b1a98a5c9d1d3bdac6219617b53fe29ed60a37966d1d4734f612` |
+| `aaa.r.ScalarR__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `ticks.csv` | ✓ | 32,700 | 5.5 MB | `850455fc69002416213281b2cb876e6c3436b852f50801abbb861d6ef71bea53` |
+| `aaa.r.ScalarR__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `scan.csv` | ✓ | 32,180 | 8.6 MB | `06b77c110832ac07e8953045bd94eb5316c4e71a781493670701a5f7b28fdc3e` |
+| `aaa.r.ScalarR__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `their-waves.csv` | ✓ | 2,774 | 1.1 MB | `51d629fd62cc078d9ee0c609595b1541400aeb392716d4bbdbce8d6f651adb78` |
+| `aaa.r.ScalarR__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `autopilot-waves.csv` | ✓ | 88 | 41.7 KB | `c07926a60b4503625e98204127885ed26434bf844fd341f3a74ecdedf4a5f993` |
+| `aaa.r.ScalarR__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `dejavu-waves.csv` | ✓ | 2,780 | 1.4 MB | `f3fa1019eaac5ff61b7bced01bd7fbeb814f46da0137861bcb852bb0c3cec837` |
 | `aaa.r.ScalarR__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `scores.csv` | ✓ | 1 | 0.1 KB | `96067450ef8bdd68f6eb8bef1f41559103839306c34a375f7dafe8a0341911a0` |
-| `aaa.r.ScalarR__vs__kc.mega.BeepBoop/Perspective0-aaa.r.ScalarR` | `ticks.csv` | ✓ | 62,089 | 11.1 MB | `72e805be5f40736523f92a4a0ed5cd88d6b3bec1f047fd89b3ba3c9e9096edf8` |
-| `aaa.r.ScalarR__vs__kc.mega.BeepBoop/Perspective0-aaa.r.ScalarR` | `scan.csv` | ✓ | 61,465 | 16.5 MB | `820f858914c4943ee41de6058cb2dc736e3fb6c05ad36717a1a0a3978ddf0ce7` |
-| `aaa.r.ScalarR__vs__kc.mega.BeepBoop/Perspective0-aaa.r.ScalarR` | `their-waves.csv` | ✓ | 4,660 | 1.8 MB | `6c57ba3c98930762fc86ce5a5f69a904d0950a736424455e9e22af161a10fc78` |
-| `aaa.r.ScalarR__vs__kc.mega.BeepBoop/Perspective0-aaa.r.ScalarR` | `autopilot-waves.csv` | ✓ | 13,618 | 6.3 MB | `43d77d9c533ea972c4d9209a734a83eda4ff81de0a9de2264e734abdfbfb30df` |
-| `aaa.r.ScalarR__vs__kc.mega.BeepBoop/Perspective0-aaa.r.ScalarR` | `dejavu-waves.csv` | ✓ | 5,427 | 2.6 MB | `9fd7a4085798322d51ec71d84daf65122bb759f773d2c2df21036863419253a2` |
+| `aaa.r.ScalarR__vs__kc.mega.BeepBoop/Perspective0-aaa.r.ScalarR` | `ticks.csv` | ✓ | 61,183 | 11.0 MB | `b99025c588fde7aa2ec3ee8a9eb9183fb6bcc3abca2e67b9682105b5dc2d7638` |
+| `aaa.r.ScalarR__vs__kc.mega.BeepBoop/Perspective0-aaa.r.ScalarR` | `scan.csv` | ✓ | 60,872 | 16.3 MB | `327e2eec6f6eb0ea6c0a985ca07594d13e3f2b0dd3c8191d02c74d7bcb749eb0` |
+| `aaa.r.ScalarR__vs__kc.mega.BeepBoop/Perspective0-aaa.r.ScalarR` | `their-waves.csv` | ✓ | 4,531 | 1.7 MB | `2e2178a7197eac4c9dfe0f8103c824a07730a09698985ab65035505d02094648` |
+| `aaa.r.ScalarR__vs__kc.mega.BeepBoop/Perspective0-aaa.r.ScalarR` | `autopilot-waves.csv` | ✓ | 242 | 113.0 KB | `620411ded676e932d326bc39e8ed796c3b14981a6a5fbd95dad803d72cde14e6` |
+| `aaa.r.ScalarR__vs__kc.mega.BeepBoop/Perspective0-aaa.r.ScalarR` | `dejavu-waves.csv` | ✓ | 5,359 | 2.6 MB | `c2e369eb59db55fa944c426b818995af88fa4c78826d93302d015540699bbf2c` |
 | `aaa.r.ScalarR__vs__kc.mega.BeepBoop/Perspective0-aaa.r.ScalarR` | `scores.csv` | ✓ | 1 | 0.1 KB | `d7c96a05845bf301167b2372cdfaf85a93ea9edf9b05ca343fe5036e6414640d` |
-| `aaa.r.ScalarR__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `ticks.csv` | ✓ | 62,391 | 11.1 MB | `4371f776b69f46fba6bcfbce25e7234350b4d9f32012f1b05919d6cc8101c041` |
-| `aaa.r.ScalarR__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `scan.csv` | ✓ | 61,472 | 16.5 MB | `4d920c21b44febfa8fa142e5eece57608facc44756fd818becd72aba5b230c96` |
-| `aaa.r.ScalarR__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `their-waves.csv` | ✓ | 4,686 | 1.8 MB | `29e1b67d490586ee6edc716174953d8a0aa58668ae0f3e3efe8412446a4c93b2` |
-| `aaa.r.ScalarR__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `autopilot-waves.csv` | ✓ | 13,013 | 6.0 MB | `e3d1a3753f5804ba9a44f47deb0fcb99299e1fa8b99a07d1ab5a1c173e0850b4` |
-| `aaa.r.ScalarR__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `dejavu-waves.csv` | ✓ | 5,420 | 2.6 MB | `184634748f303b16d47ed29771e0a2a3e8dc182a7853335f3b3df9fa24d4be8c` |
+| `aaa.r.ScalarR__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `ticks.csv` | ✓ | 62,089 | 11.1 MB | `95451cb1bb164078eacf688769773042afbb89a7d0895dc64d6711daf4a33706` |
+| `aaa.r.ScalarR__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `scan.csv` | ✓ | 60,856 | 16.3 MB | `c82ec8f5f0d2a5f4750b65f95e14fc1d939cc4c7c2cf060e7ce1f03ebd9d4879` |
+| `aaa.r.ScalarR__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `their-waves.csv` | ✓ | 4,523 | 1.7 MB | `4d45cb2279605e5d296b3997e40fb7afb3a3fc9a843832ca055d2fda837b7c62` |
+| `aaa.r.ScalarR__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `autopilot-waves.csv` | ✓ | 22 | 10.9 KB | `eb1f53178661c7eac7ef53211262225babcb55c82a27a719e7167e592dfa5649` |
+| `aaa.r.ScalarR__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `dejavu-waves.csv` | ✓ | 5,379 | 2.6 MB | `23a79a662bac4009e57b1f82fd0b425621232b26d58949d2360d37c1764a6a47` |
 | `aaa.r.ScalarR__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `scores.csv` | ✓ | 1 | 0.1 KB | `d2c5c11f3106e2cbcf675bad05cace24002a0304ac1c77ec8827b88168fef78c` |
-| `aaa.r.ScalarR__vs__rsalesc.mega.Knight/Perspective0-aaa.r.ScalarR` | `ticks.csv` | ✓ | 56,542 | 10.3 MB | `a192006e029a468c21588c7df1a51ced422cbc09686c712c93368ce6454c94e6` |
-| `aaa.r.ScalarR__vs__rsalesc.mega.Knight/Perspective0-aaa.r.ScalarR` | `scan.csv` | ✓ | 55,160 | 14.1 MB | `72f428cefe5e59d6940d873e4da67a5f643890a55f4580bb4976fd1aa495efe8` |
-| `aaa.r.ScalarR__vs__rsalesc.mega.Knight/Perspective0-aaa.r.ScalarR` | `their-waves.csv` | ✓ | 4,350 | 1.7 MB | `6920436bd426aa469db19c559ab5519ad3227b686a29008484a9bb1f728e0e0c` |
-| `aaa.r.ScalarR__vs__rsalesc.mega.Knight/Perspective0-aaa.r.ScalarR` | `autopilot-waves.csv` | ✓ | 12,595 | 5.8 MB | `4779ca6ec43f0c9385412e8ad2580c4f5bee6535f891587fadd3a0b9d53e1e13` |
-| `aaa.r.ScalarR__vs__rsalesc.mega.Knight/Perspective0-aaa.r.ScalarR` | `dejavu-waves.csv` | ✓ | 4,937 | 2.4 MB | `a2801201222776c70d00cb6bd5d0a60f3a347660e02d6881f576c72c4eb77193` |
+| `aaa.r.ScalarR__vs__rsalesc.mega.Knight/Perspective0-aaa.r.ScalarR` | `ticks.csv` | ✓ | 61,114 | 11.1 MB | `1bc227916d53c7def2439e3cf0bb39df1a2f6956338e05df8d3a528c847bb30a` |
+| `aaa.r.ScalarR__vs__rsalesc.mega.Knight/Perspective0-aaa.r.ScalarR` | `scan.csv` | ✓ | 59,593 | 15.2 MB | `2fa120369cd5a52fead1afd337c64d0052b07528dd8324aba3477261a2faa650` |
+| `aaa.r.ScalarR__vs__rsalesc.mega.Knight/Perspective0-aaa.r.ScalarR` | `their-waves.csv` | ✓ | 4,673 | 1.9 MB | `40b5b865f860ad91f45fdb788f8f8b06f351becc8138aac452b98d1ce1a2da92` |
+| `aaa.r.ScalarR__vs__rsalesc.mega.Knight/Perspective0-aaa.r.ScalarR` | `autopilot-waves.csv` | ✓ | 132 | 62.4 KB | `e83c4c3703f62d5a367c3a3ab12120d3f0760f01d2e001fd45416fac41e0e9d2` |
+| `aaa.r.ScalarR__vs__rsalesc.mega.Knight/Perspective0-aaa.r.ScalarR` | `dejavu-waves.csv` | ✓ | 5,342 | 2.5 MB | `3b0ffea471fe09ff9fe661394f2f73f8158b2e94886940a0c0fb56cdf36a3823` |
 | `aaa.r.ScalarR__vs__rsalesc.mega.Knight/Perspective0-aaa.r.ScalarR` | `scores.csv` | ✓ | 1 | 0.1 KB | `d173f47c8a4617919d7531183de9490dd4bd54be8ad732f7a8e765474d83c90b` |
-| `aaa.r.ScalarR__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `ticks.csv` | ✓ | 55,334 | 9.3 MB | `789c97b32f095693cd70ab5178b5ebbd1182872a9ea190491095851c29089b34` |
-| `aaa.r.ScalarR__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `scan.csv` | ✓ | 55,130 | 14.9 MB | `cb90598f15ffbeca8ac20634a95c1f59baba9ef832c6450bff491b30ffd538be` |
-| `aaa.r.ScalarR__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `their-waves.csv` | ✓ | 4,380 | 1.7 MB | `ee8a28a1ff408e5623e00ce4d0d754fef873a8a067141ff001b3f72de9a0a10a` |
-| `aaa.r.ScalarR__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `autopilot-waves.csv` | ✓ | 12,672 | 5.9 MB | `d3730d971bf6b4ee9f2b7f1127063ea0623b4caa78a31ab78c566cfdb2c9fe94` |
-| `aaa.r.ScalarR__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `dejavu-waves.csv` | ✓ | 4,855 | 2.4 MB | `8196b8d7964ba3aac1afe3f93393d208c731e9007a64ef214bfb57e0a3c67da8` |
+| `aaa.r.ScalarR__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `ticks.csv` | ✓ | 59,604 | 10.1 MB | `74f31ced5bd4b814ef186ebf5664fa43f7930cd7d228fb6e671c1eace9ae06a1` |
+| `aaa.r.ScalarR__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `scan.csv` | ✓ | 59,550 | 16.1 MB | `46d9d767190395c5d4cce8de5e5ce738fac7487a158e8e62148de5a649f60948` |
+| `aaa.r.ScalarR__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `their-waves.csv` | ✓ | 4,693 | 1.8 MB | `a94c8db00398c57e458cb1860a113a2b02b8411cb35d77f974c4170a5201aa96` |
+| `aaa.r.ScalarR__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `autopilot-waves.csv` | ✓ | 143 | 67.7 KB | `b927f60474fe6adcb357c2e73632fb9adb7887cb2b025c3b9460b96d8473b945` |
+| `aaa.r.ScalarR__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `dejavu-waves.csv` | ✓ | 5,276 | 2.6 MB | `52d5836935d07e294b80c3f6fbd86c1f8a68af07f76704857482debe7d886c27` |
 | `aaa.r.ScalarR__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `scores.csv` | ✓ | 1 | 0.1 KB | `bd8a156519e2504f65de3dd1578c212b26e816f180482d1208c6f492401eb1f0` |
-| `aaa.r.ScalarR__vs__voidious.Diamond/Perspective0-aaa.r.ScalarR` | `ticks.csv` | ✓ | 25,326 | 4.5 MB | `3c27098b25c35dd34ec83a4338d6c7f54b889fe412a8fef6049cd9e4d261697e` |
-| `aaa.r.ScalarR__vs__voidious.Diamond/Perspective0-aaa.r.ScalarR` | `scan.csv` | ✓ | 24,254 | 6.1 MB | `37163a0c8013b2e12f109f989535311aadeea3d885cc554363a835069460db0e` |
-| `aaa.r.ScalarR__vs__voidious.Diamond/Perspective0-aaa.r.ScalarR` | `their-waves.csv` | ✓ | 2,061 | 812.2 KB | `ef4e853dfc2518a1ad3cee261ff7cf02d6836335019f874a41a4709eea236f12` |
-| `aaa.r.ScalarR__vs__voidious.Diamond/Perspective0-aaa.r.ScalarR` | `autopilot-waves.csv` | ✓ | 5,170 | 2.4 MB | `fdcb47d3bd9b2d6e5eb9c520a4d7627815356f82a97cb324cbf89202b33f1247` |
-| `aaa.r.ScalarR__vs__voidious.Diamond/Perspective0-aaa.r.ScalarR` | `dejavu-waves.csv` | ✓ | 2,074 | 1007.6 KB | `f4c79d1918be1f75aaef90504b30bcee9e1df56064fcfda9f5303f99b25e3820` |
+| `aaa.r.ScalarR__vs__voidious.Diamond/Perspective0-aaa.r.ScalarR` | `ticks.csv` | ✓ | 25,791 | 4.6 MB | `0b1c078d116ecdeea156f25f18a6cdbfb1ad82c58b18839037c419c561208d7c` |
+| `aaa.r.ScalarR__vs__voidious.Diamond/Perspective0-aaa.r.ScalarR` | `scan.csv` | ✓ | 25,022 | 6.3 MB | `649fc10e5e02a2d51d89bed837d3e2b8a8b83898406a59796961ecce7c5dff86` |
+| `aaa.r.ScalarR__vs__voidious.Diamond/Perspective0-aaa.r.ScalarR` | `their-waves.csv` | ✓ | 2,029 | 801.9 KB | `f40be7c9dad3045f39b02dbd312e0d08077c59c050f3b7fd6d31696bc2a03c86` |
+| `aaa.r.ScalarR__vs__voidious.Diamond/Perspective0-aaa.r.ScalarR` | `autopilot-waves.csv` | ✓ | 154 | 71.2 KB | `8977b0b0edeb9f11a5e8351a535756b05b3c956a974a6903a51c9c0bc8e34330` |
+| `aaa.r.ScalarR__vs__voidious.Diamond/Perspective0-aaa.r.ScalarR` | `dejavu-waves.csv` | ✓ | 1,978 | 964.0 KB | `52a36a1274795e3a52957d6e1a8901962189617e7ffd0b87630abeee09b66725` |
 | `aaa.r.ScalarR__vs__voidious.Diamond/Perspective0-aaa.r.ScalarR` | `scores.csv` | ✓ | 1 | 0.1 KB | `bc57ea20b5856d4ea0853af794bf5b1c2199496be27c65b6fc408be540e86309` |
-| `aaa.r.ScalarR__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `ticks.csv` | ✓ | 24,722 | 4.1 MB | `e91f787fca0dd94073304df7c7b7b57e3baf452d735b556497719c6a9a754969` |
-| `aaa.r.ScalarR__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `scan.csv` | ✓ | 24,236 | 6.5 MB | `68c236f7ad8286eb3b897bfef402d84927093444dd8c3fb5ba8b8d894901e623` |
-| `aaa.r.ScalarR__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `their-waves.csv` | ✓ | 2,055 | 818.5 KB | `3fba8304c96b3c8ad79165487f768e8566c84f066f4ecd4b5cd58da526938434` |
-| `aaa.r.ScalarR__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `autopilot-waves.csv` | ✓ | 4,235 | 1.9 MB | `6478aa9e3570e0cd9390b90d81aedeb0d5a54416fe4b55662d1c4cb3d802ba90` |
-| `aaa.r.ScalarR__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `dejavu-waves.csv` | ✓ | 2,102 | 1.0 MB | `dfc9475861fac500ca00a0e8616e9a3a9115e6836d9c5762ba6e98f931054e4c` |
+| `aaa.r.ScalarR__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `ticks.csv` | ✓ | 25,640 | 4.2 MB | `5b7272c640351bd5b1dd90e84f913caccfcb4bbca8450d7a58c6d96d0d6f5500` |
+| `aaa.r.ScalarR__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `scan.csv` | ✓ | 25,001 | 6.7 MB | `a3213937bf5b72cb51050f301f85c55dec79cff3d60973fc475d1b577831c492` |
+| `aaa.r.ScalarR__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `their-waves.csv` | ✓ | 1,966 | 784.7 KB | `c1ae841dc2482a3ae1bd45d7db09de13300dff282f6573f12eaf23cfdd355bce` |
+| `aaa.r.ScalarR__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `autopilot-waves.csv` | ✓ | 176 | 82.4 KB | `ec9c8ec7a7e1a548444426cec6def5527a7b52d6fa6952aa7d7facb475b6e1ee` |
+| `aaa.r.ScalarR__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `dejavu-waves.csv` | ✓ | 2,088 | 1.0 MB | `c790ab2e413133a1cbca96c0de3c26219e2977df0e545c157f1d16523eabbb26` |
 | `aaa.r.ScalarR__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `scores.csv` | ✓ | 1 | 0.1 KB | `e32c37f96699e4bdab58209d70dcf52428698e8fabb0a146621be6655c179540` |
-| `jk.mega.DrussGT__vs__aaa.r.ScalarR/Perspective0-jk.mega.DrussGT` | `ticks.csv` | ✓ | 28,369 | 4.8 MB | `376b756c26f282b15e4e44708d3fb5d848adec95192a007962f0640b406decfc` |
-| `jk.mega.DrussGT__vs__aaa.r.ScalarR/Perspective0-jk.mega.DrussGT` | `scan.csv` | ✓ | 27,413 | 7.3 MB | `131056d997e1c80e0d155146a644034eda7abcfa60edb5060bb65d9fca38d8a6` |
-| `jk.mega.DrussGT__vs__aaa.r.ScalarR/Perspective0-jk.mega.DrussGT` | `their-waves.csv` | ✓ | 2,330 | 934.7 KB | `2e736b0eb4ace914e219fd227be779d66eb5a216d318a4897e3e36c5f9f9e0ec` |
-| `jk.mega.DrussGT__vs__aaa.r.ScalarR/Perspective0-jk.mega.DrussGT` | `autopilot-waves.csv` | ✓ | 5,434 | 2.5 MB | `83947e12ff38cbb387a7d483106671a239a6656bf1449e131c4e7d4a88a88b23` |
-| `jk.mega.DrussGT__vs__aaa.r.ScalarR/Perspective0-jk.mega.DrussGT` | `dejavu-waves.csv` | ✓ | 2,377 | 1.2 MB | `2078d9a541ad44dd53ddfbaec7931cff614c0d1905b40d20fec0abf5cafcea8d` |
-| `jk.mega.DrussGT__vs__aaa.r.ScalarR/Perspective0-jk.mega.DrussGT` | `scores.csv` | ✓ | 1 | 0.1 KB | `7d13c1f15b5f4914f0014a0d5870be1e1d791a0598449effb0bfac2250b7c57f` |
-| `jk.mega.DrussGT__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `ticks.csv` | ✓ | 28,067 | 5.0 MB | `5747c97b2d54ec8d760d690dbed87d235bb79ea1b5e28a6a8f7e6bbc83114ede` |
-| `jk.mega.DrussGT__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `scan.csv` | ✓ | 27,446 | 7.1 MB | `89c7829b8fd77d3e42855fa947fc89d211592a7a3b056a846792463f529d84ca` |
-| `jk.mega.DrussGT__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `their-waves.csv` | ✓ | 2,360 | 954.2 KB | `a27a5fc2fe8ad632d3bba50c47a8e29d3047c9d54ce7ad2bff208a151113a9df` |
-| `jk.mega.DrussGT__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `autopilot-waves.csv` | ✓ | 5,676 | 2.6 MB | `95d502e75de0ad6abcbdc96dc984317b0e2122b79ac3d1358ceb0f60f5353322` |
-| `jk.mega.DrussGT__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `dejavu-waves.csv` | ✓ | 2,345 | 1.1 MB | `67caaf57ce2174ba9dff8f60388f0c14087fa2e5ee8af04ea7ea333de783a4a6` |
-| `jk.mega.DrussGT__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `scores.csv` | ✓ | 1 | 0.1 KB | `f81bc65f601f34f893eea60176034436677f2b712ded8f22f4b95ebfcec43e69` |
-| `jk.mega.DrussGT__vs__jk.mega.DrussGT/Perspective0-jk.mega.DrussGT` | `ticks.csv` | ✓ | 30,231 | 5.2 MB | `73837530ef2af5866607a7e7d0e13fdf6156f64ca49c9a4063749508f261fda3` |
-| `jk.mega.DrussGT__vs__jk.mega.DrussGT/Perspective0-jk.mega.DrussGT` | `scan.csv` | ✓ | 29,440 | 7.6 MB | `26f1b7cf80e876f1a80755f7aad3cf48b880ff38c0df578326917ded1e7c1b0c` |
-| `jk.mega.DrussGT__vs__jk.mega.DrussGT/Perspective0-jk.mega.DrussGT` | `their-waves.csv` | ✓ | 2,518 | 1017.9 KB | `2413523d9b349f13d5964575cbcdb4e32d5a84100826cbe6ccadaf376fe190cd` |
-| `jk.mega.DrussGT__vs__jk.mega.DrussGT/Perspective0-jk.mega.DrussGT` | `autopilot-waves.csv` | ✓ | 6,039 | 2.8 MB | `cf71b78188d09320ec76dd6c9d7908380735ac9c6325c685bf626ed61e54627d` |
-| `jk.mega.DrussGT__vs__jk.mega.DrussGT/Perspective0-jk.mega.DrussGT` | `dejavu-waves.csv` | ✓ | 2,539 | 1.3 MB | `93f968d3055cc60265f732420279a65bbd646f6f247a17e72075350f6f727553` |
+| `jk.mega.DrussGT__vs__aaa.r.ScalarR/Perspective0-jk.mega.DrussGT` | `ticks.csv` | ✓ | 36,509 | 6.2 MB | `0345466886059daa41bc42c562cb60a431af1d627f7cfff1476fa89f93bfca2e` |
+| `jk.mega.DrussGT__vs__aaa.r.ScalarR/Perspective0-jk.mega.DrussGT` | `scan.csv` | ✓ | 36,444 | 9.7 MB | `9cd78203b39a0e7c5d1c8fd05288808cbab588d596e5030c6af4c918d9bb4dc8` |
+| `jk.mega.DrussGT__vs__aaa.r.ScalarR/Perspective0-jk.mega.DrussGT` | `their-waves.csv` | ✓ | 3,092 | 1.2 MB | `e3e714f856479b3b00cf480f368278e83b8573ea12f09970b403d93aeef1afdd` |
+| `jk.mega.DrussGT__vs__aaa.r.ScalarR/Perspective0-jk.mega.DrussGT` | `autopilot-waves.csv` | ✓ | 121 | 56.8 KB | `fd7ed800f41b32c2032d5213c5c46b60936254e29972757cd9c6613e15a232a4` |
+| `jk.mega.DrussGT__vs__aaa.r.ScalarR/Perspective0-jk.mega.DrussGT` | `dejavu-waves.csv` | ✓ | 3,129 | 1.5 MB | `1a10081dab1f3955b8c95cddb9abab9ff68cdf692a6986f9f3241c2012270ca3` |
+| `jk.mega.DrussGT__vs__aaa.r.ScalarR/Perspective0-jk.mega.DrussGT` | `scores.csv` | ✓ | 1 | 0.1 KB | `f81bc65f601f34f893eea60176034436677f2b712ded8f22f4b95ebfcec43e69` |
+| `jk.mega.DrussGT__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `ticks.csv` | ✓ | 37,868 | 6.7 MB | `ba7482f52a44e96b24f01254be6300f4cb8481b9c987e81227d285593659d3c0` |
+| `jk.mega.DrussGT__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `scan.csv` | ✓ | 36,492 | 9.4 MB | `aa993db7926e58fce292b9f7e38f65d586e90753d0caf3dd8cdfed76f07d8ae4` |
+| `jk.mega.DrussGT__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `their-waves.csv` | ✓ | 3,119 | 1.2 MB | `40e9f5acfe6e2d4fc449d094bf26ac10b1c815b70aaa0b5968b1139946bab5b1` |
+| `jk.mega.DrussGT__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `autopilot-waves.csv` | ✓ | 110 | 52.0 KB | `5c036e6de41e54c0db3500b991440fbad4ce9870e4cbcc283c2686e32f25fe38` |
+| `jk.mega.DrussGT__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `dejavu-waves.csv` | ✓ | 3,110 | 1.5 MB | `c20fa2a3acc36bb5f7c751a23367186b55fa00a216a4d0a087703180d522dd29` |
+| `jk.mega.DrussGT__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `scores.csv` | ✓ | 1 | 0.1 KB | `7d13c1f15b5f4914f0014a0d5870be1e1d791a0598449effb0bfac2250b7c57f` |
+| `jk.mega.DrussGT__vs__jk.mega.DrussGT/Perspective0-jk.mega.DrussGT` | `ticks.csv` | ✓ | 31,476 | 5.4 MB | `3503da3ac237ada50efb0bcfff100f24b242ed754ce08ffc6da740677a13a8c9` |
+| `jk.mega.DrussGT__vs__jk.mega.DrussGT/Perspective0-jk.mega.DrussGT` | `scan.csv` | ✓ | 30,508 | 7.9 MB | `90976ad841e574003ece74980665796772586a7143d09097d074b38eeafb118c` |
+| `jk.mega.DrussGT__vs__jk.mega.DrussGT/Perspective0-jk.mega.DrussGT` | `their-waves.csv` | ✓ | 2,630 | 1.0 MB | `6e0a171f7c5af051ef23877d230cd8fd483ff243d5b9e2f6ce680e8f082e5a37` |
+| `jk.mega.DrussGT__vs__jk.mega.DrussGT/Perspective0-jk.mega.DrussGT` | `autopilot-waves.csv` | ✓ | 110 | 52.0 KB | `1bee0ea289d4ccd5d57493467d39add5bff9268f55b4e9bb2703199e2017d773` |
+| `jk.mega.DrussGT__vs__jk.mega.DrussGT/Perspective0-jk.mega.DrussGT` | `dejavu-waves.csv` | ✓ | 2,666 | 1.3 MB | `b2d167a3f760f680ffb7674d91211866b49b51f072d479edd1c507b103e89661` |
 | `jk.mega.DrussGT__vs__jk.mega.DrussGT/Perspective0-jk.mega.DrussGT` | `scores.csv` | ✓ | 1 | 0.1 KB | `7ad469a96f314dccf05a2cfe991fce111e7bf7219d5b806f5527a20ed6625b78` |
-| `jk.mega.DrussGT__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `ticks.csv` | ✓ | 30,231 | 5.2 MB | `d835300fa042f1fe710d4cb8b35d3a230e51a880ea7b61164fd3a8c3fd39b15c` |
-| `jk.mega.DrussGT__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `scan.csv` | ✓ | 29,442 | 7.7 MB | `c38c79dc2d4ba3c630ae158ad10c4fe628db48bc3ee0873e897007430433d614` |
-| `jk.mega.DrussGT__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `their-waves.csv` | ✓ | 2,521 | 1021.7 KB | `4e01f976208de7e48074a14ba89c13ca03b4bda9aed00998071e9d78198dda8e` |
-| `jk.mega.DrussGT__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `autopilot-waves.csv` | ✓ | 6,182 | 2.8 MB | `fade8f318f162cb577ca49e4c380c24e8360d57e7f19fd8d6d3d184102e2ed8e` |
-| `jk.mega.DrussGT__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `dejavu-waves.csv` | ✓ | 2,535 | 1.3 MB | `c6df0b4a9edec36b310c0235840da6e08a9b591000832ee60a15c7817d9c0ccb` |
+| `jk.mega.DrussGT__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `ticks.csv` | ✓ | 31,174 | 5.3 MB | `d8297c175855ea9ee8e2a28bb0cd22a40f103e39d7d7a33396e31863f8459725` |
+| `jk.mega.DrussGT__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `scan.csv` | ✓ | 30,521 | 7.9 MB | `be2d6058b10399ea5ff743673799f06913de1da1e1771cf19e64f4f646838686` |
+| `jk.mega.DrussGT__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `their-waves.csv` | ✓ | 2,649 | 1.0 MB | `e25331306fa858572b075e518ab064fdd5e19557f77149716024fb17204d1185` |
+| `jk.mega.DrussGT__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `autopilot-waves.csv` | ✓ | 44 | 21.0 KB | `178ccedb74414f68d026c5e7b72f491a587e341efe635575b3024083bf4de769` |
+| `jk.mega.DrussGT__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `dejavu-waves.csv` | ✓ | 2,648 | 1.3 MB | `6e60adda15c7b6d9f571325bb0efdfad883802ea70757e44f2eba52cb9bf7163` |
 | `jk.mega.DrussGT__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `scores.csv` | ✓ | 1 | 0.1 KB | `e723f23747581dca2f81d5bf4c01c8b5eb86e86d1b2240933e689d0104dacbd9` |
-| `jk.mega.DrussGT__vs__kc.mega.BeepBoop/Perspective0-jk.mega.DrussGT` | `ticks.csv` | ✓ | 47,392 | 8.2 MB | `7d8cbccfbd02b8b2b88f3ed2a05b7fa2beb2d7361ce35a522308cef8381aca43` |
-| `jk.mega.DrussGT__vs__kc.mega.BeepBoop/Perspective0-jk.mega.DrussGT` | `scan.csv` | ✓ | 47,319 | 12.7 MB | `d04329dd87dfce02e06a90e9f671ea1b658e4731971d4d0ebd98facaeaac621d` |
-| `jk.mega.DrussGT__vs__kc.mega.BeepBoop/Perspective0-jk.mega.DrussGT` | `their-waves.csv` | ✓ | 3,962 | 1.6 MB | `2d0004659a6bc366f7698870cdfd32f24ac57ca9e9e5931ee7b34d5ff5c58431` |
-| `jk.mega.DrussGT__vs__kc.mega.BeepBoop/Perspective0-jk.mega.DrussGT` | `autopilot-waves.csv` | ✓ | 10,208 | 4.7 MB | `3ce99b38f4eebc23af23647c9940f2f6138fa5aeb9033811a67a9c16d0e55a4b` |
-| `jk.mega.DrussGT__vs__kc.mega.BeepBoop/Perspective0-jk.mega.DrussGT` | `dejavu-waves.csv` | ✓ | 4,198 | 2.1 MB | `90b08aaff880030e8d48d69309112b2b817f6c07432d5ff23044817820a7f901` |
+| `jk.mega.DrussGT__vs__kc.mega.BeepBoop/Perspective0-jk.mega.DrussGT` | `ticks.csv` | ✓ | 52,083 | 9.1 MB | `6c025f7ac7befe6859207fb2156f4f11e34f08fb249f3582198858d67f31f00a` |
+| `jk.mega.DrussGT__vs__kc.mega.BeepBoop/Perspective0-jk.mega.DrussGT` | `scan.csv` | ✓ | 52,040 | 14.0 MB | `5179672a49a2dc2a87c1d96f8feaa8ddc0d8367986d3ad66dc1c5d9af396f571` |
+| `jk.mega.DrussGT__vs__kc.mega.BeepBoop/Perspective0-jk.mega.DrussGT` | `their-waves.csv` | ✓ | 4,192 | 1.6 MB | `c137a33791cf8fe5f377b933eaa9030d13df8d5fdc947a21b445e2122cc843ce` |
+| `jk.mega.DrussGT__vs__kc.mega.BeepBoop/Perspective0-jk.mega.DrussGT` | `autopilot-waves.csv` | ✓ | 220 | 103.6 KB | `b8c2e90063af6df6a0d8ec524d6671d5e22c051731db3759cbd346065e7637a8` |
+| `jk.mega.DrussGT__vs__kc.mega.BeepBoop/Perspective0-jk.mega.DrussGT` | `dejavu-waves.csv` | ✓ | 4,640 | 2.3 MB | `a0728d7758aee6b3ffeb7df673cc91ee32c397664f9ef95f8750ab49ec7630f6` |
 | `jk.mega.DrussGT__vs__kc.mega.BeepBoop/Perspective0-jk.mega.DrussGT` | `scores.csv` | ✓ | 1 | 0.1 KB | `eb882c2e9fc7e11eb956d4f2118f3a2ae37d0dae995e036d16b2f1961684a9b7` |
-| `jk.mega.DrussGT__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `ticks.csv` | ✓ | 48,902 | 8.7 MB | `9a2a9a2ba867ff69701ca7eb209aca49cdf5e63df296178b4cec240dffa4605e` |
-| `jk.mega.DrussGT__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `scan.csv` | ✓ | 47,369 | 12.4 MB | `6bd5a08927db51a5a45ca2aef145668047bcae81a2fb65fc72aa386f3db924e6` |
-| `jk.mega.DrussGT__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `their-waves.csv` | ✓ | 3,989 | 1.6 MB | `d9b310a3bc182c1b2ebdf9a7089c6489c4497253dc1a2706873450b0154254f4` |
-| `jk.mega.DrussGT__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `autopilot-waves.csv` | ✓ | 8,393 | 3.9 MB | `013050d9894d804598ef4325a3436481b59ee3c59224154ee80c046ddbf7cae1` |
-| `jk.mega.DrussGT__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `dejavu-waves.csv` | ✓ | 4,238 | 2.0 MB | `fc7719358d6c712632028d298ea436372ace1088ee5f876b9293938e7c7fa9b1` |
+| `jk.mega.DrussGT__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `ticks.csv` | ✓ | 53,593 | 9.6 MB | `458cd3d65acb3274bcf894c7fb3ce2f97b99a62be1292d961334834eac3bd40c` |
+| `jk.mega.DrussGT__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `scan.csv` | ✓ | 52,060 | 13.7 MB | `60a758e146e45b1ad53985eac9079d8e1d8d514b59bbb2fd13fec82a32ff3c34` |
+| `jk.mega.DrussGT__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `their-waves.csv` | ✓ | 4,214 | 1.7 MB | `c4e7a3d7eeed549abb47626655042bc81c02c0d602fcb2b33a113e6674f2b0d5` |
+| `jk.mega.DrussGT__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `autopilot-waves.csv` | ✓ | 209 | 98.5 KB | `31a3e2ba7fbf4699c39654630e80109f3b48209cccd32e6de592024f832379ba` |
+| `jk.mega.DrussGT__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `dejavu-waves.csv` | ✓ | 4,654 | 2.2 MB | `9ca977d550b94b7d2b17514aa0e1cbac7c38af046b22c2c069135cfd9496b76d` |
 | `jk.mega.DrussGT__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `scores.csv` | ✓ | 1 | 0.1 KB | `25bd3023a7e2e79e18f92c7495d944d8ee89d709bb618bf2df171909adf15b89` |
-| `jk.mega.DrussGT__vs__rsalesc.mega.Knight/Perspective0-jk.mega.DrussGT` | `ticks.csv` | ✓ | 33,377 | 5.9 MB | `8e64eb4ed6b0ae98761d734d78fff8699426781928f843f5fe26274dc5e78200` |
-| `jk.mega.DrussGT__vs__rsalesc.mega.Knight/Perspective0-jk.mega.DrussGT` | `scan.csv` | ✓ | 32,838 | 8.4 MB | `af8695d1783ca4f967730cbb3093e38af58d4fe4579326321128c20d60b8e9a5` |
-| `jk.mega.DrussGT__vs__rsalesc.mega.Knight/Perspective0-jk.mega.DrussGT` | `their-waves.csv` | ✓ | 2,858 | 1.1 MB | `588f4cac361f2fae528106f409577320cbd5facecdcd0f478db56a4f034f8810` |
-| `jk.mega.DrussGT__vs__rsalesc.mega.Knight/Perspective0-jk.mega.DrussGT` | `autopilot-waves.csv` | ✓ | 7,370 | 3.4 MB | `00f3652db5da919ae60a84b8121869db3a70023d8ee66304f9c493c7fd44d21b` |
-| `jk.mega.DrussGT__vs__rsalesc.mega.Knight/Perspective0-jk.mega.DrussGT` | `dejavu-waves.csv` | ✓ | 2,873 | 1.4 MB | `13b93a6cd4114dca4e767cd2f552a2f7ac0ec68eece7b6c5bf0b3f80f141069a` |
-| `jk.mega.DrussGT__vs__rsalesc.mega.Knight/Perspective0-jk.mega.DrussGT` | `scores.csv` | ✓ | 1 | 0.1 KB | `73b338dde584262297759868f20d4d9fea5167db57952c5a15079e092534cea9` |
-| `jk.mega.DrussGT__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `ticks.csv` | ✓ | 33,981 | 5.8 MB | `8177c10574aa968c112e86ffa76b063be89d0da08b2d12c3151f3ad7b5e6a49b` |
-| `jk.mega.DrussGT__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `scan.csv` | ✓ | 32,891 | 8.7 MB | `f13c782344580ceca808f857a55804fa2d75a06b26dfd66882e3eb5fff595e03` |
-| `jk.mega.DrussGT__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `their-waves.csv` | ✓ | 2,860 | 1.1 MB | `dad9e05fa09ced2537deda63dbf05b71cac5742f1d5ff55c8b61f9d4cdf408fc` |
-| `jk.mega.DrussGT__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `autopilot-waves.csv` | ✓ | 6,567 | 3.0 MB | `24c8aa32c37bb92e0a4e679e1f0fe4b72ccc43b15e0a2dff835c03bfed21e838` |
-| `jk.mega.DrussGT__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `dejavu-waves.csv` | ✓ | 2,916 | 1.4 MB | `443934b909b0b5e2ff486da2c4f670c2986927fdb838af746e11b3fe85479999` |
-| `jk.mega.DrussGT__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `scores.csv` | ✓ | 1 | 0.1 KB | `6b01fb590600c94cae0c0290681b580e40e7f4a07eb764ee6f404da09a436997` |
-| `jk.mega.DrussGT__vs__voidious.Diamond/Perspective0-jk.mega.DrussGT` | `ticks.csv` | ✓ | 24,896 | 4.3 MB | `612500d464ef50fc37ccdd40d0dcb0d2478693ce0cb5f1d05d9e96bfcb9133d4` |
-| `jk.mega.DrussGT__vs__voidious.Diamond/Perspective0-jk.mega.DrussGT` | `scan.csv` | ✓ | 23,943 | 6.1 MB | `5bae9632543a974613b8480a089b8ac95e27b31ea046e2458bde66add68aaa1e` |
-| `jk.mega.DrussGT__vs__voidious.Diamond/Perspective0-jk.mega.DrussGT` | `their-waves.csv` | ✓ | 2,009 | 796.3 KB | `9e28c35c7f0dd8f8b845b913588e9889be56ba7f1d3d372e8727cc0445d4a927` |
-| `jk.mega.DrussGT__vs__voidious.Diamond/Perspective0-jk.mega.DrussGT` | `autopilot-waves.csv` | ✓ | 5,335 | 2.4 MB | `8a092eb10aa7e31b6d5b5c5f196c54dde5db72d2b7ad6eb3b1194cbb5cb7b59b` |
-| `jk.mega.DrussGT__vs__voidious.Diamond/Perspective0-jk.mega.DrussGT` | `dejavu-waves.csv` | ✓ | 2,062 | 1.0 MB | `f23e5528b2fdb61cff7231bd346d51a5d2d1cf945306a30350220fc67c654297` |
+| `jk.mega.DrussGT__vs__rsalesc.mega.Knight/Perspective0-jk.mega.DrussGT` | `ticks.csv` | ✓ | 31,176 | 5.5 MB | `7fa8cd0ae8951d8ecadc32539f020698700448059532e288b097f76105875b12` |
+| `jk.mega.DrussGT__vs__rsalesc.mega.Knight/Perspective0-jk.mega.DrussGT` | `scan.csv` | ✓ | 30,246 | 7.7 MB | `19884bf456dcaab5f63abc3d4dcf4f653f761067744c83d5d7a31cd03c0579b1` |
+| `jk.mega.DrussGT__vs__rsalesc.mega.Knight/Perspective0-jk.mega.DrussGT` | `their-waves.csv` | ✓ | 2,612 | 1.0 MB | `a42cea9ddb052970ea0ebcc9336b57978e3d24a0798f5a2ac555012f5162f766` |
+| `jk.mega.DrussGT__vs__rsalesc.mega.Knight/Perspective0-jk.mega.DrussGT` | `autopilot-waves.csv` | ✓ | 77 | 36.4 KB | `a06149128801f11a57901e7022d064ca0b76949892e0e57130917524ce8f0328` |
+| `jk.mega.DrussGT__vs__rsalesc.mega.Knight/Perspective0-jk.mega.DrussGT` | `dejavu-waves.csv` | ✓ | 2,637 | 1.3 MB | `39bb9ace541dbe68f439989738110820a075bf34f23210478f4aaf0a49ad17a5` |
+| `jk.mega.DrussGT__vs__rsalesc.mega.Knight/Perspective0-jk.mega.DrussGT` | `scores.csv` | ✓ | 1 | 0.1 KB | `6b01fb590600c94cae0c0290681b580e40e7f4a07eb764ee6f404da09a436997` |
+| `jk.mega.DrussGT__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `ticks.csv` | ✓ | 30,874 | 5.3 MB | `ade22c4771bcbb4ff54f6969937bce095a794a02fd86660181fffd7239fb1f2b` |
+| `jk.mega.DrussGT__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `scan.csv` | ✓ | 30,241 | 8.0 MB | `c9312cb22ad499fd512a7cbe3a04affe9a2bdc0d0ac57bc4718d3979c49380d0` |
+| `jk.mega.DrussGT__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `their-waves.csv` | ✓ | 2,618 | 1.0 MB | `0dd3835e94fcf87cbe844fc8dfd636a184cb30f6f8d86e5491c0c2a08099e308` |
+| `jk.mega.DrussGT__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `autopilot-waves.csv` | ✓ | 176 | 83.1 KB | `f7399c1c72d81ded3377ef50af841758034a7a09971bc788e818137a259b36fa` |
+| `jk.mega.DrussGT__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `dejavu-waves.csv` | ✓ | 2,652 | 1.3 MB | `dac13cf194060f7a3858d61c0f42793e29c0300f974eab4c1555f519f8bc3469` |
+| `jk.mega.DrussGT__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `scores.csv` | ✓ | 1 | 0.1 KB | `73b338dde584262297759868f20d4d9fea5167db57952c5a15079e092534cea9` |
+| `jk.mega.DrussGT__vs__voidious.Diamond/Perspective0-jk.mega.DrussGT` | `ticks.csv` | ✓ | 29,941 | 5.1 MB | `d90aa62e28090e28cd95aad7c12c51f4dcd0ef3dfe002bae4c878901723c2196` |
+| `jk.mega.DrussGT__vs__voidious.Diamond/Perspective0-jk.mega.DrussGT` | `scan.csv` | ✓ | 29,256 | 7.4 MB | `fb0f387ad692e70cbf3c063dd26131dad410871ddffa13df616300f87385a654` |
+| `jk.mega.DrussGT__vs__voidious.Diamond/Perspective0-jk.mega.DrussGT` | `their-waves.csv` | ✓ | 2,395 | 947.1 KB | `dc359ffe729f2a1c9780c9c316842e2b1c196d90c7f052a7e8637ac3598aefa6` |
+| `jk.mega.DrussGT__vs__voidious.Diamond/Perspective0-jk.mega.DrussGT` | `autopilot-waves.csv` | ✓ | 209 | 98.0 KB | `80d4d1373bb45ec6cec4d3cfdbaeaf2b652491660ea30ac6c32c448557a39726` |
+| `jk.mega.DrussGT__vs__voidious.Diamond/Perspective0-jk.mega.DrussGT` | `dejavu-waves.csv` | ✓ | 2,430 | 1.2 MB | `2c515bba91d2548fd04bd914e4f484652b7ca0d203097fbc49f60fd9ce7ac3a0` |
 | `jk.mega.DrussGT__vs__voidious.Diamond/Perspective0-jk.mega.DrussGT` | `scores.csv` | ✓ | 1 | 0.1 KB | `32c7cd65d51cbc41c64c0013f43e011e8e1fe9dc218bbb05a61e94ebcaf50b58` |
-| `jk.mega.DrussGT__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `ticks.csv` | ✓ | 24,594 | 4.1 MB | `1eebc92ea59e225aac93d64c729bb3285a36a816b963338849abb3dc6c66e617` |
-| `jk.mega.DrussGT__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `scan.csv` | ✓ | 23,958 | 6.2 MB | `efb6ab206ff29e48d6716272c99295311278567e43d42b6ddae407ece8ac3678` |
-| `jk.mega.DrussGT__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `their-waves.csv` | ✓ | 2,042 | 825.3 KB | `713acf51baa981badb9dfa0c4548b3ed56157c6691dddd210328fda0c84c0d08` |
-| `jk.mega.DrussGT__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `autopilot-waves.csv` | ✓ | 4,719 | 2.2 MB | `a777ee6a2a7d186cd102fc2eb717e75ac2d3b7c758d40dd243ce844a4211c1fe` |
-| `jk.mega.DrussGT__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `dejavu-waves.csv` | ✓ | 2,070 | 1.0 MB | `89b9d35accb09493ce1c4a8ba860271a57ff803d86eb9f8bfa71ab0379b75614` |
+| `jk.mega.DrussGT__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `ticks.csv` | ✓ | 29,790 | 5.0 MB | `a68441e7f247e6ce4cc1a15170315a9b492801f9cc07678285798da9d9487903` |
+| `jk.mega.DrussGT__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `scan.csv` | ✓ | 29,297 | 7.6 MB | `a597dbf2288e30358e02f704e6d043b0d267a0b696e2ecf23bbe33eeafb74b68` |
+| `jk.mega.DrussGT__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `their-waves.csv` | ✓ | 2,415 | 977.8 KB | `37fb20a8c84b6e243d2739e5e658b9aaed360f60817a85dc2e42f40725ee7c3c` |
+| `jk.mega.DrussGT__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `autopilot-waves.csv` | ✓ | 33 | 15.3 KB | `f4512ac55d9f852abe6895e4acdcc570aa600178d766bdc80d94b7652e9bfe42` |
+| `jk.mega.DrussGT__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `dejavu-waves.csv` | ✓ | 2,444 | 1.2 MB | `76eafac2c19d859c3ca47359176ba29b6fb7612b6f5c89705a2f06546ac2b280` |
 | `jk.mega.DrussGT__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `scores.csv` | ✓ | 1 | 0.1 KB | `e6a17901387a78c309f7143b5cbf1d6ab6d92a9c8241a15c46842f60a57d6cca` |
-| `kc.mega.BeepBoop__vs__aaa.r.ScalarR/Perspective0-kc.mega.BeepBoop` | `ticks.csv` | ✓ | 72,342 | 12.9 MB | `362af938385596f32a73fdf687f10a11c200c441f26cef5fbc4441c572b4835d` |
-| `kc.mega.BeepBoop__vs__aaa.r.ScalarR/Perspective0-kc.mega.BeepBoop` | `scan.csv` | ✓ | 71,261 | 19.1 MB | `72e259b2aeea8a99deafce51e54effd72b96d5114d2d2b19af4846b2edd45361` |
-| `kc.mega.BeepBoop__vs__aaa.r.ScalarR/Perspective0-kc.mega.BeepBoop` | `their-waves.csv` | ✓ | 4,965 | 1.9 MB | `0cdc0e947cc0e99d881288dfbd6761106ca56106140e4e159533edf824c2fdf0` |
-| `kc.mega.BeepBoop__vs__aaa.r.ScalarR/Perspective0-kc.mega.BeepBoop` | `autopilot-waves.csv` | ✓ | 15,488 | 7.1 MB | `1a08250888da9adf1ceafe6d291d2c153bc19618f564a488874156068e26b567` |
-| `kc.mega.BeepBoop__vs__aaa.r.ScalarR/Perspective0-kc.mega.BeepBoop` | `dejavu-waves.csv` | ✓ | 6,284 | 3.0 MB | `c9fbe6cb7d91f11ec2c71093c48ca3c19b989657ec7dc304dd846c22cebf7558` |
+| `kc.mega.BeepBoop__vs__aaa.r.ScalarR/Perspective0-kc.mega.BeepBoop` | `ticks.csv` | ✓ | 66,776 | 11.9 MB | `e89fa1e58369339a1599acdb85b7a97b8898170b492918de50e66f3aa49ae2ba` |
+| `kc.mega.BeepBoop__vs__aaa.r.ScalarR/Perspective0-kc.mega.BeepBoop` | `scan.csv` | ✓ | 65,400 | 17.5 MB | `38b76388f86a19d50e836566c3cada728dd9bb0b8491885fa5967a2ed685cd26` |
+| `kc.mega.BeepBoop__vs__aaa.r.ScalarR/Perspective0-kc.mega.BeepBoop` | `their-waves.csv` | ✓ | 4,782 | 1.8 MB | `674cb078215ef925175a39845a9972d8d30925f02bb9cd7b6337635f1ed20f02` |
+| `kc.mega.BeepBoop__vs__aaa.r.ScalarR/Perspective0-kc.mega.BeepBoop` | `autopilot-waves.csv` | ✓ | 33 | 15.9 KB | `d4e593e35dcf2ba80b926d73f93a6618174370aa426ea6d48abeac68a9a55a82` |
+| `kc.mega.BeepBoop__vs__aaa.r.ScalarR/Perspective0-kc.mega.BeepBoop` | `dejavu-waves.csv` | ✓ | 5,783 | 2.8 MB | `dfc847ea62c0bf5d48c968b59d0997b8311618ac602dfd46f101d0eafb9a6449` |
 | `kc.mega.BeepBoop__vs__aaa.r.ScalarR/Perspective0-kc.mega.BeepBoop` | `scores.csv` | ✓ | 1 | 0.1 KB | `7592f703ccbd2f84b5e0c5f9a0e2112026a7edc69e5e5ef5b9f26c9cb533b9f5` |
-| `kc.mega.BeepBoop__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `ticks.csv` | ✓ | 71,737 | 12.9 MB | `8abf272186d32db81c8e7997b23ac036f98a601aebf96696a6ee40917b3a0129` |
-| `kc.mega.BeepBoop__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `scan.csv` | ✓ | 71,269 | 19.1 MB | `c3c8e180eef8ac6e8739b0b3ddcee9b3cab8b665679ece1fa01853751c74169e` |
-| `kc.mega.BeepBoop__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `their-waves.csv` | ✓ | 4,957 | 1.9 MB | `99bf9be88e1d1ea1de0f125c6083c1e997a8cc467d3ef7d014c5ae2c31b85050` |
-| `kc.mega.BeepBoop__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `autopilot-waves.csv` | ✓ | 14,894 | 6.9 MB | `ded5addf5c3b481836274b58ab6a5ed1296b26d3046ce25db4f429f0492ca8ba` |
-| `kc.mega.BeepBoop__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `dejavu-waves.csv` | ✓ | 6,309 | 3.0 MB | `6394a5fa8e2f7809a62eec19c97e8f5ee44b7d6f2671e06a5cac93201351e53a` |
+| `kc.mega.BeepBoop__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `ticks.csv` | ✓ | 65,568 | 11.8 MB | `c4ee789918b9e57196078a53306c9ae1303a07085c8b708289843a675d9e8f65` |
+| `kc.mega.BeepBoop__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `scan.csv` | ✓ | 65,401 | 17.5 MB | `5c777108c086396094c7b2b4c9d8009612f26adc764cf0a1321bbcab83ff160c` |
+| `kc.mega.BeepBoop__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `their-waves.csv` | ✓ | 4,767 | 1.8 MB | `f47ae93d8f2bad20033698f094631ae8f15354bbe3e5a8070e4a861d9da22770` |
+| `kc.mega.BeepBoop__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `autopilot-waves.csv` | ✓ | 374 | 175.5 KB | `9bda872b5220b2974610659239a1a41088e7eebd5ddd63b9fc5a4f21fa5496e7` |
+| `kc.mega.BeepBoop__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `dejavu-waves.csv` | ✓ | 5,757 | 2.8 MB | `51ff6ce8d28559f4fd64e5077397576d9f36e9e459780325c257586ea7b0d1ed` |
 | `kc.mega.BeepBoop__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `scores.csv` | ✓ | 1 | 0.1 KB | `4bc654c5a5f7f134f098c2d5a7dcf20e1713419b9ae41b2aa018fccb0e9c8968` |
-| `kc.mega.BeepBoop__vs__jk.mega.DrussGT/Perspective0-kc.mega.BeepBoop` | `ticks.csv` | ✓ | 61,818 | 11.1 MB | `2b4ac15733e9ec4bf4211da9dc25bbf6f31199e4d64339ad6549f113bd5c1e7b` |
-| `kc.mega.BeepBoop__vs__jk.mega.DrussGT/Perspective0-kc.mega.BeepBoop` | `scan.csv` | ✓ | 60,287 | 15.8 MB | `d04310907ae3f4e7d910745755de187d15066eda4d014aab9ade2d7dc1021b54` |
-| `kc.mega.BeepBoop__vs__jk.mega.DrussGT/Perspective0-kc.mega.BeepBoop` | `their-waves.csv` | ✓ | 4,723 | 1.9 MB | `78172715ccd97e0c94f2807271ab8219afd073bf76675ff14d4029c1be46e941` |
-| `kc.mega.BeepBoop__vs__jk.mega.DrussGT/Perspective0-kc.mega.BeepBoop` | `autopilot-waves.csv` | ✓ | 11,396 | 5.3 MB | `91b1084adec4c9c7d30fb0a92990da3495ed91aeaa2cb1d057316c2c91a3a768` |
-| `kc.mega.BeepBoop__vs__jk.mega.DrussGT/Perspective0-kc.mega.BeepBoop` | `dejavu-waves.csv` | ✓ | 5,398 | 2.6 MB | `d7862bd813986a3893894d45d57fa0d31aa136b5fdd032ef72a6401d391b47b7` |
+| `kc.mega.BeepBoop__vs__jk.mega.DrussGT/Perspective0-kc.mega.BeepBoop` | `ticks.csv` | ✓ | 48,999 | 8.8 MB | `0d2e2a4179f9c7ad8bcdfe5dcff23103db3bd0e27275ab8318eea978497ff4ed` |
+| `kc.mega.BeepBoop__vs__jk.mega.DrussGT/Perspective0-kc.mega.BeepBoop` | `scan.csv` | ✓ | 47,472 | 12.5 MB | `65aa90d1512607d564c59b9bf71e98503d3ab0b19a01ad177e0959a6cd5ffaf0` |
+| `kc.mega.BeepBoop__vs__jk.mega.DrussGT/Perspective0-kc.mega.BeepBoop` | `their-waves.csv` | ✓ | 3,991 | 1.6 MB | `ae4cfd54440991b7df97a3763330fe767d23e2fceb96773d300ec30807df2193` |
+| `kc.mega.BeepBoop__vs__jk.mega.DrussGT/Perspective0-kc.mega.BeepBoop` | `autopilot-waves.csv` | ✓ | 176 | 81.1 KB | `0adca33fbb7cdec4bc09376a2fe2de6bd8d8c0762509be99d48d9aae9b97fead` |
+| `kc.mega.BeepBoop__vs__jk.mega.DrussGT/Perspective0-kc.mega.BeepBoop` | `dejavu-waves.csv` | ✓ | 4,231 | 2.0 MB | `05d5d4dce0fea232e456db068fbffdc3af8cb70557a76785c8a2023c73b211b1` |
 | `kc.mega.BeepBoop__vs__jk.mega.DrussGT/Perspective0-kc.mega.BeepBoop` | `scores.csv` | ✓ | 1 | 0.1 KB | `59d38ddb465c5b8c080c9e02442b9269f6f5ca140add21b4b275d84e93f9d530` |
-| `kc.mega.BeepBoop__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `ticks.csv` | ✓ | 60,308 | 10.5 MB | `1b7ac1cf4fc9f233498f9dd356a713e801e8f6942316ee8e0e1bd09c6682cfd7` |
-| `kc.mega.BeepBoop__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `scan.csv` | ✓ | 60,236 | 16.2 MB | `0fb93084d2d28e61a7778bb69c60ece89768ded502fd3afd2f1c360eb05413e3` |
-| `kc.mega.BeepBoop__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `their-waves.csv` | ✓ | 4,709 | 1.8 MB | `97274a66acd979922ccb29d3d1bd13d2d0ddc02057aa105f8d52efbd1578bbc6` |
-| `kc.mega.BeepBoop__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `autopilot-waves.csv` | ✓ | 12,166 | 5.6 MB | `3fc9dbc6497501e8dc6dd395484eb93c4a458be8c1e31649e4e2b35fcde66573` |
-| `kc.mega.BeepBoop__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `dejavu-waves.csv` | ✓ | 5,417 | 2.7 MB | `88fdeb6161ea3fe8a62894942b98a540e46082608d889ada131fd379133337c4` |
+| `kc.mega.BeepBoop__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `ticks.csv` | ✓ | 47,489 | 8.3 MB | `8394c6322f9934ee92c3474c41382e47e490177026368c861e5eb340763cda67` |
+| `kc.mega.BeepBoop__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `scan.csv` | ✓ | 47,449 | 12.8 MB | `5415822640d8b5bb7d3bbf39ad7935d0721a1c55f33f20d0f3f0cfd33dbb2411` |
+| `kc.mega.BeepBoop__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `their-waves.csv` | ✓ | 3,953 | 1.5 MB | `dcc0b097b7793eaa67a7e53cad01eb97f294ebbd3b62af3b811b1074e27f9758` |
+| `kc.mega.BeepBoop__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `autopilot-waves.csv` | ✓ | 297 | 139.5 KB | `fb458cfb746198cdcc2f895505a515d5de1b953b65c12fa557dbf9d467277a2a` |
+| `kc.mega.BeepBoop__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `dejavu-waves.csv` | ✓ | 4,234 | 2.1 MB | `c2d86b23cc31167b3971c7b38c67b4538b8ebd8717996b0910a2ed6e7772a43d` |
 | `kc.mega.BeepBoop__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `scores.csv` | ✓ | 1 | 0.1 KB | `41f49a3e63050d5adb0b8793e9198f290a09336cc8f269bc657401370e146253` |
-| `kc.mega.BeepBoop__vs__kc.mega.BeepBoop/Perspective0-kc.mega.BeepBoop` | `ticks.csv` | ✓ | 67,177 | 12.2 MB | `5939d1e2c42f3f4caa73fb7cdad514bea03da18e6f6caff38911ebc501644751` |
-| `kc.mega.BeepBoop__vs__kc.mega.BeepBoop/Perspective0-kc.mega.BeepBoop` | `scan.csv` | ✓ | 66,406 | 18.1 MB | `bdebc32e53619d12acd79acdd721b88614304a535682d3e911478f3f9b72d9a4` |
-| `kc.mega.BeepBoop__vs__kc.mega.BeepBoop/Perspective0-kc.mega.BeepBoop` | `their-waves.csv` | ✓ | 4,873 | 1.9 MB | `179932cd6bd9532f2d31be03242c4a004153dbbe5e82f60be13d016670d0cbee` |
-| `kc.mega.BeepBoop__vs__kc.mega.BeepBoop/Perspective0-kc.mega.BeepBoop` | `autopilot-waves.csv` | ✓ | 13,937 | 6.5 MB | `0099ab044e2b134bd6e55cd4c041a0ceb3da640d78f97f823e13866fde33c26f` |
-| `kc.mega.BeepBoop__vs__kc.mega.BeepBoop/Perspective0-kc.mega.BeepBoop` | `dejavu-waves.csv` | ✓ | 5,897 | 2.9 MB | `bae286b9bc72eb608a2612dc5aaa1835bc9d642cf6cd440a5f3ddc098c874f05` |
+| `kc.mega.BeepBoop__vs__kc.mega.BeepBoop/Perspective0-kc.mega.BeepBoop` | `ticks.csv` | ✓ | 62,715 | 11.4 MB | `11c4d4270cf4df1cf1f8972dc8324515423a5c736423ea20f31a8e1b13fe5321` |
+| `kc.mega.BeepBoop__vs__kc.mega.BeepBoop/Perspective0-kc.mega.BeepBoop` | `scan.csv` | ✓ | 62,087 | 16.9 MB | `d488bb4e40b838c60055c4019a69c18cc0a81cbb26ef22a87ac9687a8a1b435f` |
+| `kc.mega.BeepBoop__vs__kc.mega.BeepBoop/Perspective0-kc.mega.BeepBoop` | `their-waves.csv` | ✓ | 4,670 | 1.8 MB | `bb6befba89542f19ba774231b3343682b2fb22214f2a83100c94e0c812f2f96c` |
+| `kc.mega.BeepBoop__vs__kc.mega.BeepBoop/Perspective0-kc.mega.BeepBoop` | `autopilot-waves.csv` | ✓ | 209 | 98.9 KB | `6d62861cf43586a452dbab72f34f942eedabee0b86fadeefb9fbb8b361dfeef3` |
+| `kc.mega.BeepBoop__vs__kc.mega.BeepBoop/Perspective0-kc.mega.BeepBoop` | `dejavu-waves.csv` | ✓ | 5,544 | 2.7 MB | `7c6ed12b5b645169a834e3e47b510a82f0d61b4daa2cfcea8e5becae4053be16` |
 | `kc.mega.BeepBoop__vs__kc.mega.BeepBoop/Perspective0-kc.mega.BeepBoop` | `scores.csv` | ✓ | 1 | 0.1 KB | `06592fe2ec52471d24dfc672dbaf8bd43ba6f77d864ce4631507c09545860f05` |
-| `kc.mega.BeepBoop__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `ticks.csv` | ✓ | 67,177 | 12.2 MB | `390427a36c515d641076e3539b205fd509dc6251fed4ae2d53671ee6957e56f2` |
-| `kc.mega.BeepBoop__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `scan.csv` | ✓ | 66,398 | 18.1 MB | `01120cce9bcb6f4482b35dc4fd24bfb1046ff3cea1e49fbac71628c807b23617` |
-| `kc.mega.BeepBoop__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `their-waves.csv` | ✓ | 4,884 | 1.9 MB | `5fab79cc76f7f2fd41e5dd80a497cffc140a9d3a1fcc2bfe01e4ca88e5610259` |
-| `kc.mega.BeepBoop__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `autopilot-waves.csv` | ✓ | 13,750 | 6.4 MB | `ddf59ee5bd658917f33da48f8498d17d381e7447c58cdce4dd1be2408658c85c` |
-| `kc.mega.BeepBoop__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `dejavu-waves.csv` | ✓ | 5,888 | 2.8 MB | `fef3be8abd0564656cbb227dbebde8063a3dea0a021d50355bafdbf4dfcfc7ac` |
+| `kc.mega.BeepBoop__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `ticks.csv` | ✓ | 62,863 | 11.5 MB | `4607de18efa957478e31c3b9f0a0e513650ffa7bee7e9420519292715c7d3310` |
+| `kc.mega.BeepBoop__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `scan.csv` | ✓ | 62,087 | 16.9 MB | `d0e8ef7463c4c43aeca7c09feabc2415f6f54d6245b019be590a05cb769f7304` |
+| `kc.mega.BeepBoop__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `their-waves.csv` | ✓ | 4,675 | 1.8 MB | `4662b325bac3e5d4265602ec7444765485adf032c28e9f6e3009721f9c28cb9b` |
+| `kc.mega.BeepBoop__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `autopilot-waves.csv` | ✓ | 253 | 118.8 KB | `35e281182c92b61a3298a8d41f7cf6d50c382e9c87e07b3c4da19a55460cab41` |
+| `kc.mega.BeepBoop__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `dejavu-waves.csv` | ✓ | 5,517 | 2.7 MB | `747554d15cf4342fd7ab4d80f31508e279223e96e28f5152677243d84b94ec58` |
 | `kc.mega.BeepBoop__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `scores.csv` | ✓ | 1 | 0.1 KB | `bb0d6838b6e03afea25bb884fc3cb36c700d32da53cea0d99fe8d3da47700e06` |
-| `kc.mega.BeepBoop__vs__rsalesc.mega.Knight/Perspective0-kc.mega.BeepBoop` | `ticks.csv` | ✓ | 58,952 | 10.7 MB | `160e526fd0afd713491f1274383e99b45a1fe650cc2900cf9398db63ca56764a` |
-| `kc.mega.BeepBoop__vs__rsalesc.mega.Knight/Perspective0-kc.mega.BeepBoop` | `scan.csv` | ✓ | 57,420 | 14.8 MB | `8e69defc4de9fdcc35844de8326f01a0b1e4a03f7bf4837d6881caab2d6a8746` |
-| `kc.mega.BeepBoop__vs__rsalesc.mega.Knight/Perspective0-kc.mega.BeepBoop` | `their-waves.csv` | ✓ | 4,810 | 1.9 MB | `5b7bca4081697f7a1f0e96501e78e67a06e6eb4f2f15c146389908ea193b9dd0` |
-| `kc.mega.BeepBoop__vs__rsalesc.mega.Knight/Perspective0-kc.mega.BeepBoop` | `autopilot-waves.csv` | ✓ | 11,385 | 5.2 MB | `0778a92d923042dbd60b9993f561c929885027a724feb6ec41ef5462dcd4c50a` |
-| `kc.mega.BeepBoop__vs__rsalesc.mega.Knight/Perspective0-kc.mega.BeepBoop` | `dejavu-waves.csv` | ✓ | 5,143 | 2.5 MB | `5e2f69094a6d1dc57c4f07b7b1a91800b4713a7d6beaaa0de5832cf2bb263f2e` |
+| `kc.mega.BeepBoop__vs__rsalesc.mega.Knight/Perspective0-kc.mega.BeepBoop` | `ticks.csv` | ✓ | 63,828 | 11.6 MB | `b4069c49c5021dcb165b964627824c91da23fae9f4157e669ca0ecd96b14c4b2` |
+| `kc.mega.BeepBoop__vs__rsalesc.mega.Knight/Perspective0-kc.mega.BeepBoop` | `scan.csv` | ✓ | 62,285 | 16.0 MB | `146e2859fb46288d266363c3caafe058faba600ceb5c6f16b13d6370fed985b3` |
+| `kc.mega.BeepBoop__vs__rsalesc.mega.Knight/Perspective0-kc.mega.BeepBoop` | `their-waves.csv` | ✓ | 5,086 | 2.0 MB | `6fefcebd5e26f26583aa58178d30455b3924d1f7f00a19829556a26b2fcde122` |
+| `kc.mega.BeepBoop__vs__rsalesc.mega.Knight/Perspective0-kc.mega.BeepBoop` | `autopilot-waves.csv` | ✓ | 209 | 98.9 KB | `af7e759d8535f1a507adac4cca509e1183fef88956f307476a464969df9938f8` |
+| `kc.mega.BeepBoop__vs__rsalesc.mega.Knight/Perspective0-kc.mega.BeepBoop` | `dejavu-waves.csv` | ✓ | 5,588 | 2.7 MB | `53e83fc0fd70d82e5a1fa705658d9b56dbf6d1eceb1056918692494a4862c4fb` |
 | `kc.mega.BeepBoop__vs__rsalesc.mega.Knight/Perspective0-kc.mega.BeepBoop` | `scores.csv` | ✓ | 1 | 0.1 KB | `a8a4c38d8a6cc72a368e5ea5cf9dc27747a042eb9aaba52a67389954036e0e68` |
-| `kc.mega.BeepBoop__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `ticks.csv` | ✓ | 57,442 | 9.9 MB | `124a8bc8a655a1c7d61d367e4bc9ec5f6b68c5b991a78057e6fd0f83e1b8a115` |
-| `kc.mega.BeepBoop__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `scan.csv` | ✓ | 57,392 | 15.6 MB | `364e51ee88b0225ee73c50382804d3c813d882a376223464bc386f3a6f22a345` |
-| `kc.mega.BeepBoop__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `their-waves.csv` | ✓ | 4,787 | 1.9 MB | `e8fa65ce3df949da05a9a64e0d861a2c93cde6ce311fb71582ef1d17375af81f` |
-| `kc.mega.BeepBoop__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `autopilot-waves.csv` | ✓ | 11,308 | 5.3 MB | `44200ef2479b38adb9d771e72ab420aee9e39cc26b2dc1b1317ea1f759f6ee70` |
-| `kc.mega.BeepBoop__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `dejavu-waves.csv` | ✓ | 5,149 | 2.5 MB | `a8c8716fae2eee1d2e65bad616359e24e862470c6ffef964b873cbba1de5917c` |
+| `kc.mega.BeepBoop__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `ticks.csv` | ✓ | 62,318 | 10.7 MB | `155b1cb396f4a374c0767866ad74c7e37b5d4ce6a431d038d845e80960f38376` |
+| `kc.mega.BeepBoop__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `scan.csv` | ✓ | 62,242 | 16.9 MB | `99526d5a1ec7aca9aa94760a02ffac557b76e669ab52b18a3f373b263ba4c091` |
+| `kc.mega.BeepBoop__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `their-waves.csv` | ✓ | 5,087 | 2.0 MB | `7bb09c9276cd925de9cc53c01cadc5a25853e129df8ccd47737c8ae97a6764c5` |
+| `kc.mega.BeepBoop__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `autopilot-waves.csv` | ✓ | 121 | 57.8 KB | `d3e10d6162a635fd0476da04595c35e00db38f27412d1c9bf674c146d21b0135` |
+| `kc.mega.BeepBoop__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `dejavu-waves.csv` | ✓ | 5,556 | 2.7 MB | `9b78cb58630d4324bb35b63647f1c195f5989b9857c4c66fc02013dbdf94c620` |
 | `kc.mega.BeepBoop__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `scores.csv` | ✓ | 1 | 0.1 KB | `f282a03932ec6ce19bed06618a47e5386fff45bc76446d94058855a16c76bf72` |
-| `kc.mega.BeepBoop__vs__voidious.Diamond/Perspective0-kc.mega.BeepBoop` | `ticks.csv` | ✓ | 30,128 | 5.4 MB | `ff1770296e451297a02e7c529231f95689637e7f85955ebcfdaff5acbbb4570c` |
-| `kc.mega.BeepBoop__vs__voidious.Diamond/Perspective0-kc.mega.BeepBoop` | `scan.csv` | ✓ | 28,594 | 7.3 MB | `a57eae2f9c51eb5f713fbfbc0c56bc231d9d25bb4cf2d4d13247095202ce511e` |
-| `kc.mega.BeepBoop__vs__voidious.Diamond/Perspective0-kc.mega.BeepBoop` | `their-waves.csv` | ✓ | 2,471 | 982.3 KB | `b3bcb1494a9124f7c173a3a7025227a8db4bfbe6a0d8bc9fa7e3c22140a34a32` |
-| `kc.mega.BeepBoop__vs__voidious.Diamond/Perspective0-kc.mega.BeepBoop` | `autopilot-waves.csv` | ✓ | 6,259 | 2.9 MB | `5dfc6c92d5dacc0bbc4390f3ab8888a7e2cd28af2706ba4ab959c3b89d628864` |
-| `kc.mega.BeepBoop__vs__voidious.Diamond/Perspective0-kc.mega.BeepBoop` | `dejavu-waves.csv` | ✓ | 2,526 | 1.2 MB | `da669caf02217505135689d257027098666b66bcc089f0c78e4e01e7db5700d1` |
+| `kc.mega.BeepBoop__vs__voidious.Diamond/Perspective0-kc.mega.BeepBoop` | `ticks.csv` | ✓ | 29,422 | 5.3 MB | `4dbeb95e0f7f932de0dc7abdd83cfb1e44e12b73f08ff9e1307c1af4378ab11a` |
+| `kc.mega.BeepBoop__vs__voidious.Diamond/Perspective0-kc.mega.BeepBoop` | `scan.csv` | ✓ | 28,047 | 7.1 MB | `141426e44a70603f5c438508fc144bb376c25b769faa74c5552bba9f488cb9e2` |
+| `kc.mega.BeepBoop__vs__voidious.Diamond/Perspective0-kc.mega.BeepBoop` | `their-waves.csv` | ✓ | 2,366 | 941.6 KB | `2851531934c96809caa8863cf6e72886d3a269c9fa51e205ae50059e4ca9d506` |
+| `kc.mega.BeepBoop__vs__voidious.Diamond/Perspective0-kc.mega.BeepBoop` | `autopilot-waves.csv` | ✓ | 198 | 92.6 KB | `17023ea496c7399b705e670bae034d517ed3a749c11b907e022cdd7f1446c902` |
+| `kc.mega.BeepBoop__vs__voidious.Diamond/Perspective0-kc.mega.BeepBoop` | `dejavu-waves.csv` | ✓ | 2,419 | 1.2 MB | `3b2f92dd1556dc481982ddb06d1e987efdd78b6075758daed05ab11d3c55420e` |
 | `kc.mega.BeepBoop__vs__voidious.Diamond/Perspective0-kc.mega.BeepBoop` | `scores.csv` | ✓ | 1 | 0.1 KB | `fc46cb2191f3cab033c039e6c759c26c716f8c2de124d6e21740e57e614cfd69` |
-| `kc.mega.BeepBoop__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `ticks.csv` | ✓ | 28,618 | 4.8 MB | `855379cfc2684f6b8e20d64ba5ef38a0c45e1d0e87efd2d7e009be4d1082f21b` |
-| `kc.mega.BeepBoop__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `scan.csv` | ✓ | 28,583 | 7.8 MB | `8f755350fa0d4acb1112604d63f79e14a526f4ff195136d14d3d13f742656d28` |
-| `kc.mega.BeepBoop__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `their-waves.csv` | ✓ | 2,465 | 993.3 KB | `e549fabfe1726cf4abf540a66a68b6eaf38d6c9fcbf5bdad6b0d17dd1bc12505` |
-| `kc.mega.BeepBoop__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `autopilot-waves.csv` | ✓ | 5,687 | 2.6 MB | `327fcae55221c18cfaf76a8bad3f16b60c4bcdba94f928e75b4500f1857c4063` |
-| `kc.mega.BeepBoop__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `dejavu-waves.csv` | ✓ | 2,481 | 1.2 MB | `bdb43742eb6fcc9e3adaa8d5e2aba4b22d56ab54cfc33b59c5ecef7e5f0f738f` |
+| `kc.mega.BeepBoop__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `ticks.csv` | ✓ | 28,063 | 4.7 MB | `6956f8c91d8be6b01cac0e7666647bf41b2a14a071aeedf19b749ea3c71241bd` |
+| `kc.mega.BeepBoop__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `scan.csv` | ✓ | 28,039 | 7.6 MB | `c5e9aa7a23a2d2a20385ed49b6d655837b91a26ac5982ffa32aee35ccad0d2fb` |
+| `kc.mega.BeepBoop__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `their-waves.csv` | ✓ | 2,365 | 949.4 KB | `89bccf63f4442db0a52eeb2c8ba4cd53f71014064dca8437c23c71e06e68d499` |
+| `kc.mega.BeepBoop__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `autopilot-waves.csv` | ✓ | 176 | 82.9 KB | `eea0476783e63a60c7c9c2c497df4a4039cdbc8cfb2f0fd056922ecdc2f3ac9b` |
+| `kc.mega.BeepBoop__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `dejavu-waves.csv` | ✓ | 2,376 | 1.2 MB | `e0320413e044e7b17bad312c5817700093024f4280c6c77efb796dbd064cb92e` |
 | `kc.mega.BeepBoop__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `scores.csv` | ✓ | 1 | 0.1 KB | `e771f0ebb636401210126a3304c3965b3febc150b7fa1f35d1296ee9e5d63af6` |
-| `rsalesc.mega.Knight__vs__aaa.r.ScalarR/Perspective0-rsalesc.mega.Knight` | `ticks.csv` | ✓ | 53,333 | 9.0 MB | `808a94f509a996c99abbf7e257038edf3cac610f74b24ad49bc1bda91dad5c7a` |
-| `rsalesc.mega.Knight__vs__aaa.r.ScalarR/Perspective0-rsalesc.mega.Knight` | `scan.csv` | ✓ | 53,288 | 14.5 MB | `65c9c502d5aa890d8424ae9e7f4203f28a92cd3c9332ad1dabe8fdeb5bf6f261` |
-| `rsalesc.mega.Knight__vs__aaa.r.ScalarR/Perspective0-rsalesc.mega.Knight` | `their-waves.csv` | ✓ | 4,217 | 1.6 MB | `0457ca578e383184ee4d0f6c4ba0c07d4a15c81e1795df8d21d614a1d3a17144` |
-| `rsalesc.mega.Knight__vs__aaa.r.ScalarR/Perspective0-rsalesc.mega.Knight` | `autopilot-waves.csv` | ✓ | 11,759 | 5.5 MB | `99bb304df1e887a45130e096166ab2ffbb122f973018f2163b52b91e7f340185` |
-| `rsalesc.mega.Knight__vs__aaa.r.ScalarR/Perspective0-rsalesc.mega.Knight` | `dejavu-waves.csv` | ✓ | 4,694 | 2.3 MB | `527f91453e3fa109505ec5b4f20e947c550c1cbad72509d3449616582f19ddfc` |
+| `rsalesc.mega.Knight__vs__aaa.r.ScalarR/Perspective0-rsalesc.mega.Knight` | `ticks.csv` | ✓ | 59,262 | 10.0 MB | `4a914f85cad4a29bf7e0d48dd61a42a7729b468af51754f6510d9c01b2014bed` |
+| `rsalesc.mega.Knight__vs__aaa.r.ScalarR/Perspective0-rsalesc.mega.Knight` | `scan.csv` | ✓ | 59,227 | 16.0 MB | `34b0220f09d478287621b2bae12f1600464b3d4f6ecf8d93a0f365bbd2876f94` |
+| `rsalesc.mega.Knight__vs__aaa.r.ScalarR/Perspective0-rsalesc.mega.Knight` | `their-waves.csv` | ✓ | 4,614 | 1.8 MB | `d64f132723a1958eb9a3d7268a1a5a3771cddc3f9ad9b37a998f3f90596fc13a` |
+| `rsalesc.mega.Knight__vs__aaa.r.ScalarR/Perspective0-rsalesc.mega.Knight` | `autopilot-waves.csv` | ✓ | 198 | 93.7 KB | `47b2b15d965bac9a2d68519a3a5e77229d93884be168625509b2a795bfbaf05b` |
+| `rsalesc.mega.Knight__vs__aaa.r.ScalarR/Perspective0-rsalesc.mega.Knight` | `dejavu-waves.csv` | ✓ | 5,240 | 2.5 MB | `50716a6cedacd5f76fb1980a1717f5e41b1034bb55f30a98b30b45f9a8450a8e` |
 | `rsalesc.mega.Knight__vs__aaa.r.ScalarR/Perspective0-rsalesc.mega.Knight` | `scores.csv` | ✓ | 1 | 0.1 KB | `24e7fa4075b426159e825306aca7aae789eb18b3fc296c162814bf975f192112` |
-| `rsalesc.mega.Knight__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `ticks.csv` | ✓ | 54,843 | 10.0 MB | `d6ed1a7df2636ec29b2d0aa192e38e8c3329752381cc2cb3897eef5038f44a12` |
-| `rsalesc.mega.Knight__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `scan.csv` | ✓ | 53,306 | 13.6 MB | `d1e6cde92fb470e4f0ec0d71ec5b513f8d06a431a2ba45d7b55f4ab37baa3889` |
-| `rsalesc.mega.Knight__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `their-waves.csv` | ✓ | 4,209 | 1.7 MB | `4d4636195a18e7da135090113c551e5099a15237f43d6d62d597b8f44ddaf3c1` |
-| `rsalesc.mega.Knight__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `autopilot-waves.csv` | ✓ | 10,263 | 4.7 MB | `a4d6a772d1cfd65f2c34bc792318926287797b23cca4b5596f1daae3fa9fbc95` |
-| `rsalesc.mega.Knight__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `dejavu-waves.csv` | ✓ | 4,749 | 2.3 MB | `51c622e283c311fe46b2343bfa3449cc671646d7a7035c17c008d60d67aa9ea1` |
+| `rsalesc.mega.Knight__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `ticks.csv` | ✓ | 60,772 | 11.1 MB | `48548a1971e1d22bca72ad44cadffced321b0619a10a23aa0095377b143e23e5` |
+| `rsalesc.mega.Knight__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `scan.csv` | ✓ | 59,250 | 15.1 MB | `00897183cd919c7ead8db64ec89ee74b6a9325d5fe9ad5a515a6f8a2daeedb6c` |
+| `rsalesc.mega.Knight__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `their-waves.csv` | ✓ | 4,586 | 1.8 MB | `56ce8350ce989b5a05f9ef407a7255294b6eb3f3eac8531b5b521bedd4677913` |
+| `rsalesc.mega.Knight__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `autopilot-waves.csv` | ✓ | 176 | 82.8 KB | `fe60e08916e53de1efdd5076bcca4cdf2d08a2daefdeaf937310e9d4f03cb536` |
+| `rsalesc.mega.Knight__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `dejavu-waves.csv` | ✓ | 5,304 | 2.5 MB | `ad5c4b4ee627f73f177b6276f725a5d258fcec23b5d5c2a1a37928594c7ffa5b` |
 | `rsalesc.mega.Knight__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `scores.csv` | ✓ | 1 | 0.1 KB | `d2460a9379563c5e1b5dc0c3396da7c9bd3dad79bab7def9a285239f5b86b529` |
-| `rsalesc.mega.Knight__vs__jk.mega.DrussGT/Perspective0-rsalesc.mega.Knight` | `ticks.csv` | ✓ | 29,391 | 5.0 MB | `1635868b05d3b0fde250147662c8d9bbef00d2d46dcfefe0060230f0bb4e3350` |
-| `rsalesc.mega.Knight__vs__jk.mega.DrussGT/Perspective0-rsalesc.mega.Knight` | `scan.csv` | ✓ | 28,747 | 7.6 MB | `a8c69e7445f71150a43237b575ebb53eb5e8b00cd4cfded3298308a1db4f57a9` |
-| `rsalesc.mega.Knight__vs__jk.mega.DrussGT/Perspective0-rsalesc.mega.Knight` | `their-waves.csv` | ✓ | 2,465 | 1003.0 KB | `61fcbff441deef90167f0af22dfa279c4278088b101993e37b1b20dd5ecb6402` |
-| `rsalesc.mega.Knight__vs__jk.mega.DrussGT/Perspective0-rsalesc.mega.Knight` | `autopilot-waves.csv` | ✓ | 5,687 | 2.6 MB | `6611cb6450fad5d72321492ba86ca14eb2ec7c833a551b3fd4ed0ca38a924393` |
-| `rsalesc.mega.Knight__vs__jk.mega.DrussGT/Perspective0-rsalesc.mega.Knight` | `dejavu-waves.csv` | ✓ | 2,508 | 1.2 MB | `eeb188f663186d2c2a7d19805c51832c0bb7d2e637bf8f0abab7a90422287b0b` |
-| `rsalesc.mega.Knight__vs__jk.mega.DrussGT/Perspective0-rsalesc.mega.Knight` | `scores.csv` | ✓ | 1 | 0.1 KB | `671572bcc2bcb13145e4a3ab70f3a09d9c6bad57603a89093a1e47be4ae4e17e` |
-| `rsalesc.mega.Knight__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `ticks.csv` | ✓ | 29,693 | 5.2 MB | `47c86c98f9666e16f7053e13883106dc8cfc60d5a2052602206d6906ce8ce9d7` |
-| `rsalesc.mega.Knight__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `scan.csv` | ✓ | 28,719 | 7.3 MB | `1539c5a548c07fec25fd19abe438359797b98f67eb06e1389d25407c9fb93031` |
-| `rsalesc.mega.Knight__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `their-waves.csv` | ✓ | 2,447 | 998.9 KB | `de2765f07befeb701e2f8f1709e1479017885775874a30c7b89851447f8706f4` |
-| `rsalesc.mega.Knight__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `autopilot-waves.csv` | ✓ | 6,523 | 3.0 MB | `ba836e4e1cfcf7ee5675b7a9a51555ce75bc0f2b78d5a3833075df8eafb91812` |
-| `rsalesc.mega.Knight__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `dejavu-waves.csv` | ✓ | 2,483 | 1.2 MB | `16e772513198744b6dd531855abb6dffe7462b757c02711c06f4625dd1e8db22` |
-| `rsalesc.mega.Knight__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `scores.csv` | ✓ | 1 | 0.1 KB | `e5959dd9a696290bb7364d71ede566e5037e91d5deeddae4e1f76b2d4b0e35fe` |
-| `rsalesc.mega.Knight__vs__kc.mega.BeepBoop/Perspective0-rsalesc.mega.Knight` | `ticks.csv` | ✓ | 58,849 | 10.1 MB | `7991c6ed09be06d9fcec55761f33b59067edc12c6aaec17249fd4f17d2f7ca87` |
-| `rsalesc.mega.Knight__vs__kc.mega.BeepBoop/Perspective0-rsalesc.mega.Knight` | `scan.csv` | ✓ | 58,805 | 16.0 MB | `ae0ce3dc78ba968b506dd1f532e7f45cb48e7c9de3b4bee3893afdd201be9722` |
-| `rsalesc.mega.Knight__vs__kc.mega.BeepBoop/Perspective0-rsalesc.mega.Knight` | `their-waves.csv` | ✓ | 4,755 | 1.9 MB | `d27c48086b885a8d2a7e7438998cad37c6c63ef93aa45e00c8112a42dc5ed9b9` |
-| `rsalesc.mega.Knight__vs__kc.mega.BeepBoop/Perspective0-rsalesc.mega.Knight` | `autopilot-waves.csv` | ✓ | 12,947 | 6.0 MB | `6b198444235ccdcbc9072e955ce9cf33cd59b6df882fb58b1090e794306e216c` |
-| `rsalesc.mega.Knight__vs__kc.mega.BeepBoop/Perspective0-rsalesc.mega.Knight` | `dejavu-waves.csv` | ✓ | 5,256 | 2.6 MB | `99877038a9e8607426b0558ab83edaa3c5b70f8f96f54c5703be16b6eb69e919` |
+| `rsalesc.mega.Knight__vs__jk.mega.DrussGT/Perspective0-rsalesc.mega.Knight` | `ticks.csv` | ✓ | 30,649 | 5.2 MB | `10abd7dc1e2a42b8191fd606b79f95f829cd6fa02e1c369edc82bbddf6802c78` |
+| `rsalesc.mega.Knight__vs__jk.mega.DrussGT/Perspective0-rsalesc.mega.Knight` | `scan.csv` | ✓ | 29,709 | 7.8 MB | `3dfcff48038dd87e87947473cb3d9fc87ce4a726b15c884c7e69e7fef6df71e7` |
+| `rsalesc.mega.Knight__vs__jk.mega.DrussGT/Perspective0-rsalesc.mega.Knight` | `their-waves.csv` | ✓ | 2,571 | 1.0 MB | `998f9fc554884d3772d8ee23f895a3281b64f89026b4fbef42f22e0dd5d37636` |
+| `rsalesc.mega.Knight__vs__jk.mega.DrussGT/Perspective0-rsalesc.mega.Knight` | `autopilot-waves.csv` | ✓ | 165 | 77.8 KB | `4e603638502a085e70032e59a6de3255ac5dea3bd470facb8b7e7f9eb3dfc36e` |
+| `rsalesc.mega.Knight__vs__jk.mega.DrussGT/Perspective0-rsalesc.mega.Knight` | `dejavu-waves.csv` | ✓ | 2,611 | 1.3 MB | `b59e1af936f39132b1ebdefe97665d0c9357dba7d50097445a7b25b9fe0169f5` |
+| `rsalesc.mega.Knight__vs__jk.mega.DrussGT/Perspective0-rsalesc.mega.Knight` | `scores.csv` | ✓ | 1 | 0.1 KB | `e5959dd9a696290bb7364d71ede566e5037e91d5deeddae4e1f76b2d4b0e35fe` |
+| `rsalesc.mega.Knight__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `ticks.csv` | ✓ | 30,347 | 5.3 MB | `f263e38fcea2162f7c43b96bf3f4c3e9eed0f4eb8baf52501a1a352dcfcf2fa8` |
+| `rsalesc.mega.Knight__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `scan.csv` | ✓ | 29,691 | 7.6 MB | `627ea30526d561d5d35facdc63f679aa9a51a3ffe39b971ab7b58dedfc6c78a0` |
+| `rsalesc.mega.Knight__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `their-waves.csv` | ✓ | 2,558 | 1.0 MB | `f297a160ba12da983239a4f059881d5b1dc78aa90b1f115f6e96dce928512f7b` |
+| `rsalesc.mega.Knight__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `autopilot-waves.csv` | ✓ | 110 | 52.1 KB | `cd03b4c286e93a125d92b4c1e828941da82fbdd0c4af3aabe03fc74b21c95237` |
+| `rsalesc.mega.Knight__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `dejavu-waves.csv` | ✓ | 2,589 | 1.3 MB | `665d2ab28a44ff49be8133eee227807780bada5fdd586b6147fcc85426da5285` |
+| `rsalesc.mega.Knight__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `scores.csv` | ✓ | 1 | 0.1 KB | `671572bcc2bcb13145e4a3ab70f3a09d9c6bad57603a89093a1e47be4ae4e17e` |
+| `rsalesc.mega.Knight__vs__kc.mega.BeepBoop/Perspective0-rsalesc.mega.Knight` | `ticks.csv` | ✓ | 55,887 | 9.6 MB | `82ab975eba15e97cdd2878adfd414ede3203068c4259b3c513a54c0d49fc06a3` |
+| `rsalesc.mega.Knight__vs__kc.mega.BeepBoop/Perspective0-rsalesc.mega.Knight` | `scan.csv` | ✓ | 55,840 | 15.3 MB | `fb9147ae05a1ba2c3e9de07e1345c99d69a9e5093ec01eec2d9f449e915886ed` |
+| `rsalesc.mega.Knight__vs__kc.mega.BeepBoop/Perspective0-rsalesc.mega.Knight` | `their-waves.csv` | ✓ | 4,663 | 1.8 MB | `f4eb8c0311fb3564b883f9e5c7daa579a2aa5313454833f26e5da4db0a56f5c5` |
+| `rsalesc.mega.Knight__vs__kc.mega.BeepBoop/Perspective0-rsalesc.mega.Knight` | `autopilot-waves.csv` | ✓ | 253 | 121.0 KB | `b66ca0604d7b1a51796e8deaaa59bb4c2e201b23e10b239171e4b71640658fa3` |
+| `rsalesc.mega.Knight__vs__kc.mega.BeepBoop/Perspective0-rsalesc.mega.Knight` | `dejavu-waves.csv` | ✓ | 4,987 | 2.4 MB | `c713e5668c28d22f1e95a9b56c7db0e17c3eca05e3ff8bca74fff092b99cd7a1` |
 | `rsalesc.mega.Knight__vs__kc.mega.BeepBoop/Perspective0-rsalesc.mega.Knight` | `scores.csv` | ✓ | 1 | 0.1 KB | `a73edb0195b6929cdaf1080c179e05feae9deddc8433a6dc210f58493fd4bab8` |
-| `rsalesc.mega.Knight__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `ticks.csv` | ✓ | 60,359 | 11.0 MB | `48428a15bdd2ab48fec87c630922bf8ab8265ed28b6a2583c1414687fc28d041` |
-| `rsalesc.mega.Knight__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `scan.csv` | ✓ | 58,836 | 15.1 MB | `b3d7145ed18c2d350e602815ce3faedc9c8bccc3df572a8f69056778c929b031` |
-| `rsalesc.mega.Knight__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `their-waves.csv` | ✓ | 4,775 | 1.9 MB | `ee0e1629b57349954ef72d3a7fbbdbbda81cac65af5610d98355d3680f8d665c` |
-| `rsalesc.mega.Knight__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `autopilot-waves.csv` | ✓ | 12,232 | 5.6 MB | `e04bbd28545bc4e271e04b577d391da6efa134f3b5d261946c7aeeca317c7ffe` |
-| `rsalesc.mega.Knight__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `dejavu-waves.csv` | ✓ | 5,271 | 2.5 MB | `40bd81ba56ac184fb3a61083a20f573f47261fa39d2345fe80b5c0217e2bebbc` |
+| `rsalesc.mega.Knight__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `ticks.csv` | ✓ | 57,397 | 10.5 MB | `9dee629307fecd30b163d56dd2b4f3917231ff3e81709062744ad721028d8816` |
+| `rsalesc.mega.Knight__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `scan.csv` | ✓ | 55,875 | 14.4 MB | `7f888838c24a7df06063e0d39fed8f5007756542d60bb4fa381a2424d9ed3dbd` |
+| `rsalesc.mega.Knight__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `their-waves.csv` | ✓ | 4,672 | 1.9 MB | `95965e306a9e279150781ff530607c4250f20c33d72b8b4cb463f34c83cc3fc1` |
+| `rsalesc.mega.Knight__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `autopilot-waves.csv` | ✓ | 242 | 113.8 KB | `21d8dafed322b55ee7d5e5b3e67044330f8cb84e1935a6c2c69f4d0bfc94c4ea` |
+| `rsalesc.mega.Knight__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `dejavu-waves.csv` | ✓ | 5,020 | 2.4 MB | `99d2da505e05bf130ca1db5eebc72b6d218a732199c401cc6ece786098d4d184` |
 | `rsalesc.mega.Knight__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `scores.csv` | ✓ | 1 | 0.1 KB | `6a336f81cafa544ec30bedf0adff2ad12dbb554f7eb303a0bbf1379764c3070c` |
-| `rsalesc.mega.Knight__vs__rsalesc.mega.Knight/Perspective0-rsalesc.mega.Knight` | `ticks.csv` | ✓ | 62,333 | 10.9 MB | `99a5a8d11a8fa630f336a60209e505a5990fddc4cac8cfed5e728d9ad5b85dc8` |
-| `rsalesc.mega.Knight__vs__rsalesc.mega.Knight/Perspective0-rsalesc.mega.Knight` | `scan.csv` | ✓ | 61,403 | 16.0 MB | `5bf48c2203182043228bbe687dcba783a66fab8024219bb9146d59a5b15b5b31` |
-| `rsalesc.mega.Knight__vs__rsalesc.mega.Knight/Perspective0-rsalesc.mega.Knight` | `their-waves.csv` | ✓ | 5,111 | 2.1 MB | `9cb7c443cd7fb815ea5e43d52b56bc3cca9213e6dd6813ec6fbae771effe7166` |
-| `rsalesc.mega.Knight__vs__rsalesc.mega.Knight/Perspective0-rsalesc.mega.Knight` | `autopilot-waves.csv` | ✓ | 14,641 | 6.8 MB | `37249e11a08f39df23c7ec754da9c648d5e81257593d6478ccff492af5cea714` |
-| `rsalesc.mega.Knight__vs__rsalesc.mega.Knight/Perspective0-rsalesc.mega.Knight` | `dejavu-waves.csv` | ✓ | 5,484 | 2.7 MB | `3331579d048075d923804371447ca696c5bfe2ba6dcf96b118ba54e169f13517` |
-| `rsalesc.mega.Knight__vs__rsalesc.mega.Knight/Perspective0-rsalesc.mega.Knight` | `scores.csv` | ✓ | 1 | 0.1 KB | `14b0c22204436353359190e3378a5736e0ffd3895ba1bf167922b0e3b925be4c` |
-| `rsalesc.mega.Knight__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `ticks.csv` | ✓ | 62,031 | 10.9 MB | `66286fd0502dfcde9592ad9ecfbf5e466c817b88da571265d34950feca763789` |
-| `rsalesc.mega.Knight__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `scan.csv` | ✓ | 61,391 | 16.0 MB | `266c72a3fb75e03ff42e9749e8093c2aae21974f82d3e3679abdb3a29af50258` |
-| `rsalesc.mega.Knight__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `their-waves.csv` | ✓ | 5,094 | 2.1 MB | `1dbf256df74e21e3e6f6c58f0aa1a0e916995d8e35f7554ad1f8b72253a3e5f8` |
-| `rsalesc.mega.Knight__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `autopilot-waves.csv` | ✓ | 13,805 | 6.4 MB | `461af766f8b63034583514825d121981facca6a03967db2af20f2366c2120c49` |
-| `rsalesc.mega.Knight__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `dejavu-waves.csv` | ✓ | 5,515 | 2.7 MB | `d65c04448448d79a7eb7dc571cfa3a3407e727be2634955f680ffeca94c2fe16` |
-| `rsalesc.mega.Knight__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `scores.csv` | ✓ | 1 | 0.1 KB | `c804295ba68336d09263a42f6931ccd166cb184c833f0869add19688e50aca26` |
-| `rsalesc.mega.Knight__vs__voidious.Diamond/Perspective0-rsalesc.mega.Knight` | `ticks.csv` | ✓ | 29,483 | 5.0 MB | `448c7c8b460b0e525f84976a96dc501eb4c3e46319bfbb3d49a4f8749f04139f` |
-| `rsalesc.mega.Knight__vs__voidious.Diamond/Perspective0-rsalesc.mega.Knight` | `scan.csv` | ✓ | 28,691 | 7.4 MB | `f7d5e51fe03ef4cfbc146dc667906aaf2aa120402e0a70af797c07267bf785ce` |
-| `rsalesc.mega.Knight__vs__voidious.Diamond/Perspective0-rsalesc.mega.Knight` | `their-waves.csv` | ✓ | 2,477 | 986.9 KB | `6be00ce24de02c87b7b5bc097b0e80009abb501738c0759c9dca1b00e0c9e443` |
-| `rsalesc.mega.Knight__vs__voidious.Diamond/Perspective0-rsalesc.mega.Knight` | `autopilot-waves.csv` | ✓ | 5,698 | 2.6 MB | `ab86ef06ec617a5ac6d8b51d56d5f7353409a80ec0356da33e55aa13a8e6da21` |
-| `rsalesc.mega.Knight__vs__voidious.Diamond/Perspective0-rsalesc.mega.Knight` | `dejavu-waves.csv` | ✓ | 2,488 | 1.2 MB | `4a580fbb12905f260ee1e656a88bee33e3b6a55728c4a42320f24b62e575d4b3` |
-| `rsalesc.mega.Knight__vs__voidious.Diamond/Perspective0-rsalesc.mega.Knight` | `scores.csv` | ✓ | 1 | 0.1 KB | `55ef64077856b4901edf7e7fe8a047ae8ff909a6fdd684522d86ffb01c5b3744` |
-| `rsalesc.mega.Knight__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `ticks.csv` | ✓ | 29,483 | 5.1 MB | `f0ccca456fa85bcf744fbc3c33eac9ebf9517d872febaef684e540cb585c28ab` |
-| `rsalesc.mega.Knight__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `scan.csv` | ✓ | 28,696 | 7.4 MB | `2ec83e8657958fa6155abacf56817e496c4b6beb7f8a36d08bbb7037356db029` |
-| `rsalesc.mega.Knight__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `their-waves.csv` | ✓ | 2,448 | 1000.0 KB | `8323ce28fab149a6a6d08dc1ff41642d13d0ed759430435b41a8e8ba523ddf8b` |
-| `rsalesc.mega.Knight__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `autopilot-waves.csv` | ✓ | 4,983 | 2.3 MB | `6dafcfbebc4fc4188822e85fce2e7692ac0d6ebb4b35e53035d1d5669473f7ec` |
-| `rsalesc.mega.Knight__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `dejavu-waves.csv` | ✓ | 2,550 | 1.2 MB | `0a662619f100c5ecc82e3ed2916e7cff808dc70442bbc3b6b30a0ffa1fd88402` |
-| `rsalesc.mega.Knight__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `scores.csv` | ✓ | 1 | 0.1 KB | `47398fb33a29a44fb10ea1173a5f3d3bb891c55e7f0be952ddb603d75edb9fdb` |
-| `voidious.Diamond__vs__aaa.r.ScalarR/Perspective0-voidious.Diamond` | `ticks.csv` | ✓ | 24,898 | 4.1 MB | `dc1c8aea33aa6d75427241ff3d8871255afc94976541e82135edc254cdb9a351` |
-| `voidious.Diamond__vs__aaa.r.ScalarR/Perspective0-voidious.Diamond` | `scan.csv` | ✓ | 24,557 | 6.6 MB | `cd057864eff525f3a09c7e883aea85a175b84f5074ddbd18e610e60d5297eaac` |
-| `voidious.Diamond__vs__aaa.r.ScalarR/Perspective0-voidious.Diamond` | `their-waves.csv` | ✓ | 2,057 | 820.7 KB | `81878823594445f507904b5c3b7638d33088093a8d7bd7e0398b9e0a54f9068a` |
-| `voidious.Diamond__vs__aaa.r.ScalarR/Perspective0-voidious.Diamond` | `autopilot-waves.csv` | ✓ | 4,752 | 2.2 MB | `bd5431a4ffe16da5906e90631ac761d8b1cc149a80fb10f584d3797c89040cf2` |
-| `voidious.Diamond__vs__aaa.r.ScalarR/Perspective0-voidious.Diamond` | `dejavu-waves.csv` | ✓ | 2,132 | 1.0 MB | `5439a464477b160dbaff824651cdde5daf1cd93a241d00b27fc25cb79ffb62f0` |
+| `rsalesc.mega.Knight__vs__rsalesc.mega.Knight/Perspective0-rsalesc.mega.Knight` | `ticks.csv` | ✓ | 64,483 | 11.3 MB | `78af2b01ad2024f2d8c88b4b655131defc4a3560e940653d4df79bad7bd8da3a` |
+| `rsalesc.mega.Knight__vs__rsalesc.mega.Knight/Perspective0-rsalesc.mega.Knight` | `scan.csv` | ✓ | 63,626 | 16.6 MB | `103d4412f08313dc2b1b862d54cbd6cc54fa81f515e739569f41f6fe7003f6ac` |
+| `rsalesc.mega.Knight__vs__rsalesc.mega.Knight/Perspective0-rsalesc.mega.Knight` | `their-waves.csv` | ✓ | 5,043 | 2.0 MB | `e32b5a78b20c1e94b79aa28712c1f61e9bbb144c116604604d28601f93e06d8a` |
+| `rsalesc.mega.Knight__vs__rsalesc.mega.Knight/Perspective0-rsalesc.mega.Knight` | `autopilot-waves.csv` | ✓ | 176 | 84.5 KB | `bb2c3e605858fcf20f6fd98407a98a652c2af14be9f8d4767cfa9440e60cbedc` |
+| `rsalesc.mega.Knight__vs__rsalesc.mega.Knight/Perspective0-rsalesc.mega.Knight` | `dejavu-waves.csv` | ✓ | 5,687 | 2.7 MB | `6fc4a371eafbe2479a6d550047ca3d5191d7a61503fa44bb4090b0c361611fe9` |
+| `rsalesc.mega.Knight__vs__rsalesc.mega.Knight/Perspective0-rsalesc.mega.Knight` | `scores.csv` | ✓ | 1 | 0.1 KB | `c804295ba68336d09263a42f6931ccd166cb184c833f0869add19688e50aca26` |
+| `rsalesc.mega.Knight__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `ticks.csv` | ✓ | 64,483 | 11.3 MB | `314cd0a75ff9619f22abfac2434396ad51527e8ffa45739e29f562084547feed` |
+| `rsalesc.mega.Knight__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `scan.csv` | ✓ | 63,628 | 16.6 MB | `2d68f5edb853505d29fc074dc40380e40c2343437869fbd1f77a2d538255f4d6` |
+| `rsalesc.mega.Knight__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `their-waves.csv` | ✓ | 5,043 | 2.0 MB | `44e1bf054e00d61b60ec1495d61405dc88f67cc1242bec2f248f640c78561cc1` |
+| `rsalesc.mega.Knight__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `autopilot-waves.csv` | ✓ | 165 | 78.8 KB | `ec52cbcd620b1ae26b679d7a633ad31592a75c547ebf271eb85c9f7cd00e0e9c` |
+| `rsalesc.mega.Knight__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `dejavu-waves.csv` | ✓ | 5,704 | 2.8 MB | `8d93d7ac548474d46a7f3f8fdfd7d9b4872b9449cb8b562714a3bc8fe836e9ff` |
+| `rsalesc.mega.Knight__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `scores.csv` | ✓ | 1 | 0.1 KB | `14b0c22204436353359190e3378a5736e0ffd3895ba1bf167922b0e3b925be4c` |
+| `rsalesc.mega.Knight__vs__voidious.Diamond/Perspective0-rsalesc.mega.Knight` | `ticks.csv` | ✓ | 26,281 | 4.5 MB | `5ba6e257cc2ecf180c015c52cdc04c6714bfeaa1bec980fd2111749c6be22500` |
+| `rsalesc.mega.Knight__vs__voidious.Diamond/Perspective0-rsalesc.mega.Knight` | `scan.csv` | ✓ | 25,493 | 6.6 MB | `0d912a72b55d7cbf0c0497b94ca50161f6c81630bac9e7aa049b5402eaaa5545` |
+| `rsalesc.mega.Knight__vs__voidious.Diamond/Perspective0-rsalesc.mega.Knight` | `their-waves.csv` | ✓ | 2,154 | 858.7 KB | `d56e30f68a9d9af16ecbabbe076cfb5d451ea5ac129085b9e930e7a1bf6db526` |
+| `rsalesc.mega.Knight__vs__voidious.Diamond/Perspective0-rsalesc.mega.Knight` | `autopilot-waves.csv` | ✓ | 77 | 36.7 KB | `aea8231c0853200393577fb5a684b9d835efff059e3cd155e401adf07b80c82a` |
+| `rsalesc.mega.Knight__vs__voidious.Diamond/Perspective0-rsalesc.mega.Knight` | `dejavu-waves.csv` | ✓ | 2,249 | 1.1 MB | `1a1bdc386f7d99bbbbcf49546f4ed5487f8d2494621f4e986551bf9463e56ad8` |
+| `rsalesc.mega.Knight__vs__voidious.Diamond/Perspective0-rsalesc.mega.Knight` | `scores.csv` | ✓ | 1 | 0.1 KB | `47398fb33a29a44fb10ea1173a5f3d3bb891c55e7f0be952ddb603d75edb9fdb` |
+| `rsalesc.mega.Knight__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `ticks.csv` | ✓ | 26,282 | 4.5 MB | `33256670c668562da1395386d8bea0e54bc3e04a5738630fed7646cce0831ed0` |
+| `rsalesc.mega.Knight__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `scan.csv` | ✓ | 25,505 | 6.6 MB | `3332d4b85e522bf2d3832f11382377429eb4e3a7e844bf8603ff887ebc1ca079` |
+| `rsalesc.mega.Knight__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `their-waves.csv` | ✓ | 2,176 | 886.3 KB | `104db449f51b204157e8aa463aa4c01f0cfe857555c109fc4b98088441c28779` |
+| `rsalesc.mega.Knight__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `autopilot-waves.csv` | ✓ | 88 | 41.5 KB | `a56d1159a6755179fec8e27a725852b692c136c67f1ad3187867dc98ec121e3f` |
+| `rsalesc.mega.Knight__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `dejavu-waves.csv` | ✓ | 2,225 | 1.1 MB | `032f970d96080720297f1d6261f61e2049f716d992d106ca63507ce055301b3b` |
+| `rsalesc.mega.Knight__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `scores.csv` | ✓ | 1 | 0.1 KB | `55ef64077856b4901edf7e7fe8a047ae8ff909a6fdd684522d86ffb01c5b3744` |
+| `voidious.Diamond__vs__aaa.r.ScalarR/Perspective0-voidious.Diamond` | `ticks.csv` | ✓ | 30,837 | 5.1 MB | `ef4a1ea0539741d9b7b528c5987d358bebcd86e6b04049f6cafffcbb065dcbe1` |
+| `voidious.Diamond__vs__aaa.r.ScalarR/Perspective0-voidious.Diamond` | `scan.csv` | ✓ | 30,668 | 8.2 MB | `ea304943eb91722d3f3e859c1fd2bfad722f927ac83ca533f0f0f4d7bd081bd9` |
+| `voidious.Diamond__vs__aaa.r.ScalarR/Perspective0-voidious.Diamond` | `their-waves.csv` | ✓ | 2,589 | 1.0 MB | `66d1174470298a702e8d1657255e10c15253ff4dca31c4d72ae5cd77da5c05d8` |
+| `voidious.Diamond__vs__aaa.r.ScalarR/Perspective0-voidious.Diamond` | `autopilot-waves.csv` | ✓ | 143 | 67.0 KB | `8d754d70cc104d54b07c54daab54e6e0732e85d1179013bfbbd1300dce863252` |
+| `voidious.Diamond__vs__aaa.r.ScalarR/Perspective0-voidious.Diamond` | `dejavu-waves.csv` | ✓ | 2,628 | 1.3 MB | `9ddcad0e9102097952517deaa3de2ec377c4b9cbccafa037093269cdf919dd3c` |
 | `voidious.Diamond__vs__aaa.r.ScalarR/Perspective0-voidious.Diamond` | `scores.csv` | ✓ | 1 | 0.1 KB | `11e4c5a13ee311dced6bcb59b3bd4f4e913eae06b3f2a49803d2d94c302b1c7e` |
-| `voidious.Diamond__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `ticks.csv` | ✓ | 25,804 | 4.6 MB | `b0bee4cd2c99d83fd3c897f355b60d90bad2b1890cf0ed4c659342779d43fae3` |
-| `voidious.Diamond__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `scan.csv` | ✓ | 24,579 | 6.2 MB | `8b1c238936a4d0060add5c12cac8a847a655a14faec11f54901dec29cb34adc8` |
-| `voidious.Diamond__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `their-waves.csv` | ✓ | 2,100 | 829.0 KB | `908bfdce7ccde80385cb5d67853dd8c34c9292ce748507ff1af327d7a1671f83` |
-| `voidious.Diamond__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `autopilot-waves.csv` | ✓ | 4,807 | 2.2 MB | `d0604216e5c41c5c1fde361ac79c1d6db6facfa1d1d11846ff7c11011bdb0205` |
-| `voidious.Diamond__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `dejavu-waves.csv` | ✓ | 2,078 | 1011.3 KB | `eb1d6c834d6190e469c6edf688c8c546ab0748764e6b183d10ef6bbe382a036e` |
+| `voidious.Diamond__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `ticks.csv` | ✓ | 32,045 | 5.7 MB | `d02f27909256e3761c899b7066cff69d9c0f7c9f0be4593623f29b1152cc176b` |
+| `voidious.Diamond__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `scan.csv` | ✓ | 30,656 | 7.7 MB | `d435416740670ba66ea9a0d4e6d8e5a88e1c91c028ae166c75f20e92eeaa79a1` |
+| `voidious.Diamond__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `their-waves.csv` | ✓ | 2,605 | 1.0 MB | `482c61c7d197f7f7368faea84c7a4970960bd7e9814ca69bca24adc94ec580bb` |
+| `voidious.Diamond__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `autopilot-waves.csv` | ✓ | 44 | 20.6 KB | `8ad1a937f686137d72ffe1df2566be2f95d4e55d522ce2ecb69cf53c5c6c9d2f` |
+| `voidious.Diamond__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `dejavu-waves.csv` | ✓ | 2,605 | 1.2 MB | `72dfff6f2e2e8357aaaac993359697cd2635ff8bfc54d5410280f419e0e04a23` |
 | `voidious.Diamond__vs__aaa.r.ScalarR/Perspective1-aaa.r.ScalarR` | `scores.csv` | ✓ | 1 | 0.1 KB | `9b91d63517e314c301ab3b90ad910d23c096ecd3ce5407c2c5526a304267835f` |
-| `voidious.Diamond__vs__jk.mega.DrussGT/Perspective0-voidious.Diamond` | `ticks.csv` | ✓ | 25,801 | 4.3 MB | `5ab99fb6c0432b38794e63125c424d010a003e9b46de3c7e24cbffde57c6f4e3` |
-| `voidious.Diamond__vs__jk.mega.DrussGT/Perspective0-voidious.Diamond` | `scan.csv` | ✓ | 25,608 | 6.7 MB | `6335eedc67b04911cf5ec8968e689e0a3711c63d65c995f84c067f6bda7ec81f` |
-| `voidious.Diamond__vs__jk.mega.DrussGT/Perspective0-voidious.Diamond` | `their-waves.csv` | ✓ | 2,175 | 879.7 KB | `ecfdabc3fee7d0f64855fc9e534e43bf7895fb874cba8986e916bdb6a57934ea` |
-| `voidious.Diamond__vs__jk.mega.DrussGT/Perspective0-voidious.Diamond` | `autopilot-waves.csv` | ✓ | 4,510 | 2.1 MB | `8214b9be1e060f9a388a2e82b3912eda2ece6c185d05819751f97da19a8455a3` |
-| `voidious.Diamond__vs__jk.mega.DrussGT/Perspective0-voidious.Diamond` | `dejavu-waves.csv` | ✓ | 2,191 | 1.1 MB | `f05415eddc18000957fc47983be61df50f12a69408ef7d3ccee543988d92d34a` |
+| `voidious.Diamond__vs__jk.mega.DrussGT/Perspective0-voidious.Diamond` | `ticks.csv` | ✓ | 29,410 | 4.9 MB | `f24df8aed737275510de2cb0c4cf37f6cc1ce013b4b77ef591cfbb6b44ff7c32` |
+| `voidious.Diamond__vs__jk.mega.DrussGT/Perspective0-voidious.Diamond` | `scan.csv` | ✓ | 29,082 | 7.5 MB | `8ba8fb2c0884f90e291b2a55d2f1b48b9d301ecf7cc3ffdf39bca772b44b5c52` |
+| `voidious.Diamond__vs__jk.mega.DrussGT/Perspective0-voidious.Diamond` | `their-waves.csv` | ✓ | 2,509 | 1012.0 KB | `ca03d23e152926417968c9870189af76f70789832abb730c65b564cf4f1695df` |
+| `voidious.Diamond__vs__jk.mega.DrussGT/Perspective0-voidious.Diamond` | `autopilot-waves.csv` | ✓ | 154 | 68.2 KB | `1f2efacb9047d5adb5894fc4df6b9a17a1dcbcf31803505c209af48081ba3f98` |
+| `voidious.Diamond__vs__jk.mega.DrussGT/Perspective0-voidious.Diamond` | `dejavu-waves.csv` | ✓ | 2,515 | 1.2 MB | `dc7b41b82cdae8e19b8523db9a82af0e076d3f1f12ce9f2ca2589eca39396a38` |
 | `voidious.Diamond__vs__jk.mega.DrussGT/Perspective0-voidious.Diamond` | `scores.csv` | ✓ | 1 | 0.1 KB | `05b7cb95a8262e65598c2c77f1b944af9ce2f0d07f4c38e5193bef8181be96fd` |
-| `voidious.Diamond__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `ticks.csv` | ✓ | 26,858 | 4.6 MB | `31e82cb4f77f7dc5e3f62afc2bf38d87cd4e6638efa3c4c59a0c980cabdf2965` |
-| `voidious.Diamond__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `scan.csv` | ✓ | 25,576 | 6.5 MB | `c476a915b79f0eb8b831c8061d23bf6bfb038993a262c719095a326bfaafd68b` |
-| `voidious.Diamond__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `their-waves.csv` | ✓ | 2,171 | 858.2 KB | `377ca3a9d196105f4b172fec2fd1867e87f5cebee77048416d8da7ea93557d9a` |
-| `voidious.Diamond__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `autopilot-waves.csv` | ✓ | 4,730 | 2.2 MB | `35d4042d29f2b74218615b77f6284b6706a5321771173bb2386e348524d65c4f` |
-| `voidious.Diamond__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `dejavu-waves.csv` | ✓ | 2,198 | 1.1 MB | `11f675360532b6f8e2ccea9b92fd78a283d23f18dc6b42af865025fa4ff8455f` |
+| `voidious.Diamond__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `ticks.csv` | ✓ | 30,316 | 5.2 MB | `f79f398f354119b042e20c2013d1b1c00cce804fb9a330a28e8ce9fc5e6d17f0` |
+| `voidious.Diamond__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `scan.csv` | ✓ | 29,077 | 7.4 MB | `a6fe0378019ca39ab029857d33a41d7f9b126b13502d6160b778d1d7a3d5b34b` |
+| `voidious.Diamond__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `their-waves.csv` | ✓ | 2,482 | 974.1 KB | `c020e7f22e5704775d1803fc6504db8552f566329c992a1d32277004596ddb61` |
+| `voidious.Diamond__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `autopilot-waves.csv` | ✓ | 121 | 56.3 KB | `3d04fcb25617dddd9d84fc4dff54b0685150bb39535d847b02db77f0aa85136a` |
+| `voidious.Diamond__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `dejavu-waves.csv` | ✓ | 2,533 | 1.2 MB | `10d2a04953b6193209d592327bde3ad09939ba9ea858f624808e604354ac6dc5` |
 | `voidious.Diamond__vs__jk.mega.DrussGT/Perspective1-jk.mega.DrussGT` | `scores.csv` | ✓ | 1 | 0.1 KB | `b90a6bdbd7d3fb5e74a8dd97f93fdda6a7f7d191efaae38acd5fd5bf1e2103c4` |
-| `voidious.Diamond__vs__kc.mega.BeepBoop/Perspective0-voidious.Diamond` | `ticks.csv` | ✓ | 29,654 | 5.0 MB | `8292e551a9a3a606394c0135e5d257830ff1169c20ff26737ab5e92b55e4355e` |
-| `voidious.Diamond__vs__kc.mega.BeepBoop/Perspective0-voidious.Diamond` | `scan.csv` | ✓ | 29,635 | 8.0 MB | `39094043a7dc9038dbc88da30664b66be45749821529f2d20b42c14e1864c6d4` |
-| `voidious.Diamond__vs__kc.mega.BeepBoop/Perspective0-voidious.Diamond` | `their-waves.csv` | ✓ | 2,555 | 1023.3 KB | `592ecee4ca5bcd3f8c37fb51e4efad2e87400301c90a3c5519dea58bffd6c4bd` |
-| `voidious.Diamond__vs__kc.mega.BeepBoop/Perspective0-voidious.Diamond` | `autopilot-waves.csv` | ✓ | 5,951 | 2.8 MB | `0776b6673c5d94c2fd5cbdf9b7559628134f685757627dca7e8f4af4e0f08e79` |
-| `voidious.Diamond__vs__kc.mega.BeepBoop/Perspective0-voidious.Diamond` | `dejavu-waves.csv` | ✓ | 2,565 | 1.3 MB | `652db7f95342198bcb967a7724e861c8ea2f2d5719ffde4069cd40e59ad5225a` |
+| `voidious.Diamond__vs__kc.mega.BeepBoop/Perspective0-voidious.Diamond` | `ticks.csv` | ✓ | 29,335 | 4.9 MB | `661defb1ea02b06476e556128f7bd1164b6e52549f70bc15297345b740159e9c` |
+| `voidious.Diamond__vs__kc.mega.BeepBoop/Perspective0-voidious.Diamond` | `scan.csv` | ✓ | 29,316 | 7.9 MB | `6804558e3d45386b115441f4cca30c9f827d95cc58e0a6631f1fa3ef781a6412` |
+| `voidious.Diamond__vs__kc.mega.BeepBoop/Perspective0-voidious.Diamond` | `their-waves.csv` | ✓ | 2,529 | 1015.5 KB | `2146f3c2108da66ee958ff402a6b76aeffd6ec9ce82f52b73734ff18a6fb7442` |
+| `voidious.Diamond__vs__kc.mega.BeepBoop/Perspective0-voidious.Diamond` | `autopilot-waves.csv` | ✓ | 99 | 47.3 KB | `85772af7a7b134d8c884e67e02d4d5afbe5e56b127dd37ce2259a5f0188a4f22` |
+| `voidious.Diamond__vs__kc.mega.BeepBoop/Perspective0-voidious.Diamond` | `dejavu-waves.csv` | ✓ | 2,542 | 1.2 MB | `01c9a3f00b9c2ee0b74c5361ec284f52ff017f0dc4753d9b40daa274b3f6d6ff` |
 | `voidious.Diamond__vs__kc.mega.BeepBoop/Perspective0-voidious.Diamond` | `scores.csv` | ✓ | 1 | 0.1 KB | `1a2c881777eceb4ce9f764a1545c2e2c7d47866c74a1b1c654ea0f4226cc73eb` |
-| `voidious.Diamond__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `ticks.csv` | ✓ | 31,164 | 5.6 MB | `32a8d73f0d874f7595ae8d2e1cabaa0cf737763b49f57caf445c067e79d23b41` |
-| `voidious.Diamond__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `scan.csv` | ✓ | 29,622 | 7.5 MB | `2f3b2e13de343dce686b8b3e1e3898458a2a1218a0557f86cd6d32189840c9e5` |
-| `voidious.Diamond__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `their-waves.csv` | ✓ | 2,555 | 1017.3 KB | `0d383818351d941f5c1bcd3d8beacc0a328ed8509d6268b5ca2923d9dbd1fe2a` |
-| `voidious.Diamond__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `autopilot-waves.csv` | ✓ | 5,841 | 2.7 MB | `261c9af6198564e2734ac2c9f5eb572aa48ea95cb905a9969454f76b4b6afa99` |
-| `voidious.Diamond__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `dejavu-waves.csv` | ✓ | 2,618 | 1.3 MB | `1944bd832156e877da3af22826e745e7dac4a3bfaf180770ed300349c3dbeee9` |
+| `voidious.Diamond__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `ticks.csv` | ✓ | 30,845 | 5.6 MB | `add2924a6e5828c978e8f1bcee0988a4e2f65af3b60ff6becb82e42d8de1e8b4` |
+| `voidious.Diamond__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `scan.csv` | ✓ | 29,324 | 7.4 MB | `1b722e13ecc9ddaf945ca89a1b90159c282e18d6bd3111ad100ecaa70b98c371` |
+| `voidious.Diamond__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `their-waves.csv` | ✓ | 2,532 | 1006.6 KB | `ef983467be1b2081bbfe6af9f6b1924d7d41e1aa0fb83595285bbb2fd07ae3a9` |
+| `voidious.Diamond__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `autopilot-waves.csv` | ✓ | 99 | 45.8 KB | `7149f3138f17dfd5c75457727d3c48b09c755d4d0711852ab5ebf1f0134ea232` |
+| `voidious.Diamond__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `dejavu-waves.csv` | ✓ | 2,589 | 1.2 MB | `d7bc42bc7c62ec370ecb2e178f6de751fcff870e911718ae68674ba9802b3f64` |
 | `voidious.Diamond__vs__kc.mega.BeepBoop/Perspective1-kc.mega.BeepBoop` | `scores.csv` | ✓ | 1 | 0.1 KB | `24d635d522c1bcb82d97bfb500037b71ce4d5b4ae6f8c227c568f1a366afd0d2` |
-| `voidious.Diamond__vs__rsalesc.mega.Knight/Perspective0-voidious.Diamond` | `ticks.csv` | ✓ | 26,030 | 4.5 MB | `7cd94fb30b3de9048f46f4d6c492d80cab666c076518e1a902eece5180412cb5` |
-| `voidious.Diamond__vs__rsalesc.mega.Knight/Perspective0-voidious.Diamond` | `scan.csv` | ✓ | 25,263 | 6.5 MB | `7fd403699b26b38a7664641d78831aea1069681840a5af67c50ab19aa9445720` |
-| `voidious.Diamond__vs__rsalesc.mega.Knight/Perspective0-voidious.Diamond` | `their-waves.csv` | ✓ | 2,148 | 876.5 KB | `ae2d32ba297961b2fb055b839fa3c053246d61c232e50693c30e3d651564dafa` |
-| `voidious.Diamond__vs__rsalesc.mega.Knight/Perspective0-voidious.Diamond` | `autopilot-waves.csv` | ✓ | 5,280 | 2.4 MB | `93f7fa7c09863e06421fb4749b361c37eb270538c358edec47b577c60fbb05d9` |
-| `voidious.Diamond__vs__rsalesc.mega.Knight/Perspective0-voidious.Diamond` | `dejavu-waves.csv` | ✓ | 2,195 | 1.1 MB | `b736353ab7e372bb8ced9e17f65e1f21c8d0235b577b827ed07487d309bc7691` |
+| `voidious.Diamond__vs__rsalesc.mega.Knight/Perspective0-voidious.Diamond` | `ticks.csv` | ✓ | 26,393 | 4.5 MB | `724f5c12861b4a0159c5969ffd47061b04f89e4a817afe6983ccc9b1063d1a6d` |
+| `voidious.Diamond__vs__rsalesc.mega.Knight/Perspective0-voidious.Diamond` | `scan.csv` | ✓ | 25,612 | 6.6 MB | `664aa7c5efb8d1019b5930c11ee865adbed1c1dfbcb4cbf0ef670569718b3c24` |
+| `voidious.Diamond__vs__rsalesc.mega.Knight/Perspective0-voidious.Diamond` | `their-waves.csv` | ✓ | 2,198 | 896.6 KB | `c89f38865a59821495da038e74b5587c6cda754388f082b5e4d936c2746e91fd` |
+| `voidious.Diamond__vs__rsalesc.mega.Knight/Perspective0-voidious.Diamond` | `autopilot-waves.csv` | ✓ | 33 | 16.1 KB | `5258eee78ca1ad4c20ae2259dc006145a74c9aafdd655c20ef8085810fbbf89e` |
+| `voidious.Diamond__vs__rsalesc.mega.Knight/Perspective0-voidious.Diamond` | `dejavu-waves.csv` | ✓ | 2,242 | 1.1 MB | `225aa4a17ba4dabf77a943ea3e4e8ae7da2c5e291421f81a9180f6f43995b39a` |
 | `voidious.Diamond__vs__rsalesc.mega.Knight/Perspective0-voidious.Diamond` | `scores.csv` | ✓ | 1 | 0.1 KB | `c0716f2b558695ce63ae6e8c1babaf00f225f62a2c79b8b37e968a8f4648f493` |
-| `voidious.Diamond__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `ticks.csv` | ✓ | 26,030 | 4.5 MB | `cb26c1484672ddbb6f39d5960b9c9de0c09bc35474eda14dff0b1b7faa572ac1` |
-| `voidious.Diamond__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `scan.csv` | ✓ | 25,231 | 6.5 MB | `1a3e4392cfe3406a30ae3219da19ff77770fe096ea36e8c563f37e54b157c136` |
-| `voidious.Diamond__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `their-waves.csv` | ✓ | 2,123 | 846.4 KB | `e3a0da4662c03610a4dedca185e7ea218341f2397bce57d386e514790cd7ea6e` |
-| `voidious.Diamond__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `autopilot-waves.csv` | ✓ | 5,159 | 2.4 MB | `02cb3d6681ebfb5a9117f7eef8ff0bc152d4a716daad622d74a06a3cc2cca2fe` |
-| `voidious.Diamond__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `dejavu-waves.csv` | ✓ | 2,207 | 1.1 MB | `49c7557efe4d00881fd01689107f17c9bae9189f7748427e99711c15a2d6ed65` |
+| `voidious.Diamond__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `ticks.csv` | ✓ | 26,393 | 4.5 MB | `c3b8509f97a7bb9251b7b3ade1df396a1985efa56fb2725bef3b66c301c9afd0` |
+| `voidious.Diamond__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `scan.csv` | ✓ | 25,615 | 6.6 MB | `f4349ed7013b7d4bc9e9284875746cd855dc850db15d8c326a7f87d6ba67f153` |
+| `voidious.Diamond__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `their-waves.csv` | ✓ | 2,167 | 863.1 KB | `346c948c255be5e02b5c511915dc8855ecddfa0c4bc59ea88bf4941e584766b5` |
+| `voidious.Diamond__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `autopilot-waves.csv` | ✓ | 143 | 66.7 KB | `02feaca282522703f66b652ed8eae0dc1cb4f92097fb0b228e7940d7d14c9d72` |
+| `voidious.Diamond__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `dejavu-waves.csv` | ✓ | 2,237 | 1.1 MB | `1970396a33b080b452eaeea4fa19b3befd43f7ccb7af00cbf69b59693d118468` |
 | `voidious.Diamond__vs__rsalesc.mega.Knight/Perspective1-rsalesc.mega.Knight` | `scores.csv` | ✓ | 1 | 0.1 KB | `30957a9045d768fc00297d938af59f993b0e1c2bbc6946714a31dc99369af57d` |
-| `voidious.Diamond__vs__voidious.Diamond/Perspective0-voidious.Diamond` | `ticks.csv` | ✓ | 27,097 | 4.6 MB | `f6ea16ef81e10018c8f1cba6f37f24fb28ee433bce72f27e3e01372bb55808bd` |
-| `voidious.Diamond__vs__voidious.Diamond/Perspective0-voidious.Diamond` | `scan.csv` | ✓ | 26,313 | 6.7 MB | `f179ff20dea153432ca448969511be0354437ce4bd8c4f04d362ecc7f54237c6` |
-| `voidious.Diamond__vs__voidious.Diamond/Perspective0-voidious.Diamond` | `their-waves.csv` | ✓ | 2,225 | 874.8 KB | `7cb341b1210145df5d8a18c85fde77d036d3eda2aa61e4a5956a58cae982b5ee` |
-| `voidious.Diamond__vs__voidious.Diamond/Perspective0-voidious.Diamond` | `autopilot-waves.csv` | ✓ | 4,818 | 2.2 MB | `384c25986c28c8834cb6f9d16230eb017a68b4026665aa519edf04c267ec63e8` |
-| `voidious.Diamond__vs__voidious.Diamond/Perspective0-voidious.Diamond` | `dejavu-waves.csv` | ✓ | 2,315 | 1.1 MB | `2fdb13d23ab8b0fa5f65a113b57edcd3a0e55cbd2301f9ab76139ea4cee86aa5` |
+| `voidious.Diamond__vs__voidious.Diamond/Perspective0-voidious.Diamond` | `ticks.csv` | ✓ | 24,199 | 4.1 MB | `35af7919533d59c37f6166f70230a41093832c9a390a532051a273aa241b8ecc` |
+| `voidious.Diamond__vs__voidious.Diamond/Perspective0-voidious.Diamond` | `scan.csv` | ✓ | 23,266 | 5.9 MB | `17a92b851ec7be8ebed6f96fbb2cb5e424c86c8c46aaccb6ef74c1387fafc85d` |
+| `voidious.Diamond__vs__voidious.Diamond/Perspective0-voidious.Diamond` | `their-waves.csv` | ✓ | 1,955 | 771.5 KB | `ae62b377e28ee5fb0f58f8e88323086e7a3bbde41b78432508a5cf72fbfbb19b` |
+| `voidious.Diamond__vs__voidious.Diamond/Perspective0-voidious.Diamond` | `autopilot-waves.csv` | ✓ | 44 | 20.6 KB | `976128e66960cfc52fcb96e2634709b80daf844523f7dd86648b670689f8b6e5` |
+| `voidious.Diamond__vs__voidious.Diamond/Perspective0-voidious.Diamond` | `dejavu-waves.csv` | ✓ | 2,051 | 1009.7 KB | `a41c6b1d30d929890b7c9f5a76e086356a78aba04cc8b849fc80563dd271050a` |
 | `voidious.Diamond__vs__voidious.Diamond/Perspective0-voidious.Diamond` | `scores.csv` | ✓ | 1 | 0.1 KB | `5bde857ab503b6c1b5e3ac9370daf98b49a585c2f9eb0d86f9dc389693647eb2` |
-| `voidious.Diamond__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `ticks.csv` | ✓ | 27,097 | 4.6 MB | `e3f0c0ce9354f4768c8a0049f1d8b756d7c9b5f7ff76b62c4bd82fbd705e7dc3` |
-| `voidious.Diamond__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `scan.csv` | ✓ | 26,313 | 6.7 MB | `5843980d21d780907df2ca6d98cdad0a7ded036c44fa4a7140035c782a948d91` |
-| `voidious.Diamond__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `their-waves.csv` | ✓ | 2,241 | 884.0 KB | `4ec0facfe25fa20f41a43ada8cafa8c0e87720371e8e97d677a3c9d64ab5b7f2` |
-| `voidious.Diamond__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `autopilot-waves.csv` | ✓ | 5,500 | 2.5 MB | `9f67cdc4c0db9eb39829774b74d7e006b32f720184d3ace2ba9543e7f98ae2ef` |
-| `voidious.Diamond__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `dejavu-waves.csv` | ✓ | 2,273 | 1.1 MB | `e8da7a96b2bb0a1c95062bfafe49e94a54a84e52b9365117ec5bfd01c3db36fb` |
+| `voidious.Diamond__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `ticks.csv` | ✓ | 23,897 | 4.0 MB | `58136c07d4ce23e3f9926a50aec87e541a5e92713982712e5d83bf21d4b301d8` |
+| `voidious.Diamond__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `scan.csv` | ✓ | 23,270 | 5.9 MB | `81ec8b488e82e1f8e538619bed5aaf5a11f1f5c42043b93b601f2baeebf986ca` |
+| `voidious.Diamond__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `their-waves.csv` | ✓ | 1,977 | 780.1 KB | `a75e688ae937965a1f16344af2c7cb5672f4e16a5de0528c058a6f9f156b5cac` |
+| `voidious.Diamond__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `autopilot-waves.csv` | ✓ | 55 | 25.8 KB | `430c5b22b8621cf31afc5a17e863ad0586fe8da268cc9fc7842cd00acb88eb39` |
+| `voidious.Diamond__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `dejavu-waves.csv` | ✓ | 2,015 | 997.8 KB | `6475d15240fddf81ffd6cb8377a32b32dcfc8a688793cb785b8717f54ae02226` |
 | `voidious.Diamond__vs__voidious.Diamond/Perspective1-voidious.Diamond` | `scores.csv` | ✓ | 1 | 0.1 KB | `052ae4a6cebe35de7a770569235da90128e2d0d956a910db420740f785ec7bdc` |
 
 ## Data availability
@@ -336,15 +336,15 @@ Per-perspective file presence, data-row count, and SHA-256 of each CSV. Two repo
 
 ### A1 — Inventory
 
-25 matchups · 5 distinct robots · 50 perspectives · 10 rounds/battle · 1272.2 MB total.
+25 matchups · 5 distinct robots · 50 perspectives · 10 rounds/battle · 1084.4 MB total.
 
 | File | Perspectives present | Total data rows |
 |---|---|---|
-| `ticks.csv` | 50/50 | 2,118,454 |
-| `scan.csv` | 50/50 | 2,079,180 |
-| `their-waves.csv` | 50/50 | 167,906 |
-| `autopilot-waves.csv` | 50/50 | 431,761 |
-| `dejavu-waves.csv` | 50/50 | 183,093 |
+| `ticks.csv` | 50/50 | 2,134,547 |
+| `scan.csv` | 50/50 | 2,096,176 |
+| `their-waves.csv` | 50/50 | 169,661 |
+| `autopilot-waves.csv` | 50/50 | 7,348 |
+| `dejavu-waves.csv` | 50/50 | 184,111 |
 | `scores.csv` | 50/50 | 50 |
 
 ### A2 — Real / virtual / total labels per wave file
@@ -353,16 +353,16 @@ The honest targeting label budget is dejavu's real waves; the autopilot virtual 
 
 | File | Real | Virtual | Total | Meaning |
 |---|---|---|---|---|
-| `dejavu-waves.csv` | 183,093 | 0 | 183,093 | in-game hero real gun |
-| `autopilot-waves.csv` | 39,251 | 392,510 | 431,761 | shadow gun (real + virtual fan) |
-| `their-waves.csv` | 167,906 | 0 | 167,906 | incoming (defensive) |
+| `dejavu-waves.csv` | 184,111 | 0 | 184,111 | in-game hero real gun |
+| `autopilot-waves.csv` | 668 | 6,680 | 7,348 | shadow gun (real + virtual fan) |
+| `their-waves.csv` | 169,661 | 0 | 169,661 | incoming (defensive) |
 
 ### A3 — Missing-value (NaN) rate per column
 
 | File | Columns with NaN (rate) |
 |---|---|
-| `dejavu-waves.csv` | `our_aim_lag1_gf` 0.37% |
-| `autopilot-waves.csv` (real) | `our_break_gf` 0.11% |
+| `dejavu-waves.csv` | `our_aim_lag1_gf` 0.37%, `our_break_tick` 0.00%, `our_break_gf` 0.00%, `our_break_bearing_offset` 0.00%, `our_break_opponent_x` 0.00%, `our_break_opponent_y` 0.00%, `our_break_hit` 0.00% |
+| `autopilot-waves.csv` (real) | `our_break_gf` 0.15% |
 | `their-waves.csv` | `their_break_tick` 0.03%, `their_break_our_x` 0.03%, `their_break_our_y` 0.03%, `their_break_gf` 0.03%, `their_break_bearing_offset` 0.03% |
 | `ticks.csv` | no missing values |
 | `scan.csv` | `scan_ticks_since_scan` 0.02%, `scan_their_inactivity_zap_active` 0.02% |
@@ -375,7 +375,7 @@ Unresolved waves are dropped from label tables but are **not** missing at random
 | Wave source | Unresolved rate |
 |---|---|
 | dejavu (outgoing real) | 0.00% |
-| autopilot (outgoing real) | 0.11% |
+| autopilot (outgoing real) | 0.15% |
 | their (incoming) | 0.03% |
 
 ### A5 — Identifier collisions (keyed by matchup+perspective+round)
@@ -384,8 +384,8 @@ Unresolved waves are dropped from label tables but are **not** missing at random
 
 | Identifier | Within-key duplicates | Rows |
 |---|---|---|
-| `our_fire_bullet_id` (dejavu real) | 0 | 183,093 |
-| `their_fire_tick` (incoming) | 1 | 167,906 |
+| `our_fire_bullet_id` (dejavu real) | 0 | 184,111 |
+| `their_fire_tick` (incoming) | 1 | 169,661 |
 | `scan_opponent_id_hash` (perspectives w/ >1 hash) | 0 | 50 perspectives |
 
 ### A6 — Opponent hash ↔ name stability
@@ -406,11 +406,11 @@ Zap is a coarse per-scan-tick blip; it should be concentrated in a few low-energ
 
 | Opponent | Scan ticks | Zap-active rate | Incoming fires | Fires on zap tick |
 |---|---|---|---|---|
-| `aaa.r.ScalarR` | 360,391 | 0.00% | 28,114 | 0.00% |
-| `jk.mega.DrussGT` | 289,347 | 0.00% | 24,053 | 0.00% |
-| `kc.mega.BeepBoop` | 414,704 | 0.00% | 32,850 | 0.00% |
-| `rsalesc.mega.Knight` | 340,238 | 0.00% | 28,045 | 0.00% |
-| `voidious.Diamond` | 210,490 | 0.00% | 17,967 | 0.00% |
+| `aaa.r.ScalarR` | 369,326 | 0.00% | 29,033 | 0.00% |
+| `jk.mega.DrussGT` | 286,589 | 0.00% | 24,203 | 0.00% |
+| `kc.mega.BeepBoop` | 401,199 | 0.00% | 32,087 | 0.00% |
+| `rsalesc.mega.Knight` | 348,057 | 0.00% | 28,561 | 0.00% |
+| `voidious.Diamond` | 222,490 | 0.00% | 18,730 | 0.00% |
 
 
 ## Section B — Game & physics orientation
@@ -419,12 +419,12 @@ Zap is a coarse per-scan-tick blip; it should be concentrated in a few low-energ
 
 | Scope | N | p10 | p50 | p90 |
 |---|---|---|---|---|
-| overall | 142,286 | 450.4 | 518.5 | 601.6 |
-| `aaa.r.ScalarR` | 31,619 | 441.2 | 498.5 | 535.9 |
-| `jk.mega.DrussGT` | 25,413 | 461.1 | 530.0 | 606.8 |
-| `kc.mega.BeepBoop` | 36,802 | 458.7 | 533.4 | 612.6 |
-| `rsalesc.mega.Knight` | 30,201 | 442.3 | 515.8 | 598.2 |
-| `voidious.Diamond` | 18,251 | 458.8 | 536.5 | 626.9 |
+| overall | 142,754 | 451.8 | 519.0 | 601.9 |
+| `aaa.r.ScalarR` | 32,303 | 443.4 | 499.3 | 537.1 |
+| `jk.mega.DrussGT` | 25,013 | 458.2 | 530.5 | 605.4 |
+| `kc.mega.BeepBoop` | 35,451 | 459.4 | 536.4 | 615.7 |
+| `rsalesc.mega.Knight` | 30,947 | 445.3 | 515.8 | 598.9 |
+| `voidious.Diamond` | 19,040 | 462.5 | 533.4 | 625.3 |
 
 ![B1 engagement-distance histogram](ml-intuition/B1-distance-hist.png)
 
@@ -432,25 +432,25 @@ Zap is a coarse per-scan-tick blip; it should be concentrated in a few low-energ
 
 | Scope | Our mean | Our p50 | Their mean | Their p50 |
 |---|---|---|---|---|
-| overall | 0.23 | 0.15 | 0.23 | 0.15 |
-| `aaa.r.ScalarR` | 0.20 | 0.15 | 0.21 | 0.10 |
+| overall | 0.23 | 0.15 | 0.24 | 0.15 |
+| `aaa.r.ScalarR` | 0.21 | 0.15 | 0.20 | 0.10 |
 | `jk.mega.DrussGT` | 0.27 | 0.15 | 0.25 | 0.15 |
-| `kc.mega.BeepBoop` | 0.18 | 0.15 | 0.18 | 0.15 |
-| `rsalesc.mega.Knight` | 0.22 | 0.12 | 0.22 | 0.15 |
-| `voidious.Diamond` | 0.34 | 0.15 | 0.37 | 0.10 |
+| `kc.mega.BeepBoop` | 0.19 | 0.15 | 0.19 | 0.12 |
+| `rsalesc.mega.Knight` | 0.22 | 0.13 | 0.21 | 0.15 |
+| `voidious.Diamond` | 0.33 | 0.15 | 0.38 | 0.10 |
 
 ### B3 — Velocity at fire time (px/tick)
 
 | Quantity | mean | std | p10 | p50 | p90 |
 |---|---|---|---|---|---|
-| lateral velocity | 0.01 | 5.84 | -7.9 | 0.0 | 7.9 |
-| advancing velocity | -0.05 | 1.47 | -1.6 | -0.1 | 1.6 |
+| lateral velocity | 0.02 | 5.84 | -7.9 | 0.0 | 7.9 |
+| advancing velocity | -0.05 | 1.48 | -1.6 | -0.1 | 1.6 |
 
 ### B4 — Bullet flight time (ticks) = label latency
 
 | mean | p10 | p50 | p90 | corr(flight, distance) | corr(flight, power) |
 |---|---|---|---|---|---|
-| 27.69 | 24.0 | 27.0 | 32.0 | 0.754 | 0.492 |
+| 27.75 | 24.0 | 27.0 | 32.0 | 0.747 | 0.498 |
 Latency scales with distance/power, so online evaluation must use each wave's own flight time, not a global constant.
 
 ![B4 flight-time histogram](ml-intuition/B4-flight-time-hist.png)
@@ -459,7 +459,7 @@ Latency scales with distance/power, so online evaluation must use each wave's ow
 
 | N rounds | p10 | p50 | p90 | max |
 |---|---|---|---|---|
-| 500 | 2226.1 | 3462.0 | 6950.0 | 8551 |
+| 500 | 2155.0 | 3683.5 | 6921.2 | 9829 |
 
 ![B5 energy-vs-tick curve](ml-intuition/B5-energy-vs-tick.png)
 
@@ -468,16 +468,16 @@ Latency scales with distance/power, so online evaluation must use each wave's ow
 | Opponent | Scan coverage | Median ticks-since-scan |
 |---|---|---|
 | `aaa.r.ScalarR` | 98.8% | 1.0 |
-| `jk.mega.DrussGT` | 97.4% | 1.0 |
-| `kc.mega.BeepBoop` | 99.5% | 1.0 |
-| `rsalesc.mega.Knight` | 97.8% | 1.0 |
-| `voidious.Diamond` | 96.1% | 1.0 |
+| `jk.mega.DrussGT` | 97.3% | 1.0 |
+| `kc.mega.BeepBoop` | 99.6% | 1.0 |
+| `rsalesc.mega.Knight` | 97.7% | 1.0 |
+| `voidious.Diamond` | 96.4% | 1.0 |
 
 ### B7 — Wall proximity at fire time (edge-to-wall gap, px)
 
 | N | p10 | p50 | p90 |
 |---|---|---|---|
-| 142,286 | 2.3 | 65.0 | 167.8 |
+| 142,754 | 2.8 | 66.3 | 167.4 |
 Battlefield 800×600 px, robot half-width 18 px.
 
 ![B7 fire-position heatmap](ml-intuition/B7-position-heatmap.png)
@@ -489,11 +489,11 @@ Battlefield 800×600 px, robot half-width 18 px.
 
 | Opponent | N | GF mean | GF std | Peak bin | Top-1 mass | Shape |
 |---|---|---|---|---|---|---|
-| `aaa.r.ScalarR` | 31,619 | -0.146 | 0.507 | -0.979 | 4.2% | flat |
-| `jk.mega.DrussGT` | 25,413 | -0.150 | 0.488 | -0.979 | 4.6% | flat |
-| `kc.mega.BeepBoop` | 36,802 | -0.145 | 0.484 | -0.979 | 3.7% | flat |
-| `rsalesc.mega.Knight` | 30,201 | -0.183 | 0.475 | -0.979 | 5.5% | flat |
-| `voidious.Diamond` | 18,251 | -0.162 | 0.477 | -0.979 | 3.8% | flat |
+| `aaa.r.ScalarR` | 32,303 | -0.146 | 0.506 | -0.979 | 4.3% | flat |
+| `jk.mega.DrussGT` | 25,013 | -0.146 | 0.486 | -0.979 | 4.5% | flat |
+| `kc.mega.BeepBoop` | 35,451 | -0.147 | 0.484 | -0.979 | 3.5% | flat |
+| `rsalesc.mega.Knight` | 30,947 | -0.185 | 0.477 | -0.979 | 5.5% | flat |
+| `voidious.Diamond` | 19,040 | -0.167 | 0.482 | -0.979 | 4.4% | flat |
 
 ![C1 GF histogram vs aaa.r.ScalarR](ml-intuition/C1-gf-hist-aaa.r.ScalarR.png)
 ![C1 GF histogram vs jk.mega.DrussGT](ml-intuition/C1-gf-hist-jk.mega.DrussGT.png)
@@ -505,66 +505,66 @@ Battlefield 800×600 px, robot half-width 18 px.
 
 | Opponent | N | GF entropy | Head-on hit | 95% CI |
 |---|---|---|---|---|
-| `aaa.r.ScalarR` | 31,619 | 5.40 | 10.15% | [9.8, 10.5] |
-| `jk.mega.DrussGT` | 25,413 | 5.39 | 11.01% | [10.6, 11.4] |
-| `kc.mega.BeepBoop` | 36,802 | 5.39 | 9.82% | [9.5, 10.1] |
-| `rsalesc.mega.Knight` | 30,201 | 5.35 | 11.25% | [10.9, 11.6] |
-| `voidious.Diamond` | 18,251 | 5.38 | 10.51% | [10.1, 11.0] |
+| `aaa.r.ScalarR` | 32,303 | 5.40 | 12.78% | [12.4, 13.1] |
+| `jk.mega.DrussGT` | 25,013 | 5.38 | 14.36% | [13.9, 14.8] |
+| `kc.mega.BeepBoop` | 35,451 | 5.40 | 11.86% | [11.5, 12.2] |
+| `rsalesc.mega.Knight` | 30,947 | 5.35 | 13.60% | [13.2, 14.0] |
+| `voidious.Diamond` | 19,040 | 5.38 | 12.58% | [12.1, 13.1] |
 Entropy is intrinsic targeting difficulty; head-on is the zero-learning baseline to beat.
 
 ### C3 — GF mass concentration
 
 | Opponent | N | Top-1 bin mass | Effective bins (perplexity) |
 |---|---|---|---|
-| `aaa.r.ScalarR` | 31,619 | 4.2% | 42.3 |
-| `jk.mega.DrussGT` | 25,413 | 4.6% | 41.8 |
-| `kc.mega.BeepBoop` | 36,802 | 3.7% | 42.1 |
-| `rsalesc.mega.Knight` | 30,201 | 5.5% | 40.7 |
-| `voidious.Diamond` | 18,251 | 3.8% | 41.8 |
+| `aaa.r.ScalarR` | 32,303 | 4.3% | 42.2 |
+| `jk.mega.DrussGT` | 25,013 | 4.5% | 41.6 |
+| `kc.mega.BeepBoop` | 35,451 | 3.5% | 42.1 |
+| `rsalesc.mega.Knight` | 30,947 | 5.5% | 40.8 |
+| `voidious.Diamond` | 19,040 | 4.4% | 41.6 |
 Out of 47 canonical bins; low effective-bins ⇒ peaked/learnable.
 
 ### C4 — Current-autopilot floor vs in-game hero (unpaired) + selection bias
 
 | Opponent | Floor hit | Hero hit | Floor \|GF err\| | Hero \|GF err\| | Δdist (floor−hero) | Δ\|latV\| |
 |---|---|---|---|---|---|---|
-| `aaa.r.ScalarR` | 10.63% (N=6952) | 8.37% (N=31619) | 0.457 | 0.554 | -1.3 | -0.06 |
-| `jk.mega.DrussGT` | 10.33% (N=5081) | 8.87% (N=25413) | 0.427 | 0.518 | -1.3 | -0.12 |
-| `kc.mega.BeepBoop` | 8.80% (N=7883) | 7.65% (N=36802) | 0.433 | 0.505 | 1.8 | 0.20 |
-| `rsalesc.mega.Knight` | 9.99% (N=6415) | 10.15% (N=30201) | 0.420 | 0.486 | 2.6 | -0.16 |
-| `voidious.Diamond` | 8.59% (N=3901) | 8.29% (N=18251) | 0.446 | 0.504 | -0.2 | -0.15 |
+| `aaa.r.ScalarR` | 11.90% (N=84 †) | 10.68% (N=32303) | 0.411 | 0.557 | -17.2 | 0.89 |
+| `jk.mega.DrussGT` | 25.69% (N=109 †) | 12.21% (N=25013) | 0.313 | 0.504 | -18.8 | -1.45 |
+| `kc.mega.BeepBoop` | 9.94% (N=161 †) | 9.46% (N=35451) | 0.421 | 0.506 | -3.0 | 0.26 |
+| `rsalesc.mega.Knight` | 10.31% (N=97 †) | 12.83% (N=30947) | 0.405 | 0.483 | 16.2 | 0.85 |
+| `voidious.Diamond` | 10.53% (N=95 †) | 10.05% (N=19040) | 0.369 | 0.514 | -10.8 | -1.55 |
 The floor fires at its own self-selected ticks/states, so the floor↔hero gap is **not** pure aim quality (trap #7): Δdist / Δ|latV| show how far apart the two fire-time samples are.
 
 ### C5 — Achievable ceiling
 
 | Opponent | N | Quantization bound | Best-static | CV-model | Current (hero) |
 |---|---|---|---|---|---|
-| `aaa.r.ScalarR` | 31,619 | 100.0% | 11.95% @ GF=-0.17 | 13.16% | 8.37% |
-| `jk.mega.DrussGT` | 25,413 | 100.0% | 11.22% @ GF=-0.04 | 11.98% | 8.87% |
-| `kc.mega.BeepBoop` | 36,802 | 100.0% | 10.62% @ GF=-0.13 | 11.08% | 7.65% |
-| `rsalesc.mega.Knight` | 30,201 | 100.0% | 11.25% @ GF=-0.00 | 11.81% | 10.15% |
-| `voidious.Diamond` | 18,251 | 100.0% | 10.78% @ GF=-0.04 | 11.53% | 8.29% |
+| `aaa.r.ScalarR` | 32,303 | 100.0% | 14.73% @ GF=-0.17 | 16.07% | 10.68% |
+| `jk.mega.DrussGT` | 25,013 | 100.0% | 14.67% @ GF=-0.04 | 14.39% | 12.21% |
+| `kc.mega.BeepBoop` | 35,451 | 100.0% | 13.15% @ GF=-0.26 | 13.63% | 9.46% |
+| `rsalesc.mega.Knight` | 30,947 | 100.0% | 13.94% @ GF=-0.34 | 14.64% | 12.83% |
+| `voidious.Diamond` | 19,040 | 100.0% | 13.53% @ GF=-0.21 | 14.01% | 10.05% |
 _Quantization bound = aim the realized bin every time (sanity bound, **not** learnable — aim = label). The learnable ceiling is best-static / CV-model._
 
 ### C6 — Fire-time feature relation to `our_break_gf` (pooled dejavu)
 
 | Feature | Pearson r | Mutual info (nats) |
 |---|---|---|
-| `our_fire_lateral_velocity` | -0.003 | 0.1037 |
-| `our_fire_advancing_velocity` | 0.139 | 0.0557 |
-| `our_fire_distance` | 0.017 | 0.0090 |
-| `our_fire_power` | 0.019 | 0.0038 |
-| `our_fire_bullet_speed` | -0.019 | 0.0032 |
-| `our_fire_direction` | 0.009 | 0.0008 |
-| `our_fire_mea` | 0.020 | 0.0002 |
+| `our_fire_lateral_velocity` | -0.011 | 0.1015 |
+| `our_fire_advancing_velocity` | 0.138 | 0.0532 |
+| `our_fire_distance` | 0.008 | 0.0157 |
+| `our_fire_mea` | 0.023 | 0.0051 |
+| `our_fire_power` | 0.023 | 0.0020 |
+| `our_fire_bullet_speed` | -0.023 | 0.0008 |
+| `our_fire_direction` | 0.004 | 0.0000 |
 Computed on a seeded subsample of 50,000 dejavu real waves (capped at --max-model-rows=50,000; **not** full-data correlation).
 
 ### C7 — GF variance explained by segmentation axes (η²)
 
 | Segmentation axis | η² (variance explained) |
 |---|---|
-| lateral velocity (5 bins) | 0.0762 |
-| advancing velocity (5 bins) | 0.0417 |
-| distance (5 bins) | 0.0004 |
+| lateral velocity (5 bins) | 0.0765 |
+| advancing velocity (5 bins) | 0.0430 |
+| distance (5 bins) | 0.0002 |
 | wall gap (3 bins) | 0.0001 |
 Higher η² ⇒ the axis separates GF and is worth its data cost.
 
@@ -573,19 +573,19 @@ Higher η² ⇒ the axis separates GF and is worth its data cost.
 | Lag | Mean autocorrelation | Rounds |
 |---|---|---|
 | lag 1 | 0.061 | 400 rounds |
-| lag 2 | -0.038 | 400 rounds |
-| lag 3 | -0.002 | 400 rounds |
+| lag 2 | -0.040 | 400 rounds |
+| lag 3 | -0.009 | 400 rounds |
 Gun-side `our_break_gf` is essentially **not** autocorrelated on the corrected aim-time frame (|lag-1| < 0.15), so a sequence/pattern *gun* gains little; the lag-1 structure earlier passes saw lives on the **movement** channel (`their_break_gf`, see [sequence.md](sequence.md)).
 
 ### C9 — Hit rate vs engagement distance (canonical, hero aim)
 
 | Distance (px) | N | Hero hit | 95% CI |
 |---|---|---|---|
-| 0–150 | 41 † | 46.34% | [32.1, 61.3] |
-| 150–300 | 228 | 19.30% | [14.7, 24.9] |
-| 300–450 | 13,828 | 11.62% | [11.1, 12.2] |
-| 450–600 | 113,401 | 8.36% | [8.2, 8.5] |
-| 600+ | 14,788 | 7.73% | [7.3, 8.2] |
+| 0–150 | 38 † | 42.11% | [27.9, 57.8] |
+| 150–300 | 232 | 23.28% | [18.3, 29.1] |
+| 300–450 | 13,352 | 14.00% | [13.4, 14.6] |
+| 450–600 | 114,011 | 10.90% | [10.7, 11.1] |
+| 600+ | 15,121 | 9.07% | [8.6, 9.5] |
 
 ![C9 hit-rate vs distance](ml-intuition/C9-hitrate-vs-distance.png)
 
@@ -596,11 +596,11 @@ Gun-side `our_break_gf` is essentially **not** autocorrelated on the corrected a
 
 | Opponent | N | GF mean | GF entropy | Peak bin | Top-1 mass |
 |---|---|---|---|---|---|
-| `aaa.r.ScalarR` | 28,113 | -0.172 | 5.38 | -0.979 | 5.3% |
-| `jk.mega.DrussGT` | 24,038 | -0.148 | 5.39 | -0.979 | 4.1% |
-| `kc.mega.BeepBoop` | 32,842 | -0.152 | 5.38 | -0.979 | 4.2% |
-| `rsalesc.mega.Knight` | 28,039 | -0.155 | 5.40 | -0.979 | 4.0% |
-| `voidious.Diamond` | 17,961 | -0.160 | 5.40 | -0.979 | 4.2% |
+| `aaa.r.ScalarR` | 29,025 | -0.170 | 5.38 | -0.979 | 5.3% |
+| `jk.mega.DrussGT` | 24,195 | -0.162 | 5.39 | -0.979 | 4.5% |
+| `kc.mega.BeepBoop` | 32,080 | -0.152 | 5.38 | -0.979 | 4.2% |
+| `rsalesc.mega.Knight` | 28,555 | -0.153 | 5.40 | -0.979 | 4.1% |
+| `voidious.Diamond` | 18,721 | -0.156 | 5.39 | -0.979 | 4.0% |
 A flat profile (high entropy) = hard to hit; a peak reveals an exploitable movement bias.
 
 ![D1 dodge-profile histogram vs aaa.r.ScalarR](ml-intuition/D1-dodge-hist-aaa.r.ScalarR.png)
@@ -613,49 +613,49 @@ A flat profile (high entropy) = hard to hit; a peak reveals an exploitable movem
 
 | Opponent | N | Hit-us | Power<1.5 | Power≥1.5 | Most-dangerous GF bin |
 |---|---|---|---|---|---|
-| `aaa.r.ScalarR` | 28,114 | 9.58% | 9.60% | 9.03% | (-1.0, -0.957] |
-| `jk.mega.DrussGT` | 24,053 | 8.37% | 8.35% | 8.77% | (-1.0, -0.957] |
-| `kc.mega.BeepBoop` | 32,850 | 9.39% | 9.37% | 14.77% | (-1.0, -0.957] |
-| `rsalesc.mega.Knight` | 28,045 | 8.03% | 8.00% | 9.20% | (-0.957, -0.915] |
-| `voidious.Diamond` | 17,967 | 7.96% | 8.14% | 6.53% | (-0.872, -0.83] |
+| `aaa.r.ScalarR` | 29,033 | 9.76% | 9.81% | 8.52% | (-1.0, -0.957] |
+| `jk.mega.DrussGT` | 24,203 | 8.42% | 8.46% | 7.38% | (-0.0213, 0.0213] |
+| `kc.mega.BeepBoop` | 32,087 | 9.33% | 9.34% | 7.36% | (-1.0, -0.957] |
+| `rsalesc.mega.Knight` | 28,561 | 8.26% | 8.25% | 8.46% | (0.787, 0.83] |
+| `voidious.Diamond` | 18,730 | 8.14% | 8.31% | 6.83% | (-0.957, -0.915] |
 
 ### D3 — Where opponents aim relative to head-on (`their_break_gf` bias)
 
 | Opponent | N | Mean aim GF | 95% CI | Peak bin |
 |---|---|---|---|---|
-| `aaa.r.ScalarR` | 28,113 | -0.172 | [-0.178, -0.166] | -0.979 |
-| `jk.mega.DrussGT` | 24,038 | -0.148 | [-0.154, -0.142] | -0.979 |
-| `kc.mega.BeepBoop` | 32,842 | -0.152 | [-0.157, -0.146] | -0.979 |
-| `rsalesc.mega.Knight` | 28,039 | -0.155 | [-0.160, -0.149] | -0.979 |
-| `voidious.Diamond` | 17,961 | -0.160 | [-0.167, -0.152] | -0.979 |
+| `aaa.r.ScalarR` | 29,025 | -0.170 | [-0.176, -0.164] | -0.979 |
+| `jk.mega.DrussGT` | 24,195 | -0.162 | [-0.168, -0.156] | -0.979 |
+| `kc.mega.BeepBoop` | 32,080 | -0.152 | [-0.157, -0.146] | -0.979 |
+| `rsalesc.mega.Knight` | 28,555 | -0.153 | [-0.159, -0.147] | -0.979 |
+| `voidious.Diamond` | 18,721 | -0.156 | [-0.162, -0.148] | -0.979 |
 Same `their_break_gf` distribution as D1, read as opponent aim bias rather than our dodge profile. A bias away from 0 = a predictable gun that movement can deterministically dodge.
 
 ### D4 — Incoming bullet power × distance + zap overlap
 
 | Opponent | N | Mean power | Mean distance | Fires on zap tick |
 |---|---|---|---|---|
-| `aaa.r.ScalarR` | 28,114 | 0.21 | 492 | 0.00% |
-| `jk.mega.DrussGT` | 24,053 | 0.25 | 530 | 0.00% |
-| `kc.mega.BeepBoop` | 32,850 | 0.18 | 535 | 0.00% |
-| `rsalesc.mega.Knight` | 28,045 | 0.22 | 518 | 0.00% |
-| `voidious.Diamond` | 17,967 | 0.37 | 539 | 0.00% |
+| `aaa.r.ScalarR` | 29,033 | 0.20 | 494 | 0.00% |
+| `jk.mega.DrussGT` | 24,203 | 0.25 | 529 | 0.00% |
+| `kc.mega.BeepBoop` | 32,087 | 0.19 | 538 | 0.00% |
+| `rsalesc.mega.Knight` | 28,561 | 0.21 | 519 | 0.00% |
+| `voidious.Diamond` | 18,730 | 0.38 | 538 | 0.00% |
 Near-zero zap overlap confirms incoming bullets are real threats, not zap artifacts.
 
 ### D5 — Conditional hit-us by own state at incoming fire time
 
 | Condition | N | Hit-us |
 |---|---|---|
-| close (<300 px) | 217 | 16.13% |
-| far (≥300 px) | 130,812 | 8.74% |
-| near wall (<50 px) | 53,591 | 8.45% |
-| open field (≥50 px) | 77,438 | 8.97% |
+| close (<300 px) | 221 | 19.46% |
+| far (≥300 px) | 132,393 | 8.84% |
+| near wall (<50 px) | 53,147 | 8.36% |
+| open field (≥50 px) | 79,467 | 9.20% |
 Identifies dangerous states for movement constraints/penalties.
 
 ### D6 — Dodge time budget (incoming flight time, ticks)
 
 | N | p10 | p50 | p90 |
 |---|---|---|---|
-| 130,993 | 24.0 | 27.0 | 32.0 |
+| 132,576 | 24.0 | 27.0 | 32.0 |
 Ticks the surfer has to react after detecting a wave.
 
 
@@ -665,10 +665,10 @@ Ticks the surfer has to react after detecting a wave.
 
 | Feature | File | dtype | Range | %NaN | Units |
 |---|---|---|---|---|---|
-| `our_fire_distance` | `dejavu-waves.csv` | float64 | [42.6, 759.1] | 0.0% | px |
+| `our_fire_distance` | `dejavu-waves.csv` | float64 | [42.1, 781.0] | 0.0% | px |
 | `our_fire_lateral_velocity` | `dejavu-waves.csv` | float64 | [-8.0, 8.0] | 0.0% | px/tick |
 | `our_fire_advancing_velocity` | `dejavu-waves.csv` | float64 | [-8.0, 8.0] | 0.0% | px/tick |
-| `our_fire_bullet_speed` | `dejavu-waves.csv` | float64 | [11.2, 19.7] | 0.0% | px/tick |
+| `our_fire_bullet_speed` | `dejavu-waves.csv` | float64 | [11.8, 19.7] | 0.0% | px/tick |
 | `our_fire_mea` | `dejavu-waves.csv` | float64 | [0.4, 0.8] | 0.0% | rad |
 | `our_fire_direction` | `dejavu-waves.csv` | float64 | [-1.0, 1.0] | 0.0% | sign(±1) |
 | `our_fire_bearing_absolute` | `dejavu-waves.csv` | float64 | [-3.1, 3.1] | 0.0% | rad |
@@ -676,49 +676,49 @@ Ticks the surfer has to react after detecting a wave.
 | `our_fire_y` | `dejavu-waves.csv` | float64 | [18.0, 582.0] | 0.0% | px |
 | `our_fire_opponent_x` | `dejavu-waves.csv` | float64 | [18.0, 782.0] | 0.0% | px |
 | `our_fire_opponent_y` | `dejavu-waves.csv` | float64 | [18.0, 582.0] | 0.0% | px |
-| `our_fire_power` | `dejavu-waves.csv` | float64 | [0.1, 3.0] | 0.0% | energy |
-| `our_fire_tick` | `dejavu-waves.csv` | float64 | [30.0, 8401.0] | 0.0% | tick |
-| `our_fire_bullet_id` | `dejavu-waves.csv` | float64 | [0.0, 9010741.0] | 0.0% | id |
+| `our_fire_power` | `dejavu-waves.csv` | float64 | [0.1, 2.8] | 0.0% | energy |
+| `our_fire_tick` | `dejavu-waves.csv` | float64 | [30.0, 9678.0] | 0.0% | tick |
+| `our_fire_bullet_id` | `dejavu-waves.csv` | float64 | [0.0, 9010700.0] | 0.0% | id |
 | `our_fire_aim_gf` | `dejavu-waves.csv` | float64 | [-1.0, 1.0] | 0.0% | GF[-1,1] |
 | `our_fire_is_real` | `dejavu-waves.csv` | float64 | [1.0, 1.0] | 0.0% | bool |
 | `our_aim_x` | `dejavu-waves.csv` | float64 | [18.0, 782.0] | 0.0% | — |
 | `our_aim_y` | `dejavu-waves.csv` | float64 | [18.0, 582.0] | 0.0% | — |
 | `our_aim_opponent_x` | `dejavu-waves.csv` | float64 | [18.0, 782.0] | 0.0% | — |
 | `our_aim_opponent_y` | `dejavu-waves.csv` | float64 | [18.0, 582.0] | 0.0% | — |
-| `our_aim_distance` | `dejavu-waves.csv` | float64 | [46.6, 756.3] | 0.0% | px |
+| `our_aim_distance` | `dejavu-waves.csv` | float64 | [48.9, 782.9] | 0.0% | px |
 | `our_aim_lateral_velocity` | `dejavu-waves.csv` | float64 | [-8.0, 8.0] | 0.0% | — |
 | `our_aim_bearing_absolute` | `dejavu-waves.csv` | float64 | [-3.1, 3.1] | 0.0% | rad |
-| `our_aim_lag1_gf` | `dejavu-waves.csv` | float64 | [-0.9, 0.5] | 0.4% | — |
-| `our_break_tick` | `dejavu-waves.csv` | float64 | [43.0, 8405.0] | 0.0% | tick |
+| `our_aim_lag1_gf` | `dejavu-waves.csv` | float64 | [-0.9, 0.6] | 0.4% | — |
+| `our_break_tick` | `dejavu-waves.csv` | float64 | [45.0, 9709.0] | 0.0% | tick |
 | `our_break_gf` | `dejavu-waves.csv` | float64 | [-1.0, 0.9] | 0.0% | GF[-1,1] |
-| `our_break_bearing_offset` | `dejavu-waves.csv` | float64 | [-0.8, 0.7] | 0.0% | rad |
+| `our_break_bearing_offset` | `dejavu-waves.csv` | float64 | [-0.7, 0.7] | 0.0% | rad |
 | `our_break_opponent_x` | `dejavu-waves.csv` | float64 | [18.0, 782.0] | 0.0% | — |
 | `our_break_opponent_y` | `dejavu-waves.csv` | float64 | [18.0, 582.0] | 0.0% | — |
 | `our_break_hit` | `dejavu-waves.csv` | float64 | [0.0, 1.0] | 0.0% | bool |
-| `their_fire_power` | `their-waves.csv` | float64 | [0.1, 3.0] | 0.0% | energy |
-| `their_fire_tick` | `their-waves.csv` | float64 | [11.0, 5870.0] | 0.0% | — |
+| `their_fire_power` | `their-waves.csv` | float64 | [0.1, 2.8] | 0.0% | energy |
+| `their_fire_tick` | `their-waves.csv` | float64 | [30.0, 5864.0] | 0.0% | — |
 | `their_fire_x` | `their-waves.csv` | float64 | [18.0, 782.0] | 0.0% | — |
 | `their_fire_y` | `their-waves.csv` | float64 | [18.0, 582.0] | 0.0% | — |
-| `their_bullet_speed` | `their-waves.csv` | float64 | [11.1, 19.7] | 0.0% | px/tick |
+| `their_bullet_speed` | `their-waves.csv` | float64 | [11.8, 19.7] | 0.0% | px/tick |
 | `their_fire_bearing` | `their-waves.csv` | float64 | [-3.1, 3.1] | 0.0% | — |
-| `their_fire_distance` | `their-waves.csv` | float64 | [67.9, 759.1] | 0.0% | px |
+| `their_fire_distance` | `their-waves.csv` | float64 | [56.3, 781.0] | 0.0% | px |
 | `their_fire_our_x` | `their-waves.csv` | float64 | [18.0, 782.0] | 0.0% | — |
 | `their_fire_our_y` | `their-waves.csv` | float64 | [18.0, 582.0] | 0.0% | — |
 | `their_aim_x` | `their-waves.csv` | float64 | [18.0, 782.0] | 0.0% | — |
 | `their_aim_y` | `their-waves.csv` | float64 | [18.0, 582.0] | 0.0% | — |
 | `their_aim_our_x` | `their-waves.csv` | float64 | [18.0, 782.0] | 0.0% | — |
 | `their_aim_our_y` | `their-waves.csv` | float64 | [18.0, 582.0] | 0.0% | — |
-| `their_aim_distance` | `their-waves.csv` | float64 | [61.1, 756.3] | 0.0% | — |
+| `their_aim_distance` | `their-waves.csv` | float64 | [52.5, 782.9] | 0.0% | — |
 | `their_aim_bearing` | `their-waves.csv` | float64 | [-3.1, 3.1] | 0.0% | — |
 | `their_aim_lateral_velocity` | `their-waves.csv` | float64 | [-8.0, 8.0] | 0.0% | — |
-| `their_break_tick` | `their-waves.csv` | float64 | [28.0, 5895.0] | 0.0% | — |
+| `their_break_tick` | `their-waves.csv` | float64 | [45.0, 5894.0] | 0.0% | — |
 | `their_break_our_x` | `their-waves.csv` | float64 | [18.0, 782.0] | 0.0% | — |
 | `their_break_our_y` | `their-waves.csv` | float64 | [18.0, 582.0] | 0.0% | — |
 | `their_break_gf` | `their-waves.csv` | float64 | [-1.0, 0.9] | 0.0% | GF[-1,1] |
 | `their_break_bearing_offset` | `their-waves.csv` | float64 | [-0.7, 0.7] | 0.0% | — |
 | `their_hit_us` | `their-waves.csv` | float64 | [0.0, 1.0] | 0.0% | bool |
-| `scan_tick` | `scan.csv` | float32 | [1.0, 8401.0] | 0.0% | — |
-| `scan_distance` | `scan.csv` | float32 | [40.1, 812.1] | 0.0% | px |
+| `scan_tick` | `scan.csv` | float32 | [1.0, 9678.0] | 0.0% | — |
+| `scan_distance` | `scan.csv` | float32 | [42.1, 787.5] | 0.0% | px |
 | `scan_opponent_id_hash` | `scan.csv` | float32 | [-887270144.0, 1865178880.0] | 0.0% | hash |
 | `scan_opponent_lateral_velocity` | `scan.csv` | float32 | [-8.0, 8.0] | 0.0% | px/tick |
 | `scan_opponent_advancing_velocity` | `scan.csv` | float32 | [-8.0, 8.0] | 0.0% | px/tick |
@@ -740,12 +740,12 @@ Ticks the surfer has to react after detecting a wave.
 
 | Feature | Impurity importance | Permutation importance |
 |---|---|---|
-| `our_fire_lateral_velocity` | 0.4296 | 0.2523 |
-| `our_fire_advancing_velocity` | 0.3218 | 0.1485 |
-| `our_fire_distance` | 0.1432 | 0.0708 |
-| `our_fire_mea` | 0.0822 | 0.0284 |
-| `our_fire_bullet_speed` | 0.0116 | 0.0046 |
-| `our_fire_power` | 0.0113 | 0.0045 |
+| `our_fire_lateral_velocity` | 0.4382 | 0.2439 |
+| `our_fire_advancing_velocity` | 0.3106 | 0.1446 |
+| `our_fire_distance` | 0.1440 | 0.0706 |
+| `our_fire_mea` | 0.0837 | 0.0297 |
+| `our_fire_power` | 0.0114 | 0.0053 |
+| `our_fire_bullet_speed` | 0.0119 | 0.0051 |
 | `our_fire_direction` | 0.0003 | 0.0001 |
 Fit on 50,000 dejavu real waves (capped at --max-model-rows=50,000).
 
@@ -753,14 +753,14 @@ Fit on 50,000 dejavu real waves (capped at --max-model-rows=50,000).
 
 | Feature | Permutation importance (PR-AUC) |
 |---|---|
-| `our_fire_distance` | 0.2139 |
-| `our_fire_advancing_velocity` | 0.1811 |
-| `our_fire_lateral_velocity` | 0.1688 |
-| `our_fire_mea` | 0.1658 |
-| `our_fire_bullet_speed` | 0.1036 |
-| `our_fire_power` | 0.1016 |
-| `our_fire_direction` | 0.0204 |
-Positive base rate 8.56% (4,281/50,000); in-sample PR-AUC 0.350. At ~11:1 imbalance, accuracy and impurity importance mislead, so PR-AUC is the fixed metric.
+| `our_fire_distance` | 0.1612 |
+| `our_fire_advancing_velocity` | 0.1460 |
+| `our_fire_lateral_velocity` | 0.1341 |
+| `our_fire_mea` | 0.1228 |
+| `our_fire_bullet_speed` | 0.0744 |
+| `our_fire_power` | 0.0730 |
+| `our_fire_direction` | 0.0207 |
+Positive base rate 11.05% (5,523/50,000); in-sample PR-AUC 0.323. At ~8:1 imbalance, accuracy and impurity importance mislead, so PR-AUC is the fixed metric.
 
 ### E5 — Recommended v1 feature set
 
@@ -777,16 +777,16 @@ Dropped as redundant: `our_fire_direction`, `our_fire_mea`, `our_fire_power`.
 
 | Round | Waves/round (mean) | Waves/round (median) | Cumulative (mean) | Cumulative (median) |
 |---|---|---|---|---|
-| 0 | 413 | 419 | 413 | 419 |
-| 1 | 646 | 582 | 1059 | 1041 |
-| 2 | 747 | 594 | 1806 | 1672 |
-| 3 | 668 | 610 | 2474 | 2109 |
-| 4 | 730 | 594 | 3204 | 2609 |
-| 5 | 812 | 586 | 4016 | 3172 |
-| 6 | 822 | 712 | 4837 | 3788 |
-| 7 | 757 | 668 | 5594 | 4362 |
-| 8 | 721 | 589 | 6315 | 4903 |
-| 9 | 800 | 592 | 7114 | 5486 |
+| 0 | 385 | 410 | 385 | 410 |
+| 1 | 660 | 577 | 1045 | 877 |
+| 2 | 673 | 560 | 1718 | 1456 |
+| 3 | 680 | 611 | 2398 | 2014 |
+| 4 | 783 | 663 | 3181 | 2606 |
+| 5 | 824 | 668 | 4006 | 3205 |
+| 6 | 747 | 640 | 4752 | 3698 |
+| 7 | 803 | 652 | 5555 | 4292 |
+| 8 | 806 | 656 | 6361 | 4910 |
+| 9 | 776 | 667 | 7138 | 5432 |
 Per-matchup statistics across 20 matchups (**not** the pooled cross-matchup total); the cold-start budget is what a single battle accumulates.
 
 ![F1 per-matchup cold-start curve](ml-intuition/F1-cold-start-curve.png)
@@ -795,33 +795,33 @@ Per-matchup statistics across 20 matchups (**not** the pooled cross-matchup tota
 
 | Opponent | N(r0/last) | KL (bits) | 95% CI |
 |---|---|---|---|
-| `aaa.r.ScalarR` | 1999/3703 | 0.000 | [0.000, 0.012] |
-| `jk.mega.DrussGT` | 944/3207 | 0.222 | [0.139, 0.295] |
-| `kc.mega.BeepBoop` | 2112/3741 | 0.005 | [0.000, 0.021] |
-| `rsalesc.mega.Knight` | 1594/3276 | 0.017 | [0.000, 0.038] |
-| `voidious.Diamond` | 1608/2063 | 0.000 | [0.000, 0.018] |
+| `aaa.r.ScalarR` | 1565/3391 | 0.000 | [0.000, 0.012] |
+| `jk.mega.DrussGT` | 1130/2883 | 0.596 | [0.473, 0.705] |
+| `kc.mega.BeepBoop` | 1637/4001 | 0.008 | [0.000, 0.027] |
+| `rsalesc.mega.Knight` | 1797/3368 | 0.001 | [0.000, 0.018] |
+| `voidious.Diamond` | 1563/1883 | 0.082 | [0.037, 0.125] |
 Bias-corrected KL (the finite-sample plug-in KL is positively biased and is corrected toward 0). High KL ⇒ the opponent adapts across rounds and recency-weighting matters; ≈0 ⇒ stationary within sampling noise.
 
 ### F3 — Segmented VCS grid occupancy (distance 5 × lateralV 5 × advancingV 3 = 75 cells)
 
 | Opponent | N | Occupied cells | Mean rows/cell |
 |---|---|---|---|
-| `aaa.r.ScalarR` | 31,619 | 73/75 | 421.6 |
-| `jk.mega.DrussGT` | 25,413 | 75/75 | 338.8 |
-| `kc.mega.BeepBoop` | 36,802 | 75/75 | 490.7 |
-| `rsalesc.mega.Knight` | 30,201 | 75/75 | 402.7 |
-| `voidious.Diamond` | 18,251 | 75/75 | 243.3 |
+| `aaa.r.ScalarR` | 32,303 | 75/75 | 430.7 |
+| `jk.mega.DrussGT` | 25,013 | 75/75 | 333.5 |
+| `kc.mega.BeepBoop` | 35,451 | 74/75 | 472.7 |
+| `rsalesc.mega.Knight` | 30,947 | 75/75 | 412.6 |
+| `voidious.Diamond` | 19,040 | 75/75 | 253.9 |
 Sparse grids (few rows/cell) argue for KNN over a fixed grid.
 
 ### F4 — GF stability vs sample size (bootstrap std of peak-bin GF)
 
 | Sample size N | Std of peak-bin GF |
 |---|---|
-| 50 | 0.430 |
-| 100 | 0.458 |
-| 200 | 0.440 |
-| 500 | 0.392 |
-| 1000 | 0.343 |
+| 50 | 0.442 |
+| 100 | 0.419 |
+| 200 | 0.432 |
+| 500 | 0.425 |
+| 1000 | 0.299 |
 Smaller std ⇒ fewer samples needed for a trustworthy per-segment aim.
 
 ![F4 stability vs N curve](ml-intuition/F4-stability-vs-n.png)
@@ -833,27 +833,27 @@ Smaller std ⇒ fewer samples needed for a trustworthy per-segment aim.
 
 | Opponent | N | Floor (autopilot) | Hero (in-game) | Head-on | Best-static | Quant. bound | Hero 95% CI |
 |---|---|---|---|---|---|---|---|
-| `aaa.r.ScalarR` | 31,619 | 10.63% (eng 0.06%; N=6952) | 8.37% (eng 8.31%) | 10.15% | 11.95% | 100.0% | [8.1, 8.7] |
-| `jk.mega.DrussGT` | 25,413 | 10.33% (eng 0.77%; N=5081) | 8.87% (eng 8.78%) | 11.01% | 11.22% | 100.0% | [8.5, 9.2] |
-| `kc.mega.BeepBoop` | 36,802 | 8.80% (eng 0.00%; N=7883) | 7.65% (eng 7.02%) | 9.82% | 10.62% | 100.0% | [7.4, 7.9] |
-| `rsalesc.mega.Knight` | 30,201 | 9.99% (eng 0.08%; N=6415) | 10.15% (eng 10.42%) | 11.25% | 11.25% | 100.0% | [9.8, 10.5] |
-| `voidious.Diamond` | 18,251 | 8.59% (eng 0.10%; N=3901) | 8.29% (eng 8.79%) | 10.51% | 10.78% | 100.0% | [7.9, 8.7] |
+| `aaa.r.ScalarR` | 32,303 | 11.90% (eng 0.00%; N=84 †) | 10.68% (eng 8.28%) | 12.78% | 14.73% | 100.0% | [10.3, 11.0] |
+| `jk.mega.DrussGT` | 25,013 | 25.69% (eng 2.75%; N=109 †) | 12.21% (eng 9.40%) | 14.36% | 14.67% | 100.0% | [11.8, 12.6] |
+| `kc.mega.BeepBoop` | 35,451 | 9.94% (eng 0.62%; N=161 †) | 9.46% (eng 6.98%) | 11.86% | 13.15% | 100.0% | [9.2, 9.8] |
+| `rsalesc.mega.Knight` | 30,947 | 10.31% (eng 0.00%; N=97 †) | 12.83% (eng 10.42%) | 13.60% | 13.94% | 100.0% | [12.5, 13.2] |
+| `voidious.Diamond` | 19,040 | 10.53% (eng 0.00%; N=95 †) | 10.05% (eng 8.56%) | 12.58% | 13.53% | 100.0% | [9.6, 10.5] |
 Floor is what ML must beat; head-on/best-static are dejavu-derived; the quantization bound is a sanity bound, not learnable. _Caveat: the floor's analytic hit recomputes from the shadow gun's `aim_gf`, but its engine-hit column reflects the **real** bullet (a different gun) — the two floor columns are not the same gun._
 
 ### G2 — Battle outcomes (robots facing this opponent)
 
 | Opponent | Battles | Faced-robot wins | Losses | Ties |
 |---|---|---|---|---|
-| `aaa.r.ScalarR` | 8 | 3 | 5 | 0 |
-| `jk.mega.DrussGT` | 8 | 4 | 4 | 0 |
+| `aaa.r.ScalarR` | 8 | 2 | 6 | 0 |
+| `jk.mega.DrussGT` | 8 | 5 | 3 | 0 |
 | `kc.mega.BeepBoop` | 8 | 0 | 8 | 0 |
-| `rsalesc.mega.Knight` | 8 | 6 | 2 | 0 |
-| `voidious.Diamond` | 8 | 7 | 1 | 0 |
+| `rsalesc.mega.Knight` | 8 | 7 | 1 | 0 |
+| `voidious.Diamond` | 8 | 6 | 2 | 0 |
 Win = the robot facing this opponent beat it; many losses ⇒ a strong opponent. Per-shot hit rates live in G1/H1 (computed canonically from waves); the producer's battle-end `round_hit_rate` field is not reliably populated, so it is omitted here.
 
 ### G3 — Virtual-gun hit-rate curves (fixed-aim sweep)
 
-Sweeping a single fixed aim-GF through the canonical hit rule: the peak marks the best-static gun (GF=-0.128, 10.81%). The autopilot-fan overlay is the same sweep over the shadow gun's real rows (a different gun, shown for cross-check only).
+Sweeping a single fixed aim-GF through the canonical hit rule: the peak marks the best-static gun (GF=-0.213, 13.48%). The autopilot-fan overlay is the same sweep over the shadow gun's real rows (a different gun, shown for cross-check only).
 
 ![G3 virtual-gun curves](ml-intuition/G3-virtual-gun-curves.png)
 
@@ -864,21 +864,21 @@ Sweeping a single fixed aim-GF through the canonical hit rule: the peak marks th
 
 | Opponent | N | Mean dist | GF peak | GF entropy | Our hit | Hit-us | KL(adapt) | Typ. power |
 |---|---|---|---|---|---|---|---|---|
-| `aaa.r.ScalarR` | 31,619 | 492 | -0.979 | 5.40 | 8.37% | 9.58% | 0.000 | 0.20 |
-| `jk.mega.DrussGT` | 25,413 | 531 | -0.979 | 5.39 | 8.87% | 8.37% | 0.222 | 0.27 |
-| `kc.mega.BeepBoop` | 36,802 | 533 | -0.979 | 5.39 | 7.65% | 9.39% | 0.005 | 0.18 |
-| `rsalesc.mega.Knight` | 30,201 | 517 | -0.979 | 5.35 | 10.15% | 8.03% | 0.017 | 0.22 |
-| `voidious.Diamond` | 18,251 | 539 | -0.979 | 5.38 | 8.29% | 7.96% | 0.000 | 0.34 |
+| `aaa.r.ScalarR` | 32,303 | 493 | -0.979 | 5.40 | 10.68% | 9.76% | 0.000 | 0.21 |
+| `jk.mega.DrussGT` | 25,013 | 530 | -0.979 | 5.38 | 12.21% | 8.42% | 0.596 | 0.27 |
+| `kc.mega.BeepBoop` | 35,451 | 536 | -0.979 | 5.40 | 9.46% | 9.33% | 0.008 | 0.19 |
+| `rsalesc.mega.Knight` | 30,947 | 518 | -0.979 | 5.35 | 12.83% | 8.26% | 0.001 | 0.22 |
+| `voidious.Diamond` | 19,040 | 538 | -0.979 | 5.38 | 10.05% | 8.14% | 0.082 | 0.33 |
 
 ### H2 — Opponent similarity (Jensen-Shannon distance of GF distributions)
 
 | Opponent | `ScalarR` | `DrussGT` | `BeepBoop` | `Knight` | `Diamond` | Cluster |
 |---|---|---|---|---|---|---|
-| `aaa.r.ScalarR` | 0.000 | 0.005 | 0.006 | 0.012 | 0.006 | 1 |
-| `jk.mega.DrussGT` | 0.005 | 0.000 | 0.002 | 0.004 | 0.002 | 0 |
-| `kc.mega.BeepBoop` | 0.006 | 0.002 | 0.000 | 0.004 | 0.001 | 0 |
-| `rsalesc.mega.Knight` | 0.012 | 0.004 | 0.004 | 0.000 | 0.003 | 2 |
-| `voidious.Diamond` | 0.006 | 0.002 | 0.001 | 0.003 | 0.000 | 0 |
+| `aaa.r.ScalarR` | 0.000 | 0.005 | 0.006 | 0.011 | 0.005 | 1 |
+| `jk.mega.DrussGT` | 0.005 | 0.000 | 0.004 | 0.004 | 0.002 | 0 |
+| `kc.mega.BeepBoop` | 0.006 | 0.004 | 0.000 | 0.004 | 0.002 | 0 |
+| `rsalesc.mega.Knight` | 0.011 | 0.004 | 0.004 | 0.000 | 0.002 | 2 |
+| `voidious.Diamond` | 0.005 | 0.002 | 0.002 | 0.002 | 0.000 | 0 |
 Opponents in one cluster may share a model / warm-start prior.
 
 
@@ -888,9 +888,9 @@ Opponents in one cluster may share a model / warm-start prior.
 
 | Task | Label | Label budget | Noise / base rate | Per-wave latency | Stationarity |
 |---|---|---|---|---|---|
-| GF regression (targeting) | `our_break_gf` (dejavu real) | 183,093 waves | continuous, low NaN | variable 28 ticks mean | moderate (see F2 KL) |
-| Hit / no-hit (fire policy) | canonical analytic hit | 183,093 waves | ~8–9% positive (imbalanced) | same as targeting | moderate |
-| Movement (surf) | `their_break_gf` / `their_hit_us` | 167,906 waves | ~30% hit-us base | incoming flight time (D6) | per-opponent gun-dependent |
+| GF regression (targeting) | `our_break_gf` (dejavu real) | 184,111 waves | continuous, low NaN | variable 28 ticks mean | moderate (see F2 KL) |
+| Hit / no-hit (fire policy) | canonical analytic hit | 184,111 waves | ~8–9% positive (imbalanced) | same as targeting | moderate |
+| Movement (surf) | `their_break_gf` / `their_hit_us` | 169,661 waves | ~30% hit-us base | incoming flight time (D6) | per-opponent gun-dependent |
 
 ### I2 — Recommended target formulation
 
@@ -913,5 +913,4 @@ Per C1–C5: GF distributions are peaked enough to be learnable for several oppo
 6. **Round-end censoring** — unresolved waves (A4) are not missing at random.
 7. **Floor selection bias** — the floor↔hero gap is unpaired (C4).
 8. **Missing scans** — stale features when coverage drops (B6).
-
 

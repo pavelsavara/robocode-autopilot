@@ -127,18 +127,27 @@ def require(condition: bool, message: str) -> None:
 # Canonical statistical helpers (fixed once; every section uses these identically)
 # --------------------------------------------------------------------------------------
 
-def canonical_hit(aim_gf, break_gf, fire_distance, mea):
-    """Canonical analytic hit rule: ``|aim_gf - break_gf| <= (18/fire_distance)/mea``.
+def canonical_hit(aim_gf, break_gf, fire_distance, mea, fire_bearing=None):
+    """Canonical analytic hit rule:
+    ``|aim_gf - break_gf| <= (18*box_factor/fire_distance)/mea``.
 
     Vectorized over numpy arrays / pandas Series. ``mea`` is each wave's own
     max-escape-angle and ``fire_distance`` its own fire-time distance, so the tolerance
-    is computed per wave (robot half-width 18 px)."""
+    is computed per wave (robot half-width 18 px). ``box_factor = |cos t| + |sin t|`` of
+    the absolute fire bearing ``t`` accounts for the axis-aligned 36x36 box that does
+    NOT rotate: the hittable width is 1x at the cardinals up to sqrt(2)x at the
+    diagonals. When ``fire_bearing`` is omitted the factor is 1 (cardinal/flat-18)."""
     aim_gf = np.asarray(aim_gf, dtype=np.float64)
     break_gf = np.asarray(break_gf, dtype=np.float64)
     fire_distance = np.asarray(fire_distance, dtype=np.float64)
     mea = np.asarray(mea, dtype=np.float64)
+    if fire_bearing is None:
+        box_factor = 1.0
+    else:
+        t = np.asarray(fire_bearing, dtype=np.float64)
+        box_factor = np.abs(np.cos(t)) + np.abs(np.sin(t))
     with np.errstate(divide="ignore", invalid="ignore"):
-        gf_tol = (18.0 / fire_distance) / mea
+        gf_tol = (18.0 * box_factor / fire_distance) / mea
     return np.abs(aim_gf - break_gf) <= gf_tol
 
 
@@ -555,10 +564,13 @@ def hit_rate_analytic(df: pd.DataFrame, aim) -> tuple[int, int]:
     brk = df["our_break_gf"].to_numpy(dtype=np.float64)
     dist = df["our_fire_distance"].to_numpy(dtype=np.float64)
     mea = df["our_fire_mea"].to_numpy(dtype=np.float64)
+    bearing = (df["our_fire_bearing_absolute"].to_numpy(dtype=np.float64)
+               if "our_fire_bearing_absolute" in df.columns else None)
     mask = np.isfinite(brk) & np.isfinite(dist) & np.isfinite(mea) & (mea > 0)
     if isinstance(aim, np.ndarray):
         aim = aim[mask]
-    hits = canonical_hit(aim, brk[mask], dist[mask], mea[mask])
+    fb = bearing[mask] if bearing is not None else None
+    hits = canonical_hit(aim, brk[mask], dist[mask], mea[mask], fb)
     return int(np.sum(hits)), int(mask.sum())
 
 
@@ -1429,7 +1441,8 @@ def section_c(ds: Dataset, max_model_rows: int, figs: Figures) -> str:
             model = RandomForestRegressor(n_estimators=60, max_depth=8, random_state=SEED, n_jobs=-1)
             pred = cross_val_predict(model, X, yv, cv=GroupKFold(k), groups=groups)
             ch, cm = canonical_hit(pred, yv, ds_d["our_fire_distance"].to_numpy(dtype=float),
-                                   ds_d["our_fire_mea"].to_numpy(dtype=float)), len(yv)
+                                   ds_d["our_fire_mea"].to_numpy(dtype=float),
+                                   ds_d["our_fire_bearing_absolute"].to_numpy(dtype=float)), len(yv)
             cv_rate = float(np.mean(ch))
         c5.append((f"`{opp}`", f"{n:,}{_flag(n)}",
                    _pct(qh / qm if qm else float('nan'), 1),
@@ -1738,7 +1751,8 @@ def section_e(ds: Dataset, max_model_rows: int, figs: Figures) -> str:
     from sklearn.metrics import average_precision_score
     hit = canonical_hit(d["our_fire_aim_gf"].to_numpy(dtype=float), y,
                         d["our_fire_distance"].to_numpy(dtype=float),
-                        d["our_fire_mea"].to_numpy(dtype=float)).astype(int)
+                        d["our_fire_mea"].to_numpy(dtype=float),
+                        d["our_fire_bearing_absolute"].to_numpy(dtype=float)).astype(int)
     base = hit.mean()
     out += ["### E4 — Feature importance for hit / no-hit (PR-AUC-scored)", ""]
     if hit.sum() < 10 or hit.sum() == len(hit):

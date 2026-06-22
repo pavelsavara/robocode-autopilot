@@ -26,6 +26,22 @@ public final class GuessFactor {
     public static final double BOT_HALF_WIDTH = 18.0;
 
     /**
+     * Bounding-box cross-section factor for a bullet travelling at absolute bearing
+     * {@code absBearing}. The Robocode robot box is an axis-aligned 36x36 square that
+     * does NOT rotate with heading, so the hittable width seen by a bullet is
+     * {@code 36*(|cos|+|sin|)} — 1x at the cardinals (18 px half-width) up to
+     * {@code sqrt(2)}x at the diagonals (18*sqrt(2) ~= 25.46 px). The angle is the
+     * bullet's ABSOLUTE bearing (the box is field-aligned, so robot heading is
+     * irrelevant). Returns 1 when the bearing is unknown.
+     */
+    public static double boxFactor(double absBearing) {
+        if (Double.isNaN(absBearing)) {
+            return 1.0;
+        }
+        return Math.abs(Math.cos(absBearing)) + Math.abs(Math.sin(absBearing));
+    }
+
+    /**
      * Precise maximum escape angle: the angular offset a target can reach by moving
      * perpendicular at max velocity for the bullet's full flight time, measured at
      * the intercept. Slightly wider than the linear {@link #maxEscapeAngle} because
@@ -51,15 +67,17 @@ public final class GuessFactor {
     /**
      * Half-width (in GF bins) of the bullet's hit band at a given distance/MEA, so a
      * gun can aim where the box-convolved hit count peaks instead of the raw bin
-     * mode. The hittable GF half-band is {@code BOT_HALF_WIDTH/(distance*mea)}; this
-     * maps it to bin units (GF in [-1,1] over {@code numBins}). Always at least 1 so
-     * a lone saturation spike cannot capture the aim.
+     * mode. The hittable GF half-band is
+     * {@code BOT_HALF_WIDTH*boxFactor(absBearing)/(distance*mea)} — widened by the
+     * non-rotating box cross-section (1x..sqrt(2)x with absolute bearing); this maps
+     * it to bin units (GF in [-1,1] over {@code numBins}). Always at least 1 so a
+     * lone saturation spike cannot capture the aim.
      */
-    public static int gfBoxWindowBins(double distance, double mea, int numBins) {
+    public static int gfBoxWindowBins(double distance, double mea, int numBins, double absBearing) {
         if (Double.isNaN(distance) || Double.isNaN(mea) || distance <= 0 || mea <= 0) {
             return 0;
         }
-        double boxTolGf = BOT_HALF_WIDTH / (distance * mea);
+        double boxTolGf = BOT_HALF_WIDTH * boxFactor(absBearing) / (distance * mea);
         int half = numBins / 2;
         int w = (int) Math.round(boxTolGf * half);
         return Math.max(1, Math.min(half, w));
