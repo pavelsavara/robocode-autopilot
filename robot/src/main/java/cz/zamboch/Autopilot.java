@@ -307,6 +307,15 @@ public final class Autopilot extends AdvancedRobot {
     private double bfWidth;
     private double bfHeight;
 
+    /**
+     * Gun-settle tolerance: fire only when the gun's actual heading is within this
+     * of the committed aim it was tracking. The gun slews 20°/tick, far faster than
+     * the per-tick aim drift, so it settles exactly on the committed aim almost
+     * every tick; this is an FP-robust "is it there yet" margin, not an aiming slop
+     * budget (≈0.1° ⇒ &lt;0.05 GF-bin of pointing error).
+     */
+    private static final double GUN_SETTLE_TOLERANCE = Math.toRadians(0.1);
+
     /** Shared initialization for both live and observer modes. */
     private void initCommon(double bfWidth, double bfHeight) {
         this.bfWidth = bfWidth;
@@ -337,6 +346,13 @@ public final class Autopilot extends AdvancedRobot {
         // is the radar's actual angular motion (no carry from body/gun turns).
         setAdjustRadarForRobotTurn(true);
         setAdjustRadarForGunTurn(true);
+        // Decouple the gun from the body turn so a commanded gun rotation lands the
+        // gun exactly on the intended aim. Without this the gun also carries the
+        // body's per-tick rotation (several degrees while orbiting), so the bullet
+        // leaves at intended-aim + body-turn — a one-sided pointing error — and the
+        // gun never settles tightly on the committed aim. Decoupling makes the
+        // committed-aim fire gate exact and removes that aim bias.
+        setAdjustGunForRobotTurn(true);
         // Round 2+ of the same battle: the opponent and its accumulated VCS model are
         // already known from a prior round via the per-battle static, so attach the
         // model now — before the first scan — so targeting benefits immediately.
@@ -372,17 +388,24 @@ public final class Autopilot extends AdvancedRobot {
         setAhead(moveCmd.ahead);
 
         // Gun — unified code path for both live and observer mode.
-        // In live mode: setTurnGunRightRadians → peer stores radians;
-        // getGunTurnRemaining() returns degrees (AdvancedRobot converts).
-        // In observer mode: setTurnGunRightRadians → ObserverRobotPeer stores radians;
-        // getGunTurnRemaining() returns radians (same internal storage),
-        // AdvancedRobot.getGunTurnRemaining() wraps with toDegrees().
-        // Both paths: check < 5 degrees, call setFireBullet which checks gun heat.
+        // Robocode fires at the gun's CURRENT heading and applies the rotation we
+        // command this tick only AFTER the bullet has left (fire-before-rotate).
+        // So the bullet always flies along the aim we committed LAST tick, which
+        // the gun has been slewing toward. Only fire once the gun has actually
+        // SETTLED on that committed aim (its previous-tick GUN_AIM_ANGLE); until
+        // then the heading is a mid-slew angle that matches no deliberate GF. The
+        // settle test compares the actual gun heading against the committed aim —
+        // both authoritative in live and observer mode, so the fire decision is
+        // identical on both paths (getGunTurnRemaining is NOT decremented in the
+        // observer, so it cannot be used here). The T-0 "surprise" veto is separate.
         gun.getFireCommand(fireCmd);
         if (!Double.isNaN(fireCmd.angle)) {
             double gunHeading = wb.getFeature(Feature.GUN_HEADING);
+            double committedAim = wb.getPreviousTickFeature(Feature.GUN_AIM_ANGLE);
+            boolean gunSettledOnCommittedAim = !Double.isNaN(committedAim)
+                    && Math.abs(RoboMath.normalRelativeAngle(committedAim - gunHeading)) < GUN_SETTLE_TOLERANCE;
             setTurnGunRightRadians(RoboMath.normalRelativeAngle(fireCmd.angle - gunHeading));
-            if (fireCmd.power > 0 && Math.abs(getGunTurnRemaining()) < 5) {
+            if (fireCmd.power > 0 && gunSettledOnCommittedAim) {
                 Bullet bullet = setFireBullet(fireCmd.power);
                 if (bullet != null) {
                     snapshotFireFeatures(fireCmd.power, bullet.hashCode());
@@ -431,7 +454,10 @@ public final class Autopilot extends AdvancedRobot {
         wb.setFeature(Feature.OUR_FIRE_ADVANCING_VELOCITY, wb.getFeature(Feature.OPPONENT_ADVANCING_VELOCITY));
         wb.setFeature(Feature.OUR_FIRE_OPPONENT_X, wb.getFeature(Feature.OPPONENT_X));
         wb.setFeature(Feature.OUR_FIRE_OPPONENT_Y, wb.getFeature(Feature.OPPONENT_Y));
-        wb.setFeature(Feature.OUR_FIRE_AIM_GF, wb.getFeature(Feature.GUN_AIM_GF));
+        // The bullet flew along the aim we committed LAST tick (the gun had settled
+        // there before firing), so record THAT tick's GF — not this tick's recompute
+        // — to keep the trained intent matched to the bullet's actual direction.
+        wb.setFeature(Feature.OUR_FIRE_AIM_GF, wb.getPreviousTickFeature(Feature.GUN_AIM_GF));
         wb.setFeature(Feature.OUR_FIRE_IS_REAL, 1.0);
 
         // Aim-time geometry: the gun was aimed reacting to the previous tick's
