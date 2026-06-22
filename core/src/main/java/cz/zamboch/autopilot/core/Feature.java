@@ -68,6 +68,10 @@ public enum Feature {
     THEIR_AIM_OUR_Y(FileType.THEIR_WAVES),
     THEIR_AIM_DISTANCE(FileType.THEIR_WAVES),
     THEIR_AIM_BEARING(FileType.THEIR_WAVES),
+    // Our lateral velocity as seen by the opponent at their aim time (their GF
+    // frame). Gives the GF sign so their_break_gf is in the same directioned,
+    // aim-time frame as our_break_gf instead of a direction-less raw offset.
+    THEIR_AIM_LATERAL_VELOCITY(FileType.THEIR_WAVES),
     THEIR_BREAK_TICK(FileType.THEIR_WAVES),
     THEIR_BREAK_OUR_X(FileType.THEIR_WAVES),
     THEIR_BREAK_OUR_Y(FileType.THEIR_WAVES),

@@ -101,7 +101,7 @@ final class ModelSelectorTest {
         }
 
         ModelSelector sel = new ModelSelector(vcs);
-        double predicted = sel.predictForAim(400, 5.0, 0.0);
+        double predicted = sel.predictForAim(400, 5.0, 0.0, GuessFactor.maxEscapeAngle(14.0));
         double expected = GuessFactor.binIndexToGf(targetBin, GuessFactor.NUM_BINS);
         assertEquals(expected, predicted, 1e-9);
     }

@@ -1494,6 +1494,7 @@ def section_c(ds: Dataset, max_model_rows: int, figs: Figures) -> str:
     # C8 — temporal autocorrelation of break_gf within rounds
     out += ["### C8 — Temporal autocorrelation of `our_break_gf` (within round)", ""]
     c8 = []
+    lag1_mean = float('nan')
     for lag in (1, 2, 3):
         vals = []
         for _, grp in ds.dejavu[~ds.dejavu["self_play"]].groupby(
@@ -1503,10 +1504,17 @@ def section_c(ds: Dataset, max_model_rows: int, figs: Figures) -> str:
                 a, b = s[:-lag], s[lag:]
                 if a.std() > 0 and b.std() > 0:
                     vals.append(np.corrcoef(a, b)[0, 1])
-        c8.append((f"lag {lag}", _f(np.mean(vals) if vals else float('nan'), 3),
-                   f"{len(vals)} rounds"))
-    out += [md_table(["Lag", "Mean autocorrelation", "Rounds"], c8),
-            "Non-zero autocorrelation ⇒ sequence/pattern models can beat memoryless VCS.", ""]
+        m = float(np.mean(vals)) if vals else float('nan')
+        if lag == 1:
+            lag1_mean = m
+        c8.append((f"lag {lag}", _f(m, 3), f"{len(vals)} rounds"))
+    note = ("Gun-side `our_break_gf` is essentially **not** autocorrelated on the corrected "
+            "aim-time frame (|lag-1| < 0.15), so a sequence/pattern *gun* gains little; the "
+            "lag-1 structure earlier passes saw lives on the **movement** channel "
+            "(`their_break_gf`, see [sequence.md](sequence.md))."
+            if (np.isfinite(lag1_mean) and abs(lag1_mean) < 0.15) else
+            "Non-zero autocorrelation ⇒ a sequence/pattern gun could beat the memoryless VCS.")
+    out += [md_table(["Lag", "Mean autocorrelation", "Rounds"], c8), note, ""]
 
     # C9 — hit rate vs distance
     out += ["### C9 — Hit rate vs engagement distance (canonical, hero aim)", ""]

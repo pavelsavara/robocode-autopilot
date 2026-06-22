@@ -228,7 +228,7 @@ final class GodViewWaveResolver {
         long fireTick = (long) ctx.godWb().getFeature(Feature.TICK) - 1L;
 
         Wave wave = new Wave(fireX, fireY, fireTick, absoluteBearing,
-                bulletSpeed, direction, distSeg, latVelSeg);
+                bulletSpeed, direction, distSeg, latVelSeg, 0, distance);
 
         double advVel = oppVel * Math.cos(relativeHeading);
 
@@ -314,7 +314,7 @@ final class GodViewWaveResolver {
         ModelSelector selector = wb.getModelSelector();
         double aimGf = 0.0;
         if (selector != null) {
-            aimGf = selector.predictForAim(aimDistance, tw.aimLatVel, w.lag1Gf);
+            aimGf = selector.predictForAim(aimDistance, tw.aimLatVel, w.lag1Gf, w.mea);
         } else {
             VcsStore vcs = wb.getVcsStore();
             if (vcs != null) {
@@ -322,7 +322,8 @@ final class GodViewWaveResolver {
                         ? w.distanceSegment : GuessFactor.distanceSegment(aimDistance);
                 int latVelSeg = Double.isNaN(tw.aimLatVel)
                         ? w.latVelSegment : GuessFactor.lateralVelocitySegment(tw.aimLatVel);
-                int bestBin = vcs.getBestBin(distSeg, latVelSeg, w.lag1Gf);
+                int window = GuessFactor.gfBoxWindowBins(aimDistance, w.mea, GuessFactor.NUM_BINS);
+                int bestBin = vcs.getBestBinBoxed(distSeg, latVelSeg, w.lag1Gf, window);
                 aimGf = GuessFactor.binIndexToGf(bestBin, GuessFactor.NUM_BINS);
             }
         }
@@ -446,6 +447,10 @@ final class GodViewWaveResolver {
         peerWb.setFeature(Feature.THEIR_AIM_OUR_Y, tw.aimTargetY);
         peerWb.setFeature(Feature.THEIR_AIM_DISTANCE, aimDistance);
         peerWb.setFeature(Feature.THEIR_AIM_BEARING, aimBearing);
+        // Our (target's) lateral velocity in the firer's frame at aim time — the GF
+        // sign. Same quantity the core TheirWaveTracker captures, so their_break_gf
+        // stays consistent between observer and god-view.
+        peerWb.setFeature(Feature.THEIR_AIM_LATERAL_VELOCITY, tw.aimLatVel);
 
         // Break-time features
         peerWb.setFeature(Feature.THEIR_BREAK_TICK, breakTick);

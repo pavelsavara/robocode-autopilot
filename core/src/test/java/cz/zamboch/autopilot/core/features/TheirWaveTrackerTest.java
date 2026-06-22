@@ -184,7 +184,7 @@ final class TheirWaveTrackerTest {
         // Offset from fire bearing (PI ≈ 3.14): 2.76 - 3.14 ≈ -0.38
         double actualBearing = Math.atan2(280 - 200, 200 - 400);
         double expectedOffset = actualBearing - fireBearing;
-        double mea = GuessFactor.maxEscapeAngle(14.0);
+        double mea = GuessFactor.preciseMaxEscapeAngle(14.0, 200);
         double expectedGF = Math.max(-1.0, Math.min(1.0, expectedOffset / mea));
 
         assertEquals(expectedGF, wb.getTheirWave(slot, TheirWaveColumn.BREAK_GF), 0.01);

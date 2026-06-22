@@ -1,6 +1,6 @@
 # Absolute bullet angle and GuessFactor hit geometry
 
-_Generated 2026-06-07 13:25 UTC from `pipeline/build/battle-csv-producer/1780834355900-1780834355900`._
+_Generated 2026-06-22 09:43 UTC from `pipeline/build/intuition-run/1782120123832-1782120123832`._
 
 ## Verdict: CONFIRMED (engine mechanism)
 
@@ -8,17 +8,17 @@ The hypothesis is correct **by construction**, not by chance. Robocode resolves 
 
 ## How much it matters across real battles
 
-Measured over **679,080** resolved real hero waves (`dejavu-waves.csv`, self-play and the non-competitive `cz.zamboch.Autopilot` excluded). The absolute bullet angle is the recorded `our_fire_bearing_absolute` column; `box_factor = |cos theta| + |sin theta|`:
+Measured over **145,169** resolved real hero waves (`dejavu-waves.csv`, self-play and the non-competitive `cz.zamboch.Autopilot` excluded). The absolute bullet angle is the recorded `our_fire_bearing_absolute` column; `box_factor = |cos theta| + |sin theta|`:
 
 | quantity | value |
 |---|---|
-| mean box_factor (mean GF-band widening) | 1.251x |
-| median box_factor | 1.269x |
+| mean box_factor (mean GF-band widening) | 1.252x |
+| median box_factor | 1.271x |
 | p90 box_factor | 1.407x |
 | max box_factor | 1.414x |
-| waves with box_factor >= 1.10 | 82.9% |
-| waves with box_factor >= 1.20 | 64.1% |
-| waves with box_factor >= 1.30 | 43.3% |
+| waves with box_factor >= 1.10 | 83.1% |
+| waves with box_factor >= 1.20 | 64.3% |
+| waves with box_factor >= 1.30 | 43.7% |
 | mean hit-band the flat-18 model misses | 20.1% |
 | worst-case (diagonal) under-count | 29.3% |
 
@@ -26,14 +26,14 @@ Per box_factor bin (median hittable GF half-band, flat-18 vs box model):
 
 | box_factor bin | center | waves | share | median dist | flat GF tol | box GF tol |
 |---|---|---|---|---|---|---|
-| [1.000, 1.052] | 1.026 | 58,517 | 8.6% | 529 | 0.0802 | 0.0823 |
-| [1.052, 1.104] | 1.078 | 61,835 | 9.1% | 529 | 0.0804 | 0.0866 |
-| [1.104, 1.155] | 1.129 | 65,433 | 9.6% | 527 | 0.0807 | 0.0911 |
-| [1.155, 1.207] | 1.181 | 67,487 | 9.9% | 524 | 0.0811 | 0.0957 |
-| [1.207, 1.259] | 1.233 | 71,157 | 10.5% | 521 | 0.0815 | 0.1005 |
-| [1.259, 1.311] | 1.285 | 76,731 | 11.3% | 517 | 0.0822 | 0.1056 |
-| [1.311, 1.362] | 1.337 | 89,118 | 13.1% | 513 | 0.0829 | 0.1109 |
-| [1.362, 1.414] | 1.388 | 188,802 | 27.8% | 507 | 0.0839 | 0.1171 |
+| [1.000, 1.052] | 1.026 | 12,246 | 8.4% | 531 | 0.0785 | 0.0805 |
+| [1.052, 1.104] | 1.078 | 13,142 | 9.1% | 529 | 0.0789 | 0.0849 |
+| [1.104, 1.155] | 1.129 | 13,868 | 9.6% | 529 | 0.0788 | 0.0889 |
+| [1.155, 1.207] | 1.181 | 14,529 | 10.0% | 527 | 0.0790 | 0.0934 |
+| [1.207, 1.259] | 1.233 | 15,171 | 10.5% | 523 | 0.0798 | 0.0983 |
+| [1.259, 1.311] | 1.285 | 16,287 | 11.2% | 519 | 0.0804 | 0.1033 |
+| [1.311, 1.362] | 1.337 | 19,175 | 13.2% | 514 | 0.0811 | 0.1085 |
+| [1.362, 1.414] | 1.388 | 40,751 | 28.1% | 509 | 0.0819 | 0.1144 |
 
 **Actionable:** the analytic hit rule `canonical_hit` in `scripts/intuition.py` (and `gf_tol ~= (18/fire_distance)/mea` in `wiki/intuition-design.md`) uses a **flat 18 px** half-width. It therefore under-counts the true hittable GF band by ~20% on average and up to 29% at diagonal absolute angles. Replacing 18 with `18 * (|cos theta| + |sin theta|)` (theta = `our_fire_bearing_absolute`) makes the analytic hit baseline match the engine.
 
@@ -42,4 +42,3 @@ Per box_factor bin (median hittable GF half-band, flat-18 vs box model):
 ![gf-band-widening](abs-angle-gf/gf-band-widening.png)
 
 _Assets under `wiki/abs-angle-gf/`._
-

@@ -533,7 +533,7 @@ final class OurWaveTrackerTest {
         assertEquals(oppY, wb.getFeature(Feature.OPPONENT_Y), 1e-6);
         assertEquals(Whiteboard.WAVE_RESOLVED, wb.getOurWaveState(0));
 
-        double mea = GuessFactor.maxEscapeAngle(14.0);
+        double mea = GuessFactor.preciseMaxEscapeAngle(14.0, distance);
         double actualBearing = Math.atan2(oppX - fireX, oppY - fireY);
         double aimBaseline = Math.atan2(aimOppX - fireX, aimOppY - fireY);
         double expectedGf = GuessFactor.guessFactor(

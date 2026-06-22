@@ -34,6 +34,13 @@ public final class Wave {
     public Wave(double fireX, double fireY, long fireTick, double fireBearing,
             double bulletSpeed, int direction, int distanceSegment,
             int latVelSegment, int bulletId) {
+        this(fireX, fireY, fireTick, fireBearing, bulletSpeed, direction,
+                distanceSegment, latVelSegment, bulletId, Double.NaN);
+    }
+
+    public Wave(double fireX, double fireY, long fireTick, double fireBearing,
+            double bulletSpeed, int direction, int distanceSegment,
+            int latVelSegment, int bulletId, double distance) {
         this.fireX = fireX;
         this.fireY = fireY;
         this.fireTick = fireTick;
@@ -42,7 +49,7 @@ public final class Wave {
         this.direction = direction;
         this.distanceSegment = distanceSegment;
         this.latVelSegment = latVelSegment;
-        this.mea = GuessFactor.maxEscapeAngle(bulletSpeed);
+        this.mea = GuessFactor.preciseMaxEscapeAngle(bulletSpeed, distance);
         this.bulletId = bulletId;
     }
 

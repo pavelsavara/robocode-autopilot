@@ -47,6 +47,8 @@ public final class TheirWaveTracker implements IInGameFeatures {
             Feature.OPPONENT_Y,
             Feature.OUR_X,
             Feature.OUR_Y,
+            Feature.OUR_HEADING,
+            Feature.OUR_VELOCITY,
             Feature.TICK
     };
     private static final Feature[] OUTPUTS = {
@@ -68,6 +70,7 @@ public final class TheirWaveTracker implements IInGameFeatures {
             Feature.THEIR_AIM_OUR_Y,
             Feature.THEIR_AIM_DISTANCE,
             Feature.THEIR_AIM_BEARING,
+            Feature.THEIR_AIM_LATERAL_VELOCITY,
             Feature.THEIR_BREAK_TICK,
             Feature.THEIR_BREAK_OUR_X,
             Feature.THEIR_BREAK_OUR_Y,
@@ -327,6 +330,14 @@ public final class TheirWaveTracker implements IInGameFeatures {
         wb.setTheirWave(slot, TheirWaveColumn.AIM_OUR_Y, aimOurY);
         wb.setTheirWave(slot, TheirWaveColumn.AIM_DISTANCE, aimDistance);
         wb.setTheirWave(slot, TheirWaveColumn.AIM_BEARING, aimBearing);
+        // Our lateral velocity as seen by them at aim time (CORE convention:
+        // relative to bearing-from-us = aimBearing + PI). Its sign is the GF
+        // direction, so their_break_gf is directioned like our_break_gf instead of
+        // a direction-less raw offset.
+        double aimOurHeading = wb.getFeatureNTicksAgo(Feature.OUR_HEADING, 2);
+        double aimOurVel = wb.getFeatureNTicksAgo(Feature.OUR_VELOCITY, 2);
+        double aimLatVel = aimOurVel * Math.sin(aimOurHeading - (aimBearing + Math.PI));
+        wb.setTheirWave(slot, TheirWaveColumn.AIM_LATERAL_VELOCITY, aimLatVel);
 
         // Also write fire-time features to staging for CsvWriter
         wb.setFeature(Feature.THEIR_FIRE_TICK, fireTick);
@@ -343,6 +354,7 @@ public final class TheirWaveTracker implements IInGameFeatures {
         wb.setFeature(Feature.THEIR_AIM_OUR_Y, aimOurY);
         wb.setFeature(Feature.THEIR_AIM_DISTANCE, aimDistance);
         wb.setFeature(Feature.THEIR_AIM_BEARING, aimBearing);
+        wb.setFeature(Feature.THEIR_AIM_LATERAL_VELOCITY, aimLatVel);
 
         // Clear fire power staging so we don't re-create next tick
         wb.setFeature(Feature.THEIR_FIRE_POWER, Double.NaN);
@@ -376,15 +388,26 @@ public final class TheirWaveTracker implements IInGameFeatures {
             double distToUs = Math.sqrt(dx * dx + dy * dy);
 
             if (distTravelled >= distToUs) {
-                // Compute bearing offset and guess factor from their perspective
-                double fireBearing = wb.getTheirWave(slot, TheirWaveColumn.FIRE_BEARING);
+                // GF=0 baseline (pre-aim convention): from their fire origin to OUR
+                // aim-time position, with the GF sign from our aim-time lateral
+                // velocity in their frame — the same directioned, aim-time frame as
+                // our_break_gf. Falls back to the recorded fire bearing / no-direction
+                // when the aim-time data is unavailable (synthetic test waves).
                 double actualBearing = Math.atan2(dx, dy);
-                double bearingOffset = RoboMath.normalRelativeAngle(actualBearing - fireBearing);
+                double aimOurX = wb.getTheirWave(slot, TheirWaveColumn.AIM_OUR_X);
+                double aimOurY = wb.getTheirWave(slot, TheirWaveColumn.AIM_OUR_Y);
+                double baseBearing = (Double.isNaN(aimOurX) || Double.isNaN(aimOurY))
+                        ? wb.getTheirWave(slot, TheirWaveColumn.FIRE_BEARING)
+                        : Math.atan2(aimOurX - fireX, aimOurY - fireY);
+                double bearingOffset = RoboMath.normalRelativeAngle(actualBearing - baseBearing);
 
-                // GF from their perspective: use MEA based on fire distance
-                double mea = GuessFactor.maxEscapeAngle(bulletSpeed);
-                double gf = (mea != 0) ? bearingOffset / mea : 0;
-                gf = Math.max(-1.0, Math.min(1.0, gf));
+                // GF from their perspective: MEA based on fire distance, sign from
+                // our aim-time lateral velocity in their frame.
+                double fireDistance = wb.getTheirWave(slot, TheirWaveColumn.FIRE_DISTANCE);
+                double mea = GuessFactor.preciseMaxEscapeAngle(bulletSpeed, fireDistance);
+                double aimLatVel = wb.getTheirWave(slot, TheirWaveColumn.AIM_LATERAL_VELOCITY);
+                int direction = Double.isNaN(aimLatVel) ? 1 : GuessFactor.direction(aimLatVel);
+                double gf = GuessFactor.guessFactor(bearingOffset, mea, direction);
 
                 // Write break columns to ring buffer
                 wb.setTheirWave(slot, TheirWaveColumn.BREAK_TICK, currentTick);

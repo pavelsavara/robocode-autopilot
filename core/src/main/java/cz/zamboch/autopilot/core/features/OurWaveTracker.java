@@ -115,7 +115,7 @@ public final class OurWaveTracker implements IInGameFeatures {
         }
 
         double bulletSpeed = GuessFactor.bulletSpeed(power > 0 ? power : 2.0);
-        double mea = GuessFactor.maxEscapeAngle(bulletSpeed);
+        double mea = GuessFactor.preciseMaxEscapeAngle(bulletSpeed, distance);
         int direction = Double.isNaN(latVel) ? 1 : GuessFactor.direction(latVel);
 
         double offset = 0;
@@ -132,14 +132,15 @@ public final class OurWaveTracker implements IInGameFeatures {
 
         ModelSelector selector = wb.getModelSelector();
         if (selector != null) {
-            aimGf = selector.predictForAim(distance, Double.isNaN(latVel) ? 0 : latVel, lag1Gf);
+            aimGf = selector.predictForAim(distance, Double.isNaN(latVel) ? 0 : latVel, lag1Gf, mea);
             offset = aimGf * mea * direction;
         } else {
             VcsStore vcs = wb.getVcsStore();
             if (vcs != null) {
                 int distSeg = GuessFactor.distanceSegment(distance);
                 int latVelSeg = GuessFactor.lateralVelocitySegment(Double.isNaN(latVel) ? 0 : latVel);
-                int bestBin = vcs.getBestBin(distSeg, latVelSeg, lag1Gf);
+                int window = GuessFactor.gfBoxWindowBins(distance, mea, GuessFactor.NUM_BINS);
+                int bestBin = vcs.getBestBinBoxed(distSeg, latVelSeg, lag1Gf, window);
                 double bestGf = GuessFactor.binIndexToGf(bestBin, GuessFactor.NUM_BINS);
                 offset = bestGf * mea * direction;
                 aimGf = bestGf;
@@ -260,7 +261,7 @@ public final class OurWaveTracker implements IInGameFeatures {
             return;
         }
         double bulletSpeed = GuessFactor.bulletSpeed(power);
-        double mea = GuessFactor.maxEscapeAngle(bulletSpeed);
+        double mea = GuessFactor.preciseMaxEscapeAngle(bulletSpeed, wb.getFeature(Feature.OUR_FIRE_DISTANCE));
         double latVel = wb.getFeature(Feature.OUR_FIRE_LATERAL_VELOCITY);
         int direction = Double.isNaN(latVel) ? 1 : GuessFactor.direction(latVel);
 

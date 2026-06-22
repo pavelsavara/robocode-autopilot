@@ -23,6 +23,7 @@ public enum TheirWaveColumn {
     AIM_OUR_Y,
     AIM_DISTANCE,
     AIM_BEARING, // absolute bearing from them to us at aim time
+    AIM_LATERAL_VELOCITY, // our lateral velocity in their frame at aim time (GF sign)
 
     // --- Break-time columns (filled at resolution) ---
     BREAK_TICK,

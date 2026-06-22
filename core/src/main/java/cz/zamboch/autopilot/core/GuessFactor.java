@@ -22,6 +22,49 @@ public final class GuessFactor {
         return Math.asin(8.0 / bulletSpeed);
     }
 
+    /** Half-width of the robot bounding box (px) — the GF hit tolerance source. */
+    public static final double BOT_HALF_WIDTH = 18.0;
+
+    /**
+     * Precise maximum escape angle: the angular offset a target can reach by moving
+     * perpendicular at max velocity for the bullet's full flight time, measured at
+     * the intercept. Slightly wider than the linear {@link #maxEscapeAngle} because
+     * the target's range grows as it flees, extending the flight time. Falls back to
+     * the linear MEA when distance is unknown.
+     */
+    public static double preciseMaxEscapeAngle(double bulletSpeed, double distance) {
+        if (Double.isNaN(distance) || distance <= 0 || bulletSpeed <= 0) {
+            return maxEscapeAngle(bulletSpeed);
+        }
+        final double maxVelocity = 8.0;
+        double lateral = 0.0;
+        for (int tick = 1; tick <= 256; tick++) {
+            lateral += maxVelocity;
+            double range = Math.hypot(lateral, distance);
+            if (bulletSpeed * tick >= range) {
+                return Math.atan2(lateral, distance);
+            }
+        }
+        return maxEscapeAngle(bulletSpeed);
+    }
+
+    /**
+     * Half-width (in GF bins) of the bullet's hit band at a given distance/MEA, so a
+     * gun can aim where the box-convolved hit count peaks instead of the raw bin
+     * mode. The hittable GF half-band is {@code BOT_HALF_WIDTH/(distance*mea)}; this
+     * maps it to bin units (GF in [-1,1] over {@code numBins}). Always at least 1 so
+     * a lone saturation spike cannot capture the aim.
+     */
+    public static int gfBoxWindowBins(double distance, double mea, int numBins) {
+        if (Double.isNaN(distance) || Double.isNaN(mea) || distance <= 0 || mea <= 0) {
+            return 0;
+        }
+        double boxTolGf = BOT_HALF_WIDTH / (distance * mea);
+        int half = numBins / 2;
+        int w = (int) Math.round(boxTolGf * half);
+        return Math.max(1, Math.min(half, w));
+    }
+
     /** Bullet speed from fire power. */
     public static double bulletSpeed(double power) {
         return 20.0 - 3.0 * power;

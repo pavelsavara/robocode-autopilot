@@ -881,32 +881,54 @@ def build_report(run_dir: Path, results: list[OpponentResult], val: Validation,
     proxy_off = [r.gf_off.get("proxy", (float("nan"), 0))[0] for r in results]
     stale_off = [r.gf_off.get("preds", {}).get("last_broken_gf", (float("nan"),))[0]
                  for r in results]
+    lag1_def = [r.gf_def.get("lag1_autocorr", (float("nan"), 0))[0] for r in results]
+    dev_def = [r.gf_def.get("preds", {}).get("developing_gf", (float("nan"),))[0]
+               for r in results]
     max_dist_off = max((r.mi_off.get("distance", float("nan")) for r in results
                         if np.isfinite(r.mi_off.get("distance", float("nan")))), default=float("nan"))
     best = max((r for r in results if np.isfinite(r.off_best_rate)),
                key=lambda r: r.off_best_rate, default=None)
+    # Is there usable lag-1 / developing-GF structure on the MOVEMENT (defense)
+    # channel? After the aim-time-direction fix was applied to incoming waves
+    # (TheirWaveTracker), this is decided from the data rather than asserted.
+    dev_def_max = max((abs(v) for v in dev_def if v is not None and np.isfinite(v)),
+                      default=float("nan"))
+    movement_predictive = np.isfinite(dev_def_max) and dev_def_max >= 0.05
     L.append("## Verdict")
     L.append("")
     L.append('**The earlier "all scenarios disproved" conclusion was a measurement artifact, '
              "not a true null.** It scored every hypothesis against the noisy hit/miss label "
              "with mutual-information-in-bits, and blamed a metronome gun that is not in the "
              "data. Measured on the right target - the continuous break GuessFactor - the "
-             "central claim holds.")
+             "once-apparent lag-1 structure turns out to be a reference-frame artifact: once "
+             "the GF is computed on the directioned, aim-time frame it collapses to near zero "
+             + ("on the gun channel while a usable remnant survives on the movement channel."
+                if movement_predictive else "on BOTH the gun and the movement channels."))
     L.append("")
-    L.append(f"**Aim is strongly predictable - C8 confirmed.** The fire-order lag-1 break-GF "
-             f"autocorrelation is {_rng(lag1_off)} across opponents (offense), reproducing the "
-             "intuition report's C8 = 0.643: *where* the victim dodges is highly auto-correlated "
-             "wave to wave.")
+    L.append(f"**The GUN target is NOT lag-1 predictable.** On the directioned, aim-time GF "
+             f"frame the fire-order lag-1 break-GF autocorrelation is only {_rng(lag1_off)} "
+             f"across opponents (offense, `our_break_gf`) - near zero, and the leakage-safe "
+             f"predictors are flat (`developing_gf` -> GF r {_rng(dev_off)}, `last_broken_gf` "
+             f"-> GF r {_rng(stale_off)}). The ~0.64 that the original intuition report (C8) "
+             "and earlier sequence passes saw was an artifact of a direction-less / mis-framed "
+             "break GF (a slowly-varying geometric offset masquerading as a dodge).")
     L.append("")
-    L.append(f"**The signal survives the leakage guard - online and usable.** `developing_gf` "
-             f"is a faithful lag-1 proxy (proxy r {_rng(proxy_off)}) and **still predicts the "
-             f"next wave's break GF at fire time, r {_rng(dev_off)}, positive for every "
-             "opponent** - real aiming signal a memoryless VCS gun discards. The original "
-             "script only ever correlated it with hit/miss (r ~ 0) and used the wrong feature "
-             f"for aim: the freshest *already-broken* wave is ~3 fires stale "
-             f"(`last_broken_gf` -> break GF r {_rng(stale_off)}, ~ 0), which it mislabelled as "
-             '"the autocorrelation is not available online." It is - through the in-flight '
-             "wave.")
+    if movement_predictive:
+        L.append(f"**The lag-1 structure that survives is on the MOVEMENT (defense) channel.** "
+                 f"Where we are when the opponent's wave breaks (`their_break_gf`) is lag-1 "
+                 f"autocorrelated {_rng(lag1_def)}, and the leakage-safe `developing_gf` still "
+                 f"predicts the next defense break GF at fire time, r {_rng(dev_def)} - i.e. it "
+                 "is OUR own (simple-orbit) movement that is predictable to their guns.")
+    else:
+        L.append(f"**The MOVEMENT (defense) channel collapses the same way once its frame is "
+                 f"corrected.** With the aim-time-direction fix now applied to incoming waves "
+                 f"(TheirWaveTracker), the fire-order lag-1 autocorrelation of `their_break_gf` "
+                 f"is only {_rng(lag1_def)} and the leakage-safe `developing_gf` no longer "
+                 f"predicts the next defense break GF (r {_rng(dev_def)}, ~0). The earlier "
+                 "reading that the structure 'lived on the movement channel' was the residue of "
+                 "the same direction-less framing on incoming waves; correcting it removes it. "
+                 "**Net: neither channel carries exploitable wave-to-wave dodge memory on the "
+                 "corrected frame.**")
     L.append("")
     L.append("**Hit/miss really is near-null - but that is expected, not a disproof.** At a "
              "~10% base rate against world-class movement, whether one low-power bullet lands "
@@ -919,9 +941,14 @@ def build_report(run_dir: Path, results: list[OpponentResult], val: Validation,
              + f". `distance` stays the strongest single geometry axis (MI up to "
                f"{_fmt(max_dist_off, 4)} bits).")
     L.append("")
-    L.append("**Net.** Sequences win by sharpening **GF prediction** (the primary headline "
-             "below), not by making a fixed shot more likely to land. The hit/miss tables are "
-             "retained as a deliberately noisy secondary.")
+    L.append("**Net.** " + (
+        "Sequences win by sharpening **GF prediction** (the primary headline below), not by "
+        "making a fixed shot more likely to land. The hit/miss tables are retained as a "
+        "deliberately noisy secondary." if movement_predictive else
+        "On the corrected directioned frame the wave-to-wave GF predictors are flat on both "
+        "channels, so sequence / pattern memory adds little; aiming gains come from the "
+        "geometric segmentation (distance, lateral / advancing velocity), not from lag-1 dodge "
+        "memory. The hit/miss tables are retained as a deliberately noisy secondary."))
     L.append("")
 
     # ---- Primary headline: GF aiming predictability ----
@@ -947,10 +974,14 @@ def build_report(run_dir: Path, results: list[OpponentResult], val: Validation,
                      f"{_fmt(dev[0], 3)} ({_fmt(dev[1], 3)}) | {_fmt(prox, 3)} | "
                      f"{_fmt(onl[0], 3)} |")
     L.append("")
-    L.append("> The leaky lag-1 column reproduces C8 (~0.7); the leakage-safe `developing_gf` "
-             "keeps a positive, usable correlation with the next break GF on every opponent and "
-             "side, while the stale broken-feedback mean sits near zero. This is the result the "
-             "original report missed by testing hit/miss instead of the GF.")
+    L.append("> The leaky lag-1 column reproduces the corrected C8 reference ("
+             + _rng(lag1_off + lag1_def) + "); on the directioned aim-time frame the "
+             "leakage-safe `developing_gf` "
+             + ("keeps a positive, usable correlation with the next break GF on the movement "
+                "side while the gun side and the stale broken-feedback mean sit near zero."
+                if movement_predictive else
+                "no longer tracks the next break GF on either channel (r near zero), so the "
+                "earlier 'sequences sharpen GF' reading does not survive frame correction."))
     L.append("")
 
     # ---- Secondary: gun-heat phase (hit/miss, Wilson CI + lift) ----
@@ -1103,9 +1134,10 @@ def build_report(run_dir: Path, results: list[OpponentResult], val: Validation,
              "battles. Each names a new axis and the data channel that feeds it.")
     L.append("")
     L.append("1. **GF sign-sequence aiming model** `[existing]`. Predict the *next* break GF "
-             "(sign or bin) from the last 2-3 break GFs in the round. Puts C8's lag-1 "
-             "autocorrelation (0.643) to work on the aiming target itself, where the predictable "
-             "structure actually lives. Channel: `our_break_gf` ordered by `our_break_tick`.")
+             "(sign or bin) from the last 2-3 break GFs in the round. On the corrected frame the "
+             "gun-side lag-1 autocorrelation is ~0, so this is now a MOVEMENT-side idea (surf the "
+             "predictable structure in `their_break_gf`), not a gun one. Channel: `their_break_gf` "
+             "ordered by `their_break_tick`.")
     L.append("2. **Opponent direction-reversal cadence** `[existing]`. Count lateral-velocity "
              "sign flips over the last K ticks; a recently-wobbling dodger may be more "
              "predictable on the next shot. Channel: `scan_opponent_lateral_velocity`.")

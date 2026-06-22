@@ -26,3 +26,4 @@ run BattleLoopTest without fixed random seed for 35 rounds
 - categorize reasons for individual drift instances if any
 
 - we could decide to postpone firing, if the opponent surprized us by his move. For that we would need to make an estimate of his T position at T-1 time. Let's have new MovementPredictorStrategy class that would produce the estimate. 
+- we could also postpone fire randomly to see uncertainity for the opponent about our gun heat -> fire time. Note that opponent will learn that we fired in T+1

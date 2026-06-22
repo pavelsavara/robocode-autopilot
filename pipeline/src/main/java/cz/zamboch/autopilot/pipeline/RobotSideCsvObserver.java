@@ -488,7 +488,7 @@ public final class RobotSideCsvObserver extends BattleAdaptor implements Closeab
             wave.values[OurWaveColumn.FIRE_LATERAL_VELOCITY.ordinal()] = latVel;
             wave.values[OurWaveColumn.FIRE_ADVANCING_VELOCITY.ordinal()] = advVel;
             wave.values[OurWaveColumn.FIRE_BULLET_SPEED.ordinal()] = bulletSpeed;
-            wave.values[OurWaveColumn.FIRE_MEA.ordinal()] = GuessFactor.maxEscapeAngle(bulletSpeed);
+            wave.values[OurWaveColumn.FIRE_MEA.ordinal()] = GuessFactor.preciseMaxEscapeAngle(bulletSpeed, distance);
             wave.values[OurWaveColumn.FIRE_DIRECTION.ordinal()] = GuessFactor.direction(latVel);
             wave.values[OurWaveColumn.FIRE_BEARING_ABSOLUTE.ordinal()] = fireBearing;
             wave.values[OurWaveColumn.FIRE_X.ordinal()] = fireX;
@@ -572,7 +572,8 @@ public final class RobotSideCsvObserver extends BattleAdaptor implements Closeab
             double actualBearing = Math.atan2(dx, dy);
             double baseBearing = Double.isNaN(gfBaseline) ? fireBearing : gfBaseline;
             double bearingOffset = RoboMath.normalRelativeAngle(actualBearing - baseBearing);
-            double mea = GuessFactor.maxEscapeAngle(bulletSpeed);
+            double mea = GuessFactor.preciseMaxEscapeAngle(
+                    bulletSpeed, values[OurWaveColumn.FIRE_DISTANCE.ordinal()]);
             // Aim-time direction (the GF sign the gun keyed on), fallback to the
             // fire-time direction. Matches OurWaveTracker.aimDirection so dejavu's
             // BREAK_GF uses the same directioned convention as the core wave tracker.
@@ -611,7 +612,7 @@ public final class RobotSideCsvObserver extends BattleAdaptor implements Closeab
             int dir = Double.isNaN(aimLatVel)
                     ? (int) values[OurWaveColumn.FIRE_DIRECTION.ordinal()]
                     : GuessFactor.direction(aimLatVel);
-            double mea = GuessFactor.maxEscapeAngle(bulletSpeed);
+            double mea = values[OurWaveColumn.FIRE_MEA.ordinal()];
             return GuessFactor.developingGuessFactor(fireX, fireY, base, mea, dir, oppX, oppY);
         }
     }

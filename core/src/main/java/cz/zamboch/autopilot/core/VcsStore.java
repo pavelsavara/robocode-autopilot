@@ -34,32 +34,62 @@ public final class VcsStore implements IOnlineModel {
      * slice is empty, and returns ZERO_BIN if the whole segment pair is empty.
      */
     public int getBestBin(int distSeg, int latVelSeg, double lag1Gf) {
-        int lag1Seg = GuessFactor.lag1Segment(lag1Gf);
-        int[] bins = data[distSeg][latVelSeg][lag1Seg];
+        return getBestBinBoxed(distSeg, latVelSeg, lag1Gf, 0);
+    }
+
+    /**
+     * Box-aware best bin: returns the bin maximizing the count summed over a
+     * +-{@code halfWindowBins} window — i.e. where a bullet's hit band catches the
+     * most opponent mass — instead of the raw mode. With {@code halfWindowBins <= 0}
+     * this is the plain mode. Using the box window stops a lone GF saturation spike
+     * (e.g. the +-1 reversal pile-up) from capturing the aim.
+     */
+    public int getBestBinBoxed(int distSeg, int latVelSeg, double lag1Gf, int halfWindowBins) {
+        int[] bins = effectiveBins(distSeg, latVelSeg, lag1Gf);
         int bestIndex = GuessFactor.ZERO_BIN;
-        int bestCount = 0;
-        for (int i = 0; i < bins.length; i++) {
-            if (bins[i] > bestCount) {
-                bestCount = bins[i];
+        long bestScore = 0;
+        for (int i = 0; i < GuessFactor.NUM_BINS; i++) {
+            long score;
+            if (halfWindowBins <= 0) {
+                score = bins[i];
+            } else {
+                score = 0;
+                int lo = Math.max(0, i - halfWindowBins);
+                int hi = Math.min(GuessFactor.NUM_BINS - 1, i + halfWindowBins);
+                for (int j = lo; j <= hi; j++) {
+                    score += bins[j];
+                }
+            }
+            if (score > bestScore || (score == bestScore && score > 0
+                    && bins[i] > bins[bestIndex])) {
+                bestScore = score;
                 bestIndex = i;
             }
         }
-        if (bestCount > 0) {
-            return bestIndex;
-        }
-        // Sparse lag-1 slice: fall back to the aggregate over all lag-1 slices.
-        int[][] slices = data[distSeg][latVelSeg];
-        for (int b = 0; b < GuessFactor.NUM_BINS; b++) {
-            int sum = 0;
-            for (int s = 0; s < GuessFactor.LAG1_SEGMENTS; s++) {
-                sum += slices[s][b];
-            }
-            if (sum > bestCount) {
-                bestCount = sum;
-                bestIndex = b;
-            }
-        }
         return bestIndex;
+    }
+
+    /**
+     * The bin array to read for a segment + lag-1 slice: the requested lag-1 slice
+     * if it has any samples, otherwise the aggregate across all lag-1 slices (a
+     * fresh array). An all-zero array yields ZERO_BIN from the callers.
+     */
+    private int[] effectiveBins(int distSeg, int latVelSeg, double lag1Gf) {
+        int lag1Seg = GuessFactor.lag1Segment(lag1Gf);
+        int[] slice = data[distSeg][latVelSeg][lag1Seg];
+        for (int c : slice) {
+            if (c > 0) {
+                return slice;
+            }
+        }
+        int[] agg = new int[GuessFactor.NUM_BINS];
+        int[][] slices = data[distSeg][latVelSeg];
+        for (int s = 0; s < GuessFactor.LAG1_SEGMENTS; s++) {
+            for (int b = 0; b < GuessFactor.NUM_BINS; b++) {
+                agg[b] += slices[s][b];
+            }
+        }
+        return agg;
     }
 
     /** Get the visit count for a specific bin (lag-1 slice chosen by raw GF). */
